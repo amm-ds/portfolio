@@ -1,0 +1,148 @@
+{
+  "seasonal_naive": {
+    "mae": 83.19940476190476,
+    "rmse": 134.02384071855417,
+    "mape": 153.19989911042663
+  },
+  "ridge": {
+    "mae": 51.09094969058817,
+    "rmse": 77.7812613005462,
+    "mape": 86.36397422637272
+  },
+  "random_forest": {
+    "mae": 26.31669750330688,
+    "rmse": 45.66907793770365,
+    "mape": 25.749461779518867
+  },
+  "lightgbm_hpo": {
+    "mae": 25.37318492658977,
+    "rmse": 40.21052924548496,
+    "mape": 27.4218582655074
+  },
+  "mlp": {
+    "mae": 25.43163249606178,
+    "rmse": 39.322385862511936,
+    "mape": 33.717433700685255
+  },
+  "_meta": {
+    "split": "test window: final test_weeks of the series, scored once per candidate",
+    "champion": "mlp",
+    "champion_selected_by": "lowest validation MAE (test never consulted)",
+    "val_mae": {
+      "seasonal_naive": 88.65029761904762,
+      "ridge": 68.86840057900616,
+      "random_forest": 39.50242981150794,
+      "lightgbm_hpo": 34.396797677319,
+      "mlp": 34.21699224767231
+    },
+    "mae_improvement_vs_floor_ci": {
+      "point": 57.76777226584298,
+      "lo": 52.48709735714254,
+      "hi": 63.0707142345962,
+      "n_boot": 2000,
+      "significant_95": true
+    },
+    "hpo": {
+      "best_params": {
+        "learning_rate": 0.06226643111943728,
+        "num_leaves": 39.0,
+        "max_depth": 12.0,
+        "min_child_samples": 46.0,
+        "subsample": 0.5409676118845669,
+        "colsample_bytree": 0.6522351470898891,
+        "reg_lambda": 0.004962255025866918
+      },
+      "n_trials": 50,
+      "best_val_mae": 34.396797677319,
+      "time_budget_s": 240,
+      "trial_cap": 50
+    },
+    "ablation": [
+      {
+        "variant": "dropout=on|wd=on|es=on",
+        "dropout_on": true,
+        "weight_decay_on": true,
+        "early_stopping_on": true,
+        "val_mae": 34.21699224767231,
+        "test_mae": 25.43163249606178,
+        "epochs_run": 57,
+        "selected": true
+      },
+      {
+        "variant": "dropout=on|wd=on|es=off",
+        "dropout_on": true,
+        "weight_decay_on": true,
+        "early_stopping_on": false,
+        "val_mae": 35.25563016959599,
+        "test_mae": 26.75050027597518,
+        "epochs_run": 150,
+        "selected": false
+      },
+      {
+        "variant": "dropout=on|wd=off|es=on",
+        "dropout_on": true,
+        "weight_decay_on": false,
+        "early_stopping_on": true,
+        "val_mae": 34.255045362881255,
+        "test_mae": 25.36321144444602,
+        "epochs_run": 57,
+        "selected": false
+      },
+      {
+        "variant": "dropout=on|wd=off|es=off",
+        "dropout_on": true,
+        "weight_decay_on": false,
+        "early_stopping_on": false,
+        "val_mae": 34.767066228957404,
+        "test_mae": 26.243260803676787,
+        "epochs_run": 150,
+        "selected": false
+      },
+      {
+        "variant": "dropout=off|wd=on|es=on",
+        "dropout_on": false,
+        "weight_decay_on": true,
+        "early_stopping_on": true,
+        "val_mae": 32.129945879890805,
+        "test_mae": 24.955414420082455,
+        "epochs_run": 38,
+        "selected": false
+      },
+      {
+        "variant": "dropout=off|wd=on|es=off",
+        "dropout_on": false,
+        "weight_decay_on": true,
+        "early_stopping_on": false,
+        "val_mae": 35.74591418675014,
+        "test_mae": 27.366398300443375,
+        "epochs_run": 150,
+        "selected": false
+      },
+      {
+        "variant": "dropout=off|wd=off|es=on",
+        "dropout_on": false,
+        "weight_decay_on": false,
+        "early_stopping_on": true,
+        "val_mae": 32.16279371011825,
+        "test_mae": 24.991596534138633,
+        "epochs_run": 38,
+        "selected": false
+      },
+      {
+        "variant": "dropout=off|wd=off|es=off",
+        "dropout_on": false,
+        "weight_decay_on": false,
+        "early_stopping_on": false,
+        "val_mae": 34.8473935070492,
+        "test_mae": 27.257389170782908,
+        "epochs_run": 150,
+        "selected": false
+      }
+    ],
+    "limits": [
+      "The test window is scored once per candidate; model selection, early stopping and the ablation choice used validation only.",
+      "MAPE denominators are floored at 1 rental; near-zero hours inflate MAPE even when the absolute error is small \u2014 read MAE first.",
+      "Two seasons, one city, one system: transfer to other fleets or regimes is plausible, not measured."
+    ]
+  }
+}

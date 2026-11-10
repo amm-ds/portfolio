@@ -48,7 +48,10 @@ def _choropleth(
     colorscale: str,
     colorbar_title: str,
 ) -> go.Figure:
-    geojson = gdf.__geo_interface__
+    # Douglas-Peucker simplify at ~45 m (0.0004°): visually identical at the
+    # city-wide zoom these figures render at, and the committed payload drops
+    # from ~3.8 MB to a few hundred KB (external audit F-02: figure bloat).
+    geojson = gdf.geometry.simplify(0.0004, preserve_topology=True).__geo_interface__
     fig = go.Figure(
         go.Choroplethmap(
             geojson=geojson,

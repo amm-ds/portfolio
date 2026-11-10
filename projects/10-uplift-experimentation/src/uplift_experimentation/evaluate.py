@@ -645,6 +645,29 @@ def decile_table(cfg: UpliftConfig, df: pd.DataFrame, policy: str) -> dict[str, 
 # Figures
 # ---------------------------------------------------------------------------
 
+_FIG_MAX_POINTS = 400
+
+
+def _fig_curve(
+    fr: np.ndarray, inc: np.ndarray, max_points: int = _FIG_MAX_POINTS
+) -> tuple[np.ndarray, np.ndarray]:
+    """Decimate a curve for the committed figure payload.
+
+    The Qini/frontier curves carry one point per customer (64k); at any
+    render width that is invisible weight (external audit F-02: ~3 MB per
+    figure). Even-stride decimation keeps the line visually identical and
+    the endpoint exact; downstream star/threshold picks read the same grid
+    as the drawn trace.
+    """
+    n = len(fr)
+    if n <= max_points:
+        return fr, inc
+    stride = int(np.ceil(n / max_points))
+    idx = np.arange(0, n, stride)
+    if idx[-1] != n - 1:
+        idx = np.append(idx, n - 1)
+    return fr[idx], inc[idx]
+
 
 def qini_figure(
     curves: dict[str, tuple[np.ndarray, np.ndarray]],
@@ -661,6 +684,7 @@ def qini_figure(
     stay deliberately faint so the lines read through them.
     """
     fig = go.Figure()
+    curves = {policy: _fig_curve(fr, inc) for policy, (fr, inc) in curves.items()}
     for policy, (fr, inc) in curves.items():
         fig.add_scatter(
             x=fr,
@@ -744,6 +768,7 @@ def profit_figure(
 ) -> go.Figure:
     """Incremental profit vs budget fraction for every policy."""
     fig = go.Figure()
+    curves = {policy: _fig_curve(fr, inc) for policy, (fr, inc) in curves.items()}
     for policy, (fr, inc) in curves.items():
         profit = profit_curve(fr, inc, n_total, cfg.revenue_per_conversion, cfg.cost_per_email)
         fig.add_scatter(
@@ -858,11 +883,12 @@ def qini_per_arm_figure(
 ) -> go.Figure:
     """Empirical Qini curves per arm on the randomized pairs (+ committed binary read)."""
     fig = go.Figure()
+    arm_curves = {arm: _fig_curve(fr, inc) for arm, (fr, inc) in arm_curves.items()}
+    fr_b, inc_b = _fig_curve(*binary_curve)
     arm_style = {"mens": {"color": "#fbbf24"}, "womens": {"color": "#f472b6"}}
     for arm in ("mens", "womens"):
         fr, inc = arm_curves[arm]
         fig.add_scatter(x=fr, y=inc, mode="lines", name=f"uplift_{arm}")
-    fr_b, inc_b = binary_curve
     fig.add_scatter(
         x=fr_b,
         y=inc_b,
@@ -895,6 +921,7 @@ def profit_frontier_multi_arm_figure(
 ) -> go.Figure:
     """MODEL-ESTIMATED profit frontier: best-arm vs the single-arm/mail-everyone strategies."""
     fig = go.Figure()
+    curves = {policy: _fig_curve(fr, inc) for policy, (fr, inc) in curves.items()}
     for policy, (fr, inc) in curves.items():
         profit = profit_curve(fr, inc, n_total, cfg.revenue_per_conversion, cfg.cost_per_email)
         fig.add_scatter(

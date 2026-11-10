@@ -39,7 +39,7 @@ def repo_root() -> Path:
 def docker_available() -> bool:
     if shutil.which("docker") is None:
         return False
-    r = subprocess.run(["docker", "info"], capture_output=True, text=True)
+    r = subprocess.run(["docker", "info"], capture_output=True, text=True, check=False)
     return r.returncode == 0
 
 

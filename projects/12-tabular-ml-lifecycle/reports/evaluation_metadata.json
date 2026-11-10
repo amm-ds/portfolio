@@ -1,0 +1,31 @@
+{
+  "protocol": "Time-based split: the final 8 weeks of the 2011-2012 hourly series are the test window, scored once per candidate; the 8 weeks before it are validation (model selection, LightGBM HPO objective, MLP early stopping, ablation choice); everything earlier is training. Lag features read only the past. Paired bootstrap on the test window prices the champion-vs-floor MAE gap.",
+  "versions": {
+    "python": "3.12.9",
+    "tabular_ml_lifecycle": "0.1.0",
+    "scikit-learn": "1.9.1",
+    "lightgbm": "4.7.0",
+    "optuna": "5.0.0",
+    "torch": "2.14.1",
+    "plotly": "7.1.0",
+    "pandas": "2.3.3",
+    "numpy": "2.5.4"
+  },
+  "hardware": {
+    "platform": "macOS-26.5-arm64-i386-64bit",
+    "machine": "arm64",
+    "processor": "i386",
+    "cpu_count": 16,
+    "torch_threads": 1
+  },
+  "runtime": {
+    "train_s": 50.789,
+    "evaluate_s": 0.523
+  },
+  "seed": 42,
+  "limits": [
+    "The test window is scored once per candidate; model selection, early stopping and the ablation choice used validation only.",
+    "MAPE denominators are floored at 1 rental; near-zero hours inflate MAPE even when the absolute error is small \u2014 read MAE first.",
+    "Two seasons, one city, one system: transfer to other fleets or regimes is plausible, not measured."
+  ]
+}

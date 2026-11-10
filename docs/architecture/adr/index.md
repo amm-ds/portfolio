@@ -14,9 +14,10 @@ template keeps its own decision records under
 | [0002 — pydantic contracts at every boundary](0002-pydantic-contracts-everywhere.md) | Dataset records, run configs, API requests/responses are typed models — drift and config typos fail loudly at the boundary, not downstream. | Accepted |
 | [0003 — DVC pipelines for reproducibility](0003-dvc-pipeline-reproducibility.md) | Per-project DVC stages (`prepare → … → evaluate`) make "reproducible" testable: a stranger reproduces headline results from a clean clone. | Accepted |
 | [0004 — LLM provider abstraction](0004-llm-provider-abstraction.md) | One factory — `portfolio_core.llm.build_model()` on pydantic-ai — runs CI without secrets, offline on local Ollama, or against any OpenAI-compatible endpoint. | Accepted |
-| [0005 — plotly as the only visualization library](0005-plotly-as-only-viz.md) | All figures go through `portfolio_core.plotting` (shared theme, one export path) so READMEs, the mkdocs site, and the React app render identical charts. | Accepted |
+| [0005 — plotly as the only visualization library](0005-plotly-as-only-viz.md) | All figures go through `portfolio_core.plotting` (shared theme, one export path) so READMEs, the mkdocs site, and the React app render identical charts. | Accepted; rendering side amended by ADR-0008 |
 | [0006 — local-first LLM + evaluation frameworks](0006-local-llm-ollama-and-evaluation-frameworks.md) | Ollama is the default model runtime (free, private, CI-runnable); RAGAS + pydantic-evals grade LLM quality with committed numbers. | Accepted |
 | [0007 — DVC beyond pipelines](0007-dvc-metrics-experiments-registry.md) | `reports/metrics.json`, queued HPO experiments, and the dataset registry become declarative DVC concerns instead of ad-hoc scripts and markdown-only cards. | Accepted |
+| [0008 — ECharts renderer with plotly fallback](0008-echarts-renderer-plotly-fallback.md) | Committed plotly payloads stay the single figure source; the showcase web converts and renders them with ECharts, per-figure plotly.js fallback when conversion fails. | Accepted; amends ADR-0005 |
 
 ## agent-chat template ADRs
 

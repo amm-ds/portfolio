@@ -6,9 +6,10 @@ setup: ## Install all workspace deps and pre-commit hooks
 	uv sync --all-packages --dev
 	uv run pre-commit install
 
-lint: ## Ruff check + format check
+lint: ## Ruff check + format check + import contracts
 	uv run ruff check .
 	uv run ruff format --check .
+	uv run lint-imports --no-logo
 
 typecheck: ## Mypy over workspace
 	uv run mypy libs projects apps

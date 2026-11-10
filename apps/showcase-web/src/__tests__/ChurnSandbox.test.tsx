@@ -612,14 +612,18 @@ describe("churn sandbox routing & links", () => {
     }
   });
 
-  it("omits the live-demo link when the registry has no demo for the project", async () => {
+  it("omits the live-demo link when no registry has a demo for the project", async () => {
+    // neither the baked static registry (02/05 only) nor the live registry
     mockFetch((path) => {
-      if (path.endsWith("/projects")) return jsonResponse([CHURN_PROJECT]);
+      if (path.endsWith("/projects"))
+        return jsonResponse([
+          { id: "99-no-demo", title: "No Demo", domain: "testing", techniques: ["synthetic"] },
+        ]);
       if (path.endsWith("/demos")) return jsonResponse([]);
       return jsonResponse({ detail: "no story" }, 404);
     });
     render(
-      <MemoryRouter initialEntries={["/projects/05-ml-pipeline-churn"]}>
+      <MemoryRouter initialEntries={["/projects/99-no-demo"]}>
         <Routes>
           <Route path="/projects/:id" element={<ProjectDetail />} />
         </Routes>
@@ -629,7 +633,9 @@ describe("churn sandbox routing & links", () => {
     expect(screen.queryByRole("link", { name: "▶ try the live demo" })).toBeNull();
   });
 
-  it("omits the live-demo link when the registry fetch fails", async () => {
+  it("keeps the live-demo link from the baked registry when the registry fetch fails", async () => {
+    // the banner/link derive from the baked static registry so first paint
+    // carries them (the CLS fix); a failing live fetch leaves them in place
     mockFetch((path) => {
       if (path.endsWith("/projects")) return jsonResponse([CHURN_PROJECT]);
       return jsonResponse({ detail: "registry down" }, 503);
@@ -642,6 +648,8 @@ describe("churn sandbox routing & links", () => {
       </MemoryRouter>,
     );
     await waitFor(() => expect(screen.getByRole("link", { name: "[code]" })).toBeInTheDocument());
-    expect(screen.queryByRole("link", { name: "▶ try the live demo" })).toBeNull();
+    for (const link of screen.getAllByRole("link", { name: "▶ try the live demo" })) {
+      expect(link).toHaveAttribute("href", "/demos/churn-sandbox");
+    }
   });
 });

@@ -59,7 +59,7 @@ const SECTIONS = [
   { id: "modes", title: "Four modes" },
   { id: "evidence", title: "Evidence & performance" },
   { id: "interface", title: "Interface" },
-  { id: "downloads", title: "Downloads/exports" },
+  { id: "downloads", title: "Downloads & exports" },
   { id: "evaluation", title: "Evaluation" },
   { id: "specs", title: "Specs & limits" },
 ] as const;
@@ -138,7 +138,7 @@ export function DocumentIntelligenceArticle() {
             index={1}
             title="Background"
             subtitle="a document workbench built around verifiable per-page answers, not opaque JSON"
-            takeaway="The useful unit is a page-level result linked to exact source evidence—not an unverified model response."
+            takeaway="One AI call per page produces the summary, entities, and topics; deterministic code verifies every quote against PyMuPDF-owned text, and partial results stay visible while the worker continues."
           >
             <LazyFlowDiagram specId="app-document-intelligence-architecture" />
             <div className="prose">
@@ -162,7 +162,7 @@ export function DocumentIntelligenceArticle() {
             index={2}
             title="Page analysis contract"
             subtitle="one structured-output call per page over delimited, untrusted text"
-            takeaway="Each page is analyzed independently, so results appear page by page and one slow page never blocks the document."
+            takeaway="Pages are analyzed independently: results stream in page by page, one slow page never blocks the document, and the model has no tools, storage, or path to persistence."
           >
             <div className="prose">
               <p>
@@ -188,7 +188,7 @@ export function DocumentIntelligenceArticle() {
             index={3}
             title="Four modes"
             subtitle="three analysis lenses per page plus one page-scoped conversation"
-            takeaway="Summary, Entities, and Topics are three views over the same per-page analysis; Chat answers questions about the selected page only."
+            takeaway="Summary, Entities, and Topics are three views over the same per-page record; Chat answers only about the page in view, with bounded history and exact citations."
           >
             <div className="prose">
               <ul>
@@ -212,7 +212,7 @@ export function DocumentIntelligenceArticle() {
             index={4}
             title="Evidence & performance"
             subtitle="parser-resolved citations with page-by-page progress"
-            takeaway="A missing, ambiguous, or fabricated citation becomes a visible validation error; completed pages stay visible while the worker continues."
+            takeaway="Model-supplied coordinates are discarded: quotes re-match after a unicode fold across spans, table lines, and image placeholders — a quote matching nothing stays a visible error, never a silent guess."
           >
             <div className="prose">
               <p>
@@ -243,7 +243,7 @@ export function DocumentIntelligenceArticle() {
             index={5}
             title="Interface"
             subtitle="the source PDF and every page result stay in one analysis workspace"
-            takeaway="Selecting a summary point, entity, topic, or chat answer reveals its exact source passage."
+            takeaway="Select a key point, entity, topic, or chat answer and the exact source passage highlights on the page; done, running, and failed states stay explicit per page."
           >
             <div className="app-media-grid">
               <AppScreenshot
@@ -275,9 +275,9 @@ export function DocumentIntelligenceArticle() {
           <AppArticleSection
             id="downloads"
             index={6}
-            title="Downloads/exports"
+            title="Downloads & exports"
             subtitle="full-document and selected-page reports off the server record"
-            takeaway="Download the complete analysis or just the page in view, as JSON or Markdown."
+            takeaway="What was analyzed is what downloads: the full document or the selected page as JSON or Markdown, with queued or failed pages listed — never silently omitted."
           >
             <div className="prose">
               <p>
@@ -298,7 +298,7 @@ export function DocumentIntelligenceArticle() {
             index={7}
             title="Evaluation"
             subtitle="page-level scorecards with evidence, latency, usage, and cost"
-            takeaway="Offline fixtures verify the application path; only an executed provider run supports live-quality claims."
+            takeaway="Offline fixtures verify the application path without credentials; the executed kimi-for-coding run measured chat accuracy 1.00, citation support 1.00, evidence resolvability 1.00, entity F1 0.68, topic F1 0.50, zero page failures."
           >
             <div className="prose">
               <p>
@@ -343,7 +343,7 @@ export function DocumentIntelligenceArticle() {
             index={8}
             title="Specs & limits"
             subtitle="the source, operating contract, and adoption boundaries travel with the application"
-            takeaway="The template is ready to adapt; representative evaluation still belongs to each rollout."
+            takeaway="Four specs cover architecture, operations, source, and workbench; the limits stay explicit — synthetic born-digital fixtures, no OCR or handwriting claims, and representative validation belongs to each rollout."
           >
             <div className="app-spec-grid">
               {SPECS.map((spec) => (

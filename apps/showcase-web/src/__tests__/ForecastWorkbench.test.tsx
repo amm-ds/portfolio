@@ -220,9 +220,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const lgbmPolylines = () =>
+const ensemblePolylines = () =>
   Array.from(document.querySelectorAll(".demo-chart polyline")).filter(
-    (el) => (el as SVGPolylineElement).style.stroke === "var(--chart-teal)",
+    (el) => (el as SVGPolylineElement).style.stroke === "var(--chart-amber)",
   );
 
 const peaksAt = (card: Element) =>
@@ -279,13 +279,13 @@ describe("ForecastWorkbench", () => {
     expect(tiles).toHaveLength(3);
     expect(screen.getByText("official WRMSSE")).toBeInTheDocument();
     expect(screen.getByText("zero-day accuracy")).toBeInTheDocument();
-    // the demo opens on the full scored window (h=28) with every candidate
-    // selected; LightGBM leads the fixture window
+    // the demo opens on the full scored window (h=28) with the seasonal naive
+    // and the champion ensemble selected; the ensemble leads the fixture window
     const wapeTile = screen.getByText("WAPE @ 28d").closest(".wb-kpi")!;
-    expect(wapeTile.textContent).toMatch(/LightGBM vs naive [\d.]+%/);
+    expect(wapeTile.textContent).toMatch(/ensemble vs naive [\d.]+%/);
     // the committed pooled chip is quoted at the full scored horizon (the
-    // fixture's per-series winner is LightGBM → its committed pooled WRMSSE gap)
-    expect(wapeTile.textContent).toMatch(/pooled WRMSSE −0\.2328 committed/);
+    // fixture's per-series winner is the ensemble → its committed pooled gap)
+    expect(wapeTile.textContent).toMatch(/pooled WRMSSE −0\.2768 committed/);
     fireEvent.click(screen.getByRole("button", { name: "7d" }));
     expect(screen.getByText("WAPE @ 7d").closest(".wb-kpi")!.textContent).not.toMatch(/committed/);
     // the headline tile carries the committed scored-once numbers
@@ -297,25 +297,29 @@ describe("ForecastWorkbench", () => {
     expect(zeroTile.textContent).toMatch(/66\.6%/);
   });
 
-  it("opens with horizon 28d and every model chip selected", async () => {
+  it("opens with horizon 28d, the seasonal naive and the champion ensemble selected", async () => {
     mockFetch();
     renderDemo();
     await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     expect(
       (screen.getByRole("button", { name: "28d" }) as HTMLButtonElement).getAttribute("aria-pressed"),
     ).toBe("true");
+    // the default overlay is the floor vs the champion — the six other
+    // candidates stay one chip away
+    for (const name of ["seasonal naive", "ensemble"]) {
+      const chip = screen.getByRole("button", { name });
+      expect(chip.getAttribute("aria-pressed"), name).toBe("true");
+    }
     for (const name of [
-      "seasonal naive",
       "AutoETS",
       "LightGBM",
       "LightGBM tweedie",
       "pooled store",
       "pooled store×cat",
       "pooled dept",
-      "ensemble",
     ]) {
       const chip = screen.getByRole("button", { name });
-      expect(chip.getAttribute("aria-pressed"), name).toBe("true");
+      expect(chip.getAttribute("aria-pressed"), name).toBe("false");
     }
     // the pooled chips carry their grouping tooltips
     expect(screen.getByRole("button", { name: "pooled store" }).getAttribute("title")).toBe(
@@ -343,8 +347,8 @@ describe("ForecastWorkbench", () => {
     mockFetch();
     renderDemo();
     await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
-    // default: full scored window — 28 visible window points on the lgbm curve
-    const pointsAt = () => lgbmPolylines()[0].getAttribute("points")!.trim().split(" ").length;
+    // default: full scored window — 28 visible window points on the ensemble curve
+    const pointsAt = () => ensemblePolylines()[0].getAttribute("points")!.trim().split(" ").length;
     expect(pointsAt()).toBe(28);
     fireEvent.click(screen.getByRole("button", { name: "7d" }));
     expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument();
@@ -388,8 +392,8 @@ describe("ForecastWorkbench", () => {
     mockFetch();
     renderDemo();
     await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
-    // default view: every candidate + envelope on the full scored window
-    expect(lgbmPolylines().length).toBeGreaterThan(0);
+    // default view: the naive + ensemble + member envelope on the full window
+    expect(ensemblePolylines().length).toBeGreaterThan(0);
     expect(document.querySelector(".demo-chart path[d]")).not.toBeNull();
     expectFiniteChartGeometry();
     // toggle the ensemble off (envelope indices shift by two)
@@ -417,9 +421,9 @@ describe("ForecastWorkbench", () => {
     const errCard = () =>
       screen.getByText("error composition").closest(".wb-secondary-panel")!;
     const spreadCard = () => screen.getByText("model spread").closest(".wb-secondary-panel")!;
-    // full-horizon headlines (the demo opens at h=28 with every candidate on)
+    // full-horizon headlines (the demo opens at h=28 with the naive + ensemble on)
     expect(errCard().textContent).toMatch(/wape @28d 0\.\d{3}/);
-    expect(spreadCard().textContent).toMatch(/8 models/);
+    expect(spreadCard().textContent).toMatch(/2 models/);
     const errBefore = errCard().textContent;
     // next-week window: every card recomputes client-side
     fireEvent.click(screen.getByRole("button", { name: "7d" }));
@@ -436,13 +440,14 @@ describe("ForecastWorkbench", () => {
     renderDemo();
     await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     const spreadCard = () => screen.getByText("model spread").closest(".wb-secondary-panel")!;
-    // default: every candidate — a disagreement band with a closest-model chip
-    expect(spreadCard().textContent).toMatch(/8 models/);
+    // default: the naive + ensemble — a disagreement band with a closest-model chip
+    expect(spreadCard().textContent).toMatch(/2 models/);
     expect(spreadCard().textContent).toMatch(/closest/);
     expect(spreadCard().textContent).toMatch(/not a calibrated interval/);
     // deselecting the ensemble does NOT collapse the card — it recomputes
+    // into the single-model |error| view
     fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
-    expect(spreadCard().textContent).toMatch(/7 models/);
+    expect(spreadCard().textContent).toMatch(/1 model — \|error\| view/);
     expect(spreadCard().querySelector(".state-box")).toBeNull();
     const before = spreadCard().textContent;
     fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
@@ -488,7 +493,7 @@ describe("ForecastWorkbench", () => {
     expect(comment).toContain("not a calibrated interval");
     // horizon toggle recomputes the band and the footer
     fireEvent.click(screen.getByRole("button", { name: "7d" }));
-    expect(spreadCard().textContent).toMatch(/8 models/);
+    expect(spreadCard().textContent).toMatch(/2 models/);
     expect(spreadCard().textContent).toMatch(/mean spread [\d.]+/);
     // the band never dead-ends: it is present at every shipped horizon
     for (const horizon of ["14d", "28d"]) {
@@ -525,9 +530,9 @@ describe("ForecastWorkbench", () => {
     renderDemo();
     await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     const verdictCard = () => screen.getByText("model verdict").closest(".wb-secondary-panel")!;
-    // default selection: every candidate -> one bar per model
+    // default selection: the naive + champion ensemble -> one bar per model
     const items = verdictCard().querySelectorAll(".fwb-verdict-item");
-    expect(items).toHaveLength(8);
+    expect(items).toHaveLength(2);
     for (const item of Array.from(items)) {
       // dot + name + tinted bar fill + value label at the bar end + peak-day MAE
       expect(item.querySelector(".fwb-dot")).not.toBeNull();
@@ -569,21 +574,25 @@ describe("ForecastWorkbench", () => {
     const scaleBefore = scaleLabel().textContent;
 
     // toggle a subset OFF: another bar's width must be pixel-identical and
-    // the scale label must persist unchanged
+    // the scale label must persist unchanged. The default is naive+ensemble,
+    // so first add LightGBM + AutoETS, then drop two of the four.
     const lightgbmRow = () =>
       Array.from(verdictCard().querySelectorAll(".fwb-verdict-item")).find((i) =>
         i.querySelector(".fwb-verdict-name")!.textContent!.includes("LightGBM"),
       )!;
+    fireEvent.click(screen.getByRole("button", { name: "LightGBM" }));
+    fireEvent.click(screen.getByRole("button", { name: "AutoETS" }));
+    expect(verdictCard().querySelectorAll(".fwb-verdict-item")).toHaveLength(4);
     const widthBefore = (lightgbmRow().querySelector(".fwb-bar-fill") as HTMLElement).style.width;
     fireEvent.click(screen.getByRole("button", { name: "AutoETS" }));
     fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
-    expect(verdictCard().querySelectorAll(".fwb-verdict-item")).toHaveLength(6);
+    expect(verdictCard().querySelectorAll(".fwb-verdict-item")).toHaveLength(2);
     expect((lightgbmRow().querySelector(".fwb-bar-fill") as HTMLElement).style.width).toBe(widthBefore);
     expect(scaleLabel().textContent).toBe(scaleBefore);
-    // toggling back restores the full set at the same widths
+    // toggling back restores the four at the same widths
     fireEvent.click(screen.getByRole("button", { name: "AutoETS" }));
     fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
-    expect(verdictCard().querySelectorAll(".fwb-verdict-item")).toHaveLength(8);
+    expect(verdictCard().querySelectorAll(".fwb-verdict-item")).toHaveLength(4);
     expect((lightgbmRow().querySelector(".fwb-bar-fill") as HTMLElement).style.width).toBe(widthBefore);
 
     // bars and peak-day MAEs change with the horizon toggle
@@ -597,7 +606,8 @@ describe("ForecastWorkbench", () => {
     expect(verdictCard().querySelector(".fwb-verdict-scale")!.textContent).toMatch(
       /wape@7d scale max 0\.\d{3}/,
     );
-    // back at h=28 the pooled committed chip reappears
+    // back at h=28 the pooled committed chip reappears — the restored
+    // four-candidate selection crowns LightGBM on this fixture window
     fireEvent.click(screen.getByRole("button", { name: "28d" }));
     expect(verdictCard().textContent).toMatch(/pooled official WRMSSE −0\.2328 committed/);
     expect(verdictCard().textContent).toMatch(/h = 28/);

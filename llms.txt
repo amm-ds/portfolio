@@ -34,7 +34,7 @@
 
 - [docs/index.md](docs/index.md) — site home; [docs/projects/](docs/projects/index.md) — the 13 case studies.
 - [docs/architecture/platform.md](docs/architecture/platform.md) — reference architecture.
-- [docs/architecture/adr/](docs/architecture/adr/index.md) — architecture decision records 0001–0007 (explanation, Diátaxis).
+- [docs/architecture/adr/](docs/architecture/adr/index.md) — architecture decision records 0001–0008 (explanation, Diátaxis).
 - [docs/runbooks/](docs/runbooks/pipeline-restore.md) — drift response, LLM cost incident, pipeline restore (how-to, Diátaxis).
 - [docs/data-registry/](docs/data-registry/index.md) — dataset cards with pinned URLs + checksums (reference, Diátaxis).
 - [docs/engineering-playbook.md](docs/engineering-playbook.md) — review culture.

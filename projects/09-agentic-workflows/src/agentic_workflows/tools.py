@@ -293,7 +293,7 @@ _UNIT_ALIASES = {
 def _resolve_unit(unit: str) -> tuple[str, float]:
     """Return (dimension, factor to canonical unit) for a unit name."""
     u = _UNIT_ALIASES.get(unit.lower(), unit.lower())
-    if u == "c" or u == "f":
+    if u in {"c", "f"}:
         return ("temperature", 1.0)
     for dimension, table in _CONVERSIONS.items():
         if u in table:

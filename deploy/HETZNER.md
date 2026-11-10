@@ -52,6 +52,14 @@ docker stats --no-stream   # co-tenant headroom check
 ```
 
 Gotchas learned on this box:
+- **Check disk before every build.** The image is ~7.3 GB and a build transiently
+  needs a third image's worth of space (current + previous + the new one) plus
+  build cache. Rule: `df -h /` first; if under ~12 GB free, `docker builder
+  prune -af` and drop the oldest image tag before building. A build that dies
+  at `exporting to image / no space left` leaves a partial tagged image —
+  remove it (`docker rmi <tag>`) before retrying, or the retry unpacks over it.
+- Prune by **image tag, not commit ancestry**: the previous release image is
+  the last *deployed tag*, which a multi-commit push can move past `HEAD~1`.
 - `git pull` REPLACES tracked files via rename, so a bind-mounted file inside a
   long-running container (the Caddyfile) keeps serving the OLD inode. After any
   Caddyfile change: `docker compose ... up -d --force-recreate caddy`.
@@ -59,6 +67,10 @@ Gotchas learned on this box:
   with `no space left`, run `docker builder prune -af` (frees the build cache,
   keeps images) before retrying; keep only the current and previous image tags.
 - The env file is root:amm 640 — readable by the deploy user, not by others.
+- The contact-store volume must be owned by the container's app user (uid
+  999): `docker run --rm -v amm-ds-portfolio_contact-store:/data --user root
+  <image> chown 999:999 /data` — redo if the volume is ever recreated (the
+  API logs a WARNING and keeps serving if the store is unwritable).
 
 Rollback: DEPLOY.md, using the recorded previous tag (keep the last image until the
 new one passes smoke).
@@ -103,6 +115,14 @@ ships neither the `rag_agent` package nor a retrieval index.
 
 ## History
 
+- 2026-11-10 — release `77cb63f`. Web-only waves since the cutover: demo pages
+  dropped the header results strip and the API-endpoint drawer rows (forecast
+  workbench now opens with the seasonal-naive + champion-ensemble overlay);
+  app-article tl;dr cards rewritten with concrete numbers; ECharts figure
+  renderer documented as ADR-0008; docs/README refreshed. No API, Caddyfile,
+  or compose changes — standard pull/build/up flow, smoke suite green,
+  api ~60MiB of 1GiB after boot. Repo description genericized; GitHub topics
+  unchanged.
 - 2026-11-08 — first cutover, tag `191a4ce`. Three latent bugs found only by a real
   boot and fixed in `bd60eed` (CMD glob-expansion of `FORWARDED_ALLOW_IPS=*`),
   `db4fc13` (`DAILY_LIVE_BUDGET=10.0` float crashed `int()` parsing), `191a4ce`

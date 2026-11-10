@@ -1,6 +1,7 @@
+# DVC writes these as stage outputs; this project commits them (house
+# convention, see 05/08/13) so the showcase API can serve metrics/report live.
+# The raw HPO run record and the DQ report stay local; HTML figure renderings
+# are redundant with the committed JSON payloads.
 /dq_report.md
 /train_runs.json
-/evaluation_metadata.json
-/metrics.json
-/report.html
-/results.md
+/figures/*.html

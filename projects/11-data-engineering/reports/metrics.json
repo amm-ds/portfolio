@@ -1,0 +1,7081 @@
+{
+  "protocol": "engine_benchmark_v1",
+  "dataset": {
+    "source": "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet",
+    "n_rows": 2964624,
+    "checksum_sha256": "c4d59da7bbc8abaeeeb1727947ee93d9891a71acb42854bd80db1571b2030510"
+  },
+  "engines": {
+    "pandas": {
+      "version": "2.3.3",
+      "pyarrow": "26.0.0"
+    },
+    "polars": {
+      "version": "2.0.0"
+    },
+    "duckdb": {
+      "version": "2.0.0"
+    },
+    "sqlite": {
+      "version": "3.47.1"
+    }
+  },
+  "tasks": {
+    "read_parquet": {
+      "category": "io",
+      "description": "Read the full-month parquet and reduce to row count + fare total.",
+      "engines": {
+        "pandas": {
+          "time_median_s": 0.044103,
+          "time_all_s": [
+            0.074931,
+            0.043761,
+            0.04445,
+            0.044103,
+            0.041943
+          ],
+          "cold_s": 0.072076,
+          "peak_rss_mb": 548.7,
+          "tracemalloc_peak_mb": 50.412,
+          "result": [
+            {
+              "rows": 2964624,
+              "fare_sum": 53882200.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 1.0,
+          "speedup_vs_sqlite": 110.4
+        },
+        "polars": {
+          "time_median_s": 0.002453,
+          "time_all_s": [
+            0.004504,
+            0.00216,
+            0.002453,
+            0.002549,
+            0.002101
+          ],
+          "cold_s": 0.00489,
+          "peak_rss_mb": 200.0,
+          "tracemalloc_peak_mb": 0.004,
+          "result": [
+            {
+              "rows": 2964624,
+              "fare_sum": 53882200.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 17.979,
+          "speedup_vs_sqlite": 1984.897
+        },
+        "duckdb": {
+          "time_median_s": 0.002865,
+          "time_all_s": [
+            0.004968,
+            0.00263,
+            0.002865,
+            0.00292,
+            0.002777
+          ],
+          "cold_s": 0.004764,
+          "peak_rss_mb": 178.4,
+          "tracemalloc_peak_mb": 0.005,
+          "result": [
+            {
+              "rows": 2964624,
+              "fare_sum": 53882200.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 15.394,
+          "speedup_vs_sqlite": 1699.46
+        },
+        "sqlite": {
+          "time_median_s": 4.868952,
+          "time_all_s": [
+            4.868952,
+            5.578325,
+            6.554981,
+            4.762633,
+            4.728998
+          ],
+          "cold_s": 4.800242,
+          "peak_rss_mb": 1244.2,
+          "tracemalloc_peak_mb": 557.388,
+          "result": [
+            {
+              "rows": 2964624,
+              "fare_sum": 53882200.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 0.009,
+          "speedup_vs_sqlite": 1.0
+        }
+      }
+    },
+    "read_csv": {
+      "category": "io",
+      "description": "Read the full-month CSV (typed read: timestamp column parsed/inferred).",
+      "engines": {
+        "pandas": {
+          "time_median_s": 1.164842,
+          "time_all_s": [
+            1.249767,
+            1.177013,
+            1.164842,
+            1.150822,
+            1.160174
+          ],
+          "cold_s": 1.229444,
+          "peak_rss_mb": 900.7,
+          "tracemalloc_peak_mb": 569.257,
+          "result": [
+            {
+              "rows": 2964624,
+              "fare_sum": 53882200.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 1.0,
+          "speedup_vs_sqlite": 4.939
+        },
+        "polars": {
+          "time_median_s": 0.039624,
+          "time_all_s": [
+            0.039295,
+            0.039624,
+            0.041736,
+            0.042405,
+            0.034824
+          ],
+          "cold_s": 0.048454,
+          "peak_rss_mb": 423.7,
+          "tracemalloc_peak_mb": 0.003,
+          "result": [
+            {
+              "rows": 2964624,
+              "fare_sum": 53882200.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 29.397,
+          "speedup_vs_sqlite": 145.201
+        },
+        "duckdb": {
+          "time_median_s": 0.076638,
+          "time_all_s": [
+            0.078521,
+            0.077141,
+            0.074618,
+            0.071631,
+            0.076638
+          ],
+          "cold_s": 0.080012,
+          "peak_rss_mb": 312.2,
+          "tracemalloc_peak_mb": 0.005,
+          "result": [
+            {
+              "rows": 2964624,
+              "fare_sum": 53882200.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 15.199,
+          "speedup_vs_sqlite": 75.073
+        },
+        "sqlite": {
+          "time_median_s": 5.753463,
+          "time_all_s": [
+            5.776919,
+            5.727012,
+            5.705327,
+            5.753463,
+            5.789598
+          ],
+          "cold_s": 5.820308,
+          "peak_rss_mb": 1520.2,
+          "tracemalloc_peak_mb": 747.128,
+          "result": [
+            {
+              "rows": 2964624,
+              "fare_sum": 53882200.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 0.202,
+          "speedup_vs_sqlite": 1.0
+        }
+      }
+    },
+    "groupby": {
+      "category": "compute",
+      "description": "Per-day aggregation: trips, total fare, mean distance, mean passengers.",
+      "engines": {
+        "pandas": {
+          "time_median_s": 0.37386,
+          "time_all_s": [
+            0.401254,
+            0.37386,
+            0.371529,
+            0.378193,
+            0.370593
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 718.2,
+          "tracemalloc_peak_mb": 290.548,
+          "result": [
+            {
+              "day": "2002-12-31",
+              "trips": 2,
+              "total_fare": 0.0,
+              "mean_distance": 0.63,
+              "mean_passengers": 1.0
+            },
+            {
+              "day": "2009-01-01",
+              "trips": 3,
+              "total_fare": 100.0,
+              "mean_distance": 7.44333,
+              "mean_passengers": 1.33333
+            },
+            {
+              "day": "2023-12-31",
+              "trips": 10,
+              "total_fare": 144.1,
+              "mean_distance": 2.601,
+              "mean_passengers": 1.9
+            },
+            {
+              "day": "2024-01-01",
+              "trips": 81013,
+              "total_fare": 1765110.0,
+              "mean_distance": 4.39681,
+              "mean_passengers": 1.55102
+            },
+            {
+              "day": "2024-01-02",
+              "trips": 75519,
+              "total_fare": 1583410.0,
+              "mean_distance": 4.11903,
+              "mean_passengers": 1.42058
+            },
+            {
+              "day": "2024-01-03",
+              "trips": 82427,
+              "total_fare": 1620850.0,
+              "mean_distance": 3.8784,
+              "mean_passengers": 1.38159
+            },
+            {
+              "day": "2024-01-04",
+              "trips": 102901,
+              "total_fare": 1895570.0,
+              "mean_distance": 3.31097,
+              "mean_passengers": 1.35598
+            },
+            {
+              "day": "2024-01-05",
+              "trips": 103178,
+              "total_fare": 1839920.0,
+              "mean_distance": 3.75355,
+              "mean_passengers": 1.37181
+            },
+            {
+              "day": "2024-01-06",
+              "trips": 97117,
+              "total_fare": 1681140.0,
+              "mean_distance": 3.12583,
+              "mean_passengers": 1.45745
+            },
+            {
+              "day": "2024-01-07",
+              "trips": 67543,
+              "total_fare": 1313910.0,
+              "mean_distance": 3.88389,
+              "mean_passengers": 1.42626
+            },
+            {
+              "day": "2024-01-08",
+              "trips": 80034,
+              "total_fare": 1496520.0,
+              "mean_distance": 3.51131,
+              "mean_passengers": 1.29557
+            },
+            {
+              "day": "2024-01-09",
+              "trips": 93962,
+              "total_fare": 1587790.0,
+              "mean_distance": 3.83247,
+              "mean_passengers": 1.27286
+            },
+            {
+              "day": "2024-01-10",
+              "trips": 95000,
+              "total_fare": 1702460.0,
+              "mean_distance": 3.35086,
+              "mean_passengers": 1.26973
+            },
+            {
+              "day": "2024-01-11",
+              "trips": 105010,
+              "total_fare": 1948630.0,
+              "mean_distance": 3.58844,
+              "mean_passengers": 1.28779
+            },
+            {
+              "day": "2024-01-12",
+              "trips": 103655,
+              "total_fare": 1922630.0,
+              "mean_distance": 4.23026,
+              "mean_passengers": 1.35403
+            },
+            {
+              "day": "2024-01-13",
+              "trips": 104758,
+              "total_fare": 1809820.0,
+              "mean_distance": 3.77021,
+              "mean_passengers": 1.44194
+            },
+            {
+              "day": "2024-01-14",
+              "trips": 94420,
+              "total_fare": 1687310.0,
+              "mean_distance": 3.3126,
+              "mean_passengers": 1.43985
+            },
+            {
+              "day": "2024-01-15",
+              "trips": 77033,
+              "total_fare": 1486580.0,
+              "mean_distance": 3.73149,
+              "mean_passengers": 1.36355
+            },
+            {
+              "day": "2024-01-16",
+              "trips": 93057,
+              "total_fare": 1784090.0,
+              "mean_distance": 3.71544,
+              "mean_passengers": 1.275
+            },
+            {
+              "day": "2024-01-17",
+              "trips": 110365,
+              "total_fare": 2009080.0,
+              "mean_distance": 3.83347,
+              "mean_passengers": 1.28295
+            },
+            {
+              "day": "2024-01-18",
+              "trips": 110358,
+              "total_fare": 1974960.0,
+              "mean_distance": 3.01191,
+              "mean_passengers": 1.27486
+            },
+            {
+              "day": "2024-01-19",
+              "trips": 95951,
+              "total_fare": 1652380.0,
+              "mean_distance": 3.01143,
+              "mean_passengers": 1.33629
+            },
+            {
+              "day": "2024-01-20",
+              "trips": 108768,
+              "total_fare": 1798400.0,
+              "mean_distance": 3.53654,
+              "mean_passengers": 1.42305
+            },
+            {
+              "day": "2024-01-21",
+              "trips": 84502,
+              "total_fare": 1557430.0,
+              "mean_distance": 4.81598,
+              "mean_passengers": 1.38521
+            },
+            {
+              "day": "2024-01-22",
+              "trips": 85650,
+              "total_fare": 1587600.0,
+              "mean_distance": 3.39743,
+              "mean_passengers": 1.26412
+            },
+            {
+              "day": "2024-01-23",
+              "trips": 99891,
+              "total_fare": 1765790.0,
+              "mean_distance": 2.97302,
+              "mean_passengers": 1.2624
+            },
+            {
+              "day": "2024-01-24",
+              "trips": 105120,
+              "total_fare": 1862320.0,
+              "mean_distance": 3.51221,
+              "mean_passengers": 1.26132
+            },
+            {
+              "day": "2024-01-25",
+              "trips": 110318,
+              "total_fare": 2014790.0,
+              "mean_distance": 3.97915,
+              "mean_passengers": 1.26648
+            },
+            {
+              "day": "2024-01-26",
+              "trips": 105804,
+              "total_fare": 1884940.0,
+              "mean_distance": 3.38093,
+              "mean_passengers": 1.32925
+            },
+            {
+              "day": "2024-01-27",
+              "trips": 110515,
+              "total_fare": 1858510.0,
+              "mean_distance": 2.82494,
+              "mean_passengers": 1.41626
+            },
+            {
+              "day": "2024-01-28",
+              "trips": 92837,
+              "total_fare": 1677540.0,
+              "mean_distance": 3.33025,
+              "mean_passengers": 1.38729
+            },
+            {
+              "day": "2024-01-29",
+              "trips": 84547,
+              "total_fare": 1567830.0,
+              "mean_distance": 3.3959,
+              "mean_passengers": 1.26633
+            },
+            {
+              "day": "2024-01-30",
+              "trips": 101233,
+              "total_fare": 1754810.0,
+              "mean_distance": 6.02667,
+              "mean_passengers": 1.25363
+            },
+            {
+              "day": "2024-01-31",
+              "trips": 102120,
+              "total_fare": 1789780.0,
+              "mean_distance": 3.1554,
+              "mean_passengers": 1.24989
+            },
+            {
+              "day": "2024-02-01",
+              "trips": 3,
+              "total_fare": 58.0,
+              "mean_distance": 4.08333,
+              "mean_passengers": 2.33333
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 1.0,
+          "speedup_vs_sqlite": 13.854
+        },
+        "polars": {
+          "time_median_s": 0.009189,
+          "time_all_s": [
+            0.01351,
+            0.010004,
+            0.008894,
+            0.008871,
+            0.009189
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 315.8,
+          "tracemalloc_peak_mb": 0.026,
+          "result": [
+            {
+              "day": "2002-12-31",
+              "trips": 2,
+              "total_fare": 0.0,
+              "mean_distance": 0.63,
+              "mean_passengers": 1.0
+            },
+            {
+              "day": "2009-01-01",
+              "trips": 3,
+              "total_fare": 100.0,
+              "mean_distance": 7.44333,
+              "mean_passengers": 1.33333
+            },
+            {
+              "day": "2023-12-31",
+              "trips": 10,
+              "total_fare": 144.1,
+              "mean_distance": 2.601,
+              "mean_passengers": 1.9
+            },
+            {
+              "day": "2024-01-01",
+              "trips": 81013,
+              "total_fare": 1765110.0,
+              "mean_distance": 4.39681,
+              "mean_passengers": 1.55102
+            },
+            {
+              "day": "2024-01-02",
+              "trips": 75519,
+              "total_fare": 1583410.0,
+              "mean_distance": 4.11903,
+              "mean_passengers": 1.42058
+            },
+            {
+              "day": "2024-01-03",
+              "trips": 82427,
+              "total_fare": 1620850.0,
+              "mean_distance": 3.8784,
+              "mean_passengers": 1.38159
+            },
+            {
+              "day": "2024-01-04",
+              "trips": 102901,
+              "total_fare": 1895570.0,
+              "mean_distance": 3.31097,
+              "mean_passengers": 1.35598
+            },
+            {
+              "day": "2024-01-05",
+              "trips": 103178,
+              "total_fare": 1839920.0,
+              "mean_distance": 3.75355,
+              "mean_passengers": 1.37181
+            },
+            {
+              "day": "2024-01-06",
+              "trips": 97117,
+              "total_fare": 1681140.0,
+              "mean_distance": 3.12583,
+              "mean_passengers": 1.45745
+            },
+            {
+              "day": "2024-01-07",
+              "trips": 67543,
+              "total_fare": 1313910.0,
+              "mean_distance": 3.88389,
+              "mean_passengers": 1.42626
+            },
+            {
+              "day": "2024-01-08",
+              "trips": 80034,
+              "total_fare": 1496520.0,
+              "mean_distance": 3.51131,
+              "mean_passengers": 1.29557
+            },
+            {
+              "day": "2024-01-09",
+              "trips": 93962,
+              "total_fare": 1587790.0,
+              "mean_distance": 3.83247,
+              "mean_passengers": 1.27286
+            },
+            {
+              "day": "2024-01-10",
+              "trips": 95000,
+              "total_fare": 1702460.0,
+              "mean_distance": 3.35086,
+              "mean_passengers": 1.26973
+            },
+            {
+              "day": "2024-01-11",
+              "trips": 105010,
+              "total_fare": 1948630.0,
+              "mean_distance": 3.58844,
+              "mean_passengers": 1.28779
+            },
+            {
+              "day": "2024-01-12",
+              "trips": 103655,
+              "total_fare": 1922630.0,
+              "mean_distance": 4.23026,
+              "mean_passengers": 1.35403
+            },
+            {
+              "day": "2024-01-13",
+              "trips": 104758,
+              "total_fare": 1809820.0,
+              "mean_distance": 3.77021,
+              "mean_passengers": 1.44194
+            },
+            {
+              "day": "2024-01-14",
+              "trips": 94420,
+              "total_fare": 1687310.0,
+              "mean_distance": 3.3126,
+              "mean_passengers": 1.43985
+            },
+            {
+              "day": "2024-01-15",
+              "trips": 77033,
+              "total_fare": 1486580.0,
+              "mean_distance": 3.73149,
+              "mean_passengers": 1.36355
+            },
+            {
+              "day": "2024-01-16",
+              "trips": 93057,
+              "total_fare": 1784090.0,
+              "mean_distance": 3.71544,
+              "mean_passengers": 1.275
+            },
+            {
+              "day": "2024-01-17",
+              "trips": 110365,
+              "total_fare": 2009080.0,
+              "mean_distance": 3.83347,
+              "mean_passengers": 1.28295
+            },
+            {
+              "day": "2024-01-18",
+              "trips": 110358,
+              "total_fare": 1974960.0,
+              "mean_distance": 3.01191,
+              "mean_passengers": 1.27486
+            },
+            {
+              "day": "2024-01-19",
+              "trips": 95951,
+              "total_fare": 1652380.0,
+              "mean_distance": 3.01143,
+              "mean_passengers": 1.33629
+            },
+            {
+              "day": "2024-01-20",
+              "trips": 108768,
+              "total_fare": 1798400.0,
+              "mean_distance": 3.53654,
+              "mean_passengers": 1.42305
+            },
+            {
+              "day": "2024-01-21",
+              "trips": 84502,
+              "total_fare": 1557430.0,
+              "mean_distance": 4.81598,
+              "mean_passengers": 1.38521
+            },
+            {
+              "day": "2024-01-22",
+              "trips": 85650,
+              "total_fare": 1587600.0,
+              "mean_distance": 3.39743,
+              "mean_passengers": 1.26412
+            },
+            {
+              "day": "2024-01-23",
+              "trips": 99891,
+              "total_fare": 1765790.0,
+              "mean_distance": 2.97302,
+              "mean_passengers": 1.2624
+            },
+            {
+              "day": "2024-01-24",
+              "trips": 105120,
+              "total_fare": 1862320.0,
+              "mean_distance": 3.51221,
+              "mean_passengers": 1.26132
+            },
+            {
+              "day": "2024-01-25",
+              "trips": 110318,
+              "total_fare": 2014790.0,
+              "mean_distance": 3.97915,
+              "mean_passengers": 1.26648
+            },
+            {
+              "day": "2024-01-26",
+              "trips": 105804,
+              "total_fare": 1884940.0,
+              "mean_distance": 3.38093,
+              "mean_passengers": 1.32925
+            },
+            {
+              "day": "2024-01-27",
+              "trips": 110515,
+              "total_fare": 1858510.0,
+              "mean_distance": 2.82494,
+              "mean_passengers": 1.41626
+            },
+            {
+              "day": "2024-01-28",
+              "trips": 92837,
+              "total_fare": 1677540.0,
+              "mean_distance": 3.33025,
+              "mean_passengers": 1.38729
+            },
+            {
+              "day": "2024-01-29",
+              "trips": 84547,
+              "total_fare": 1567830.0,
+              "mean_distance": 3.3959,
+              "mean_passengers": 1.26633
+            },
+            {
+              "day": "2024-01-30",
+              "trips": 101233,
+              "total_fare": 1754810.0,
+              "mean_distance": 6.02667,
+              "mean_passengers": 1.25363
+            },
+            {
+              "day": "2024-01-31",
+              "trips": 102120,
+              "total_fare": 1789780.0,
+              "mean_distance": 3.1554,
+              "mean_passengers": 1.24989
+            },
+            {
+              "day": "2024-02-01",
+              "trips": 3,
+              "total_fare": 58.0,
+              "mean_distance": 4.08333,
+              "mean_passengers": 2.33333
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 40.686,
+          "speedup_vs_sqlite": 563.655
+        },
+        "duckdb": {
+          "time_median_s": 0.010331,
+          "time_all_s": [
+            0.012295,
+            0.010331,
+            0.010083,
+            0.009842,
+            0.010523
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 255.2,
+          "tracemalloc_peak_mb": 0.031,
+          "result": [
+            {
+              "day": "2002-12-31",
+              "trips": 2,
+              "total_fare": 0.0,
+              "mean_distance": 0.63,
+              "mean_passengers": 1.0
+            },
+            {
+              "day": "2009-01-01",
+              "trips": 3,
+              "total_fare": 100.0,
+              "mean_distance": 7.44333,
+              "mean_passengers": 1.33333
+            },
+            {
+              "day": "2023-12-31",
+              "trips": 10,
+              "total_fare": 144.1,
+              "mean_distance": 2.601,
+              "mean_passengers": 1.9
+            },
+            {
+              "day": "2024-01-01",
+              "trips": 81013,
+              "total_fare": 1765110.0,
+              "mean_distance": 4.39681,
+              "mean_passengers": 1.55102
+            },
+            {
+              "day": "2024-01-02",
+              "trips": 75519,
+              "total_fare": 1583410.0,
+              "mean_distance": 4.11903,
+              "mean_passengers": 1.42058
+            },
+            {
+              "day": "2024-01-03",
+              "trips": 82427,
+              "total_fare": 1620850.0,
+              "mean_distance": 3.8784,
+              "mean_passengers": 1.38159
+            },
+            {
+              "day": "2024-01-04",
+              "trips": 102901,
+              "total_fare": 1895570.0,
+              "mean_distance": 3.31097,
+              "mean_passengers": 1.35598
+            },
+            {
+              "day": "2024-01-05",
+              "trips": 103178,
+              "total_fare": 1839920.0,
+              "mean_distance": 3.75355,
+              "mean_passengers": 1.37181
+            },
+            {
+              "day": "2024-01-06",
+              "trips": 97117,
+              "total_fare": 1681140.0,
+              "mean_distance": 3.12583,
+              "mean_passengers": 1.45745
+            },
+            {
+              "day": "2024-01-07",
+              "trips": 67543,
+              "total_fare": 1313910.0,
+              "mean_distance": 3.88389,
+              "mean_passengers": 1.42626
+            },
+            {
+              "day": "2024-01-08",
+              "trips": 80034,
+              "total_fare": 1496520.0,
+              "mean_distance": 3.51131,
+              "mean_passengers": 1.29557
+            },
+            {
+              "day": "2024-01-09",
+              "trips": 93962,
+              "total_fare": 1587790.0,
+              "mean_distance": 3.83247,
+              "mean_passengers": 1.27286
+            },
+            {
+              "day": "2024-01-10",
+              "trips": 95000,
+              "total_fare": 1702460.0,
+              "mean_distance": 3.35086,
+              "mean_passengers": 1.26973
+            },
+            {
+              "day": "2024-01-11",
+              "trips": 105010,
+              "total_fare": 1948630.0,
+              "mean_distance": 3.58844,
+              "mean_passengers": 1.28779
+            },
+            {
+              "day": "2024-01-12",
+              "trips": 103655,
+              "total_fare": 1922630.0,
+              "mean_distance": 4.23026,
+              "mean_passengers": 1.35403
+            },
+            {
+              "day": "2024-01-13",
+              "trips": 104758,
+              "total_fare": 1809820.0,
+              "mean_distance": 3.77021,
+              "mean_passengers": 1.44194
+            },
+            {
+              "day": "2024-01-14",
+              "trips": 94420,
+              "total_fare": 1687310.0,
+              "mean_distance": 3.3126,
+              "mean_passengers": 1.43985
+            },
+            {
+              "day": "2024-01-15",
+              "trips": 77033,
+              "total_fare": 1486580.0,
+              "mean_distance": 3.73149,
+              "mean_passengers": 1.36355
+            },
+            {
+              "day": "2024-01-16",
+              "trips": 93057,
+              "total_fare": 1784090.0,
+              "mean_distance": 3.71544,
+              "mean_passengers": 1.275
+            },
+            {
+              "day": "2024-01-17",
+              "trips": 110365,
+              "total_fare": 2009080.0,
+              "mean_distance": 3.83347,
+              "mean_passengers": 1.28295
+            },
+            {
+              "day": "2024-01-18",
+              "trips": 110358,
+              "total_fare": 1974960.0,
+              "mean_distance": 3.01191,
+              "mean_passengers": 1.27486
+            },
+            {
+              "day": "2024-01-19",
+              "trips": 95951,
+              "total_fare": 1652380.0,
+              "mean_distance": 3.01143,
+              "mean_passengers": 1.33629
+            },
+            {
+              "day": "2024-01-20",
+              "trips": 108768,
+              "total_fare": 1798400.0,
+              "mean_distance": 3.53654,
+              "mean_passengers": 1.42305
+            },
+            {
+              "day": "2024-01-21",
+              "trips": 84502,
+              "total_fare": 1557430.0,
+              "mean_distance": 4.81598,
+              "mean_passengers": 1.38521
+            },
+            {
+              "day": "2024-01-22",
+              "trips": 85650,
+              "total_fare": 1587600.0,
+              "mean_distance": 3.39743,
+              "mean_passengers": 1.26412
+            },
+            {
+              "day": "2024-01-23",
+              "trips": 99891,
+              "total_fare": 1765790.0,
+              "mean_distance": 2.97302,
+              "mean_passengers": 1.2624
+            },
+            {
+              "day": "2024-01-24",
+              "trips": 105120,
+              "total_fare": 1862320.0,
+              "mean_distance": 3.51221,
+              "mean_passengers": 1.26132
+            },
+            {
+              "day": "2024-01-25",
+              "trips": 110318,
+              "total_fare": 2014790.0,
+              "mean_distance": 3.97915,
+              "mean_passengers": 1.26648
+            },
+            {
+              "day": "2024-01-26",
+              "trips": 105804,
+              "total_fare": 1884940.0,
+              "mean_distance": 3.38093,
+              "mean_passengers": 1.32925
+            },
+            {
+              "day": "2024-01-27",
+              "trips": 110515,
+              "total_fare": 1858510.0,
+              "mean_distance": 2.82494,
+              "mean_passengers": 1.41626
+            },
+            {
+              "day": "2024-01-28",
+              "trips": 92837,
+              "total_fare": 1677540.0,
+              "mean_distance": 3.33025,
+              "mean_passengers": 1.38729
+            },
+            {
+              "day": "2024-01-29",
+              "trips": 84547,
+              "total_fare": 1567830.0,
+              "mean_distance": 3.3959,
+              "mean_passengers": 1.26633
+            },
+            {
+              "day": "2024-01-30",
+              "trips": 101233,
+              "total_fare": 1754810.0,
+              "mean_distance": 6.02667,
+              "mean_passengers": 1.25363
+            },
+            {
+              "day": "2024-01-31",
+              "trips": 102120,
+              "total_fare": 1789780.0,
+              "mean_distance": 3.1554,
+              "mean_passengers": 1.24989
+            },
+            {
+              "day": "2024-02-01",
+              "trips": 3,
+              "total_fare": 58.0,
+              "mean_distance": 4.08333,
+              "mean_passengers": 2.33333
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 36.188,
+          "speedup_vs_sqlite": 501.348
+        },
+        "sqlite": {
+          "time_median_s": 5.179428,
+          "time_all_s": [
+            5.235139,
+            5.206861,
+            5.179428,
+            5.169396,
+            5.160417
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 992.6,
+          "tracemalloc_peak_mb": 367.639,
+          "result": [
+            {
+              "day": "2002-12-31",
+              "trips": 2,
+              "total_fare": 0.0,
+              "mean_distance": 0.63,
+              "mean_passengers": 1.0
+            },
+            {
+              "day": "2009-01-01",
+              "trips": 3,
+              "total_fare": 100.0,
+              "mean_distance": 7.44333,
+              "mean_passengers": 1.33333
+            },
+            {
+              "day": "2023-12-31",
+              "trips": 10,
+              "total_fare": 144.1,
+              "mean_distance": 2.601,
+              "mean_passengers": 1.9
+            },
+            {
+              "day": "2024-01-01",
+              "trips": 81013,
+              "total_fare": 1765110.0,
+              "mean_distance": 4.39681,
+              "mean_passengers": 1.55102
+            },
+            {
+              "day": "2024-01-02",
+              "trips": 75519,
+              "total_fare": 1583410.0,
+              "mean_distance": 4.11903,
+              "mean_passengers": 1.42058
+            },
+            {
+              "day": "2024-01-03",
+              "trips": 82427,
+              "total_fare": 1620850.0,
+              "mean_distance": 3.8784,
+              "mean_passengers": 1.38159
+            },
+            {
+              "day": "2024-01-04",
+              "trips": 102901,
+              "total_fare": 1895570.0,
+              "mean_distance": 3.31097,
+              "mean_passengers": 1.35598
+            },
+            {
+              "day": "2024-01-05",
+              "trips": 103178,
+              "total_fare": 1839920.0,
+              "mean_distance": 3.75355,
+              "mean_passengers": 1.37181
+            },
+            {
+              "day": "2024-01-06",
+              "trips": 97117,
+              "total_fare": 1681140.0,
+              "mean_distance": 3.12583,
+              "mean_passengers": 1.45745
+            },
+            {
+              "day": "2024-01-07",
+              "trips": 67543,
+              "total_fare": 1313910.0,
+              "mean_distance": 3.88389,
+              "mean_passengers": 1.42626
+            },
+            {
+              "day": "2024-01-08",
+              "trips": 80034,
+              "total_fare": 1496520.0,
+              "mean_distance": 3.51131,
+              "mean_passengers": 1.29557
+            },
+            {
+              "day": "2024-01-09",
+              "trips": 93962,
+              "total_fare": 1587790.0,
+              "mean_distance": 3.83247,
+              "mean_passengers": 1.27286
+            },
+            {
+              "day": "2024-01-10",
+              "trips": 95000,
+              "total_fare": 1702460.0,
+              "mean_distance": 3.35086,
+              "mean_passengers": 1.26973
+            },
+            {
+              "day": "2024-01-11",
+              "trips": 105010,
+              "total_fare": 1948630.0,
+              "mean_distance": 3.58844,
+              "mean_passengers": 1.28779
+            },
+            {
+              "day": "2024-01-12",
+              "trips": 103655,
+              "total_fare": 1922630.0,
+              "mean_distance": 4.23026,
+              "mean_passengers": 1.35403
+            },
+            {
+              "day": "2024-01-13",
+              "trips": 104758,
+              "total_fare": 1809820.0,
+              "mean_distance": 3.77021,
+              "mean_passengers": 1.44194
+            },
+            {
+              "day": "2024-01-14",
+              "trips": 94420,
+              "total_fare": 1687310.0,
+              "mean_distance": 3.3126,
+              "mean_passengers": 1.43985
+            },
+            {
+              "day": "2024-01-15",
+              "trips": 77033,
+              "total_fare": 1486580.0,
+              "mean_distance": 3.73149,
+              "mean_passengers": 1.36355
+            },
+            {
+              "day": "2024-01-16",
+              "trips": 93057,
+              "total_fare": 1784090.0,
+              "mean_distance": 3.71544,
+              "mean_passengers": 1.275
+            },
+            {
+              "day": "2024-01-17",
+              "trips": 110365,
+              "total_fare": 2009080.0,
+              "mean_distance": 3.83347,
+              "mean_passengers": 1.28295
+            },
+            {
+              "day": "2024-01-18",
+              "trips": 110358,
+              "total_fare": 1974960.0,
+              "mean_distance": 3.01191,
+              "mean_passengers": 1.27486
+            },
+            {
+              "day": "2024-01-19",
+              "trips": 95951,
+              "total_fare": 1652380.0,
+              "mean_distance": 3.01143,
+              "mean_passengers": 1.33629
+            },
+            {
+              "day": "2024-01-20",
+              "trips": 108768,
+              "total_fare": 1798400.0,
+              "mean_distance": 3.53654,
+              "mean_passengers": 1.42305
+            },
+            {
+              "day": "2024-01-21",
+              "trips": 84502,
+              "total_fare": 1557430.0,
+              "mean_distance": 4.81598,
+              "mean_passengers": 1.38521
+            },
+            {
+              "day": "2024-01-22",
+              "trips": 85650,
+              "total_fare": 1587600.0,
+              "mean_distance": 3.39743,
+              "mean_passengers": 1.26412
+            },
+            {
+              "day": "2024-01-23",
+              "trips": 99891,
+              "total_fare": 1765790.0,
+              "mean_distance": 2.97302,
+              "mean_passengers": 1.2624
+            },
+            {
+              "day": "2024-01-24",
+              "trips": 105120,
+              "total_fare": 1862320.0,
+              "mean_distance": 3.51221,
+              "mean_passengers": 1.26132
+            },
+            {
+              "day": "2024-01-25",
+              "trips": 110318,
+              "total_fare": 2014790.0,
+              "mean_distance": 3.97915,
+              "mean_passengers": 1.26648
+            },
+            {
+              "day": "2024-01-26",
+              "trips": 105804,
+              "total_fare": 1884940.0,
+              "mean_distance": 3.38093,
+              "mean_passengers": 1.32925
+            },
+            {
+              "day": "2024-01-27",
+              "trips": 110515,
+              "total_fare": 1858510.0,
+              "mean_distance": 2.82494,
+              "mean_passengers": 1.41626
+            },
+            {
+              "day": "2024-01-28",
+              "trips": 92837,
+              "total_fare": 1677540.0,
+              "mean_distance": 3.33025,
+              "mean_passengers": 1.38729
+            },
+            {
+              "day": "2024-01-29",
+              "trips": 84547,
+              "total_fare": 1567830.0,
+              "mean_distance": 3.3959,
+              "mean_passengers": 1.26633
+            },
+            {
+              "day": "2024-01-30",
+              "trips": 101233,
+              "total_fare": 1754810.0,
+              "mean_distance": 6.02667,
+              "mean_passengers": 1.25363
+            },
+            {
+              "day": "2024-01-31",
+              "trips": 102120,
+              "total_fare": 1789780.0,
+              "mean_distance": 3.1554,
+              "mean_passengers": 1.24989
+            },
+            {
+              "day": "2024-02-01",
+              "trips": 3,
+              "total_fare": 58.0,
+              "mean_distance": 4.08333,
+              "mean_passengers": 2.33333
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 0.072,
+          "speedup_vs_sqlite": 1.0
+        }
+      }
+    },
+    "join": {
+      "category": "compute",
+      "description": "Join trips to the zone lookup on pickup zone; aggregate fare by borough.",
+      "engines": {
+        "pandas": {
+          "time_median_s": 0.241591,
+          "time_all_s": [
+            0.289801,
+            0.241571,
+            0.241591,
+            0.23788,
+            0.246256
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 944.7,
+          "tracemalloc_peak_mb": 426.968,
+          "result": [
+            {
+              "Borough": "Bronx",
+              "trips": 6905,
+              "total_fare": 224018.0
+            },
+            {
+              "Borough": "Brooklyn",
+              "trips": 25258,
+              "total_fare": 719885.0
+            },
+            {
+              "Borough": "EWR",
+              "trips": 295,
+              "total_fare": 26012.2
+            },
+            {
+              "Borough": "Manhattan",
+              "trips": 2646948,
+              "total_fare": 38939500.0
+            },
+            {
+              "Borough": "N/A",
+              "trips": 1658,
+              "total_fare": 136505.0
+            },
+            {
+              "Borough": "Queens",
+              "trips": 273128,
+              "total_fare": 13613300.0
+            },
+            {
+              "Borough": "Staten Island",
+              "trips": 72,
+              "total_fare": 3150.15
+            },
+            {
+              "Borough": "Unknown",
+              "trips": 10360,
+              "total_fare": 219925.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 1.0,
+          "speedup_vs_sqlite": 15.109
+        },
+        "polars": {
+          "time_median_s": 0.009544,
+          "time_all_s": [
+            0.011359,
+            0.009907,
+            0.009544,
+            0.009509,
+            0.008799
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 305.3,
+          "tracemalloc_peak_mb": 0.007,
+          "result": [
+            {
+              "Borough": "Bronx",
+              "trips": 6905,
+              "total_fare": 224018.0
+            },
+            {
+              "Borough": "Brooklyn",
+              "trips": 25258,
+              "total_fare": 719885.0
+            },
+            {
+              "Borough": "EWR",
+              "trips": 295,
+              "total_fare": 26012.2
+            },
+            {
+              "Borough": "Manhattan",
+              "trips": 2646948,
+              "total_fare": 38939500.0
+            },
+            {
+              "Borough": "N/A",
+              "trips": 1658,
+              "total_fare": 136505.0
+            },
+            {
+              "Borough": "Queens",
+              "trips": 273128,
+              "total_fare": 13613300.0
+            },
+            {
+              "Borough": "Staten Island",
+              "trips": 72,
+              "total_fare": 3150.15
+            },
+            {
+              "Borough": "Unknown",
+              "trips": 10360,
+              "total_fare": 219925.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 25.313,
+          "speedup_vs_sqlite": 382.462
+        },
+        "duckdb": {
+          "time_median_s": 0.010164,
+          "time_all_s": [
+            0.013204,
+            0.010164,
+            0.009438,
+            0.010204,
+            0.009151
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 220.0,
+          "tracemalloc_peak_mb": 0.012,
+          "result": [
+            {
+              "Borough": "Bronx",
+              "trips": 6905,
+              "total_fare": 224018.0
+            },
+            {
+              "Borough": "Brooklyn",
+              "trips": 25258,
+              "total_fare": 719885.0
+            },
+            {
+              "Borough": "EWR",
+              "trips": 295,
+              "total_fare": 26012.2
+            },
+            {
+              "Borough": "Manhattan",
+              "trips": 2646948,
+              "total_fare": 38939500.0
+            },
+            {
+              "Borough": "N/A",
+              "trips": 1658,
+              "total_fare": 136505.0
+            },
+            {
+              "Borough": "Queens",
+              "trips": 273128,
+              "total_fare": 13613300.0
+            },
+            {
+              "Borough": "Staten Island",
+              "trips": 72,
+              "total_fare": 3150.15
+            },
+            {
+              "Borough": "Unknown",
+              "trips": 10360,
+              "total_fare": 219925.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 23.769,
+          "speedup_vs_sqlite": 359.132
+        },
+        "sqlite": {
+          "time_median_s": 3.650222,
+          "time_all_s": [
+            3.639438,
+            3.650222,
+            3.67306,
+            3.662703,
+            3.646556
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 460.1,
+          "tracemalloc_peak_mb": 35.596,
+          "result": [
+            {
+              "Borough": "Bronx",
+              "trips": 6905,
+              "total_fare": 224018.0
+            },
+            {
+              "Borough": "Brooklyn",
+              "trips": 25258,
+              "total_fare": 719885.0
+            },
+            {
+              "Borough": "EWR",
+              "trips": 295,
+              "total_fare": 26012.2
+            },
+            {
+              "Borough": "Manhattan",
+              "trips": 2646948,
+              "total_fare": 38939500.0
+            },
+            {
+              "Borough": "N/A",
+              "trips": 1658,
+              "total_fare": 136505.0
+            },
+            {
+              "Borough": "Queens",
+              "trips": 273128,
+              "total_fare": 13613300.0
+            },
+            {
+              "Borough": "Staten Island",
+              "trips": 72,
+              "total_fare": 3150.15
+            },
+            {
+              "Borough": "Unknown",
+              "trips": 10360,
+              "total_fare": 219925.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 0.066,
+          "speedup_vs_sqlite": 1.0
+        }
+      }
+    },
+    "window": {
+      "category": "compute",
+      "description": "Top-5 pickup zones by trip count per day (window rank, deterministic ties).",
+      "engines": {
+        "pandas": {
+          "time_median_s": 0.341481,
+          "time_all_s": [
+            0.362318,
+            0.335484,
+            0.339579,
+            0.341481,
+            0.3417
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 798.5,
+          "tracemalloc_peak_mb": 321.632,
+          "result": [
+            {
+              "day": "2002-12-31",
+              "pu": 170,
+              "trips": 2,
+              "rank": 1
+            },
+            {
+              "day": "2009-01-01",
+              "pu": 137,
+              "trips": 1,
+              "rank": 1
+            },
+            {
+              "day": "2009-01-01",
+              "pu": 138,
+              "trips": 1,
+              "rank": 2
+            },
+            {
+              "day": "2009-01-01",
+              "pu": 237,
+              "trips": 1,
+              "rank": 3
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 138,
+              "trips": 1,
+              "rank": 3
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 144,
+              "trips": 1,
+              "rank": 4
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 161,
+              "trips": 1,
+              "rank": 5
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 68,
+              "trips": 1,
+              "rank": 1
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 90,
+              "trips": 1,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 132,
+              "trips": 5638,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 138,
+              "trips": 2756,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 161,
+              "trips": 3042,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 186,
+              "trips": 3038,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 79,
+              "trips": 3039,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 132,
+              "trips": 6624,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 138,
+              "trips": 3310,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 161,
+              "trips": 3710,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 236,
+              "trips": 3254,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 237,
+              "trips": 3327,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 132,
+              "trips": 6139,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 161,
+              "trips": 4446,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 162,
+              "trips": 3167,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 236,
+              "trips": 3618,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 237,
+              "trips": 3943,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 132,
+              "trips": 5405,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 142,
+              "trips": 4987,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 161,
+              "trips": 5079,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 236,
+              "trips": 4500,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 237,
+              "trips": 4566,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 132,
+              "trips": 4842,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 142,
+              "trips": 4854,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 161,
+              "trips": 4452,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 236,
+              "trips": 4332,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 237,
+              "trips": 4491,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 132,
+              "trips": 4701,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 142,
+              "trips": 4339,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 230,
+              "trips": 3905,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 236,
+              "trips": 3606,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 237,
+              "trips": 3622,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 132,
+              "trips": 5599,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 138,
+              "trips": 2852,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 186,
+              "trips": 2491,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 230,
+              "trips": 2805,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 236,
+              "trips": 2502,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 132,
+              "trips": 5092,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 161,
+              "trips": 4035,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 162,
+              "trips": 3063,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 236,
+              "trips": 4389,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 237,
+              "trips": 4342,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 132,
+              "trips": 3900,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 161,
+              "trips": 5756,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 162,
+              "trips": 4510,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 236,
+              "trips": 5173,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 237,
+              "trips": 5132,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 132,
+              "trips": 4197,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 161,
+              "trips": 5414,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 162,
+              "trips": 3844,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 236,
+              "trips": 5184,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 237,
+              "trips": 5310,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 132,
+              "trips": 4862,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 161,
+              "trips": 5808,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 162,
+              "trips": 4283,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 236,
+              "trips": 5407,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 237,
+              "trips": 5681,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 132,
+              "trips": 4995,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 142,
+              "trips": 3573,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 161,
+              "trips": 4425,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 236,
+              "trips": 4977,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 237,
+              "trips": 4841,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 132,
+              "trips": 4663,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 142,
+              "trips": 4435,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 230,
+              "trips": 4030,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 249,
+              "trips": 3801,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 79,
+              "trips": 4029,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 132,
+              "trips": 4916,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 142,
+              "trips": 3551,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 161,
+              "trips": 3214,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 230,
+              "trips": 4085,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 79,
+              "trips": 3726,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 132,
+              "trips": 5651,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 138,
+              "trips": 3497,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 161,
+              "trips": 3330,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 186,
+              "trips": 3367,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 237,
+              "trips": 3437,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 132,
+              "trips": 5317,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 161,
+              "trips": 4929,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 162,
+              "trips": 3705,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 236,
+              "trips": 4731,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 237,
+              "trips": 4968,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 132,
+              "trips": 4403,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 161,
+              "trips": 6735,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 162,
+              "trips": 4751,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 236,
+              "trips": 5546,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 237,
+              "trips": 5984,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 132,
+              "trips": 4096,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 161,
+              "trips": 6763,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 162,
+              "trips": 4897,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 236,
+              "trips": 5579,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 237,
+              "trips": 6399,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 132,
+              "trips": 3913,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 161,
+              "trips": 4452,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 162,
+              "trips": 3426,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 236,
+              "trips": 5079,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 237,
+              "trips": 5245,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 142,
+              "trips": 4008,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 236,
+              "trips": 4407,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 237,
+              "trips": 4679,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 249,
+              "trips": 4196,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 79,
+              "trips": 4473,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 132,
+              "trips": 5216,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 138,
+              "trips": 3291,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 236,
+              "trips": 3332,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 237,
+              "trips": 3206,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 79,
+              "trips": 3143,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 132,
+              "trips": 5152,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 161,
+              "trips": 4806,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 162,
+              "trips": 3549,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 236,
+              "trips": 4829,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 237,
+              "trips": 4836,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 132,
+              "trips": 3826,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 161,
+              "trips": 6123,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 162,
+              "trips": 4533,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 236,
+              "trips": 5292,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 237,
+              "trips": 5775,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 161,
+              "trips": 6471,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 162,
+              "trips": 4703,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 186,
+              "trips": 3902,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 236,
+              "trips": 5357,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 237,
+              "trips": 6008,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 161,
+              "trips": 6423,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 162,
+              "trips": 4753,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 186,
+              "trips": 4080,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 236,
+              "trips": 5522,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 237,
+              "trips": 6120,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 132,
+              "trips": 4021,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 161,
+              "trips": 4716,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 162,
+              "trips": 3735,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 236,
+              "trips": 5487,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 237,
+              "trips": 5847,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 142,
+              "trips": 4176,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 236,
+              "trips": 4026,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 237,
+              "trips": 4438,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 249,
+              "trips": 4530,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 79,
+              "trips": 4735,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 132,
+              "trips": 4833,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 142,
+              "trips": 3207,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 230,
+              "trips": 3302,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 236,
+              "trips": 3238,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 79,
+              "trips": 3830,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 132,
+              "trips": 4882,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 138,
+              "trips": 3471,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 161,
+              "trips": 4608,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 236,
+              "trips": 4683,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 237,
+              "trips": 4797,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 161,
+              "trips": 6499,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 162,
+              "trips": 4657,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 186,
+              "trips": 3813,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 236,
+              "trips": 5499,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 237,
+              "trips": 5803,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 161,
+              "trips": 6378,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 162,
+              "trips": 4445,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 230,
+              "trips": 3988,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 236,
+              "trips": 5286,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 237,
+              "trips": 5442,
+              "rank": 2
+            },
+            {
+              "day": "2024-02-01",
+              "pu": 138,
+              "trips": 1,
+              "rank": 1
+            },
+            {
+              "day": "2024-02-01",
+              "pu": 161,
+              "trips": 1,
+              "rank": 2
+            },
+            {
+              "day": "2024-02-01",
+              "pu": 186,
+              "trips": 1,
+              "rank": 3
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 1.0,
+          "speedup_vs_sqlite": 17.226
+        },
+        "polars": {
+          "time_median_s": 0.007853,
+          "time_all_s": [
+            0.010433,
+            0.008594,
+            0.007076,
+            0.007853,
+            0.007435
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 250.2,
+          "tracemalloc_peak_mb": 0.079,
+          "result": [
+            {
+              "day": "2002-12-31",
+              "pu": 170,
+              "trips": 2,
+              "rank": 1
+            },
+            {
+              "day": "2009-01-01",
+              "pu": 137,
+              "trips": 1,
+              "rank": 1
+            },
+            {
+              "day": "2009-01-01",
+              "pu": 138,
+              "trips": 1,
+              "rank": 2
+            },
+            {
+              "day": "2009-01-01",
+              "pu": 237,
+              "trips": 1,
+              "rank": 3
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 138,
+              "trips": 1,
+              "rank": 3
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 144,
+              "trips": 1,
+              "rank": 4
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 161,
+              "trips": 1,
+              "rank": 5
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 68,
+              "trips": 1,
+              "rank": 1
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 90,
+              "trips": 1,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 132,
+              "trips": 5638,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 138,
+              "trips": 2756,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 161,
+              "trips": 3042,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 186,
+              "trips": 3038,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 79,
+              "trips": 3039,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 132,
+              "trips": 6624,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 138,
+              "trips": 3310,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 161,
+              "trips": 3710,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 236,
+              "trips": 3254,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 237,
+              "trips": 3327,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 132,
+              "trips": 6139,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 161,
+              "trips": 4446,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 162,
+              "trips": 3167,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 236,
+              "trips": 3618,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 237,
+              "trips": 3943,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 132,
+              "trips": 5405,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 142,
+              "trips": 4987,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 161,
+              "trips": 5079,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 236,
+              "trips": 4500,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 237,
+              "trips": 4566,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 132,
+              "trips": 4842,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 142,
+              "trips": 4854,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 161,
+              "trips": 4452,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 236,
+              "trips": 4332,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 237,
+              "trips": 4491,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 132,
+              "trips": 4701,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 142,
+              "trips": 4339,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 230,
+              "trips": 3905,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 236,
+              "trips": 3606,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 237,
+              "trips": 3622,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 132,
+              "trips": 5599,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 138,
+              "trips": 2852,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 186,
+              "trips": 2491,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 230,
+              "trips": 2805,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 236,
+              "trips": 2502,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 132,
+              "trips": 5092,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 161,
+              "trips": 4035,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 162,
+              "trips": 3063,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 236,
+              "trips": 4389,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 237,
+              "trips": 4342,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 132,
+              "trips": 3900,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 161,
+              "trips": 5756,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 162,
+              "trips": 4510,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 236,
+              "trips": 5173,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 237,
+              "trips": 5132,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 132,
+              "trips": 4197,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 161,
+              "trips": 5414,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 162,
+              "trips": 3844,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 236,
+              "trips": 5184,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 237,
+              "trips": 5310,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 132,
+              "trips": 4862,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 161,
+              "trips": 5808,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 162,
+              "trips": 4283,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 236,
+              "trips": 5407,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 237,
+              "trips": 5681,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 132,
+              "trips": 4995,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 142,
+              "trips": 3573,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 161,
+              "trips": 4425,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 236,
+              "trips": 4977,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 237,
+              "trips": 4841,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 132,
+              "trips": 4663,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 142,
+              "trips": 4435,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 230,
+              "trips": 4030,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 249,
+              "trips": 3801,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 79,
+              "trips": 4029,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 132,
+              "trips": 4916,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 142,
+              "trips": 3551,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 161,
+              "trips": 3214,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 230,
+              "trips": 4085,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 79,
+              "trips": 3726,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 132,
+              "trips": 5651,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 138,
+              "trips": 3497,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 161,
+              "trips": 3330,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 186,
+              "trips": 3367,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 237,
+              "trips": 3437,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 132,
+              "trips": 5317,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 161,
+              "trips": 4929,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 162,
+              "trips": 3705,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 236,
+              "trips": 4731,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 237,
+              "trips": 4968,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 132,
+              "trips": 4403,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 161,
+              "trips": 6735,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 162,
+              "trips": 4751,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 236,
+              "trips": 5546,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 237,
+              "trips": 5984,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 132,
+              "trips": 4096,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 161,
+              "trips": 6763,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 162,
+              "trips": 4897,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 236,
+              "trips": 5579,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 237,
+              "trips": 6399,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 132,
+              "trips": 3913,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 161,
+              "trips": 4452,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 162,
+              "trips": 3426,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 236,
+              "trips": 5079,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 237,
+              "trips": 5245,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 142,
+              "trips": 4008,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 236,
+              "trips": 4407,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 237,
+              "trips": 4679,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 249,
+              "trips": 4196,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 79,
+              "trips": 4473,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 132,
+              "trips": 5216,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 138,
+              "trips": 3291,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 236,
+              "trips": 3332,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 237,
+              "trips": 3206,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 79,
+              "trips": 3143,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 132,
+              "trips": 5152,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 161,
+              "trips": 4806,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 162,
+              "trips": 3549,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 236,
+              "trips": 4829,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 237,
+              "trips": 4836,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 132,
+              "trips": 3826,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 161,
+              "trips": 6123,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 162,
+              "trips": 4533,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 236,
+              "trips": 5292,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 237,
+              "trips": 5775,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 161,
+              "trips": 6471,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 162,
+              "trips": 4703,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 186,
+              "trips": 3902,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 236,
+              "trips": 5357,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 237,
+              "trips": 6008,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 161,
+              "trips": 6423,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 162,
+              "trips": 4753,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 186,
+              "trips": 4080,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 236,
+              "trips": 5522,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 237,
+              "trips": 6120,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 132,
+              "trips": 4021,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 161,
+              "trips": 4716,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 162,
+              "trips": 3735,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 236,
+              "trips": 5487,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 237,
+              "trips": 5847,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 142,
+              "trips": 4176,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 236,
+              "trips": 4026,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 237,
+              "trips": 4438,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 249,
+              "trips": 4530,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 79,
+              "trips": 4735,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 132,
+              "trips": 4833,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 142,
+              "trips": 3207,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 230,
+              "trips": 3302,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 236,
+              "trips": 3238,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 79,
+              "trips": 3830,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 132,
+              "trips": 4882,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 138,
+              "trips": 3471,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 161,
+              "trips": 4608,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 236,
+              "trips": 4683,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 237,
+              "trips": 4797,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 161,
+              "trips": 6499,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 162,
+              "trips": 4657,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 186,
+              "trips": 3813,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 236,
+              "trips": 5499,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 237,
+              "trips": 5803,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 161,
+              "trips": 6378,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 162,
+              "trips": 4445,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 230,
+              "trips": 3988,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 236,
+              "trips": 5286,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 237,
+              "trips": 5442,
+              "rank": 2
+            },
+            {
+              "day": "2024-02-01",
+              "pu": 138,
+              "trips": 1,
+              "rank": 1
+            },
+            {
+              "day": "2024-02-01",
+              "pu": 161,
+              "trips": 1,
+              "rank": 2
+            },
+            {
+              "day": "2024-02-01",
+              "pu": 186,
+              "trips": 1,
+              "rank": 3
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 43.484,
+          "speedup_vs_sqlite": 749.053
+        },
+        "duckdb": {
+          "time_median_s": 0.008892,
+          "time_all_s": [
+            0.011968,
+            0.008795,
+            0.008703,
+            0.008892,
+            0.008959
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 219.7,
+          "tracemalloc_peak_mb": 0.085,
+          "result": [
+            {
+              "day": "2002-12-31",
+              "pu": 170,
+              "trips": 2,
+              "rank": 1
+            },
+            {
+              "day": "2009-01-01",
+              "pu": 137,
+              "trips": 1,
+              "rank": 1
+            },
+            {
+              "day": "2009-01-01",
+              "pu": 138,
+              "trips": 1,
+              "rank": 2
+            },
+            {
+              "day": "2009-01-01",
+              "pu": 237,
+              "trips": 1,
+              "rank": 3
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 138,
+              "trips": 1,
+              "rank": 3
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 144,
+              "trips": 1,
+              "rank": 4
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 161,
+              "trips": 1,
+              "rank": 5
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 68,
+              "trips": 1,
+              "rank": 1
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 90,
+              "trips": 1,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 132,
+              "trips": 5638,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 138,
+              "trips": 2756,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 161,
+              "trips": 3042,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 186,
+              "trips": 3038,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 79,
+              "trips": 3039,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 132,
+              "trips": 6624,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 138,
+              "trips": 3310,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 161,
+              "trips": 3710,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 236,
+              "trips": 3254,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 237,
+              "trips": 3327,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 132,
+              "trips": 6139,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 161,
+              "trips": 4446,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 162,
+              "trips": 3167,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 236,
+              "trips": 3618,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 237,
+              "trips": 3943,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 132,
+              "trips": 5405,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 142,
+              "trips": 4987,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 161,
+              "trips": 5079,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 236,
+              "trips": 4500,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 237,
+              "trips": 4566,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 132,
+              "trips": 4842,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 142,
+              "trips": 4854,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 161,
+              "trips": 4452,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 236,
+              "trips": 4332,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 237,
+              "trips": 4491,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 132,
+              "trips": 4701,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 142,
+              "trips": 4339,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 230,
+              "trips": 3905,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 236,
+              "trips": 3606,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 237,
+              "trips": 3622,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 132,
+              "trips": 5599,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 138,
+              "trips": 2852,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 186,
+              "trips": 2491,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 230,
+              "trips": 2805,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 236,
+              "trips": 2502,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 132,
+              "trips": 5092,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 161,
+              "trips": 4035,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 162,
+              "trips": 3063,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 236,
+              "trips": 4389,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 237,
+              "trips": 4342,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 132,
+              "trips": 3900,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 161,
+              "trips": 5756,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 162,
+              "trips": 4510,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 236,
+              "trips": 5173,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 237,
+              "trips": 5132,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 132,
+              "trips": 4197,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 161,
+              "trips": 5414,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 162,
+              "trips": 3844,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 236,
+              "trips": 5184,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 237,
+              "trips": 5310,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 132,
+              "trips": 4862,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 161,
+              "trips": 5808,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 162,
+              "trips": 4283,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 236,
+              "trips": 5407,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 237,
+              "trips": 5681,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 132,
+              "trips": 4995,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 142,
+              "trips": 3573,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 161,
+              "trips": 4425,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 236,
+              "trips": 4977,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 237,
+              "trips": 4841,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 132,
+              "trips": 4663,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 142,
+              "trips": 4435,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 230,
+              "trips": 4030,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 249,
+              "trips": 3801,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 79,
+              "trips": 4029,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 132,
+              "trips": 4916,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 142,
+              "trips": 3551,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 161,
+              "trips": 3214,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 230,
+              "trips": 4085,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 79,
+              "trips": 3726,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 132,
+              "trips": 5651,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 138,
+              "trips": 3497,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 161,
+              "trips": 3330,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 186,
+              "trips": 3367,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 237,
+              "trips": 3437,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 132,
+              "trips": 5317,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 161,
+              "trips": 4929,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 162,
+              "trips": 3705,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 236,
+              "trips": 4731,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 237,
+              "trips": 4968,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 132,
+              "trips": 4403,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 161,
+              "trips": 6735,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 162,
+              "trips": 4751,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 236,
+              "trips": 5546,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 237,
+              "trips": 5984,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 132,
+              "trips": 4096,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 161,
+              "trips": 6763,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 162,
+              "trips": 4897,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 236,
+              "trips": 5579,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 237,
+              "trips": 6399,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 132,
+              "trips": 3913,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 161,
+              "trips": 4452,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 162,
+              "trips": 3426,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 236,
+              "trips": 5079,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 237,
+              "trips": 5245,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 142,
+              "trips": 4008,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 236,
+              "trips": 4407,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 237,
+              "trips": 4679,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 249,
+              "trips": 4196,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 79,
+              "trips": 4473,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 132,
+              "trips": 5216,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 138,
+              "trips": 3291,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 236,
+              "trips": 3332,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 237,
+              "trips": 3206,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 79,
+              "trips": 3143,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 132,
+              "trips": 5152,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 161,
+              "trips": 4806,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 162,
+              "trips": 3549,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 236,
+              "trips": 4829,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 237,
+              "trips": 4836,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 132,
+              "trips": 3826,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 161,
+              "trips": 6123,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 162,
+              "trips": 4533,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 236,
+              "trips": 5292,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 237,
+              "trips": 5775,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 161,
+              "trips": 6471,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 162,
+              "trips": 4703,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 186,
+              "trips": 3902,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 236,
+              "trips": 5357,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 237,
+              "trips": 6008,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 161,
+              "trips": 6423,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 162,
+              "trips": 4753,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 186,
+              "trips": 4080,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 236,
+              "trips": 5522,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 237,
+              "trips": 6120,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 132,
+              "trips": 4021,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 161,
+              "trips": 4716,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 162,
+              "trips": 3735,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 236,
+              "trips": 5487,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 237,
+              "trips": 5847,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 142,
+              "trips": 4176,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 236,
+              "trips": 4026,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 237,
+              "trips": 4438,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 249,
+              "trips": 4530,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 79,
+              "trips": 4735,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 132,
+              "trips": 4833,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 142,
+              "trips": 3207,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 230,
+              "trips": 3302,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 236,
+              "trips": 3238,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 79,
+              "trips": 3830,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 132,
+              "trips": 4882,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 138,
+              "trips": 3471,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 161,
+              "trips": 4608,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 236,
+              "trips": 4683,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 237,
+              "trips": 4797,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 161,
+              "trips": 6499,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 162,
+              "trips": 4657,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 186,
+              "trips": 3813,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 236,
+              "trips": 5499,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 237,
+              "trips": 5803,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 161,
+              "trips": 6378,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 162,
+              "trips": 4445,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 230,
+              "trips": 3988,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 236,
+              "trips": 5286,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 237,
+              "trips": 5442,
+              "rank": 2
+            },
+            {
+              "day": "2024-02-01",
+              "pu": 138,
+              "trips": 1,
+              "rank": 1
+            },
+            {
+              "day": "2024-02-01",
+              "pu": 161,
+              "trips": 1,
+              "rank": 2
+            },
+            {
+              "day": "2024-02-01",
+              "pu": 186,
+              "trips": 1,
+              "rank": 3
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 38.403,
+          "speedup_vs_sqlite": 661.529
+        },
+        "sqlite": {
+          "time_median_s": 5.882312,
+          "time_all_s": [
+            5.882312,
+            5.899997,
+            5.85829,
+            5.921256,
+            5.808755
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 630.3,
+          "tracemalloc_peak_mb": 349.841,
+          "result": [
+            {
+              "day": "2002-12-31",
+              "pu": 170,
+              "trips": 2,
+              "rank": 1
+            },
+            {
+              "day": "2009-01-01",
+              "pu": 137,
+              "trips": 1,
+              "rank": 1
+            },
+            {
+              "day": "2009-01-01",
+              "pu": 138,
+              "trips": 1,
+              "rank": 2
+            },
+            {
+              "day": "2009-01-01",
+              "pu": 237,
+              "trips": 1,
+              "rank": 3
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 138,
+              "trips": 1,
+              "rank": 3
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 144,
+              "trips": 1,
+              "rank": 4
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 161,
+              "trips": 1,
+              "rank": 5
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 68,
+              "trips": 1,
+              "rank": 1
+            },
+            {
+              "day": "2023-12-31",
+              "pu": 90,
+              "trips": 1,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 132,
+              "trips": 5638,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 138,
+              "trips": 2756,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 161,
+              "trips": 3042,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 186,
+              "trips": 3038,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-01",
+              "pu": 79,
+              "trips": 3039,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 132,
+              "trips": 6624,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 138,
+              "trips": 3310,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 161,
+              "trips": 3710,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 236,
+              "trips": 3254,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-02",
+              "pu": 237,
+              "trips": 3327,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 132,
+              "trips": 6139,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 161,
+              "trips": 4446,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 162,
+              "trips": 3167,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 236,
+              "trips": 3618,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-03",
+              "pu": 237,
+              "trips": 3943,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 132,
+              "trips": 5405,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 142,
+              "trips": 4987,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 161,
+              "trips": 5079,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 236,
+              "trips": 4500,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-04",
+              "pu": 237,
+              "trips": 4566,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 132,
+              "trips": 4842,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 142,
+              "trips": 4854,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 161,
+              "trips": 4452,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 236,
+              "trips": 4332,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-05",
+              "pu": 237,
+              "trips": 4491,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 132,
+              "trips": 4701,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 142,
+              "trips": 4339,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 230,
+              "trips": 3905,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 236,
+              "trips": 3606,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-06",
+              "pu": 237,
+              "trips": 3622,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 132,
+              "trips": 5599,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 138,
+              "trips": 2852,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 186,
+              "trips": 2491,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 230,
+              "trips": 2805,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-07",
+              "pu": 236,
+              "trips": 2502,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 132,
+              "trips": 5092,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 161,
+              "trips": 4035,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 162,
+              "trips": 3063,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 236,
+              "trips": 4389,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-08",
+              "pu": 237,
+              "trips": 4342,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 132,
+              "trips": 3900,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 161,
+              "trips": 5756,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 162,
+              "trips": 4510,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 236,
+              "trips": 5173,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-09",
+              "pu": 237,
+              "trips": 5132,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 132,
+              "trips": 4197,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 161,
+              "trips": 5414,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 162,
+              "trips": 3844,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 236,
+              "trips": 5184,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-10",
+              "pu": 237,
+              "trips": 5310,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 132,
+              "trips": 4862,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 161,
+              "trips": 5808,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 162,
+              "trips": 4283,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 236,
+              "trips": 5407,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-11",
+              "pu": 237,
+              "trips": 5681,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 132,
+              "trips": 4995,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 142,
+              "trips": 3573,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 161,
+              "trips": 4425,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 236,
+              "trips": 4977,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-12",
+              "pu": 237,
+              "trips": 4841,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 132,
+              "trips": 4663,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 142,
+              "trips": 4435,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 230,
+              "trips": 4030,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 249,
+              "trips": 3801,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-13",
+              "pu": 79,
+              "trips": 4029,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 132,
+              "trips": 4916,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 142,
+              "trips": 3551,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 161,
+              "trips": 3214,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 230,
+              "trips": 4085,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-14",
+              "pu": 79,
+              "trips": 3726,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 132,
+              "trips": 5651,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 138,
+              "trips": 3497,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 161,
+              "trips": 3330,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 186,
+              "trips": 3367,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-15",
+              "pu": 237,
+              "trips": 3437,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 132,
+              "trips": 5317,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 161,
+              "trips": 4929,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 162,
+              "trips": 3705,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 236,
+              "trips": 4731,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-16",
+              "pu": 237,
+              "trips": 4968,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 132,
+              "trips": 4403,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 161,
+              "trips": 6735,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 162,
+              "trips": 4751,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 236,
+              "trips": 5546,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-17",
+              "pu": 237,
+              "trips": 5984,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 132,
+              "trips": 4096,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 161,
+              "trips": 6763,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 162,
+              "trips": 4897,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 236,
+              "trips": 5579,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-18",
+              "pu": 237,
+              "trips": 6399,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 132,
+              "trips": 3913,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 161,
+              "trips": 4452,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 162,
+              "trips": 3426,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 236,
+              "trips": 5079,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-19",
+              "pu": 237,
+              "trips": 5245,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 142,
+              "trips": 4008,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 236,
+              "trips": 4407,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 237,
+              "trips": 4679,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 249,
+              "trips": 4196,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-20",
+              "pu": 79,
+              "trips": 4473,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 132,
+              "trips": 5216,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 138,
+              "trips": 3291,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 236,
+              "trips": 3332,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 237,
+              "trips": 3206,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-21",
+              "pu": 79,
+              "trips": 3143,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 132,
+              "trips": 5152,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 161,
+              "trips": 4806,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 162,
+              "trips": 3549,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 236,
+              "trips": 4829,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-22",
+              "pu": 237,
+              "trips": 4836,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 132,
+              "trips": 3826,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 161,
+              "trips": 6123,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 162,
+              "trips": 4533,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 236,
+              "trips": 5292,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-23",
+              "pu": 237,
+              "trips": 5775,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 161,
+              "trips": 6471,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 162,
+              "trips": 4703,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 186,
+              "trips": 3902,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 236,
+              "trips": 5357,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-24",
+              "pu": 237,
+              "trips": 6008,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 161,
+              "trips": 6423,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 162,
+              "trips": 4753,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 186,
+              "trips": 4080,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 236,
+              "trips": 5522,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-25",
+              "pu": 237,
+              "trips": 6120,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 132,
+              "trips": 4021,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 161,
+              "trips": 4716,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 162,
+              "trips": 3735,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 236,
+              "trips": 5487,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-26",
+              "pu": 237,
+              "trips": 5847,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 142,
+              "trips": 4176,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 236,
+              "trips": 4026,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 237,
+              "trips": 4438,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 249,
+              "trips": 4530,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-27",
+              "pu": 79,
+              "trips": 4735,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 132,
+              "trips": 4833,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 142,
+              "trips": 3207,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 230,
+              "trips": 3302,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 236,
+              "trips": 3238,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-28",
+              "pu": 79,
+              "trips": 3830,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 132,
+              "trips": 4882,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 138,
+              "trips": 3471,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 161,
+              "trips": 4608,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 236,
+              "trips": 4683,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-29",
+              "pu": 237,
+              "trips": 4797,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 161,
+              "trips": 6499,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 162,
+              "trips": 4657,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 186,
+              "trips": 3813,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 236,
+              "trips": 5499,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-30",
+              "pu": 237,
+              "trips": 5803,
+              "rank": 2
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 161,
+              "trips": 6378,
+              "rank": 1
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 162,
+              "trips": 4445,
+              "rank": 4
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 230,
+              "trips": 3988,
+              "rank": 5
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 236,
+              "trips": 5286,
+              "rank": 3
+            },
+            {
+              "day": "2024-01-31",
+              "pu": 237,
+              "trips": 5442,
+              "rank": 2
+            },
+            {
+              "day": "2024-02-01",
+              "pu": 138,
+              "trips": 1,
+              "rank": 1
+            },
+            {
+              "day": "2024-02-01",
+              "pu": 161,
+              "trips": 1,
+              "rank": 2
+            },
+            {
+              "day": "2024-02-01",
+              "pu": 186,
+              "trips": 1,
+              "rank": 3
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 0.058,
+          "speedup_vs_sqlite": 1.0
+        }
+      }
+    },
+    "filter": {
+      "category": "compute",
+      "description": "Filtered scan (predicate pushdown): fares > $50 and trips > 10 miles.",
+      "engines": {
+        "pandas": {
+          "time_median_s": 0.047582,
+          "time_all_s": [
+            0.061267,
+            0.047582,
+            0.046759,
+            0.047957,
+            0.045139
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 563.7,
+          "tracemalloc_peak_mb": 62.272,
+          "result": [
+            {
+              "rows": 168468,
+              "fare_sum": 12055500.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 1.0,
+          "speedup_vs_sqlite": 40.919
+        },
+        "polars": {
+          "time_median_s": 0.004322,
+          "time_all_s": [
+            0.006198,
+            0.003962,
+            0.004377,
+            0.004322,
+            0.004319
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 224.2,
+          "tracemalloc_peak_mb": 0.003,
+          "result": [
+            {
+              "rows": 168468,
+              "fare_sum": 12055500.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 11.009,
+          "speedup_vs_sqlite": 450.492
+        },
+        "duckdb": {
+          "time_median_s": 0.011689,
+          "time_all_s": [
+            0.005687,
+            0.00459,
+            0.011689,
+            0.011848,
+            0.011847
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 206.9,
+          "tracemalloc_peak_mb": 0.005,
+          "result": [
+            {
+              "rows": 168468,
+              "fare_sum": 12055500.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 4.071,
+          "speedup_vs_sqlite": 166.569
+        },
+        "sqlite": {
+          "time_median_s": 1.947028,
+          "time_all_s": [
+            1.947136,
+            1.936886,
+            1.947028,
+            1.941204,
+            1.954668
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 396.0,
+          "tracemalloc_peak_mb": 47.453,
+          "result": [
+            {
+              "rows": 168468,
+              "fare_sum": 12055500.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 0.024,
+          "speedup_vs_sqlite": 1.0
+        }
+      }
+    },
+    "strings_groupby": {
+      "category": "compute",
+      "description": "String-categorical rollup: trips and fare per payment_type x vendor.",
+      "engines": {
+        "pandas": {
+          "time_median_s": 0.148667,
+          "time_all_s": [
+            0.174994,
+            0.145434,
+            0.148667,
+            0.152602,
+            0.144578
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 662.1,
+          "tracemalloc_peak_mb": 202.827,
+          "result": [
+            {
+              "payment_type": "0",
+              "VendorID": "1",
+              "trips": 48455,
+              "total_fare": 899225.0
+            },
+            {
+              "payment_type": "1",
+              "VendorID": "1",
+              "trips": 564618,
+              "total_fare": 10048700.0
+            },
+            {
+              "payment_type": "2",
+              "VendorID": "1",
+              "trips": 104722,
+              "total_fare": 1729480.0
+            },
+            {
+              "payment_type": "3",
+              "VendorID": "1",
+              "trips": 8120,
+              "total_fare": 132346.0
+            },
+            {
+              "payment_type": "4",
+              "VendorID": "1",
+              "trips": 3817,
+              "total_fare": 62393.2
+            },
+            {
+              "payment_type": "0",
+              "VendorID": "2",
+              "trips": 91447,
+              "total_fare": 1894090.0
+            },
+            {
+              "payment_type": "1",
+              "VendorID": "2",
+              "trips": 1754428,
+              "total_fare": 32986800.0
+            },
+            {
+              "payment_type": "2",
+              "VendorID": "2",
+              "trips": 334469,
+              "total_fare": 6117130.0
+            },
+            {
+              "payment_type": "3",
+              "VendorID": "2",
+              "trips": 11477,
+              "total_fare": -15.7
+            },
+            {
+              "payment_type": "4",
+              "VendorID": "2",
+              "trips": 42811,
+              "total_fare": -150.0
+            },
+            {
+              "payment_type": "0",
+              "VendorID": "6",
+              "trips": 260,
+              "total_fare": 12193.8
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 1.0,
+          "speedup_vs_sqlite": 28.332
+        },
+        "polars": {
+          "time_median_s": 0.005915,
+          "time_all_s": [
+            0.008032,
+            0.006416,
+            0.005915,
+            0.005491,
+            0.004903
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 301.7,
+          "tracemalloc_peak_mb": 0.008,
+          "result": [
+            {
+              "payment_type": "0",
+              "VendorID": "1",
+              "trips": 48455,
+              "total_fare": 899225.0
+            },
+            {
+              "payment_type": "1",
+              "VendorID": "1",
+              "trips": 564618,
+              "total_fare": 10048700.0
+            },
+            {
+              "payment_type": "2",
+              "VendorID": "1",
+              "trips": 104722,
+              "total_fare": 1729480.0
+            },
+            {
+              "payment_type": "3",
+              "VendorID": "1",
+              "trips": 8120,
+              "total_fare": 132346.0
+            },
+            {
+              "payment_type": "4",
+              "VendorID": "1",
+              "trips": 3817,
+              "total_fare": 62393.2
+            },
+            {
+              "payment_type": "0",
+              "VendorID": "2",
+              "trips": 91447,
+              "total_fare": 1894090.0
+            },
+            {
+              "payment_type": "1",
+              "VendorID": "2",
+              "trips": 1754428,
+              "total_fare": 32986800.0
+            },
+            {
+              "payment_type": "2",
+              "VendorID": "2",
+              "trips": 334469,
+              "total_fare": 6117130.0
+            },
+            {
+              "payment_type": "3",
+              "VendorID": "2",
+              "trips": 11477,
+              "total_fare": -15.7
+            },
+            {
+              "payment_type": "4",
+              "VendorID": "2",
+              "trips": 42811,
+              "total_fare": -150.0
+            },
+            {
+              "payment_type": "0",
+              "VendorID": "6",
+              "trips": 260,
+              "total_fare": 12193.8
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 25.134,
+          "speedup_vs_sqlite": 712.084
+        },
+        "duckdb": {
+          "time_median_s": 0.005949,
+          "time_all_s": [
+            0.00708,
+            0.006619,
+            0.005658,
+            0.005555,
+            0.005949
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 202.5,
+          "tracemalloc_peak_mb": 0.012,
+          "result": [
+            {
+              "payment_type": "0",
+              "VendorID": "1",
+              "trips": 48455,
+              "total_fare": 899225.0
+            },
+            {
+              "payment_type": "1",
+              "VendorID": "1",
+              "trips": 564618,
+              "total_fare": 10048700.0
+            },
+            {
+              "payment_type": "2",
+              "VendorID": "1",
+              "trips": 104722,
+              "total_fare": 1729480.0
+            },
+            {
+              "payment_type": "3",
+              "VendorID": "1",
+              "trips": 8120,
+              "total_fare": 132346.0
+            },
+            {
+              "payment_type": "4",
+              "VendorID": "1",
+              "trips": 3817,
+              "total_fare": 62393.2
+            },
+            {
+              "payment_type": "0",
+              "VendorID": "2",
+              "trips": 91447,
+              "total_fare": 1894090.0
+            },
+            {
+              "payment_type": "1",
+              "VendorID": "2",
+              "trips": 1754428,
+              "total_fare": 32986800.0
+            },
+            {
+              "payment_type": "2",
+              "VendorID": "2",
+              "trips": 334469,
+              "total_fare": 6117130.0
+            },
+            {
+              "payment_type": "3",
+              "VendorID": "2",
+              "trips": 11477,
+              "total_fare": -15.7
+            },
+            {
+              "payment_type": "4",
+              "VendorID": "2",
+              "trips": 42811,
+              "total_fare": -150.0
+            },
+            {
+              "payment_type": "0",
+              "VendorID": "6",
+              "trips": 260,
+              "total_fare": 12193.8
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 24.99,
+          "speedup_vs_sqlite": 708.014
+        },
+        "sqlite": {
+          "time_median_s": 4.211978,
+          "time_all_s": [
+            4.216288,
+            4.222785,
+            4.211978,
+            4.186502,
+            4.203094
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 533.0,
+          "tracemalloc_peak_mb": 118.607,
+          "result": [
+            {
+              "payment_type": "0",
+              "VendorID": "1",
+              "trips": 48455,
+              "total_fare": 899225.0
+            },
+            {
+              "payment_type": "1",
+              "VendorID": "1",
+              "trips": 564618,
+              "total_fare": 10048700.0
+            },
+            {
+              "payment_type": "2",
+              "VendorID": "1",
+              "trips": 104722,
+              "total_fare": 1729480.0
+            },
+            {
+              "payment_type": "3",
+              "VendorID": "1",
+              "trips": 8120,
+              "total_fare": 132346.0
+            },
+            {
+              "payment_type": "4",
+              "VendorID": "1",
+              "trips": 3817,
+              "total_fare": 62393.2
+            },
+            {
+              "payment_type": "0",
+              "VendorID": "2",
+              "trips": 91447,
+              "total_fare": 1894090.0
+            },
+            {
+              "payment_type": "1",
+              "VendorID": "2",
+              "trips": 1754428,
+              "total_fare": 32986800.0
+            },
+            {
+              "payment_type": "2",
+              "VendorID": "2",
+              "trips": 334469,
+              "total_fare": 6117130.0
+            },
+            {
+              "payment_type": "3",
+              "VendorID": "2",
+              "trips": 11477,
+              "total_fare": -15.7
+            },
+            {
+              "payment_type": "4",
+              "VendorID": "2",
+              "trips": 42811,
+              "total_fare": -150.0
+            },
+            {
+              "payment_type": "0",
+              "VendorID": "6",
+              "trips": 260,
+              "total_fare": 12193.8
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 0.035,
+          "speedup_vs_sqlite": 1.0
+        }
+      }
+    },
+    "distinct_sort": {
+      "category": "compute",
+      "description": "Distinct-zone rollup sorted: top-10 pickup zones by fare (ties by trips, zone).",
+      "engines": {
+        "pandas": {
+          "time_median_s": 0.074821,
+          "time_all_s": [
+            0.085352,
+            0.067496,
+            0.075711,
+            0.074821,
+            0.067489
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 572.1,
+          "tracemalloc_peak_mb": 97.859,
+          "result": [
+            {
+              "pu": 132,
+              "trips": 145240,
+              "total_fare": 8627710.0
+            },
+            {
+              "pu": 138,
+              "trips": 89533,
+              "total_fare": 3712330.0
+            },
+            {
+              "pu": 142,
+              "trips": 104080,
+              "total_fare": 1397530.0
+            },
+            {
+              "pu": 161,
+              "trips": 143471,
+              "total_fare": 2181760.0
+            },
+            {
+              "pu": 162,
+              "trips": 106717,
+              "total_fare": 1577910.0
+            },
+            {
+              "pu": 163,
+              "trips": 85692,
+              "total_fare": 1286460.0
+            },
+            {
+              "pu": 186,
+              "trips": 104523,
+              "total_fare": 1650060.0
+            },
+            {
+              "pu": 230,
+              "trips": 106324,
+              "total_fare": 1865190.0
+            },
+            {
+              "pu": 236,
+              "trips": 136465,
+              "total_fare": 1735010.0
+            },
+            {
+              "pu": 237,
+              "trips": 142708,
+              "total_fare": 1737640.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 1.0,
+          "speedup_vs_sqlite": 51.665
+        },
+        "polars": {
+          "time_median_s": 0.00659,
+          "time_all_s": [
+            0.008613,
+            0.006768,
+            0.00659,
+            0.006083,
+            0.005427
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 221.4,
+          "tracemalloc_peak_mb": 0.008,
+          "result": [
+            {
+              "pu": 132,
+              "trips": 145240,
+              "total_fare": 8627710.0
+            },
+            {
+              "pu": 138,
+              "trips": 89533,
+              "total_fare": 3712330.0
+            },
+            {
+              "pu": 142,
+              "trips": 104080,
+              "total_fare": 1397530.0
+            },
+            {
+              "pu": 161,
+              "trips": 143471,
+              "total_fare": 2181760.0
+            },
+            {
+              "pu": 162,
+              "trips": 106717,
+              "total_fare": 1577910.0
+            },
+            {
+              "pu": 163,
+              "trips": 85692,
+              "total_fare": 1286460.0
+            },
+            {
+              "pu": 186,
+              "trips": 104523,
+              "total_fare": 1650060.0
+            },
+            {
+              "pu": 230,
+              "trips": 106324,
+              "total_fare": 1865190.0
+            },
+            {
+              "pu": 236,
+              "trips": 136465,
+              "total_fare": 1735010.0
+            },
+            {
+              "pu": 237,
+              "trips": 142708,
+              "total_fare": 1737640.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 11.354,
+          "speedup_vs_sqlite": 586.592
+        },
+        "duckdb": {
+          "time_median_s": 0.00523,
+          "time_all_s": [
+            0.00635,
+            0.005225,
+            0.005247,
+            0.00523,
+            0.004709
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 192.9,
+          "tracemalloc_peak_mb": 0.01,
+          "result": [
+            {
+              "pu": 132,
+              "trips": 145240,
+              "total_fare": 8627710.0
+            },
+            {
+              "pu": 138,
+              "trips": 89533,
+              "total_fare": 3712330.0
+            },
+            {
+              "pu": 142,
+              "trips": 104080,
+              "total_fare": 1397530.0
+            },
+            {
+              "pu": 161,
+              "trips": 143471,
+              "total_fare": 2181760.0
+            },
+            {
+              "pu": 162,
+              "trips": 106717,
+              "total_fare": 1577910.0
+            },
+            {
+              "pu": 163,
+              "trips": 85692,
+              "total_fare": 1286460.0
+            },
+            {
+              "pu": 186,
+              "trips": 104523,
+              "total_fare": 1650060.0
+            },
+            {
+              "pu": 230,
+              "trips": 106324,
+              "total_fare": 1865190.0
+            },
+            {
+              "pu": 236,
+              "trips": 136465,
+              "total_fare": 1735010.0
+            },
+            {
+              "pu": 237,
+              "trips": 142708,
+              "total_fare": 1737640.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 14.306,
+          "speedup_vs_sqlite": 739.128
+        },
+        "sqlite": {
+          "time_median_s": 3.865641,
+          "time_all_s": [
+            3.942064,
+            3.865641,
+            3.831162,
+            3.871768,
+            3.843217
+          ],
+          "cold_s": null,
+          "peak_rss_mb": 422.1,
+          "tracemalloc_peak_mb": 35.596,
+          "result": [
+            {
+              "pu": 132,
+              "trips": 145240,
+              "total_fare": 8627710.0
+            },
+            {
+              "pu": 138,
+              "trips": 89533,
+              "total_fare": 3712330.0
+            },
+            {
+              "pu": 142,
+              "trips": 104080,
+              "total_fare": 1397530.0
+            },
+            {
+              "pu": 161,
+              "trips": 143471,
+              "total_fare": 2181760.0
+            },
+            {
+              "pu": 162,
+              "trips": 106717,
+              "total_fare": 1577910.0
+            },
+            {
+              "pu": 163,
+              "trips": 85692,
+              "total_fare": 1286460.0
+            },
+            {
+              "pu": 186,
+              "trips": 104523,
+              "total_fare": 1650060.0
+            },
+            {
+              "pu": 230,
+              "trips": 106324,
+              "total_fare": 1865190.0
+            },
+            {
+              "pu": 236,
+              "trips": 136465,
+              "total_fare": 1735010.0
+            },
+            {
+              "pu": 237,
+              "trips": 142708,
+              "total_fare": 1737640.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 0.019,
+          "speedup_vs_sqlite": 1.0
+        }
+      }
+    },
+    "write_parquet": {
+      "category": "io",
+      "description": "Write the full frame back to parquet in the engine's native path.",
+      "engines": {
+        "pandas": {
+          "time_median_s": 0.500422,
+          "time_all_s": [
+            0.536426,
+            0.478187,
+            0.512675,
+            0.500422,
+            0.497218
+          ],
+          "cold_s": 0.500373,
+          "peak_rss_mb": 577.1,
+          "tracemalloc_peak_mb": 47.495,
+          "result": [
+            {
+              "rows": 2964624
+            }
+          ],
+          "detail": {
+            "bytes_mb": 33.324
+          },
+          "speedup_vs_pandas": 1.0
+        },
+        "polars": {
+          "time_median_s": 0.074328,
+          "time_all_s": [
+            0.074328,
+            0.0763,
+            0.073671,
+            0.072475,
+            0.076117
+          ],
+          "cold_s": 0.058071,
+          "peak_rss_mb": 529.2,
+          "tracemalloc_peak_mb": 0.005,
+          "result": [
+            {
+              "rows": 2964624
+            }
+          ],
+          "detail": {
+            "bytes_mb": 31.777
+          },
+          "speedup_vs_pandas": 6.733
+        },
+        "duckdb": {
+          "time_median_s": 0.083094,
+          "time_all_s": [
+            0.104589,
+            0.083094,
+            0.107635,
+            0.077199,
+            0.071937
+          ],
+          "cold_s": 0.11125,
+          "peak_rss_mb": 632.9,
+          "tracemalloc_peak_mb": 0.006,
+          "result": [
+            {
+              "rows": 2964624
+            }
+          ],
+          "detail": {
+            "bytes_mb": 32.732
+          },
+          "speedup_vs_pandas": 6.022
+        }
+      }
+    },
+    "partitioned_read": {
+      "category": "io",
+      "description": "Multi-file out-of-core style read: 31 per-day hive-partitioned parquet files.",
+      "engines": {
+        "pandas": {
+          "time_median_s": 0.048158,
+          "time_all_s": [
+            0.061278,
+            0.048158,
+            0.046935,
+            0.04608,
+            0.050536
+          ],
+          "cold_s": 0.076304,
+          "peak_rss_mb": 558.3,
+          "tracemalloc_peak_mb": 53.378,
+          "result": [
+            {
+              "rows": 2964624,
+              "fare_sum": 53882200.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 1.0,
+          "speedup_vs_sqlite": 107.778
+        },
+        "polars": {
+          "time_median_s": 0.003621,
+          "time_all_s": [
+            0.004699,
+            0.003508,
+            0.003297,
+            0.003621,
+            0.004227
+          ],
+          "cold_s": 0.006022,
+          "peak_rss_mb": 203.4,
+          "tracemalloc_peak_mb": 0.003,
+          "result": [
+            {
+              "rows": 2964624,
+              "fare_sum": 53882200.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 13.3,
+          "speedup_vs_sqlite": 1433.405
+        },
+        "duckdb": {
+          "time_median_s": 0.006106,
+          "time_all_s": [
+            0.006106,
+            0.00546,
+            0.013148,
+            0.006645,
+            0.005241
+          ],
+          "cold_s": 0.00709,
+          "peak_rss_mb": 183.7,
+          "tracemalloc_peak_mb": 0.005,
+          "result": [
+            {
+              "rows": 2964624,
+              "fare_sum": 53882200.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 7.887,
+          "speedup_vs_sqlite": 850.042
+        },
+        "sqlite": {
+          "time_median_s": 5.190358,
+          "time_all_s": [
+            5.190358,
+            5.168449,
+            7.62832,
+            5.224532,
+            5.181425
+          ],
+          "cold_s": 5.226544,
+          "peak_rss_mb": 1311.1,
+          "tracemalloc_peak_mb": 604.829,
+          "result": [
+            {
+              "rows": 2964624,
+              "fare_sum": 53882200.0
+            }
+          ],
+          "detail": {},
+          "speedup_vs_pandas": 0.009,
+          "speedup_vs_sqlite": 1.0
+        }
+      }
+    }
+  },
+  "summary": {
+    "by_engine": {
+      "pandas": {
+        "total_time_s": 2.985527,
+        "geomean_speedup_vs_pandas": 1.0
+      },
+      "polars": {
+        "total_time_s": 0.163439,
+        "geomean_speedup_vs_pandas": 19.157
+      },
+      "duckdb": {
+        "total_time_s": 0.220958,
+        "geomean_speedup_vs_pandas": 14.886
+      },
+      "sqlite": {
+        "total_time_s": 40.549382,
+        "geomean_speedup_vs_pandas": 0.035
+      }
+    },
+    "fastest_engine_by_task": {
+      "read_parquet": "polars",
+      "read_csv": "polars",
+      "groupby": "polars",
+      "join": "polars",
+      "window": "polars",
+      "filter": "polars",
+      "strings_groupby": "polars",
+      "distinct_sort": "duckdb",
+      "write_parquet": "polars",
+      "partitioned_read": "polars"
+    }
+  },
+  "scalability": {
+    "sizes": [
+      1000000,
+      3000000,
+      10000000
+    ],
+    "tasks": {
+      "read_csv": {
+        "engines": {
+          "pandas": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.3947565,
+                "time_all_s": [
+                  0.398838,
+                  0.390675
+                ]
+              },
+              "3000000": {
+                "time_median_s": 2.2259745,
+                "time_all_s": [
+                  2.418335,
+                  2.033614
+                ]
+              },
+              "10000000": {
+                "time_median_s": 4.0279055,
+                "time_all_s": [
+                  4.078062,
+                  3.977749
+                ]
+              }
+            },
+            "loglog_slope": 1.001
+          },
+          "polars": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.0203725,
+                "time_all_s": [
+                  0.02027,
+                  0.020475
+                ]
+              },
+              "3000000": {
+                "time_median_s": 0.0364245,
+                "time_all_s": [
+                  0.03916,
+                  0.033689
+                ]
+              },
+              "10000000": {
+                "time_median_s": 0.1159445,
+                "time_all_s": [
+                  0.121164,
+                  0.110725
+                ]
+              }
+            },
+            "loglog_slope": 0.758
+          },
+          "duckdb": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.0622895,
+                "time_all_s": [
+                  0.059816,
+                  0.064763
+                ]
+              },
+              "3000000": {
+                "time_median_s": 0.073235,
+                "time_all_s": [
+                  0.075784,
+                  0.070686
+                ]
+              },
+              "10000000": {
+                "time_median_s": 0.1276965,
+                "time_all_s": [
+                  0.134927,
+                  0.120466
+                ]
+              }
+            },
+            "loglog_slope": 0.314
+          },
+          "sqlite": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 1.9305205,
+                "time_all_s": [
+                  1.93208,
+                  1.928961
+                ]
+              },
+              "3000000": {
+                "time_median_s": 5.771322,
+                "time_all_s": [
+                  5.758743,
+                  5.783901
+                ]
+              },
+              "10000000": {
+                "time_median_s": 19.411061,
+                "time_all_s": [
+                  19.481309,
+                  19.340813
+                ]
+              }
+            },
+            "loglog_slope": 1.002
+          }
+        },
+        "fastest_engine_by_size": {
+          "1000000": "polars",
+          "3000000": "polars",
+          "10000000": "polars"
+        }
+      },
+      "groupby": {
+        "engines": {
+          "pandas": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.11525350000000001,
+                "time_all_s": [
+                  0.118205,
+                  0.112302
+                ]
+              },
+              "3000000": {
+                "time_median_s": 0.337344,
+                "time_all_s": [
+                  0.337017,
+                  0.337671
+                ]
+              },
+              "10000000": {
+                "time_median_s": 1.145521,
+                "time_all_s": [
+                  1.146394,
+                  1.144648
+                ]
+              }
+            },
+            "loglog_slope": 0.998
+          },
+          "polars": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.005822000000000001,
+                "time_all_s": [
+                  0.006537,
+                  0.005107
+                ]
+              },
+              "3000000": {
+                "time_median_s": 0.009874,
+                "time_all_s": [
+                  0.009808,
+                  0.00994
+                ]
+              },
+              "10000000": {
+                "time_median_s": 0.0309375,
+                "time_all_s": [
+                  0.027854,
+                  0.034021
+                ]
+              }
+            },
+            "loglog_slope": 0.729
+          },
+          "duckdb": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.0048375,
+                "time_all_s": [
+                  0.005011,
+                  0.004664
+                ]
+              },
+              "3000000": {
+                "time_median_s": 0.0078975,
+                "time_all_s": [
+                  0.008119,
+                  0.007676
+                ]
+              },
+              "10000000": {
+                "time_median_s": 0.0203955,
+                "time_all_s": [
+                  0.020004,
+                  0.020787
+                ]
+              }
+            },
+            "loglog_slope": 0.628
+          },
+          "sqlite": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 2.1361429999999997,
+                "time_all_s": [
+                  2.138223,
+                  2.134063
+                ]
+              },
+              "3000000": {
+                "time_median_s": 6.8524975,
+                "time_all_s": [
+                  6.808779,
+                  6.896216
+                ]
+              },
+              "10000000": {
+                "time_median_s": 26.350259,
+                "time_all_s": [
+                  27.758187,
+                  24.942331
+                ]
+              }
+            },
+            "loglog_slope": 1.092
+          }
+        },
+        "fastest_engine_by_size": {
+          "1000000": "duckdb",
+          "3000000": "duckdb",
+          "10000000": "duckdb"
+        }
+      },
+      "join": {
+        "engines": {
+          "pandas": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.0827185,
+                "time_all_s": [
+                  0.085417,
+                  0.08002
+                ]
+              },
+              "3000000": {
+                "time_median_s": 0.2337195,
+                "time_all_s": [
+                  0.240476,
+                  0.226963
+                ]
+              },
+              "10000000": {
+                "time_median_s": 0.7938350000000001,
+                "time_all_s": [
+                  0.844519,
+                  0.743151
+                ]
+              }
+            },
+            "loglog_slope": 0.983
+          },
+          "polars": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.007555,
+                "time_all_s": [
+                  0.007777,
+                  0.007333
+                ]
+              },
+              "3000000": {
+                "time_median_s": 0.01051,
+                "time_all_s": [
+                  0.011589,
+                  0.009431
+                ]
+              },
+              "10000000": {
+                "time_median_s": 0.034634,
+                "time_all_s": [
+                  0.026696,
+                  0.042572
+                ]
+              }
+            },
+            "loglog_slope": 0.667
+          },
+          "duckdb": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.0049145000000000005,
+                "time_all_s": [
+                  0.005629,
+                  0.0042
+                ]
+              },
+              "3000000": {
+                "time_median_s": 0.007313,
+                "time_all_s": [
+                  0.007892,
+                  0.006734
+                ]
+              },
+              "10000000": {
+                "time_median_s": 0.016350499999999997,
+                "time_all_s": [
+                  0.016335,
+                  0.016366
+                ]
+              }
+            },
+            "loglog_slope": 0.524
+          },
+          "sqlite": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 1.1690625,
+                "time_all_s": [
+                  1.163472,
+                  1.174653
+                ]
+              },
+              "3000000": {
+                "time_median_s": 3.6114965,
+                "time_all_s": [
+                  3.606093,
+                  3.6169
+                ]
+              },
+              "10000000": {
+                "time_median_s": 12.0859895,
+                "time_all_s": [
+                  12.058424,
+                  12.113555
+                ]
+              }
+            },
+            "loglog_slope": 1.014
+          }
+        },
+        "fastest_engine_by_size": {
+          "1000000": "duckdb",
+          "3000000": "duckdb",
+          "10000000": "duckdb"
+        }
+      },
+      "window": {
+        "engines": {
+          "pandas": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.116131,
+                "time_all_s": [
+                  0.117912,
+                  0.11435
+                ]
+              },
+              "3000000": {
+                "time_median_s": 0.3407945,
+                "time_all_s": [
+                  0.344487,
+                  0.337102
+                ]
+              },
+              "10000000": {
+                "time_median_s": 1.1620745000000001,
+                "time_all_s": [
+                  1.182554,
+                  1.141595
+                ]
+              }
+            },
+            "loglog_slope": 1.001
+          },
+          "polars": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.0049155,
+                "time_all_s": [
+                  0.005135,
+                  0.004696
+                ]
+              },
+              "3000000": {
+                "time_median_s": 0.006267,
+                "time_all_s": [
+                  0.006394,
+                  0.00614
+                ]
+              },
+              "10000000": {
+                "time_median_s": 0.0134465,
+                "time_all_s": [
+                  0.013837,
+                  0.013056
+                ]
+              }
+            },
+            "loglog_slope": 0.44
+          },
+          "duckdb": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.0056025,
+                "time_all_s": [
+                  0.006148,
+                  0.005057
+                ]
+              },
+              "3000000": {
+                "time_median_s": 0.0081145,
+                "time_all_s": [
+                  0.008691,
+                  0.007538
+                ]
+              },
+              "10000000": {
+                "time_median_s": 0.015989499999999997,
+                "time_all_s": [
+                  0.015759,
+                  0.01622
+                ]
+              }
+            },
+            "loglog_slope": 0.457
+          },
+          "sqlite": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 2.168561,
+                "time_all_s": [
+                  2.163215,
+                  2.173907
+                ]
+              },
+              "3000000": {
+                "time_median_s": 7.0900680000000005,
+                "time_all_s": [
+                  7.076102,
+                  7.104034
+                ]
+              },
+              "10000000": {
+                "time_median_s": 26.2378505,
+                "time_all_s": [
+                  26.358379,
+                  26.117322
+                ]
+              }
+            },
+            "loglog_slope": 1.083
+          }
+        },
+        "fastest_engine_by_size": {
+          "1000000": "polars",
+          "3000000": "polars",
+          "10000000": "polars"
+        }
+      },
+      "filter": {
+        "engines": {
+          "pandas": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.018182499999999997,
+                "time_all_s": [
+                  0.01885,
+                  0.017515
+                ]
+              },
+              "3000000": {
+                "time_median_s": 0.0534945,
+                "time_all_s": [
+                  0.055553,
+                  0.051436
+                ]
+              },
+              "10000000": {
+                "time_median_s": 0.1764945,
+                "time_all_s": [
+                  0.200625,
+                  0.152364
+                ]
+              }
+            },
+            "loglog_slope": 0.987
+          },
+          "polars": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.0046515,
+                "time_all_s": [
+                  0.005451,
+                  0.003852
+                ]
+              },
+              "3000000": {
+                "time_median_s": 0.0052765,
+                "time_all_s": [
+                  0.0056,
+                  0.004953
+                ]
+              },
+              "10000000": {
+                "time_median_s": 0.013522,
+                "time_all_s": [
+                  0.014163,
+                  0.012881
+                ]
+              }
+            },
+            "loglog_slope": 0.469
+          },
+          "duckdb": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.0028535,
+                "time_all_s": [
+                  0.00291,
+                  0.002797
+                ]
+              },
+              "3000000": {
+                "time_median_s": 0.005519,
+                "time_all_s": [
+                  0.004925,
+                  0.006113
+                ]
+              },
+              "10000000": {
+                "time_median_s": 0.012574499999999999,
+                "time_all_s": [
+                  0.01273,
+                  0.012419
+                ]
+              }
+            },
+            "loglog_slope": 0.645
+          },
+          "sqlite": {
+            "by_size": {
+              "1000000": {
+                "time_median_s": 0.642942,
+                "time_all_s": [
+                  0.634193,
+                  0.651691
+                ]
+              },
+              "3000000": {
+                "time_median_s": 1.936226,
+                "time_all_s": [
+                  1.917269,
+                  1.955183
+                ]
+              },
+              "10000000": {
+                "time_median_s": 6.4721715,
+                "time_all_s": [
+                  6.382761,
+                  6.561582
+                ]
+              }
+            },
+            "loglog_slope": 1.003
+          }
+        },
+        "fastest_engine_by_size": {
+          "1000000": "duckdb",
+          "3000000": "polars",
+          "10000000": "duckdb"
+        }
+      }
+    }
+  }
+}

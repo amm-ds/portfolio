@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse
 from portfolio_core.demo import load_demo_index
 from portfolio_core.logging import get_logger
@@ -42,7 +42,7 @@ def _pattern_match(pattern: str, path: str) -> bool:
         return path.strip("/") == ""
     pp = [s for s in pattern.split("/") if s]
     sp = [s for s in path.split("/") if s]
-    return len(pp) == len(sp) and all(p == "*" or p == s for p, s in zip(pp, sp, strict=True))
+    return len(pp) == len(sp) and all(p in ("*", s) for p, s in zip(pp, sp, strict=True))
 
 
 def _spa_patterns() -> list[str]:
@@ -92,15 +92,17 @@ def _route_index_html(path: str) -> str:
     return _HEAD_CACHE[path]
 
 
-@router.get("/{full_path:path}", include_in_schema=False)
-def spa(full_path: str) -> Response:
+@router.api_route("/{full_path:path}", methods=["GET", "HEAD"], include_in_schema=False)
+def spa(full_path: str, request: Request) -> Response:
     """Serve the React build: hashed assets as-is, known SPA routes →
     index.html, anything else → real JSON 404.
 
     Registered last, so API routes above always win. Paths are resolved and
     confined to WEB_DIST — dot segments fall back to index.html instead of
     escaping the build directory (path traversal). Without a web build every
-    unknown GET is a structured 404.
+    unknown GET is a structured 404. HEAD is answered for known routes and
+    assets (200, headers only) so uptime monitors and crawlers that probe
+    with HEAD don't mark the site down; API routes above stay GET-only.
     """
     path = "/" + full_path if not full_path.startswith("/") else full_path
     if WEB_DIST.exists():
@@ -109,6 +111,7 @@ def spa(full_path: str) -> Response:
             if candidate.is_relative_to(WEB_DIST.resolve()) and candidate.is_file():
                 # Vite content-hashes everything under /assets/ → immutable;
                 # any other file (favicon, manifests) must be revalidated.
+                # FileResponse suppresses the body for HEAD by itself.
                 cache = (
                     "public, max-age=31536000, immutable"
                     if full_path.startswith("assets/")
@@ -116,6 +119,8 @@ def spa(full_path: str) -> Response:
                 )
                 return FileResponse(candidate, headers={"Cache-Control": cache})
         if any(_pattern_match(p, path) for p in _SPA_PATTERNS):
+            if request.method == "HEAD":
+                return Response(status_code=200, headers={"Cache-Control": "no-cache"})
             return HTMLResponse(_route_index_html(path), headers={"Cache-Control": "no-cache"})
     elif any(_pattern_match(p, path) for p in _SPA_PATTERNS):
         raise HTTPException(status_code=404, detail="web build not found")

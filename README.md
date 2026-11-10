@@ -20,7 +20,8 @@ clean clone.
 | `pydantic-ai` | Agentic AI: typed tools, structured outputs, provider abstraction | 01 |
 | `scikit-learn` | Classical ML: pipelines, baselines, metrics | 02, 03, 05, 07 |
 | `pytorch` | Deep learning with hand-written training loops | 02, 04, 07 |
-| `plotly` | The only viz library — shared theme, interactive everywhere | all |
+| `plotly` | The single figure authoring path — every payload is built in Python through `portfolio_core.plotting` (shared theme) and exported as JSON | all |
+| `apache echarts` | Showcase-web figure renderer — converts the committed plotly payloads (smaller chunks, better mobile), per-figure plotly.js fallback (ADR-0008) | `apps/showcase-web` |
 | `dvc` | Pipelines + data versioning, reproduces from clean clone | all |
 | `uv` | Single workspace monorepo, committed lockfile | root |
 | `polars` | Lazy/streaming ETL over GB-scale open data | 03, 07 |
@@ -30,9 +31,9 @@ clean clone.
 
 Real artifacts from the pipelines (interactive versions in each [case study](https://alejandromerida.dev/projects/)):
 
-| Flagship demand intelligence (41.2M trips, zone map) | RAG quality-vs-cost frontier | Solver runtime-vs-gap Pareto (incl. hinted CP-SAT cross-check) |
+| Flagship demand intelligence (41.2M trips, zone map) | RAG quality-vs-cost frontier | Anomaly detection over NAB telemetry (897 alerts vs labelled windows) |
 |---|---|---|
-| ![NYC taxi-zone demand map](docs/assets/readme/mobility-demand-map.png) | ![RAG quality-cost frontier](docs/assets/readme/rag-quality-cost-frontier.png) | ![Solver runtime-vs-gap Pareto](docs/assets/readme/routing-solver-pareto.png) |
+| ![NYC taxi-zone demand map](docs/assets/readme/mobility-demand-map.png) | ![RAG quality-cost frontier](docs/assets/readme/rag-quality-cost-frontier.png) | ![NAB telemetry: champion alerts vs labelled incident windows](docs/assets/readme/anomaly-timelines.png) |
 
 ## Projects
 

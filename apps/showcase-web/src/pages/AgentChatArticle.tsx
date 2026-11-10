@@ -140,7 +140,7 @@ export function AgentChatArticle() {
             id="background"
             index={1}
             subtitle="a lift-out chassis for real assistants, not a chat screenshot"
-            takeaway="Start with a working application, then replace the domain pieces instead of rebuilding agent infrastructure."
+            takeaway="One repository carries the agent, streaming API, React UI, Postgres storage, eval suite, and deployment files — adapt behind five explicit seams: provider, embedder, vector store, notebook, approval gate."
           >
             <div className="prose">
               <p>
@@ -169,7 +169,7 @@ export function AgentChatArticle() {
             id="objectives"
             index={2}
             subtitle="typed tools, bounded runs, and explicit side effects"
-            takeaway="The model can propose an action, but the application decides what is allowed and when a human must approve it."
+            takeaway="The model proposes actions; the runtime decides. Typed tools own their schema, per-run budgets stop loops, and a consequential tool cannot fire before the human approval gate resolves."
           >
             <div className="prose">
               <p>
@@ -198,7 +198,7 @@ export function AgentChatArticle() {
             id="architecture"
             index={3}
             subtitle="provider, retrieval, memory, and approval boundaries stay independent"
-            takeaway="Change the model, database, or domain without rewriting the application."
+            takeaway="Swap the model with four environment variables — Kimi, local Ollama, or any OpenAI-compatible API. Fallback covers provider failures, retries cover schema failures, and browser sessions are isolated by construction."
           >
             <LazyFlowDiagram specId="app-agent-chat-architecture" />
             <div className="prose">
@@ -232,7 +232,7 @@ export function AgentChatArticle() {
             id="interface"
             index={4}
             subtitle="streamed answers, visible tool work, and an operator decision in-band"
-            takeaway="Users can see what the agent did, what evidence it used, and where it is waiting for a decision."
+            takeaway="One SSE stream carries the answer, tool traces, citations, and approval cards; /health names the provider and model, /ready probes both stores, and every response carries an X-Request-ID."
           >
             <div className="app-media-grid">
               <Screenshot
@@ -295,7 +295,7 @@ export function AgentChatArticle() {
             id="memory"
             index={5}
             subtitle="session-scoped facts without turning every prompt into a transcript"
-            takeaway="New chats in one browser session share bounded memory; other sessions cannot read or change it."
+            takeaway="Notebook facts live in the browser session: new chats in the same tab recall up to five notes (hard cap ten) with atomic replacement; another session's conversations, memory, and approvals return 404."
           >
             <div className="prose">
               <p>
@@ -331,7 +331,7 @@ export function AgentChatArticle() {
             id="evaluation"
             index={6}
             subtitle="deterministic graders offline, the same suite against a real provider"
-            takeaway="All three Kimi repetitions pass: 108/108 assertions across 16 cases, including exact side effects, citations, memory, and refusals."
+            takeaway="Sixteen scripted cases, exact graders, no judges — 108/108 assertions passed in each of three kimi-for-coding runs, with denials, verbatim citations, and cross-conversation memory graded separately."
           >
             <div className="prose">
               <p>
@@ -374,7 +374,7 @@ export function AgentChatArticle() {
             id="specs"
             index={7}
             subtitle="architecture, operations, adaptation, and decisions ready to download"
-            takeaway="The template includes the instructions needed to run, extend, and operate it after handover."
+            takeaway="Four specs and six ADRs document boundaries, operations, swap points, and trade-offs; the handoff checklist puts an authenticated gateway in front before any real tenant."
           >
             <div className="app-spec-grid">
               {SPECS.map((spec) => (
@@ -402,7 +402,7 @@ export function AgentChatArticle() {
             id="adapt"
             index={8}
             subtitle="change identity, capabilities, and infrastructure in that order"
-            takeaway="Most adaptations start with instructions and a folder, not a framework migration."
+            takeaway="Adapt instructions first, then add tools or skill folders; provider, embedder, and store swaps stay behind protocols. MCP is optional — every toolset answers to the same approval and refusal policy."
           >
             <div className="prose">
               <p>

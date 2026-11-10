@@ -12,8 +12,10 @@ import { usePageMeta } from "../../seo";
 const HORIZONS = [7, 14, 21, 28];
 const NAIVE = "seasonal_naive";
 
-/** Every demo chip, in display order — the workbench opens with all of them. */
-const ALL_MODEL_KEYS = MODELS.map((m) => m.key).join(",");
+/** Default overlay: the seasonal-naive floor against the champion screened
+ *  ensemble — the two curves that carry the story. Every other candidate
+ *  stays one chip away. */
+const DEFAULT_MODELS = "seasonal_naive,convex_ensemble";
 
 /** Minimal manifest so the workbench renders before/if the manifest fetch fails.
  * Mirrors projects/02-demand-forecasting/demo.yaml — keep hook/hero/scenarios
@@ -141,7 +143,7 @@ function Workbench({
   const firstSeries = payload.catalog[0]?.series_id ?? "";
   // single scored-once origin by design: no origin control
   const state = useControlState<string | number>(
-    { series: firstSeries, models: ALL_MODEL_KEYS, horizon: 28 },
+    { series: firstSeries, models: DEFAULT_MODELS, horizon: 28 },
     manifest.scenarios,
   );
   const { controls: values, setControl: setValue } = state;
@@ -483,7 +485,12 @@ function ForecastChart({
           band={band ? { between: band, color: C_AMBER, opacity: 0.12 } : undefined}
           yTicks={3}
           xTicks={4}
-          formatX={(v) => (v <= 0 ? `d${v}` : `+${v}`)}
+          formatX={(v) => {
+            // tick slots are fractional positions across the day domain —
+            // label the nearest day so the axis never prints long decimals
+            const d = Math.round(v);
+            return d <= 0 ? `d${d}` : `+${d}`;
+          }}
           ariaLabel="forecast curves versus actuals for the selected series"
         />
       </div>

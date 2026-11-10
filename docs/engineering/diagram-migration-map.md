@@ -197,7 +197,16 @@ Shipped: `@xyflow/react` v12 viewer behind a new ` ```diagram <spec-id> ` fence
 (lazy chunk, ~209 kB, main bundle unchanged). Pilots live on 09-agentic-workflows
 (agent loop with budgets in the inspector) and 04-nlp-classification (routing
 topology with τ, escalation rate, fresh macro-F1). Mermaid keeps its lane for
-docs-style flows; Plotly keeps all data figures.
+docs-style flows; data figures moved to the ECharts engine in Phase 3.
+
+## Phase 3 outcome — ECharts figure renderer (2026-11-10)
+
+Shipped (ADR-0008): every figure card routes through `EChartsFigure`, which
+converts the committed plotly payload to an ECharts option plan and falls back
+to the plotly renderer per figure when conversion or init fails. Payloads,
+authoring (`portfolio_core.plotting`), and docs embedding are unchanged. The
+pilot language in the code comments ("pilot subset") is legacy — the gate is
+now a per-figure conversion dry run, not a fixed figure list.
 
 Follow-up candidates from the pilot: 02's routing architecture, 11's benchmark
 harness flow, 13's serving topology (React Flow); deployment-architecture pages

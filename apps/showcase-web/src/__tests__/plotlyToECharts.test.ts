@@ -230,16 +230,139 @@ describe("plotlyToECharts over the committed churn figures", () => {
     const layer = option.series.find((s) => s.markLine)!;
     expect(layer).toBeDefined();
     expect(layer.markLine.data[0].xAxis).toBe(0);
-    // the zero-pinning annotation rides the silent layer, so the value axis
-    // itself stays autoscaling (plotly parity: annotation coords expand the
-    // range through data, not through explicit min/max)
-    expect(option.xAxis[0].min).toBeUndefined();
+    // numeric bar centers on x get the data window (extent ± padding) —
+    // never a pinned [0,1]; the zero baseline lives on the value (y) axis
+    expect(option.xAxis[0].min).toBeLessThan(-500);
+    expect(option.xAxis[0].min).toBeGreaterThan(-640);
+    expect(option.xAxis[0].max).toBeGreaterThan(0);
+    expect(option.xAxis[0].max).toBeLessThan(80);
+    expect(option.yAxis[0].min).toBe(0); // positive-only bar counts
     // numeric-x bars get a px width from the data-unit widths
     const bars = option.series.filter((s) => s.type === "bar");
     for (const b of bars) {
       expect(b.barWidth).toBeGreaterThan(0);
       expect(Number.isFinite(b.barWidth)).toBe(true);
     }
+  });
+
+  it("numeric domain fractions never ride a time axis (adaptive_stream regression)", () => {
+    // The payload's threshold shape and label use xref "x domain" with
+    // INTEGER fractions (plotly writes fractions as numbers) — they must
+    // resolve against the data extent, never be read as epoch ms (~1970).
+    const payload = JSON.parse(
+      readFileSync(
+        resolve(process.cwd(), "../../projects/03-anomaly-detection/reports/figures/adaptive_stream.json"),
+        "utf8",
+      ),
+    ) as PlotlyPayload;
+    const option = asOpt(plotlyToECharts(payload, "dark", 1000));
+    const stamps = payload.data
+      .flatMap((t) => (Array.isArray((t as Record<string, unknown>).x) ? ((t as Record<string, unknown>).x as string[]) : []))
+      .map((s) => Date.parse(s.replace(" ", "T")))
+      .filter((v) => Number.isFinite(v));
+    const ax = option.xAxis[0];
+    const span = Math.max(...stamps) - Math.min(...stamps);
+    expect(ax.type).toBe("time");
+    // window = data extent ± ~5% padding — never epoch-adjacent
+    expect(ax.min).toBeLessThan(Math.min(...stamps));
+    expect(ax.min).toBeGreaterThan(Math.min(...stamps) - span * 0.2);
+    expect(ax.max).toBeGreaterThan(Math.max(...stamps));
+    expect(ax.max).toBeLessThan(Math.max(...stamps) + span * 0.2);
+    // the "fixed threshold" label rides the silent layer at the resolved
+    // fraction (the right edge of the data), not at x=1
+    const layer = option.series.find((s) => s.silent && s.data.some((d: { label?: unknown }) => d.label))!;
+    expect(layer).toBeDefined();
+    const labeled = layer.data.find((d: { label?: unknown }) => d.label) as { value: number[] };
+    expect(labeled.value[0]).toBeGreaterThan(1e12);
+    // and the threshold line still spans the plot as a markLine
+    const markLine = option.series.find((s) => s.markLine);
+    expect(markLine).toBeDefined();
+  });
+
+  it("time axes span the parsed data dates — never epoch 0 (zone_fan regression)", () => {
+    const payload = JSON.parse(
+      readFileSync(
+        resolve(process.cwd(), "../../projects/07-open-data-mobility/reports/figures/zone_fan.json"),
+        "utf8",
+      ),
+    ) as PlotlyPayload;
+    const option = asOpt(plotlyToECharts(payload, "dark", 990));
+    // parse the payload's own date strings as the ground truth
+    const stamps = payload.data
+      .flatMap((t) => (Array.isArray((t as Record<string, unknown>).x) ? ((t as Record<string, unknown>).x as string[]) : []))
+      .map((s) => Date.parse(s.replace(" ", "T")))
+      .filter((v) => Number.isFinite(v));
+    const dataMin = Math.min(...stamps);
+    const dataMax = Math.max(...stamps);
+    for (const axis of option.xAxis) {
+      expect(axis.type).toBe("time");
+      // window is the data extent ± padding: strictly inside it, and far
+      // away from 1970 either way
+      expect(axis.min).toBeGreaterThan(dataMin - (dataMax - dataMin) * 0.2);
+      expect(axis.min).toBeLessThan(dataMin);
+      expect(axis.max).toBeGreaterThan(dataMax);
+      expect(axis.max).toBeLessThan(dataMax + (dataMax - dataMin) * 0.2);
+      expect(axis.min).toBeGreaterThan(1e12); // no epoch-0 leak
+    }
+  });
+
+  it("honors a payload-authored axis range verbatim (scale_ladder regression)", () => {
+    const payload = JSON.parse(
+      readFileSync(
+        resolve(process.cwd(), "../../projects/04-nlp-classification/reports/figures/scale_ladder.json"),
+        "utf8",
+      ),
+    ) as PlotlyPayload;
+    const option = asOpt(plotlyToECharts(payload, "dark", 990));
+    const authored = (payload.layout as Record<string, Record<string, unknown>>).yaxis.range as number[];
+    expect(option.yAxis[0].min).toBe(authored[0]);
+    expect(option.yAxis[0].max).toBe(authored[1]);
+  });
+
+  it("keeps authored [0, 1] windows for rate metrics (win_rate)", () => {
+    const payload = JSON.parse(
+      readFileSync(
+        resolve(process.cwd(), "../../projects/02-demand-forecasting/reports_m5/figures/win_rate.json"),
+        "utf8",
+      ),
+    ) as PlotlyPayload;
+    expect(supportsECharts(payload)).toBe(true);
+    const option = asOpt(plotlyToECharts(payload, "dark", 990));
+    const y = option.yAxis[0];
+    expect(y.min).toBe(0);
+    expect(y.max).toBe(1);
+  });
+
+  it("value-axis windows track the data extent — no pinned 0/1 (temp_vs_rentals)", () => {
+    const payload = JSON.parse(
+      readFileSync(
+        resolve(process.cwd(), "../../projects/12-tabular-ml-lifecycle/reports/figures/temp_vs_rentals.json"),
+        "utf8",
+      ),
+    ) as PlotlyPayload;
+    const option = asOpt(plotlyToECharts(payload, "dark", 990));
+    const xs = option.series
+      .flatMap((s) => (s.data as Array<{ value: unknown[] }>) ?? [])
+      .map((d) => d.value[0])
+      .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+    const dataMin = Math.min(...xs);
+    const dataMax = Math.max(...xs);
+    const span = dataMax - dataMin;
+    const ax = option.xAxis[0];
+    // extent ± ~5% padding; neither a forced zero nor a pinned [0,1]
+    expect(ax.min).toBeGreaterThanOrEqual(dataMin - span * 0.08);
+    expect(ax.min).toBeLessThanOrEqual(dataMin);
+    expect(ax.max).toBeGreaterThanOrEqual(dataMax);
+    expect(ax.max).toBeLessThanOrEqual(dataMax + span * 0.08);
+    expect(ax.min === 0 && ax.max === 1).toBe(false);
+    // and the y window fits the rentals, not [0,1]
+    const ys = option.series
+      .flatMap((s) => (s.data as Array<{ value: unknown[] }>) ?? [])
+      .map((d) => d.value[1])
+      .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+    const ySpan = Math.max(...ys) - Math.min(...ys);
+    expect(option.yAxis[0].max).toBeGreaterThan(Math.max(...ys) + ySpan * 0.04);
+    expect(option.yAxis[0].max).toBeLessThan(Math.max(...ys) + ySpan * 0.08);
   });
 
   it("renders subplot headers as extra title entries", () => {
