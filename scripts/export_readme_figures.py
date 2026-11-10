@@ -27,11 +27,7 @@ RENDER_TIMEOUT_S = 300
 FIGURES: dict[str, tuple[str, str, str]] = {
     "mobility-demand-map.png": ("07-open-data-mobility", "zone_demand_map", "zone_hour_heatmap"),
     "rag-quality-cost-frontier.png": ("01-rag-agent", "retrieval_hpo_frontier", "chunk_size_sweep"),
-    "routing-solver-pareto.png": (
-        "06-routing-optimization",
-        "pareto_gap_runtime",
-        "route_map_C101",
-    ),
+    "anomaly-timelines.png": ("03-anomaly-detection", "nab_timelines", "nab_alert_budget"),
 }
 
 # Per-project figures embedded in the mkdocs case-study pages

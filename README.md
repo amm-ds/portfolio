@@ -31,9 +31,9 @@ clean clone.
 
 Real artifacts from the pipelines (interactive versions in each [case study](https://alejandromerida.dev/projects/)):
 
-| Flagship demand intelligence (41.2M trips, zone map) | RAG quality-vs-cost frontier | Solver runtime-vs-gap Pareto (incl. hinted CP-SAT cross-check) |
+| Flagship demand intelligence (41.2M trips, zone map) | RAG quality-vs-cost frontier | Anomaly detection over NAB telemetry (897 alerts vs labelled windows) |
 |---|---|---|
-| ![NYC taxi-zone demand map](docs/assets/readme/mobility-demand-map.png) | ![RAG quality-cost frontier](docs/assets/readme/rag-quality-cost-frontier.png) | ![Solver runtime-vs-gap Pareto](docs/assets/readme/routing-solver-pareto.png) |
+| ![NYC taxi-zone demand map](docs/assets/readme/mobility-demand-map.png) | ![RAG quality-cost frontier](docs/assets/readme/rag-quality-cost-frontier.png) | ![NAB telemetry: champion alerts vs labelled incident windows](docs/assets/readme/anomaly-timelines.png) |
 
 ## Projects
 
