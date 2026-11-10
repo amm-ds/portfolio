@@ -36,7 +36,7 @@ describe("theme tokens", () => {
       "--text: #172433;",
       "--muted: #4e6276;",
       "--dim: #536578;",
-      "--accent: #0b625b;",
+      "--accent: #2dd4bf;",
       "--accent-bright: #0a5750;",
       "--secondary: #0369a1;",
       "--danger: #b4233a;",
@@ -166,12 +166,12 @@ describe("nav theme switcher styles", () => {
     expect(option).toContain("background: transparent;");
 
     const active = block(shell, ".theme-switcher__option.is-active {");
-    expect(active).toContain("color: var(--accent-bright);");
+    expect(active).toContain("color: var(--accent);");
     expect(active).toContain("border-color: var(--accent);");
     expect(active).toContain("background: var(--accent-glow);");
 
     const hover = block(shell, ".theme-switcher__option:hover:not(:disabled) {");
-    expect(hover).toContain("color: var(--accent-bright);");
+    expect(hover).toContain("color: var(--accent);");
     expect(hover).toContain("border-color: var(--accent);");
   });
 

@@ -43,16 +43,16 @@
 
 .demo-error-actions button:hover {
   border-color: var(--accent);
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .demo-error-actions a {
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .not-found-code {
   font-family: var(--mono);
-  color: var(--accent-bright);
+  color: var(--accent);
   margin: 0 0 0.5rem;
 }
 
@@ -64,7 +64,7 @@
 
 .loading::before {
   content: "> ";
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 button {
@@ -127,7 +127,7 @@ button:disabled {
 
 .services-hero .kicker {
   font-family: var(--mono);
-  color: var(--accent-bright);
+  color: var(--accent);
   font-size: 0.85rem;
   margin: 0 0 0.5rem;
 }
@@ -172,7 +172,7 @@ button:disabled {
 
 .offering-card h3::before {
   content: "[+] ";
-  color: var(--accent-bright);
+  color: var(--accent);
   font-weight: 400;
 }
 
@@ -207,7 +207,7 @@ button:disabled {
   margin-top: 0.75rem;
   font-family: var(--mono);
   font-size: 0.8rem;
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .process-timeline {
@@ -233,7 +233,7 @@ button:disabled {
   left: 0;
   background: var(--bg);
   border: 1px solid var(--accent);
-  color: var(--accent-bright);
+  color: var(--accent);
   border-radius: 6px;
   font-family: var(--mono);
   font-size: 0.78rem;
@@ -304,7 +304,7 @@ button:disabled {
   left: 0;
   background: var(--bg);
   border: 1px solid var(--accent);
-  color: var(--accent-bright);
+  color: var(--accent);
   border-radius: 6px;
   font-family: var(--mono);
   font-size: 0.78rem;
@@ -343,7 +343,7 @@ button:disabled {
 .free-call-card h2 {
   margin: 0 0 0.3rem;
   font-size: 0.95rem;
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .free-call-card p {
@@ -419,7 +419,7 @@ button:disabled {
 .channel-icon {
   display: inline-flex;
   flex-shrink: 0;
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .channel-icon svg {
@@ -685,11 +685,11 @@ button:disabled {
 
 .footer-name::before {
   content: "> ";
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .footer-accent {
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .footer-copy {
@@ -711,7 +711,7 @@ button:disabled {
 }
 
 .footer-nav a:hover {
-  color: var(--accent-bright);
+  color: var(--accent);
   text-decoration: none;
 }
 
@@ -825,7 +825,7 @@ button:disabled {
 
 .figure-id::before {
   content: "> ";
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .figure-comment {
@@ -909,7 +909,7 @@ button:disabled {
 }
 
 .page-index .page-index-label {
-  color: var(--accent-bright);
+  color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.85rem;
@@ -928,16 +928,16 @@ button:disabled {
 }
 
 .page-index a:hover {
-  color: var(--accent-bright);
+  color: var(--accent);
   text-decoration: none;
 }
 
 .page-index-slash {
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .page-index a:hover {
-  color: var(--accent-bright);
+  color: var(--accent);
   text-decoration: none;
 }
 
@@ -950,7 +950,7 @@ button:disabled {
 }
 
 .hero-accent {
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 /* bottom row on /contact: plain centered text links — no card, no border,
@@ -963,7 +963,7 @@ button:disabled {
 }
 
 .footer-links a {
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 /* --- Frameworks --- */
@@ -1079,7 +1079,7 @@ button:disabled {
 }
 
 .flow-diagram__title {
-  color: var(--accent-bright);
+  color: var(--accent);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1343,7 +1343,7 @@ button:disabled {
 
 .flow-inspector__source {
   margin: 0.8rem 0;
-  color: var(--accent-bright);
+  color: var(--accent);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1363,7 +1363,7 @@ button:disabled {
 }
 
 .flow-inspector li::marker {
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .flow-diagram__legend {
@@ -1381,7 +1381,7 @@ button:disabled {
 }
 
 .flow-legend--result {
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .flow-legend--error {
@@ -1399,7 +1399,7 @@ button:disabled {
 }
 
 .flow-edge--result {
-  --edge-color: var(--accent-bright);
+  --edge-color: var(--accent);
 }
 
 .flow-edge--error {
@@ -1526,7 +1526,7 @@ button:disabled {
 
 .code-block .hljs-string,
 .code-block .hljs-title {
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .code-block .hljs-number,
@@ -1551,7 +1551,7 @@ button:disabled {
 
 .app-spec-card h3 {
   margin: 0.15rem 0 0.45rem;
-  color: var(--accent-bright);
+  color: var(--accent);
   font-family: var(--mono);
   font-size: 1.05rem;
 }
@@ -1561,7 +1561,7 @@ button:disabled {
 }
 
 .app-spec-card a {
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .app-media-grid {

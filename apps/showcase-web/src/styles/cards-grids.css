@@ -59,7 +59,7 @@
 .study-card h3::before,
 .study-card h4::before {
   content: "> ";
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 /* metadata fields on a study card: stacked label-over-value pairs (topics /
@@ -98,7 +98,7 @@
 
 /* metadata values are terminal green; field labels and technique tags stay blue. */
 .study-sub {
-  color: var(--accent-bright);
+  color: var(--accent);
   font-size: 0.85rem;
   font-family: var(--mono);
   text-transform: none;
@@ -118,7 +118,7 @@
 /* headline metric value inside a demo card's results chip */
 .study-metric {
   font-family: var(--mono);
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 /* the measured result as a tag/chip — the demo registry's headline metric and
@@ -128,7 +128,7 @@
 .study-card .chip.study-result-chip {
   font-family: var(--mono);
   font-size: 0.82rem;
-  color: var(--accent-bright);
+  color: var(--accent);
   background: var(--chip-green-bg);
   border-color: var(--chip-green-border);
 }
@@ -175,7 +175,7 @@
 
 .section-title::before {
   content: "> ";
-  color: var(--accent-bright);
+  color: var(--accent);
   text-shadow: none;
 }
 
@@ -200,7 +200,7 @@
    "> " prompt marker on the major sections */
 .row-label::before {
   content: "/";
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .row-desc {
@@ -281,7 +281,7 @@
    .section-title::before: green "> ", no glow */
 .app-card__title--link::before {
   content: "> ";
-  color: var(--accent-bright);
+  color: var(--accent);
   text-shadow: none;
 }
 

@@ -37,6 +37,11 @@ services:
       # network can supply forwarding headers. Restrict this to Caddy's IP if
       # the network topology changes; never publish the API with "*" here.
       FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-*}
+      # Append-only log of phone-unlock submissions (valid + invalid), one
+      # JSON line each. Root-only on the host volume; unset disables storage.
+      CONTACT_STORE_PATH: ${CONTACT_STORE_PATH:-/data/contact_unlock.jsonl}
+    volumes:
+      - contact-store:/data
     extra_hosts:
       # host.docker.internal is not resolved on Linux by default; this lets the
       # api reach an Ollama sidecar running on the Docker host (see DEPLOY.md).
@@ -103,3 +108,4 @@ services:
 volumes:
   caddy-data:
   caddy-config:
+  contact-store:

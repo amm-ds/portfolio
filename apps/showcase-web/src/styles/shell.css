@@ -25,12 +25,12 @@
 
 .nav-brand::before {
   content: "> ";
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 /* the ".dev" brand suffix renders in the accent color */
 .nav-brand-accent {
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .nav-links {
@@ -48,7 +48,7 @@
 
 .nav-links a:hover,
 .nav-links a.active {
-  color: var(--accent-bright);
+  color: var(--accent);
   text-decoration: none;
 }
 
@@ -91,13 +91,13 @@
 }
 
 .theme-switcher__option:hover:not(:disabled) {
-  color: var(--accent-bright);
+  color: var(--accent);
   border-color: var(--accent);
 }
 
 /* active segment: accent border + a translucent accent wash */
 .theme-switcher__option.is-active {
-  color: var(--accent-bright);
+  color: var(--accent);
   border-color: var(--accent);
   background: var(--accent-glow);
 }
@@ -214,7 +214,7 @@
 
 .terminal-body .cmd::before {
   content: "> ";
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .terminal-body .out {
@@ -230,7 +230,7 @@
 
 .terminal-body .cmd-partial::before {
   content: "> ";
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .terminal-body .cmd-partial {

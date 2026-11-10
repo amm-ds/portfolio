@@ -98,8 +98,9 @@ function PhoneLinkCard({ phone }: { phone: string }) {
 
 /** The phone card renders locked; the number is fetched from the API once the
  * visitor shares an email or phone number. The unlock is view state only —
- * the gate is back on every reload — and the entered value is never stored,
- * locally or anywhere else. */
+ * the gate is back on every reload. Submissions (valid or not) are recorded
+ * server-side so the owner can see who asked for the line; nothing is stored
+ * in the browser. */
 function PhoneChannelCard() {
   const [phone, setPhone] = useState<string | null>(null);
   const [value, setValue] = useState("");

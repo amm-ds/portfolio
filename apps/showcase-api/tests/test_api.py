@@ -74,6 +74,22 @@ def test_contact_unlock_returns_the_configured_phone(monkeypatch) -> None:  # ty
     assert phone.json() == {"phone": "+34 670 881 697"}
 
 
+def test_contact_unlock_records_every_submission(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    store = tmp_path / "contact.jsonl"
+    monkeypatch.setenv("CONTACT_PHONE", "+34 600 000 000")
+    monkeypatch.setenv("CONTACT_STORE_PATH", str(store))
+    # env is read per request, so the module-level client is fine
+    client.post("/contact/unlock", json={"value": "prospect@example.com"})
+    client.post("/contact/unlock", json={"value": "not-an-email"})
+    lines = [json.loads(line) for line in store.read_text().splitlines()]
+    assert [(line["valid"], line["kind"]) for line in lines] == [
+        (True, "email"),
+        (False, "other"),
+    ]
+    assert lines[0]["value"] == "prospect@example.com"
+    assert "ts" in lines[0]
+
+
 def test_contact_unlock_rejects_invalid_values(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     monkeypatch.setenv("CONTACT_PHONE", "+34 670 881 697")
     for bad in ["not-an-email", "12345", "", "a@b", "call me maybe"]:

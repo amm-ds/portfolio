@@ -205,7 +205,7 @@ describe("Home (terminal-centered)", () => {
     const css = readStylesCss();
     const rule = css.match(/\.hero h1 \{[\s\S]*?\n\}/)![0];
     expect(rule).toContain("color: var(--text);");
-    expect(css.match(/\.hero-accent \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent-bright);");
+    expect(css.match(/\.hero-accent \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent);");
     expect(rule).not.toContain("linear-gradient");
     expect(rule).not.toContain("background-clip");
     expect(rule).not.toContain("transparent");

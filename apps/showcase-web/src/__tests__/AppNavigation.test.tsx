@@ -106,7 +106,7 @@ describe("AgentChatArticle", () => {
     expect(css.match(/\.detail-header \.chips \.chip \{[\s\S]*?\n\}/)![0]).toContain(
       "color: var(--chip-blue-text);",
     );
-    expect(css.match(/\.detail-header \.domain \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent-bright);");
+    expect(css.match(/\.detail-header \.domain \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent);");
   });
 });
 

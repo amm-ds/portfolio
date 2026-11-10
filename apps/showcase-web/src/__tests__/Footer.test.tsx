@@ -65,9 +65,9 @@ describe("Footer", () => {
       'content: "> ";',
     );
     expect(css.match(/\.footer-name::before \{[\s\S]*?\n\}/)![0]).toContain(
-      "color: var(--accent-bright);",
+      "color: var(--accent);",
     );
-    expect(css.match(/\.footer-accent \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent-bright);");
+    expect(css.match(/\.footer-accent \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent);");
     expect(css.match(/\.footer-copy \{[\s\S]*?\n\}/)![0]).toContain("color: var(--muted);");
   });
 

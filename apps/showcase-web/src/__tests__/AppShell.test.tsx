@@ -36,7 +36,7 @@ describe("Nav brand split", () => {
     expect(`${SITE_NAME_ROOT}${SITE_NAME_SUFFIX}`).toBe(SITE_NAME);
     const css = readStylesCss();
     expect(css.match(/\.nav-brand-accent \{[\s\S]*?\n\}/)![0]).toContain(
-      "color: var(--accent-bright);",
+      "color: var(--accent);",
     );
   });
 });

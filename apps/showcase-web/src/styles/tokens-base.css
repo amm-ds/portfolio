@@ -94,14 +94,15 @@
   --surface-hover: #f4f7fb;
   --border: #b8c6d6;
   --border-soft: #d6dee8;
-  /* the original darker teal family (user preference after the brighter
-     experiments): marks --accent, text --accent-bright — deep enough to
-     survive the prose ~0.92 opacity blend at 4.5:1; the dark theme's
-     accent-bright equals its accent, so text rules are theme-agnostic */
-  --accent: #0b625b;
+  /* light mode mirrors the dark theme's teal: --accent is the same #2dd4bf
+     (marks, borders, buttons — one line, whole UI); every text use routes
+     through --accent-bright, dark enough to pass contrast even under the
+     prose ~0.92 opacity blend; buttons pair the bright teal with dark ink
+     exactly like the dark theme */
+  --accent: #2dd4bf;
   --accent-bright: #0a5750;
-  --accent-ink: #ffffff;
-  --accent-glow: rgba(11, 98, 91, 0.1);
+  --accent-ink: #042f2e;
+  --accent-glow: rgba(45, 212, 191, 0.14);
   --secondary: #0369a1;
   --text: #172433;
   --muted: #4e6276;
@@ -209,7 +210,7 @@ code {
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 0.05rem 0.35rem;
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 #root {
@@ -263,7 +264,7 @@ code {
 .go-card h3 {
   margin: 0 0 0.4rem;
   font-size: 0.95rem;
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .go-card p {
