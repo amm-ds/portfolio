@@ -1268,6 +1268,21 @@ def test_spa_hashed_assets_immutable_else_no_cache(fake_web_dist) -> None:  # ty
     assert r.headers["Cache-Control"] == "public, max-age=31536000, immutable"
 
 
+def test_spa_head_is_answered_without_body(fake_web_dist) -> None:  # type: ignore[no-untyped-def]
+    """HEAD probes (uptime monitors, crawlers) get 200 + headers, no body."""
+    r = client.head("/")
+    assert r.status_code == 200
+    assert not r.content
+    assert r.headers["Cache-Control"] == "no-cache"
+    assert r.headers["X-Request-ID"]
+    # assets answer HEAD too, keeping their cache semantics
+    asset = client.head("/assets/app-a1b2c3.js")
+    assert asset.status_code == 200
+    assert asset.headers["Cache-Control"] == "public, max-age=31536000, immutable"
+    # unknown paths still 404 under HEAD
+    assert client.head("/definitely/not/a/route").status_code == 404
+
+
 # --- Wave B: route-specific server-rendered heads -------------------------------
 
 # The tag shapes the vite build's index.html emits today (multiline meta

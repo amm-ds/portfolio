@@ -17,7 +17,7 @@ same bar a pull request would face.
 
 - **The platform shape.** Monorepo with typed contracts (`portfolio-core`),
   a shared evaluation/story library (`portfolio-eval`), DVC pipelines, one
-  FastAPI showcase, one React/TypeScript front end. The seven ADRs in
+  FastAPI showcase, one React/TypeScript front end. The eight ADRs in
   `docs/architecture/adr/` are my calls.
 - **The evaluation-first rule.** Every project must beat a naive or random
   baseline on a real dataset, with the delta — not the model — as the

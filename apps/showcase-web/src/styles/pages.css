@@ -1306,6 +1306,14 @@ button:disabled {
 
 .flow-diagram .react-flow__attribution a {
   color: var(--muted);
+  /* WCAG 2.2 target-size (24×24 CSS px): the raw link renders ~60×13, so
+     pad the hit area without changing the visual footprint */
+  display: inline-flex;
+  align-items: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 4px 6px;
+  margin: -4px -6px;
 }
 
 .flow-inspector {

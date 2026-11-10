@@ -42,6 +42,7 @@ each backed by a public case study (details on the
 ## Contact & availability
 
 - GitHub: [amm-ds](https://github.com/amm-ds)
-- Email: available for freelance engagements — see GitHub profile.
-- Languages: Spanish, English.
-- Availability: open to freelance/consulting — response within 48h.
+- Email: [alejandromerida.dev@gmail.com](mailto:alejandromerida.dev@gmail.com) —
+  or the [contact page](https://alejandromerida.dev/contact/) for the discovery-call flow.
+- Languages: Spanish, English, Catalan.
+- Availability: open to freelance/consulting — response within 24h on business days.

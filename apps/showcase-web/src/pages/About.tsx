@@ -131,6 +131,15 @@ export function About() {
           I design, build and evaluate ML systems end to end, and I keep the code, metrics
           and case studies public and auditable.
         </p>
+        <p>
+          <a
+            href="https://amm-ds.github.io/portfolio/site/how-this-was-built/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            How this portfolio was built — AI use disclosed →
+          </a>
+        </p>
         <PageIndex
           items={[
             { id: "how-i-work", label: "how I work" },
