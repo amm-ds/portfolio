@@ -110,6 +110,7 @@ stages:
     cmd: uv run python -m mobility.cli evaluate
     deps:
       - src/mobility/evaluate.py
+      - src/mobility/geo.py
       - reports/models/predictions.parquet
       - data/curated
     outs:

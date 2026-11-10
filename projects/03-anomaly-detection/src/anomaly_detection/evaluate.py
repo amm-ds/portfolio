@@ -147,6 +147,24 @@ def roc_figure(
     return apply_theme(fig)
 
 
+def _decimate_xy(
+    x: np.ndarray, y: np.ndarray, max_points: int = 400
+) -> tuple[np.ndarray, np.ndarray]:
+    """Even-stride decimation for the committed figure payload.
+
+    ``precision_recall_curve`` emits one point per threshold — invisible
+    weight at any render width (external audit F-02). The endpoint stays
+    exact so the curve closes where the full computation did.
+    """
+    n = len(x)
+    if n <= max_points:
+        return x, y
+    idx = np.arange(0, n, int(np.ceil(n / max_points)))
+    if idx[-1] != n - 1:
+        idx = np.append(idx, n - 1)
+    return x[idx], y[idx]
+
+
 def pr_figure(
     runs: list[RunResult], scores_by_model: dict[str, np.ndarray], y_test: np.ndarray
 ) -> go.Figure:
@@ -162,6 +180,7 @@ def pr_figure(
     )
     for run in runs:
         precision, recall, _ = skm.precision_recall_curve(y_test, scores_by_model[run.name])
+        recall, precision = _decimate_xy(recall, precision)
         metric = run.get("pr_auc")
         assert metric is not None  # noqa: S101 - run metrics always recorded
         fig.add_scatter(
