@@ -71,5 +71,5 @@ apps/showcase-web/dist/
 
 # mkdocs output
 /site/
-data_m5/raw/
+**/data_m5/raw/
 *.tsbuildinfo
