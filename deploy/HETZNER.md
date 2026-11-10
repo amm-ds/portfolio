@@ -107,6 +107,14 @@ ships neither the `rag_agent` package nor a retrieval index.
 
 ## History
 
+- 2026-11-10 — release `77cb63f`. Web-only waves since the cutover: demo pages
+  dropped the header results strip and the API-endpoint drawer rows (forecast
+  workbench now opens with the seasonal-naive + champion-ensemble overlay);
+  app-article tl;dr cards rewritten with concrete numbers; ECharts figure
+  renderer documented as ADR-0008; docs/README refreshed. No API, Caddyfile,
+  or compose changes — standard pull/build/up flow, smoke suite green,
+  api ~60MiB of 1GiB after boot. Repo description genericized; GitHub topics
+  unchanged.
 - 2026-11-08 — first cutover, tag `191a4ce`. Three latent bugs found only by a real
   boot and fixed in `bd60eed` (CMD glob-expansion of `FORWARDED_ALLOW_IPS=*`),
   `db4fc13` (`DAILY_LIVE_BUDGET=10.0` float crashed `int()` parsing), `191a4ce`
