@@ -116,7 +116,7 @@ page's analysis, or another page's history. Offline mode returns a
 deterministic matching passage for local development, not an AI-quality
 answer.
 
-## Downloads/exports
+## Downloads & exports
 
 - **Full analysis report:** every completed page in one file, as JSON or
   Markdown.
