@@ -256,7 +256,7 @@ describe("StorySection subtitles", () => {
 });
 
 describe("StorySection h2 title styling", () => {
-  it("paints a green title behind a green > marker with a blue section number, no glow", () => {
+  it("paints a green title behind a green / marker with a blue section number, no glow", () => {
     const css = readStylesCss();
     const h2Rule = css.match(/\.story-section h2 \{[\s\S]*?\n\}/)![0];
     expect(h2Rule).toContain("color: var(--accent);");
@@ -270,9 +270,9 @@ describe("StorySection h2 title styling", () => {
       (m) => m[0],
     );
     expect(h2BeforeRules).toHaveLength(1);
-    // the "> " prompt marker stays green with no glow of its own
+    // the "/ " prompt marker stays green with no glow of its own
     const beforeRule = h2BeforeRules[0];
-    expect(beforeRule).toContain('content: "> ";');
+    expect(beforeRule).toContain('content: "/ ";');
     expect(beforeRule).toContain("color: var(--accent);");
     expect(beforeRule).not.toContain("accent-glow");
     // the number renders in the rail's blue family

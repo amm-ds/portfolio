@@ -158,7 +158,7 @@
 }
 
 .story-section h2::before {
-  content: "> ";
+  content: "/ ";
   color: var(--accent);
   text-shadow: none;
 }
