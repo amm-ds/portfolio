@@ -245,6 +245,40 @@ describe("plotlyToECharts over the committed churn figures", () => {
     }
   });
 
+  it("numeric domain fractions never ride a time axis (adaptive_stream regression)", () => {
+    // The payload's threshold shape and label use xref "x domain" with
+    // INTEGER fractions (plotly writes fractions as numbers) — they must
+    // resolve against the data extent, never be read as epoch ms (~1970).
+    const payload = JSON.parse(
+      readFileSync(
+        resolve(process.cwd(), "../../projects/03-anomaly-detection/reports/figures/adaptive_stream.json"),
+        "utf8",
+      ),
+    ) as PlotlyPayload;
+    const option = asOpt(plotlyToECharts(payload, "dark", 1000));
+    const stamps = payload.data
+      .flatMap((t) => (Array.isArray((t as Record<string, unknown>).x) ? ((t as Record<string, unknown>).x as string[]) : []))
+      .map((s) => Date.parse(s.replace(" ", "T")))
+      .filter((v) => Number.isFinite(v));
+    const ax = option.xAxis[0];
+    const span = Math.max(...stamps) - Math.min(...stamps);
+    expect(ax.type).toBe("time");
+    // window = data extent ± ~5% padding — never epoch-adjacent
+    expect(ax.min).toBeLessThan(Math.min(...stamps));
+    expect(ax.min).toBeGreaterThan(Math.min(...stamps) - span * 0.2);
+    expect(ax.max).toBeGreaterThan(Math.max(...stamps));
+    expect(ax.max).toBeLessThan(Math.max(...stamps) + span * 0.2);
+    // the "fixed threshold" label rides the silent layer at the resolved
+    // fraction (the right edge of the data), not at x=1
+    const layer = option.series.find((s) => s.silent && s.data.some((d: { label?: unknown }) => d.label))!;
+    expect(layer).toBeDefined();
+    const labeled = layer.data.find((d: { label?: unknown }) => d.label) as { value: number[] };
+    expect(labeled.value[0]).toBeGreaterThan(1e12);
+    // and the threshold line still spans the plot as a markLine
+    const markLine = option.series.find((s) => s.markLine);
+    expect(markLine).toBeDefined();
+  });
+
   it("time axes span the parsed data dates — never epoch 0 (zone_fan regression)", () => {
     const payload = JSON.parse(
       readFileSync(

@@ -350,6 +350,8 @@ interface AnnotationPoint {
   position: string;
   /** y given as an axis fraction ("y domain"), resolved after extents */
   yFraction?: { index: number; frac: number };
+  /** x given as an axis fraction ("x domain"), resolved after extents */
+  xFraction?: { index: number; frac: number };
 }
 
 interface ShapeLine {
@@ -358,6 +360,7 @@ interface ShapeLine {
   value: number;
   color: string;
   width: number;
+  dash: string;
 }
 
 interface RectArea {
@@ -414,7 +417,7 @@ function annotationLayer(
       label: { show: false },
       data: shapes.map((s) => {
         const item: Record<string, unknown> = s.vertical ? { xAxis: s.value } : { yAxis: s.value };
-        item.lineStyle = { color: s.color, width: s.width, type: "solid" };
+        item.lineStyle = { color: s.color, width: s.width, type: s.dash };
         return item;
       }),
     };
@@ -1221,13 +1224,43 @@ export function plotlyToECharts(
     }
     const xIdx = xref.startsWith("x") && xref !== "paper" ? axisRefIndex(xref, "x") : null;
     const yIdx = yref.startsWith("y") && yref !== "paper" ? axisRefIndex(yref, "y") : null;
-    // "y domain" fractions and plain "paper" heights both resolve against the y extent
+    // "… domain" refs are axis fractions; plain "paper" heights resolve too
     const yIsFraction = yref.endsWith(" domain") || yref === "paper";
+    const xIsFraction = xref.endsWith(" domain");
     let xVal = num(a.x);
     if (typeof a.x === "string" && xIdx !== null && axisAt(true, xIdx).type === "time") {
       xVal = parsePlotlyDate(a.x);
     }
-    if (xIdx === null || xVal === undefined) continue;
+    if (xIdx === null) continue;
+    const xAxisIsTime = axisAt(true, xIdx).type === "time";
+    if (xIsFraction) {
+      // a fraction of the x domain — resolved once the extents are final;
+      // fractions are safe on any axis (they map onto the data extent)
+      const fracPoint: AnnotationPoint = {
+        x: 0,
+        y: 0,
+        text,
+        color: remapColor(typeof font.color === "string" ? font.color : palette.textColor, theme),
+        fontSize,
+        position: xanchor === "right" ? "right" : "top",
+        xFraction: { index: xIdx, frac: num(a.x) ?? 1 },
+      };
+      if (yIsFraction) {
+        fracPoint.yFraction = { index: yIdx ?? 0, frac: num(a.y) ?? 1 };
+      } else {
+        const yVal = num(a.y);
+        if (yVal !== undefined && yIdx !== null) yAdd(yIdx, yVal);
+        fracPoint.y = yVal ?? 0;
+      }
+      const list = annPointsByGrid.get(gridIndexFor(xIdx, yIdx ?? xIdx)) ?? [];
+      list.push(fracPoint);
+      annPointsByGrid.set(gridIndexFor(xIdx, yIdx ?? xIdx), list);
+      continue;
+    }
+    if (xVal === undefined) continue;
+    // numeric x on a time axis whose dates come from strings: a bare number
+    // is not a date and must never become a time value (epoch garbage)
+    if (xAxisIsTime && typeof a.x === "number") continue;
     const gridIndex = gridIndexFor(xIdx, yIdx ?? xIdx);
     xAdd(xIdx, xVal);
     const point: AnnotationPoint = {
@@ -1271,6 +1304,22 @@ export function plotlyToECharts(
     const s = asRecord(raw);
     const xIdx = shapeAxisRef(s.xref, "x");
     const yIdx = shapeAxisRef(s.yref, "y");
+    // a bare NUMBER on a time axis with a DATA ref is never a date (plotly
+    // writes domain fractions as numbers, but those carry a "… domain" ref
+    // and resolve against the extent) — drop such shapes rather than let
+    // epoch garbage reach the axis
+    const xDataRefNum =
+      !(typeof s.xref === "string" && s.xref.endsWith(" domain")) &&
+      (typeof s.x0 === "number" || typeof s.x1 === "number");
+    const yDataRefNum =
+      !(typeof s.yref === "string" && s.yref.endsWith(" domain")) &&
+      (typeof s.y0 === "number" || typeof s.y1 === "number");
+    if (
+      (axisAt(true, xIdx).type === "time" && xDataRefNum) ||
+      (axisAt(false, yIdx).type === "time" && yDataRefNum)
+    ) {
+      continue;
+    }
     const gridIndex = gridIndexFor(xIdx, yIdx);
     const xDomainRef = typeof s.xref === "string" && s.xref.endsWith(" domain");
     const yDomainRef = typeof s.yref === "string" && s.yref.endsWith(" domain");
@@ -1321,15 +1370,16 @@ export function plotlyToECharts(
       theme,
     );
     const width = num(lineStyle.width) ?? 2;
+    const dash = DASH_MAP[String(lineStyle.dash)] ?? "solid";
     const x0 = shapeValue(s.x0, xIdx, true);
     const x1 = shapeValue(s.x1, xIdx, true);
     const y0 = shapeValue(s.y0, yIdx, false);
     const y1 = shapeValue(s.y1, yIdx, false);
     if (x0 !== undefined && x0 === x1) {
-      shapeLines.push({ gridIndex, vertical: true, value: x0, color, width });
+      shapeLines.push({ gridIndex, vertical: true, value: x0, color, width, dash });
       xAdd(xIdx, x0);
     } else if (y0 !== undefined && y0 === y1) {
-      shapeLines.push({ gridIndex, vertical: false, value: y0, color, width });
+      shapeLines.push({ gridIndex, vertical: false, value: y0, color, width, dash });
       yAdd(yIdx, y0);
     } else {
       fail("diagonal line shape unsupported");
@@ -1687,16 +1737,25 @@ export function plotlyToECharts(
   const xAxisOptions = xInstances.map((inst, i) => buildAxis(inst.info, inst.gridIndex, overlayOf(i)));
   const yAxisOptions = yInstances.map((inst, i) => buildAxis(inst.info, inst.gridIndex, overlayOf(i)));
 
-  // resolve axis-fraction annotation y values against the final y extents;
-  // a fraction without a real extent can't be placed and is dropped
-  for (const points of annPointsByGrid.values()) {
-    for (const p of points) {
-      if (p.yFraction) {
-        const ext = yExtents.get(p.yFraction.index);
-        if (!ext) continue;
-        p.y = ext.min + p.yFraction.frac * (ext.max - ext.min);
-      }
-    }
+  // resolve axis-fraction annotation coordinates against the final extents;
+  // a fraction without a real extent can't be placed — drop the point
+  for (const [g, points] of annPointsByGrid) {
+    annPointsByGrid.set(
+      g,
+      points.filter((p) => {
+        if (p.yFraction) {
+          const ext = yExtents.get(p.yFraction.index);
+          if (!ext) return false;
+          p.y = ext.min + p.yFraction.frac * (ext.max - ext.min);
+        }
+        if (p.xFraction) {
+          const ext = xExtents.get(p.xFraction.index);
+          if (!ext) return false;
+          p.x = ext.min + p.xFraction.frac * (ext.max - ext.min);
+        }
+        return true;
+      }),
+    );
   }
 
   // --- outside bar value labels must fit their slot (mobile) --------------------
