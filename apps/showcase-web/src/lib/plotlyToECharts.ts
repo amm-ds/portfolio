@@ -436,6 +436,41 @@ function annotationLayer(
   return layer;
 }
 
+/** Numbers or plotly date strings → axis units (log ranges are 10ᵏ). */
+function axisRangeValue(v: unknown, type: AxisInfo["type"]): number | undefined {
+  if (typeof v === "number" && Number.isFinite(v)) return type === "log" ? 10 ** v : v;
+  if (typeof v === "string") {
+    if (type === "time") return parsePlotlyDate(v);
+    const n = num(v);
+    if (n !== undefined) return type === "log" ? 10 ** n : n;
+  }
+  return undefined;
+}
+
+/** Value-axis tick text: integers get thousands separators, floats six
+ *  significant digits (authored ranges can sit on raw IEEE floats). */
+function formatTick(v: number): string {
+  if (!Number.isFinite(v)) return "";
+  if (Number.isInteger(v) && Math.abs(v) < 1e12) return v.toLocaleString("en-US");
+  return String(Number(v.toPrecision(6)));
+}
+
+/** The payload's authored [min, max] for this axis, or null when absent.
+ *  A null side means "auto" and falls back to the data extent (unpadded). */
+function authoredAxisRange(
+  info: Pick<AxisInfo, "raw" | "type">,
+  ext: { min: number; max: number } | null,
+): [number, number] | null {
+  const raw = info.raw.range;
+  if (!Array.isArray(raw) || raw.length !== 2) return null;
+  const autoLo = raw[0] === null || raw[0] === undefined;
+  const autoHi = raw[1] === null || raw[1] === undefined;
+  const lo = autoLo ? ext?.min : axisRangeValue(raw[0], info.type);
+  const hi = autoHi ? ext?.max : axisRangeValue(raw[1], info.type);
+  if (lo === undefined || hi === undefined || !(hi > lo)) return null;
+  return [lo, hi];
+}
+
 /**
  * Convert a plotly figure payload to a ready-to-setOption ECharts option.
  * `containerWidth` drives margin/grid scaling (the same 1000px-design rule
@@ -687,11 +722,14 @@ export function plotlyToECharts(
         if (typeof xv === "string") {
           const ms = parsePlotlyDate(xv);
           if (ms !== undefined && xInfo.type !== "category") {
-            // date strings ride an echarts time axis (converted to epoch ms)
+            // date strings ride an echarts time axis (converted to epoch ms);
+            // the parsed stamp feeds the axis extent like any numeric x
             xInfo.type = "time";
             xOut = ms;
+            xAdd(xIdx, ms);
           } else if (ms !== undefined && xInfo.type === "time") {
             xOut = ms;
+            xAdd(xIdx, ms);
           } else if (xInfo.type === "time") {
             fail("scatter.x mixes dates and categories");
           } else {
@@ -1016,9 +1054,13 @@ export function plotlyToECharts(
       gridIndex: draft.gridIndex,
       xIdx: draft.xIdx,
       yIdx: draft.yIdx,
-      data: [{ value: 0 }],
+      // the item value is one real upper point: inside the data extent, so
+      // the series influences the axis range exactly as the line itself does
+      data: [{ value: upperPts[0] ?? [0, 0] }],
       silent: true,
       z: 1,
+      // the polygon reads the closure's point lists (per-band), not params:
+      // echarts v6 does not expose the raw item on the renderItem params
       renderItem: (_params: unknown, api: { coord: (v: unknown[]) => number[] }) => {
         const pts = [
           ...upperPts.map((p) => api.coord(p)),
@@ -1245,8 +1287,10 @@ export function plotlyToECharts(
       ) => {
         if (v === undefined) return undefined;
         if (!frac) return v;
-        const e = ext ?? { min: 0, max: 1 };
-        return e.min + v * (e.max - e.min);
+        // a domain fraction needs the axis' real data extent — never a
+        // synthetic [0,1] window
+        if (!ext) return undefined;
+        return ext.min + v * (ext.max - ext.min);
       };
       const rx0 = resolve(shapeValue(s.x0, xIdx, true), xExt, xDomainRef);
       const rx1 = resolve(shapeValue(s.x1, xIdx, true), xExt, xDomainRef);
@@ -1553,16 +1597,49 @@ export function plotlyToECharts(
       },
       axisLabel,
     };
-    if (info.type === "time" || info.type === "log") {
-      // time/log ranges must come from the data alone (zero is meaningless)
-      opt.scale = true;
+    if (info.type === "value") {
+      // trim raw-float ticks (authored ranges and extents can land on
+      // 0.9560236…; integers still get thousands separators)
+      axisLabel.formatter = (v: number) => formatTick(v);
     }
-    if (info.type === "value" && info.raw.type !== "log" && ext && exactSet.has(info.index) && ext.min === 0) {
-      // bar/histogram baselines must sit at zero; the open end is left to
-      // echarts' autoscale so its ticks land on nice numbers (plotly parity:
-      // setting an explicit data-derived max makes the raw extent a tick).
-      // log axes can't pin zero and compute their own range.
-      opt.min = 0;
+    // range precedence: an authored layout.*axis.range wins verbatim; then the
+    // bar-family zero baseline (positive-only extents); otherwise the window
+    // is the axis' own data extent ± 5% padding, materialized explicitly —
+    // echarts v6 no longer honors `scale: true` for zero-exclusion, and an
+    // explicit window is the only way to keep epoch 0 / a pinned zero out.
+    const authored = authoredAxisRange(info, ext);
+    if (authored) {
+      opt.min = authored[0];
+      opt.max = authored[1];
+    } else if (
+      info.type === "value" &&
+      info.raw.type !== "log" &&
+      ext &&
+      exactSet.has(info.index)
+    ) {
+      // bar/histogram baselines sit at zero: pin the side the bars grow away
+      // from for single-signed extents (min for positive-only, max for
+      // negative-only); mixed-signed extents use the plain data window
+      if (ext.min >= 0) {
+        opt.min = 0;
+        opt.max = ext.max + (ext.max - ext.min > 0 ? (ext.max - ext.min) * 0.05 : 1);
+      } else if (ext.max <= 0) {
+        opt.max = 0;
+        opt.min = ext.min - (ext.max - ext.min > 0 ? (ext.max - ext.min) * 0.05 : 1);
+      } else {
+        const span = ext.max - ext.min;
+        const pad = span > 0 ? span * 0.05 : 1;
+        opt.min = ext.min - pad;
+        opt.max = ext.max + pad;
+      }
+    } else if (info.type !== "category") {
+      if (ext) {
+        const span = ext.max - ext.min;
+        const pad = span > 0 ? span * 0.05 : Math.max(1, Math.abs(ext.max) * 0.05);
+        opt.min = ext.min - pad;
+        opt.max = ext.max + pad;
+      }
+      // an axis with no data emits no min/max at all — no synthetic [0,1]
     }
     if (info.type === "category") {
       opt.data = info.categories;
@@ -1610,11 +1687,13 @@ export function plotlyToECharts(
   const xAxisOptions = xInstances.map((inst, i) => buildAxis(inst.info, inst.gridIndex, overlayOf(i)));
   const yAxisOptions = yInstances.map((inst, i) => buildAxis(inst.info, inst.gridIndex, overlayOf(i)));
 
-  // resolve axis-fraction annotation y values against the final y extents
+  // resolve axis-fraction annotation y values against the final y extents;
+  // a fraction without a real extent can't be placed and is dropped
   for (const points of annPointsByGrid.values()) {
     for (const p of points) {
       if (p.yFraction) {
-        const ext = yExtents.get(p.yFraction.index) ?? { min: 0, max: 1 };
+        const ext = yExtents.get(p.yFraction.index);
+        if (!ext) continue;
         p.y = ext.min + p.yFraction.frac * (ext.max - ext.min);
       }
     }
