@@ -255,9 +255,18 @@ def check_adr_counts() -> list[str]:
     if not m or int(m.group(1)) != count:
         problems.append(f"llms.txt: ADR range 0001-{m.group(1) if m else '?'} != {count} ADR files")
     spelled = {
-        1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
-        6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
-        11: "eleven", 12: "twelve",
+        1: "one",
+        2: "two",
+        3: "three",
+        4: "four",
+        5: "five",
+        6: "six",
+        7: "seven",
+        8: "eight",
+        9: "nine",
+        10: "ten",
+        11: "eleven",
+        12: "twelve",
     }
     built = REPO / "docs" / "site" / "how-this-was-built.md"
     m = re.search(r"The (\w+) ADRs", built.read_text())
