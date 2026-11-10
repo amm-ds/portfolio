@@ -59,6 +59,10 @@ Gotchas learned on this box:
   with `no space left`, run `docker builder prune -af` (frees the build cache,
   keeps images) before retrying; keep only the current and previous image tags.
 - The env file is root:amm 640 — readable by the deploy user, not by others.
+- The contact-store volume must be owned by the container's app user (uid
+  999): `docker run --rm -v amm-ds-portfolio_contact-store:/data --user root
+  <image> chown 999:999 /data` — redo if the volume is ever recreated (the
+  API logs a WARNING and keeps serving if the store is unwritable).
 
 Rollback: DEPLOY.md, using the recorded previous tag (keep the last image until the
 new one passes smoke).
