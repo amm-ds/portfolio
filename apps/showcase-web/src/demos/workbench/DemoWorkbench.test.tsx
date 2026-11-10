@@ -107,19 +107,12 @@ describe("DemoWorkbench", () => {
     expect(screen.queryByRole("button", { name: "copy link" })).toBeNull();
   });
 
-  it("renders the manifest hero as a concise strip under the hook", () => {
+  it("does not render the manifest hero strip under the hook", () => {
     renderWorkbench();
-    const hero = document.querySelector(".demo-experiment-strip")!;
-    expect(hero).not.toBeNull();
-    expect(hero.textContent).toContain("headline metric");
-    expect(hero.textContent).toContain("1.23 vs 4.56");
-    expect(hero.textContent).toContain("paired bootstrap CI [−0.3, −0.1]");
-    // sits inside the heading, after the hook
-    const heading = document.querySelector(".wb-heading")!;
-    const hook = heading.querySelector(".demo-hook")!;
-    expect(
-      hook.compareDocumentPosition(hero) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    // the header keeps only the title + hook; the headline metric lives in
+    // the drawer and on the /projects demo cards, not as a header card
+    expect(document.querySelector(".demo-experiment-strip")).toBeNull();
+    expect(screen.queryByText("1.23 vs 4.56")).toBeNull();
   });
 
   it("renders manifest scenarios as chips in the header and applies them", () => {
@@ -206,20 +199,16 @@ describe("DemoWorkbench", () => {
     expect(more.querySelector(".wb-evidence-cols")).not.toBeNull();
   });
 
-  it("lists live endpoints with method, path, label and cost in the drawer footer", () => {
+  it("keeps the drawer footer to the skills chips — no live-endpoint rows", () => {
     renderWorkbench();
     const more = document.querySelector(".wb-more")!;
-    const endpoints = more.querySelector(".wb-endpoints")!;
-    expect(endpoints).not.toBeNull();
-    const row = endpoints.querySelector(".wb-endpoint")!;
-    expect(row.querySelector(".wb-method")!.textContent).toBe("POST");
-    expect(row.querySelector(".wb-method-post")).not.toBeNull();
-    expect(row.querySelector("code")!.textContent).toBe("/projects/01-demo-project/score");
-    expect(row.querySelector(".wb-endpoint-label")!.textContent).toBe("scoring");
-    expect(row.querySelector(".wb-endpoint-cost")!.textContent).toBe("free-local");
-    // the endpoint block sits in the chrome footer, next to the skills chips
+    // the API placeholder rows (POST …/score · free-local) were dropped from
+    // the drawer even when the manifest declares them
+    expect(more.querySelector(".wb-endpoints")).toBeNull();
+    expect(more.querySelector(".wb-endpoint")).toBeNull();
     const chrome = more.querySelector(".wb-evidence-chrome")!;
-    expect(chrome.contains(endpoints)).toBe(true);
+    expect(chrome).not.toBeNull();
     expect(chrome.querySelector(".wb-skills")).not.toBeNull();
+    expect(chrome.textContent).toContain("synthetic data");
   });
 });

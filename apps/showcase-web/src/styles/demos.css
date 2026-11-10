@@ -87,23 +87,6 @@
   max-width: 720px;
 }
 
-.demo-experiment-strip {
-  display: inline-block;
-  margin: 0;
-  padding: 0.3rem 0.7rem;
-  font-family: var(--mono);
-  font-size: 0.82rem;
-  color: var(--muted);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius);
-}
-
-.demo-experiment-strip a {
-  color: var(--accent);
-}
-
 /* controls row */
 
 .demo-control {
