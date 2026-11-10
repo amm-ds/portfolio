@@ -101,7 +101,7 @@ describe("AgentChatArticle", () => {
     const css = readStylesCss();
     expect(css.match(/\.code-block \{\n  display: block;[\s\S]*?\n\}/)![0]).toContain("padding: 1rem 1.25rem;");
     expect(css.match(/\.app-spec-card \{[\s\S]*?\n\}/)![0]).toContain("padding: 1.25rem 1.4rem;");
-    expect(css.match(/\.app-screenshot img \{[\s\S]*?\n\}/)![0]).toContain("height: 360px;");
+    expect(css.match(/\.app-screenshot img \{[\s\S]*?\n\}/)![0]).toContain("height: 440px;");
     expect(css.match(/\.app-screenshot img \{[\s\S]*?\n\}/)![0]).toContain("object-fit: contain;");
     expect(css.match(/\.detail-header \.chips \.chip \{[\s\S]*?\n\}/)![0]).toContain(
       "color: var(--chip-blue-text);",
