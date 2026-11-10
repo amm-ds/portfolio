@@ -9,7 +9,16 @@ import { usePageMeta } from "../seo";
  * achievement bullets. */
 const ROLES = [
   {
-    dates: "2025 — now",
+    dates: "sep 2026 — now",
+    title: "Lead ML/AI engineer — alejandromerida.dev (independent)",
+    points: [
+      "Independent ML/AI engineering practice — this site is the showroom: two production-grade app templates and 13 reproducible experiments, every claim traced to a committed artifact.",
+      "End-to-end delivery across the stack: agentic systems, page-level document AI, forecasting, optimization and model serving, deployed and measured.",
+      "Engagements run discovery-first with fixed budgets, named baselines and stated limits.",
+    ],
+  },
+  {
+    dates: "2025 — aug 2026",
     title: "Lead ML/AI engineer — pharmaceutical AI (remote)",
     points: [
       "RAG chatbots and document-analysis pipelines over regulated content, cited per claim.",
@@ -121,6 +130,15 @@ export function About() {
         <p>
           I design, build and evaluate ML systems end to end, and I keep the code, metrics
           and case studies public and auditable.
+        </p>
+        <p>
+          <a
+            href="https://amm-ds.github.io/portfolio/site/how-this-was-built/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            How this portfolio was built — AI use disclosed →
+          </a>
         </p>
         <PageIndex
           items={[

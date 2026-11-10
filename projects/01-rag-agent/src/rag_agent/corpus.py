@@ -90,10 +90,10 @@ def prepare_corpus(config: RAGConfig) -> DatasetContract:
     anchors_missing = set(anchor_lookup)
 
     scanned = 0
-    for scanned, row in enumerate(rows, start=1):
-        if scanned > config.max_scan_rows:
-            scanned -= 1
+    for row in rows:
+        if scanned >= config.max_scan_rows:
             break
+        scanned += 1
         title = str(row["title"]).strip()
         if not title or title in seen_titles:
             continue

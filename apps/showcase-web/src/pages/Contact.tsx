@@ -140,11 +140,15 @@ export function Contact() {
         ]}
       />
 
-      <Card className="direct-contact-card" id="direct">
-        <h2>direct line</h2>
-        <p>
-          The fastest path is email — <a href={channelMailtoHref}>{CONTACT_EMAIL}</a> — one
-          message with the problem, the data reality and the timeline is enough to start.
+      <Card className="direct-card" id="direct">
+        <span className="study-block-label">&gt; direct line</span>
+        <p className="direct-card-lede">
+          The fastest path is email —{" "}
+          <a className="direct-card-mail" href={channelMailtoHref}>
+            {CONTACT_EMAIL}
+          </a>{" "}
+          — one message with the problem, the data reality and the timeline is enough to
+          start.
         </p>
         <div className="meta-links">
           <a className="chip-link" href={channelMailtoHref}>
@@ -154,9 +158,7 @@ export function Contact() {
             book a free discovery call →
           </a>
         </div>
-        <p className="section-intro" style={{ margin: "0.9rem 0 0" }}>
-          engagement types — advisory · build · audit
-        </p>
+        <p className="direct-card-strip">engagement types — advisory · build · audit</p>
       </Card>
 
       <form className="contact-form" id="inquiry" onSubmit={onSubmit} noValidate>

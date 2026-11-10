@@ -146,7 +146,7 @@ def test_cost_aware_routing_block(mixed_panel: pl.DataFrame) -> None:
     overall = block["overall_mae_test"]
     assert overall["routed_cost"] >= 0.0 and overall["routed"] >= 0.0
     assert "ci95" in overall["routed_cost_minus_routed"]
-    for _cls, entry in block["per_class"].items():
+    for entry in block["per_class"].values():
         assert set(entry["mae"]) >= {"routed_cost", "routed", "routed_cost_minus_routed"}
         for q_key, q_entry in entry["newsvendor_per_unit_demand"].items():
             assert q_key.startswith("q_")

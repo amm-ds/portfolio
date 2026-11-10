@@ -56,7 +56,9 @@ export function CaseStudy({
               className={active === `sec-${s.id}` ? "active" : ""}
               aria-current={active === `sec-${s.id}` ? "location" : undefined}
             >
-              <span className="rail-num">{String(i + 1).padStart(2, "0")}</span>
+              <span className="rail-num">
+                /{String(i + 1).padStart(2, "0")}
+              </span>
               {s.title.toLowerCase()}
             </a>
           ))}

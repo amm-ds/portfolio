@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ApiError,
@@ -17,6 +17,8 @@ import { ExperimentCrumbs, ExperimentNav } from "../components/ExperimentNav";
 import { MetricsTable } from "../components/MetricsTable";
 import { PlotlyFigure } from "../components/PlotlyFigure";
 import { DOCS_URL, REPO_URL } from "../config";
+import { DEMOS } from "../lib/demos";
+import { STATIC_PROJECTS } from "../lib/staticRegistry";
 import { summaryLine } from "../lib/impact";
 import { usePageMeta } from "../seo";
 
@@ -36,6 +38,15 @@ interface Detail {
   title: string;
   domain: string;
   techniques: string[];
+}
+
+/** Header fields from the baked static registry — first paint renders without
+ * waiting on the API detail (the audit's client-fetch LCP waterfall); the
+ * fetched detail replaces these with identical values once loaded. */
+function bakedDetailFor(id: string): Detail | null {
+  const card = STATIC_PROJECTS.find((p) => p.id === id);
+  if (!card) return null;
+  return { title: card.title, domain: card.domain, techniques: card.techniques };
 }
 
 // --- Evaluation-report probe ---------------------------------------------------
@@ -71,8 +82,16 @@ export function ProjectDetail() {
   );
   const [figures, setFigures] = useState<string[] | null>(null);
   const [figuresStatus, setFiguresStatus] = useState<"loading" | "ready" | "error">("loading");
-  const [demoHref, setDemoHref] = useState<string | null>(null);
-  const [demoLine, setDemoLine] = useState<string | null>(null);
+  // Live-demo banner: the link and placeholder line come from the baked
+  // static registry, so the banner renders with the header on first paint —
+  // popping it in after the registry fetch was the audit's 0.62 CLS shift.
+  // The manifest/registry fetch below refines the same values (production
+  // resolves to identical strings, so nothing moves; tests and stale bakes
+  // still get the live answer).
+  const bakedDemo = useMemo(() => DEMOS.find((d) => d.project === id) ?? null, [id]);
+  const bakedDetail = useMemo(() => bakedDetailFor(id), [id]);
+  const headerDetail = detail ?? bakedDetail;
+  const [liveDemo, setLiveDemo] = useState<{ href: string; line: string } | null>(null);
   const [reportOk, setReportOk] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
@@ -83,34 +102,34 @@ export function ProjectDetail() {
     noindex: notFound || undefined,
   });
 
-  // Live-demo CTA + banner: match this project against the demo registry
-  // (fetched once per mount). The banner description prefers the demo
-  // manifest, falls back to the registry hook, then to a generic line.
+  // Manifest description: prefer the demo manifest's hook, fall back to the
+  // live registry entry's hook; the baked line above stays otherwise.
   useEffect(() => {
     let cancelled = false;
-    setDemoHref(null);
-    setDemoLine(null);
+    setLiveDemo(null);
     getDemoRegistry()
       .then(async (entries) => {
         const entry = entries.find((e) => e.project === id);
         if (!entry) return;
-        if (!cancelled) setDemoHref(entry.href);
+        let line = entry.hook || GENERIC_DEMO_LINE;
         try {
           const manifest = await getDemoManifest(entry.id);
-          if (!cancelled) setDemoLine(manifest.hook || GENERIC_DEMO_LINE);
+          line = manifest.hook || line;
         } catch {
-          if (!cancelled) setDemoLine(entry.hook || GENERIC_DEMO_LINE);
+          /* registry hook stays */
         }
+        if (!cancelled) setLiveDemo({ href: entry.href, line });
       })
       .catch(() => {
-        if (cancelled) return;
-        setDemoHref(null);
-        setDemoLine(null);
+        /* baked values remain */
       });
     return () => {
       cancelled = true;
     };
   }, [id]);
+
+  const demoHref = liveDemo?.href ?? bakedDemo?.href ?? null;
+  const demoLine = liveDemo?.line ?? bakedDemo?.line ?? GENERIC_DEMO_LINE;
 
   // Evaluation report link: probe once per id (cached module-level).
   useEffect(() => {
@@ -240,15 +259,17 @@ export function ProjectDetail() {
   return (
     <>
       <ExperimentCrumbs projectId={id} projects={projects} />
-      {detail === null ? (
+      {detail === null && bakedDetail === null ? (
         <p className="loading">loading project…</p>
-      ) : detail ? (
+      ) : headerDetail ? (
         <header className="detail-header">
-          <h1>{detail.title}</h1>
-          {story?.short_version && <p className="detail-lead">{story.short_version}</p>}
-          <p className="domain">{detail.domain}</p>
+          <h1>{headerDetail.title}</h1>
+          {(story?.short_version ?? summaryLine(id)) && (
+            <p className="detail-lead">{story?.short_version ?? summaryLine(id)}</p>
+          )}
+          <p className="domain">{headerDetail.domain}</p>
           <div className="chips">
-            {detail.techniques.map((t) => (
+            {headerDetail.techniques.map((t) => (
               <span key={t} className="chip">
                 {t}
               </span>
@@ -287,7 +308,7 @@ export function ProjectDetail() {
         <aside className="demo-banner accent-card" aria-label="Live demo">
           <div>
             <p className="demo-banner-label">live demo</p>
-            <p className="demo-banner-line">{demoLine ?? GENERIC_DEMO_LINE}</p>
+            <p className="demo-banner-line">{demoLine}</p>
           </div>
           <Link className="demo-banner-cta" to={demoHref}>
             ▶ try the live demo

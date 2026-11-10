@@ -120,7 +120,7 @@ def build_demo_payload(cfg: ChurnConfig) -> dict[str, Any]:
 
     feature_domains: dict[str, Any] = {}
     for col in feature_cols(cfg):
-        if col == contract_col or col == "internet_service":
+        if col in (contract_col, "internet_service"):
             feature_domains[col] = sorted(str(v) for v in holdout[col].unique())
         else:
             feature_domains[col] = {

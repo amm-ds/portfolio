@@ -5,10 +5,43 @@ import { FigureCard } from "../components/FigureCard";
 const mocks = vi.hoisted(() => ({
   react: vi.fn(),
   purge: vi.fn(),
+  init: vi.fn(),
+  use: vi.fn(),
+  setOption: vi.fn(),
+  dispose: vi.fn(),
 }));
 
 vi.mock("plotly.js-dist-min", () => ({
   default: { react: mocks.react, purge: mocks.purge },
+}));
+
+vi.mock("echarts/core", () => ({
+  default: {},
+  init: mocks.init,
+  use: mocks.use,
+}));
+
+vi.mock("echarts/charts", () => ({
+  LineChart: {},
+  BarChart: {},
+  ScatterChart: {},
+  HeatmapChart: {},
+  CustomChart: {},
+  FunnelChart: {},
+}));
+
+vi.mock("echarts/components", () => ({
+  GridComponent: {},
+  TooltipComponent: {},
+  LegendComponent: {},
+  VisualMapComponent: {},
+  TitleComponent: {},
+  MarkLineComponent: {},
+  MarkAreaComponent: {},
+}));
+
+vi.mock("echarts/renderers", () => ({
+  SVGRenderer: {},
 }));
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -23,14 +56,23 @@ afterEach(() => {
   vi.unstubAllGlobals();
   mocks.react.mockReset();
   mocks.purge.mockReset();
+  mocks.init.mockReset();
+  mocks.use.mockReset();
+  mocks.setOption.mockReset();
+  mocks.dispose.mockReset();
 });
+
+const SUPPORTED_PAYLOAD = {
+  data: [{ type: "bar", x: ["a", "b"], y: [1, 2] }],
+  layout: { height: 560, width: 1000 },
+};
 
 describe("FigureCard", () => {
   it("renders one container with the chart and a commentary band inside it", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        jsonResponse({ data: [{ type: "bar" }], layout: { height: 560 } }),
+      vi.fn().mockImplementation(() =>
+        Promise.resolve(jsonResponse({ data: [{ type: "bar" }], layout: { height: 560 } })),
       ),
     );
     render(
@@ -40,7 +82,7 @@ describe("FigureCard", () => {
         caption="Retrieval recall@5 reaches 0.83 once claims are verified."
       />,
     );
-    await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.init).toHaveBeenCalledTimes(1));
     // a single .figure-card holds both the chart and the band — one tile
     const cards = document.querySelectorAll(".figure-card");
     expect(cards).toHaveLength(1);
@@ -59,7 +101,9 @@ describe("FigureCard", () => {
   it("shows the labeled skeleton inside the card until the plot renders", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ data: [{ type: "bar" }], layout: { height: 560 } })),
+      vi.fn().mockImplementation(() =>
+        Promise.resolve(jsonResponse({ data: [{ type: "bar" }], layout: { height: 560 } })),
+      ),
     );
     render(
       <FigureCard
@@ -73,7 +117,7 @@ describe("FigureCard", () => {
     const skeleton = within(card).getByTestId("figure-skeleton");
     expect(skeleton).toHaveTextContent("> wape_horizon");
     expect(skeleton).toHaveTextContent("rendering figure…");
-    await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.init).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(within(card).queryByTestId("figure-skeleton")).toBeNull());
     expect(card.querySelector(".plotly-host")).not.toBeNull();
   });
@@ -105,5 +149,25 @@ describe("FigureCard", () => {
       "Precision dominates above a 0.31 threshold.",
     );
     expect(band.querySelector(".figure-id")!.textContent).toBe("fig :: pr_curve");
+  });
+
+  it("routes every project through EChartsFigure (the per-figure plotly fallback stays inside)", async () => {
+    mocks.init.mockReturnValue({ setOption: mocks.setOption, resize: vi.fn(), dispose: mocks.dispose });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(SUPPORTED_PAYLOAD))),
+    );
+    const { unmount } = render(<FigureCard pid="05-ml-pipeline-churn" name="pilot_bar" />);
+    await waitFor(() => expect(mocks.init).toHaveBeenCalledTimes(1));
+    expect(mocks.react).not.toHaveBeenCalled();
+    // the data table band still receives the payload via onPayload
+    await waitFor(() =>
+      expect(document.querySelector(".figure-data table.data-table")).not.toBeNull(),
+    );
+    unmount();
+
+    render(<FigureCard pid="01-rag-agent" name="plain_bar" />);
+    await waitFor(() => expect(mocks.init).toHaveBeenCalledTimes(2));
+    expect(mocks.react).not.toHaveBeenCalled();
   });
 });

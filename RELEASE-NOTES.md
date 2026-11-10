@@ -1,3 +1,51 @@
+# Release notes — v1.1.0
+
+Second release: the portfolio goes live and closes the first external-audit
+round. Factual changelog; evidence per item lives in the repo and
+`docs/audits/`.
+
+## Production cutover — alejandromerida.dev
+
+Single-origin deployment (DEPLOY.md contract) live on a hardened Hetzner VPS
+since 2026-11-08: Caddy-provisioned TLS, per-route CSP, HSTS, rate limiting,
+non-root containers, health/readiness probes, build-SHA traceability from
+`/health` to the commit. Server operations in `deploy/HETZNER.md`.
+
+## Projects — 13 case studies (from 10)
+
+Three new end-to-end systems since v1.0.0: 11 DataFrame Engines Benchmark
+(pandas/Polars/DuckDB/sqlite, parity-gated), 12 Tabular ML Lifecycle
+(naive → LightGBM → PyTorch MLP ladder, scored once), 13 Model Serving
+(ONNX export behind a parity gate, seeded load benchmarks). All 13 now expose
+committed `reports/metrics.json` — the machine-readable artifact behind every
+public number, served live by the showcase API.
+
+## Application templates — 2
+
+Two lift-out-able production app templates with specs, ADRs, and executable
+checks: `apps/agent-chat` (typed tools, skills, pgvector memory, human
+approvals, streaming React UI) and `apps/document-intelligence` (page-level
+PDF analysis with parser-resolved evidence, leased worker, React workbench).
+
+## Demos, rendering, and site quality
+
+Two interactive demos (M5 forecast workbench, churn threshold sandbox) run
+from committed payloads with static fallbacks. Figures render through the
+ECharts engine with a per-figure plotly.js fallback (ADR-0008). Project detail
+pages carry server-rendered per-route heads and `<noscript>` bodies; the SPA
+answers HEAD probes; axe gates run blocking in CI at three viewports.
+
+## External audits closed
+
+Five independent audit passes (2026-11-10/11, overall 8.6/10) drove this
+release's fixes: metrics contract completed for 11/12, `llms.txt` shipped,
+repo/profile pointers moved to the live site, target-size a11y fix, dead CSP
+config removed, release recorded. Remaining roadmap (detail-page prerender,
+figure-weight budget, conformance hardening) is tracked in the engineering
+docs.
+
+---
+
 # Release notes — v1.0.0
 
 First public release of the amm-ds portfolio. Factual changelog; for the underlying

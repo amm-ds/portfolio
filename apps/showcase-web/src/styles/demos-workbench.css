@@ -420,8 +420,14 @@
   color: var(--secondary);
 }
 
-/* "how to interpret": full width under the linked experiment */
+/* "how to interpret": full width under the linked experiment — flex column so
+ * the panel stretches to its column's height: both drawer boxes stay the
+ * same size whatever their content */
 .wb-evidence-about {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
   padding: 0.6rem 0.8rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -432,7 +438,7 @@
 }
 
 .wb-evidence-about .wb-evidence-tag {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
 }
 
 /* result blocks nested inside the shared evidence panel keep their
@@ -446,16 +452,14 @@
   padding-bottom: 0;
 }
 
+/* one rhythm inside both drawer boxes: the flex gap separates the tag from
+ * its lines and the lines from each other — no per-element margins */
 .wb-result-block .wb-evidence-tag {
-  margin-bottom: 0.15rem;
+  margin-bottom: 0;
 }
 
 .wb-evidence-about p {
-  margin: 0 0 0.4rem;
-}
-
-.wb-evidence-about p:last-child {
-  margin-bottom: 0;
+  margin: 0;
 }
 
 /* the two content columns (models used | metrics results) */
@@ -494,44 +498,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-}
-
-.wb-endpoints {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.wb-endpoint {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  font-family: var(--mono);
-  font-size: 0.78rem;
-  flex-wrap: wrap;
-}
-
-.wb-method {
-  font-weight: 700;
-  font-size: 0.75rem;
-  padding: 0.05rem 0.35rem;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  color: var(--secondary);
-}
-
-.wb-method-post {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.wb-endpoint-label {
-  color: var(--muted);
-}
-
-.wb-endpoint-cost {
-  margin-left: auto;
-  color: var(--muted);
 }
 
 /* narrow screens: the dashboard reflows and the page may scroll */
@@ -611,9 +577,13 @@
      layout and the card grows without bound; the max-height makes the flex
      chain definite again (desktop geometry), and the scroll is the safety
      for genuinely tall content */
+  /* definite viewport-derived height instead of auto+max-height: no
+     auto-height means the measured-SVG feedback loop has nothing to feed,
+     and contain:layout stops inner chart measurement from propagating */
   .wb-secondary .figure-card {
     overflow: auto;
-    max-height: 360px;
+    height: min(42dvh, 360px);
+    contain: layout;
   }
 
   /* tighter chrome inside the clamped cards */

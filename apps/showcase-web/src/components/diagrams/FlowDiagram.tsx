@@ -37,6 +37,7 @@ const KIND_SHAPES: Record<DiagramNodeKind, string> = {
   output: "stadium",
   data: "cylinder",
   tool: "subroutine",
+  task: "rect",
   api: "hexagon",
   gate: "rhombus",
   model: "rect",

@@ -14,7 +14,7 @@ repro` inside its project directory) and is served by the
 
 ## Services
 
-Five offerings — the same categories the projects index groups its rows by —
+Eight offerings
 each backed by a public case study (details on the
 [Services](services.md) page):
 
@@ -28,6 +28,13 @@ each backed by a public case study (details on the
 - **Data engineering** — versioned, DQ-gated pipelines over large
   open/commercial data, plus CI eval gates and drift checks (see Projects 07,
   11).
+- **MLOps** — CI evaluation gates, Docker + uv
+  environments, runbooks (see Projects 05, 08).
+- **Interactive dashboards** — decision tools over live endpoints with
+  parity-tested payloads (see the showcase app demos).
+- **Full-stack engineering** — typed APIs, React frontends, and
+  one-command deployments that run from a clean clone (see Project 07 and
+  the showcase app).
 - **APIs & model serving** — versioned endpoints with explicit contracts,
   measured latency/throughput, and the typed API, web UI and deployment
   around them wired into one product slice (see Projects 08, 13).
@@ -35,6 +42,7 @@ each backed by a public case study (details on the
 ## Contact & availability
 
 - GitHub: [amm-ds](https://github.com/amm-ds)
-- Email: available for freelance engagements — see GitHub profile.
-- Languages: Spanish, English.
-- Availability: open to freelance/consulting — response within 48h.
+- Email: [alejandromerida.dev@gmail.com](mailto:alejandromerida.dev@gmail.com) —
+  or the [contact page](https://alejandromerida.dev/contact/) for the discovery-call flow.
+- Languages: Spanish, English, Catalan.
+- Availability: open to freelance/consulting — response within 24h on business days.

@@ -16,31 +16,30 @@ function renderServices() {
 }
 
 describe("Services page (wave 8)", () => {
-  it("renders the hero and exactly 5 offering cards — the canonical categories", () => {
+  it("renders the hero and exactly 8 offering cards — the canonical categories", () => {
     renderServices();
     expect(screen.getByText("> services")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "ML/AI engineering, end to end",
     );
     const offerings = document.querySelectorAll(".offering-card");
-    expect(offerings).toHaveLength(5);
+    expect(offerings).toHaveLength(8);
     const titles = [...document.querySelectorAll(".offering-card h3")].map(
       (el) => el.textContent,
     );
-    // the same five category names the projects index groups its rows by
     expect(titles).toEqual([
       "Agentic AI & LLM systems",
-      "Machine learning",
+      "Machine learning & deep learning",
       "Optimization",
       "Data engineering",
+      "MLOps",
+      "Interactive dashboards",
+      "Full-stack engineering",
       "APIs & model serving",
     ]);
     // no anomaly-specific or otherwise vertical-specific offering card
     expect(titles).not.toContain("Anomaly detection");
     expect(titles).not.toContain("Predictive analytics");
-    expect(titles).not.toContain("MLOps");
-    expect(titles).not.toContain("Interactive dashboards");
-    expect(titles).not.toContain("Full-stack engineering");
     // offering cards use the shared Card surface
     document.querySelectorAll(".offering-card").forEach((el) => {
       expect(el.classList.contains("accent-card")).toBe(true);
@@ -51,7 +50,7 @@ describe("Services page (wave 8)", () => {
     renderServices();
     expect(screen.getByText(/answer from your documents, cite every claim/)).toBeInTheDocument();
     const cards = [...document.querySelectorAll(".offering-card")];
-    expect(cards).toHaveLength(5);
+    expect(cards).toHaveLength(8);
     for (const card of cards) {
       const chips = [...card.querySelectorAll(".chip")].map((el) => el.textContent);
       expect(chips, card.querySelector("h3")!.textContent).toHaveLength(4);
@@ -76,6 +75,9 @@ describe("Services page (wave 8)", () => {
       "training pipeline with leakage-proof cross-validation",
       "solver tuned against named benchmark instances",
       "versioned, checksummed datasets in a documented registry",
+      "CI eval gates that block unevaluated model changes",
+      "deployed dashboard reading only committed, versioned payloads",
+      "typed API and web UI wired into one deployable slice",
       "versioned endpoint with an explicit contract",
     ]);
     // the full tag vocabulary covers every offering — capability wording only
@@ -99,6 +101,16 @@ describe("Services page (wave 8)", () => {
       "DQ gates",
       "Data registry",
       "CI eval gates",
+      "Checksum pinning",
+      "Reproducible environments",
+      "Clean-clone runs",
+      "Drift checks",
+      "Interactive charting",
+      "Live endpoints",
+      "Pinned payloads",
+      "API/UI integration",
+      "Composable deployments",
+      "Reverse-proxy deploys",
       "OpenAPI contracts",
       "Latency budgets",
       "Contract tests",
@@ -138,7 +150,7 @@ describe("Services page (wave 8)", () => {
   it("paints all offering tags blue — the hue rotation is gone entirely", () => {
     renderServices();
     const cards = [...document.querySelectorAll(".offering-card")];
-    expect(cards).toHaveLength(5);
+    expect(cards).toHaveLength(8);
     for (const card of cards) {
       const chips = [...card.querySelectorAll(".chip")];
       expect(chips).toHaveLength(4);
@@ -164,12 +176,12 @@ describe("Services page (wave 8)", () => {
     renderServices();
     // the ML card no longer names forecasting/churn models and carries the
     // canonical category name
-    expect(screen.getByRole("heading", { name: "Machine learning" })).toBeInTheDocument();
-    expect(screen.queryByText("Machine learning & deep learning")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Machine learning & deep learning" })).toBeInTheDocument();
+    expect(screen.getByText("Machine learning & deep learning")).toBeInTheDocument();
     expect(screen.queryByText(/forecasting, classification and churn/i)).toBeNull();
     // every card reads as delivery expertise in its own vertical
     const blurbs = [...document.querySelectorAll(".offering-blurb")].map((el) => el.textContent!);
-    expect(blurbs).toHaveLength(5);
+    expect(blurbs).toHaveLength(8);
     for (const blurb of blurbs) {
       expect(blurb.length).toBeGreaterThan(60);
     }
@@ -186,7 +198,7 @@ describe("Services page (wave 8)", () => {
   it("keeps the frameworks grid, a plain cloud block with provider logos, process and engagement table", () => {
     renderServices();
     expect(document.getElementById("frameworks")).not.toBeNull();
-    expect(document.querySelectorAll(".frameworks-grid:not(.providers-grid) .framework-tile")).toHaveLength(17);
+    expect(document.querySelectorAll(".frameworks-grid:not(.providers-grid) .framework-tile")).toHaveLength(18);
     // deterministic order: new entries placed per spec
     const names = [...document.querySelectorAll(".frameworks-grid:not(.providers-grid) .framework-name")].map(
       (el) => el.textContent,
@@ -200,6 +212,7 @@ describe("Services page (wave 8)", () => {
       "Polars",
       "DuckDB",
       "Plotly",
+      "Apache ECharts",
       "DVC",
       "uv",
       "FastAPI",
@@ -332,8 +345,8 @@ describe("Services page (wave 8)", () => {
     const imgs = [...document.querySelectorAll(".framework-tile img")];
     expect(imgs.length).toBeGreaterThan(0);
     imgs.forEach((img) => {
-      expect(img.getAttribute("width")).toBe("22");
-      expect(img.getAttribute("height")).toBe("22");
+      expect(img.getAttribute("width")).toBe("18");
+      expect(img.getAttribute("height")).toBe("18");
       expect(img.getAttribute("alt")).toMatch(/logo$/);
     });
   });

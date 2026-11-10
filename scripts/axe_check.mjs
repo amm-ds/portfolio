@@ -94,7 +94,10 @@ async function main() {
             // Let lazy charts/figures settle before scanning.
             await page.waitForTimeout(500);
 
-            const analysis = await new AxeBuilder({ page }).analyze();
+            const analysis = await new AxeBuilder({ page })
+              // WCAG 2.2 target-size is not in the default wcag2 tag set — enable it on top
+              .options({ rules: { "target-size": { enabled: true } } })
+              .analyze();
             const failing = analysis.violations;
             results.push({
               theme: theme.name,

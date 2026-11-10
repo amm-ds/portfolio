@@ -11,13 +11,13 @@ export const AUTO_01_RAG_AGENT_4_SPEC = {
     {
       id: "draft-a",
       label: "Hosted answer pass · Agent draft",
-      kind: "tool",
+      kind: "agent",
       facts: [],
     },
     {
       id: "draft-j",
       label: "Rubric + RAGAS judges",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
@@ -29,7 +29,7 @@ export const AUTO_01_RAG_AGENT_4_SPEC = {
     {
       id: "verify-out",
       label: "Audited answer",
-      kind: "tool",
+      kind: "output",
       facts: [],
     },
     {
@@ -41,19 +41,19 @@ export const AUTO_01_RAG_AGENT_4_SPEC = {
     {
       id: "verify-rd",
       label: "Re-draft, max 2 repairs",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "verify-ref",
       label: "Abstain",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "s15",
       label: "Sealed 15-question set, · scored once",
-      kind: "tool",
+      kind: "data",
       facts: [],
     },
   ],

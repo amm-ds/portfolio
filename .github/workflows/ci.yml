@@ -88,6 +88,16 @@ jobs:
       - name: Demo contract check
         if: needs.changes.outputs.python == 'true'
         run: uv run python scripts/check_demo_contract.py
+      - name: Figure weight budget
+        # Committed figure JSONs are the interactive showcase payload; fail
+        # above 1.5 MiB per figure, warn above 500 KiB (audit F-02 gate).
+        if: needs.changes.outputs.python == 'true'
+        run: uv run python scripts/check_figure_budget.py
+      - name: Release-artifact contract
+        # Every shipped project exposes metrics/story/report, and the 12→13
+        # feature contract stays in sync (external-audit gate).
+        if: needs.changes.outputs.python == 'true'
+        run: uv run python scripts/check_release_artifacts.py
       - name: Story language lint
         # Plain-language gate over projects/*/story.yaml (stdlib-only script;
         # blocks on ERROR-level findings, reports warnings). Makefile: lint-story.
@@ -110,6 +120,12 @@ jobs:
       - name: "Mypy (libs strict + projects/apps typed)"
         if: needs.changes.outputs.python == 'true'
         run: uv run mypy libs projects apps
+      - name: Import-linter contracts
+        # Dependency direction, made permanent: projects never import each
+        # other (one documented exception: 09 reads 01's committed Wikipedia
+        # slice), and shared libs import nothing first-party.
+        if: needs.changes.outputs.python == 'true'
+        run: uv run lint-imports --no-logo
       - name: "Frontend — install, test, typecheck, build"
         if: needs.changes.outputs.web == 'true'
         working-directory: apps/showcase-web

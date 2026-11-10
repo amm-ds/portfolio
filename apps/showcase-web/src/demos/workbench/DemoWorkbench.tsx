@@ -5,7 +5,7 @@ import type { DemoManifest } from "../types";
 import type { ControlState } from "./useControlState";
 
 /** Collapsible "more information" block under the header: linked experiment,
- * interpretation | results columns, and a tagged skills/endpoints footer. */
+ * interpretation | results columns, and a tagged skills footer. */
 function MoreInformation({
   manifest,
   about,
@@ -40,31 +40,15 @@ function MoreInformation({
             <div className="wb-evidence-about wb-evidence-results">{children}</div>
           </div>
         </div>
-        {(manifest.skills.length > 0 || manifest.live_endpoints.length > 0) && (
+        {manifest.skills.length > 0 && (
           <div className="wb-evidence-chrome">
-            {manifest.skills.length > 0 && (
-              <div className="wb-skills">
-                {manifest.skills.map((skill) => (
-                  <span key={skill} className="chip">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            )}
-            {manifest.live_endpoints.length > 0 && (
-              <div className="wb-endpoints">
-                {manifest.live_endpoints.map((e) => (
-                  <div key={`${e.method} ${e.path}`} className="wb-endpoint">
-                    <span className={`wb-method wb-method-${e.method.toLowerCase()}`}>
-                      {e.method}
-                    </span>
-                    <code>{e.path}</code>
-                    <span className="wb-endpoint-label">{e.label}</span>
-                    <span className="wb-endpoint-cost">{e.cost}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="wb-skills">
+              {manifest.skills.map((skill) => (
+                <span key={skill} className="chip">
+                  {skill}
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -158,12 +142,6 @@ export function DemoWorkbench({
           </Link>
           <h1 className="demo-title">{manifest.title}</h1>
           <p className="demo-hook">{manifest.hook}</p>
-          {manifest.hero && (
-            <p className="demo-experiment-strip">
-              <span>{manifest.hero.label}</span> — <strong>{manifest.hero.value}</strong>
-              {manifest.hero.ci && <span> · {manifest.hero.ci}</span>}
-            </p>
-          )}
         </div>
         <div className="wb-actions">
           {manifest.scenarios.length > 0 && (

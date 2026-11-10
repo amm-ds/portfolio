@@ -250,7 +250,7 @@ def test_select_catalog_balance_quotas() -> None:
     for sid in picked:
         by_store.setdefault(stores.loc[sid], []).append(sid)
     assert set(by_store) == {"CA_1", "TX_2"}
-    for _store, members in by_store.items():
+    for members in by_store.values():
         dense = [s for s in members if classes[s]["class"] != "intermittent"]
         inter = [s for s in members if classes[s]["class"] == "intermittent"]
         assert len(dense) == 2 and len(inter) == 2

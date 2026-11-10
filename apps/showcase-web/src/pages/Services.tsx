@@ -14,9 +14,12 @@ interface Offering {
 
 const CASE_STUDIES: Record<string, string> = {
   "Agentic AI & LLM systems": "/projects/01-rag-agent",
-  "Machine learning": "/projects/12-tabular-ml-lifecycle",
+  "Machine learning & deep learning": "/projects/12-tabular-ml-lifecycle",
   Optimization: "/projects/06-routing-optimization",
   "Data engineering": "/projects/11-data-engineering",
+  MLOps: "/projects/05-ml-pipeline-churn",
+  "Interactive dashboards": "/projects/07-open-data-mobility",
+  "Full-stack engineering": "/projects/13-model-serving",
   "APIs & model serving": "/projects/13-model-serving",
 };
 
@@ -28,7 +31,7 @@ const OFFERINGS: Offering[] = [
   {
     title: "Agentic AI & LLM systems",
     outcome:
-      "Agents and assistants with retrieval, tool use and verification loops — designed to answer from your documents, cite every claim, and stay inside fixed tool, cost and latency budgets.",
+      "Agents and assistants designed to answer from your documents, cite every claim, and stay inside fixed tool, cost and latency budgets.",
     elements: ["Retrieval pipelines", "Structured output", "Eval harnesses", "Cost budgets"],
     deliverables: [
       "retrieval pipeline over your documents with pinned corpus versions",
@@ -38,9 +41,9 @@ const OFFERINGS: Offering[] = [
     ],
   },
   {
-    title: "Machine learning",
+    title: "Machine learning & deep learning",
     outcome:
-      "Forecasting, anomaly detection, classification and decisioning with honest baselines — models designed, trained and evaluated end to end, with errors priced in business terms rather than raw accuracy.",
+      "Models designed, trained and evaluated end to end against named naive baselines, with errors priced in business terms rather than raw accuracy.",
     elements: ["Leakage-proof CV", "Calibrated models", "Cost curves", "Hyperparameter search"],
     deliverables: [
       "training pipeline with leakage-proof cross-validation",
@@ -64,25 +67,61 @@ const OFFERINGS: Offering[] = [
   {
     title: "Data engineering",
     outcome:
-      "Reproducible pipelines over large operational datasets with quality gates — versioned, tested, analysis-ready data, plus the CI eval gates and drift checks that keep shipped models honest.",
-    elements: ["Pipeline orchestration", "DQ gates", "Data registry", "CI eval gates"],
+      "Pipelines that turn raw operational dumps into versioned, tested, analysis-ready datasets with quality gates in CI — built to be handed over, not babysat.",
+    elements: ["Pipeline orchestration", "DQ gates", "Checksum pinning", "Data registry"],
     deliverables: [
       "versioned, checksummed datasets in a documented registry",
       "data-quality gates running in CI on every change",
+      "orchestrated pipeline rerunnable from the README",
+      "handover walkthrough with a data dictionary",
+    ],
+  },
+  {
+    title: "MLOps",
+    outcome:
+      "CI gates that block unevaluated models and failing data-quality checks before they can ship — operable by the client's own team from day one.",
+    elements: ["CI eval gates", "Reproducible environments", "Clean-clone runs", "Drift checks"],
+    deliverables: [
       "CI eval gates that block unevaluated model changes",
+      "environments that rebuild from a clean clone",
       "drift checks with alerts wired into your channels",
+      "runbooks your own team can operate",
+    ],
+  },
+  {
+    title: "Interactive dashboards",
+    outcome:
+      "Working demos over committed payloads — every number the screen shows is checked in CI before it ships, and the whole slice runs from a clean clone.",
+    elements: ["Interactive charting", "Live endpoints", "Pinned payloads", "Parity tests"],
+    deliverables: [
+      "deployed dashboard reading only committed, versioned payloads",
+      "CI parity tests checking every number on screen",
+      "one-command run from a clean clone",
+      "documented, accessibility-checked chart set",
+    ],
+  },
+  {
+    title: "Full-stack engineering",
+    outcome:
+      "Typed API, web UI and deployment wired together as one product slice that runs from a clean clone — full-stack delivery, not a throwaway prototype.",
+    elements: ["API/UI integration", "Composable deployments", "Reverse-proxy deploys", "Contract tests"],
+    deliverables: [
+      "typed API and web UI wired into one deployable slice",
+      "contract tests between frontend and API",
+      "composable deployment runnable from a clean clone",
+      "documentation covering setup, operation and extension",
     ],
   },
   {
     title: "APIs & model serving",
     outcome:
-      "Measured latency and throughput trade-offs across serving stacks — versioned inference endpoints with explicit contracts, and the typed API, web UI and deployment around them wired into one product slice.",
-    elements: ["OpenAPI contracts", "Latency budgets", "Contract tests", "Parity tests"],
+      "Versioned inference endpoints with explicit contracts, rate limits and measured latency/throughput on target hardware — sized, not guessed.",
+    elements: ["OpenAPI contracts", "Rate limits", "Latency budgets", "Throughput reports"],
     deliverables: [
       "versioned endpoint with an explicit contract",
-      "typed API and web UI wired into one deployable slice",
+      "rate limits and authentication set to your requirements",
       "latency and throughput measured on your target hardware",
-      "dashboards reading committed payloads, parity-checked in CI",
+      "capacity report per dollar at agreed load",
     ],
   },
 ];
@@ -137,7 +176,7 @@ export function Services() {
   usePageMeta({
     title: "Services",
     description:
-      "Freelance ML/AI engineering offerings — agentic AI & LLM systems, machine learning, optimization, APIs & model serving, and data engineering — each backed by a public, reproducible case study with measured baselines.",
+      "Freelance ML/AI engineering offerings — agentic AI & LLM systems, machine learning, optimization, data engineering, MLOps, interactive dashboards, full-stack engineering, and APIs & model serving — each backed by a public, reproducible case study with measured baselines.",
     canonical: "/services",
   });
 

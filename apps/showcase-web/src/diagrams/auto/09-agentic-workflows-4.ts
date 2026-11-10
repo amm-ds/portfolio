@@ -12,7 +12,7 @@ export const AUTO_09_AGENTIC_WORKFLOWS_4_SPEC = {
     {
       id: "gate-p",
       label: "typed human checkpoint · Plan: steps · + intended calls",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
@@ -24,19 +24,19 @@ export const AUTO_09_AGENTIC_WORKFLOWS_4_SPEC = {
     {
       id: "ex",
       label: "Execute: · tools run here only",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "cr",
       label: "Critique: · tools used vs plan",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "out",
       label: "WorkflowResult or failure End",
-      kind: "tool",
+      kind: "output",
       facts: [],
     },
   ],

@@ -11,13 +11,13 @@ export const AUTO_04_NLP_CLASSIFICATION_4_SPEC = {
     {
       id: "a",
       label: "Bulk feed",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "f",
       label: "Full-data transformer",
-      kind: "tool",
+      kind: "model",
       facts: [],
     },
     {
@@ -29,19 +29,19 @@ export const AUTO_04_NLP_CLASSIFICATION_4_SPEC = {
     {
       id: "k",
       label: "Keep transformer label",
-      kind: "tool",
+      kind: "model",
       facts: [],
     },
     {
       id: "r",
       label: "Selective LLM review · 8 rows per call",
-      kind: "tool",
+      kind: "model",
       facts: [],
     },
     {
       id: "c",
       label: "Selected cascade · 0.9539265 fresh macro-F1",
-      kind: "tool",
+      kind: "output",
       facts: [],
     },
   ],

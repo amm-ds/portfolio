@@ -89,6 +89,35 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* the live terminal overlays a hidden full-script sizer: the panel is
+   full-size from first paint and the typing never moves layout */
+.hero-terminal-stage {
+  position: relative;
+}
+
+.hero-terminal-sizer {
+  visibility: hidden;
+}
+
+.hero-terminal-live {
+  position: absolute;
+  inset: 0;
+}
+
+/* capability line as house chips */
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 1.1rem 0 0;
+}
+
+/* extra air between the hero terminal and the where-to-go cards */
+.home-where-to-go {
+  margin-top: 3.5rem;
+}
+
 /* --- Services --- */
 
 .services-hero {
@@ -323,9 +352,31 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+/* direct line: same card geometry as the channel grid (surface, border,
+   radius, padding) so the section reads as one system; the label/lede/strip
+   spacing mirrors the house card rhythm */
+.direct-card {
+  margin: 0 0 0.9rem;
+  padding: 0.95rem 1.1rem 1.05rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.direct-card-lede {
+  margin: 0.5rem 0 0.65rem;
+}
+
+.direct-card-strip {
+  margin: 0.75rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 /* direct-line prose link is an inline anchor inside a sentence (axe
    link-in-text-block): give it the same non-color cue as story prose links */
-.direct-contact-card p a {
+.direct-card-mail {
   text-decoration: underline;
   text-underline-offset: 0.18em;
 }
@@ -846,11 +897,12 @@ button:disabled {
    mono; the "index" label and each item's "> " marker carry the green accent
    — the anchor text itself renders in the muted link color and lights up on
    hover */
+/* the index label sits on its own line, then one /section link per line */
 .page-index {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.35rem 1.1rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
   margin: 1rem 0 2.25rem;
   font-family: var(--mono);
   font-size: 1.05rem;
@@ -861,14 +913,26 @@ button:disabled {
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
+.page-index .page-index-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 1.15rem;
 }
 
 .page-index a {
   color: var(--text);
 }
 
-.page-index a::before {
-  content: "/";
+.page-index a:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.page-index-slash {
   color: var(--accent);
 }
 
@@ -935,9 +999,27 @@ button:disabled {
   border-color: var(--accent);
 }
 
-.framework-tile img {
-  width: 22px;
-  height: 22px;
+/* colored brand icons sit on a light chip so dark marks (ollama, optuna…)
+   stay visible on the dark tiles — and remain readable in light mode; the
+   white-only pydantic-ai mark uses the dark chip instead */
+.framework-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  background: #f2f6fa;
+  border-radius: 6px;
+}
+
+.framework-icon--dark {
+  background: #1c2942;
+}
+
+.framework-icon img {
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
 }
 
@@ -1132,6 +1214,10 @@ button:disabled {
   border-color: var(--flow-violet);
 }
 
+.flow-node--task {
+  border-color: var(--chart-amber);
+}
+
 .flow-node--model {
   border-color: var(--ok);
 }
@@ -1220,6 +1306,14 @@ button:disabled {
 
 .flow-diagram .react-flow__attribution a {
   color: var(--muted);
+  /* WCAG 2.2 target-size (24×24 CSS px): the raw link renders ~60×13, so
+     pad the hit area without changing the visual footprint */
+  display: inline-flex;
+  align-items: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 4px 6px;
+  margin: -4px -6px;
 }
 
 .flow-inspector {
@@ -1457,6 +1551,7 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--gap-card);
+  margin: 1.25rem 0;
 }
 
 .app-spec-card {
@@ -1464,7 +1559,7 @@ button:disabled {
 }
 
 .app-spec-card h3 {
-  margin: 0.15rem 0 0.45rem;
+  margin: 0.35rem 0 0.6rem;
   color: var(--accent);
   font-family: var(--mono);
   font-size: 1.05rem;
@@ -1505,7 +1600,7 @@ button:disabled {
 .app-screenshot img {
   display: block;
   width: 100%;
-  height: 360px;
+  height: 440px;
   object-fit: contain;
   object-position: center;
   background: var(--bg);

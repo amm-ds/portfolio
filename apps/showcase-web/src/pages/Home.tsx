@@ -42,29 +42,48 @@ const GO_LINKS = [
 
 function HeroTerminal() {
   const { lines, currentCmd, done } = useTypedScript(HERO_SCRIPT);
+  const title = `alejandro@${SITE_NAME}: ~`;
   return (
     <div role="img" aria-label={HERO_MESSAGE} className="hero-terminal">
       {/* Animated copy is decorative; the full message above is what AT reads. */}
-      <div aria-hidden="true">
-        <Terminal title={`alejandro@${SITE_NAME}: ~`}>
-          {lines.map((line, i) => (
-            <div key={i}>
-              <p className="cmd">{line.cmd}</p>
-              {line.output && <p className="out">{line.output}</p>}
-            </div>
-          ))}
-          {!done && (
-            <p className="cmd-partial">
-              {currentCmd}
-              <span className="cursor" aria-hidden="true" />
-            </p>
-          )}
-          {done && (
+      <div aria-hidden="true" className="hero-terminal-stage">
+        {/* Sizer: the full script rendered at final size reserves the layout
+           box, so the typing animation fills a static terminal instead of
+           growing the panel and pushing "where to go" down the page. */}
+        <div className="hero-terminal-sizer">
+          <Terminal title={title}>
+            {HERO_SCRIPT.map((line, i) => (
+              <div key={i}>
+                <p className="cmd">{line.cmd}</p>
+                {line.output && <p className="out">{line.output}</p>}
+              </div>
+            ))}
             <p className="cmd-partial">
               <span className="cursor" aria-hidden="true" />
             </p>
-          )}
-        </Terminal>
+          </Terminal>
+        </div>
+        <div className="hero-terminal-live">
+          <Terminal title={title}>
+            {lines.map((line, i) => (
+              <div key={i}>
+                <p className="cmd">{line.cmd}</p>
+                {line.output && <p className="out">{line.output}</p>}
+              </div>
+            ))}
+            {!done && (
+              <p className="cmd-partial">
+                {currentCmd}
+                <span className="cursor" aria-hidden="true" />
+              </p>
+            )}
+            {done && (
+              <p className="cmd-partial">
+                <span className="cursor" aria-hidden="true" />
+              </p>
+            )}
+          </Terminal>
+        </div>
       </div>
     </div>
   );
@@ -74,7 +93,7 @@ export function Home() {
   usePageMeta({
     title: "Data Scientist, ML & AI Consultant",
     description:
-      "AI & ML engineering for real operational problems — predictive systems, intelligent applications and data platforms, from first experiment to reliable production deployment.",
+      "Applied AI, predictive analytics and ML engineering — reproducible experiments with measured baselines, published code, and honest case studies.",
   });
 
   return (
@@ -82,32 +101,18 @@ export function Home() {
       <PersonJsonLd />
       <section className="hero">
         <h1>
-          <span className="hero-accent">AI</span> &amp; <span className="hero-accent">ML</span>{" "}
-          engineering for real operational problems.
+          <span className="hero-accent">Data</span> Scientist, <span className="hero-accent">ML</span>{" "}
+          &amp; <span className="hero-accent">AI</span> Consultant
         </h1>
         <p className="hero-sub">
           I design and build predictive systems, intelligent applications and data platforms —
           from first experiment to reliable production deployment.
         </p>
-        <ul
-          className="hero-points"
-          style={{
-            listStyle: "none",
-            margin: "1rem 0 0",
-            padding: 0,
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            gap: "0.35rem 1.15rem",
-            fontFamily: "var(--mono)",
-            fontSize: "0.92rem",
-            color: "var(--text)",
-          }}
-        >
-          <li>Predictive analytics &amp; forecasting</li>
-          <li>Applied AI, RAG &amp; agentic systems</li>
-          <li>ML engineering &amp; production infrastructure</li>
-        </ul>
+        <div className="hero-tags">
+          <span className="chip">Predictive analytics &amp; forecasting</span>
+          <span className="chip">Applied AI, RAG &amp; agentic systems</span>
+          <span className="chip">ML engineering &amp; production infrastructure</span>
+        </div>
         <p className="meta-links" style={{ justifyContent: "center", margin: "1.1rem 0 0" }}>
           <Link className="chip-link" to="/contact">
             Discuss a project →
@@ -119,12 +124,7 @@ export function Home() {
         <HeroTerminal />
       </section>
 
-      <p className="section-intro" style={{ textAlign: "center", margin: "0.25rem auto 0" }}>
-        naive baselines · honest metrics · auditable claims — every number re-runs from the
-        repository
-      </p>
-
-      <h2 className="section-title section-title--tight">where to go</h2>
+      <h2 className="section-title section-title--tight home-where-to-go">where to go</h2>
       <div className="go-grid">
         {GO_LINKS.map((g) => (
           <Link key={g.to} to={g.to} className="go-card accent-card">

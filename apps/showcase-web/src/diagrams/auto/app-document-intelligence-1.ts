@@ -11,19 +11,19 @@ export const AUTO_APP_DOCUMENT_INTELLIGENCE_1_SPEC = {
     {
       id: "question",
       label: "page-scoped question",
-      kind: "tool",
+      kind: "source",
       facts: [],
     },
     {
       id: "ask",
       label: "tool-free chat",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "page",
       label: "parsed page text · + bounded history",
-      kind: "tool",
+      kind: "data",
       facts: [],
     },
     {
@@ -35,13 +35,13 @@ export const AUTO_APP_DOCUMENT_INTELLIGENCE_1_SPEC = {
     {
       id: "fail",
       label: "answer rejected",
-      kind: "tool",
+      kind: "output",
       facts: [],
     },
     {
       id: "answer",
       label: "cited answer · + source highlights",
-      kind: "tool",
+      kind: "output",
       facts: [],
     },
   ],

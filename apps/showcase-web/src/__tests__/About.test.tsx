@@ -102,14 +102,15 @@ describe("About page", () => {
     expect(css.match(/\.channel-card \{[\s\S]*?\n\}/)![0]).toContain("display: flex;");
   });
 
-  it("renders six experience stops as a vertical timeline with periods and 2–3 bullets each", () => {
+  it("renders seven experience stops as a vertical timeline with periods and 2–3 bullets each", () => {
     renderAbout();
     const items = document.querySelectorAll(".timeline-item");
-    expect(items).toHaveLength(6);
+    expect(items).toHaveLength(7);
     const titles = [...document.querySelectorAll(".timeline-item h3")].map(
       (el) => el.textContent,
     );
     expect(titles).toEqual([
+      "Lead ML/AI engineer — alejandromerida.dev (independent)",
       "Lead ML/AI engineer — pharmaceutical AI (remote)",
       "Senior data scientist — network telemetry (ISP data)",
       "Senior data scientist — manufacturing analytics",
@@ -120,7 +121,8 @@ describe("About page", () => {
     // periods, newest first, in accent mono
     const dates = [...document.querySelectorAll(".timeline-period")].map((el) => el.textContent);
     expect(dates).toEqual([
-      "2025 — now",
+      "sep 2026 — now",
+      "2025 — aug 2026",
       "2024 — 2025",
       "2023 — 2024",
       "2022 — 2023",

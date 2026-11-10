@@ -11,19 +11,19 @@ export const AUTO_04_NLP_CLASSIFICATION_1_SPEC = {
     {
       id: "ladder-f1",
       label: "Ladder, cheapest first · Floor: majority class",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "ladder-f2",
       label: "Floor: random, seeded",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "ladder-r3",
       label: "TF-IDF + logistic regression",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
@@ -35,19 +35,19 @@ export const AUTO_04_NLP_CLASSIFICATION_1_SPEC = {
     {
       id: "ladder-r5",
       label: "Same model, 120k rows",
-      kind: "tool",
+      kind: "model",
       facts: [],
     },
     {
       id: "judge-m",
       label: "One judge, every rung · Accuracy and macro-F1 · every topic counts equally",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "judge-h",
       label: "Test-set role disclosed",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
   ],

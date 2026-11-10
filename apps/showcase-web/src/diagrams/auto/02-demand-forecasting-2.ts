@@ -11,19 +11,19 @@ export const AUTO_02_DEMAND_FORECASTING_2_SPEC = {
     {
       id: "s",
       label: "Choose on past: · origins 2016-05-08 + 2016-05-15",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "t",
       label: "Score once: origin 2016-05-22 · competition window, 28 days",
-      kind: "tool",
+      kind: "model",
       facts: [],
     },
     {
       id: "c",
       label: "Committed headlines: · WRMSSE, bias, per level",
-      kind: "tool",
+      kind: "output",
       facts: [],
     },
   ],
