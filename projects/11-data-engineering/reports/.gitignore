@@ -1,4 +1,4 @@
-/metrics.json
-/evaluation_metadata.json
-/report.html
-/results.md
+# DVC writes these as stage outputs; this project commits them (house
+# convention, see 05/08/13) so the showcase API can serve metrics/report live.
+# Only the redundant self-contained HTML figure renderings stay out of git.
+/figures/*.html
