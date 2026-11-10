@@ -52,6 +52,14 @@ docker stats --no-stream   # co-tenant headroom check
 ```
 
 Gotchas learned on this box:
+- **Check disk before every build.** The image is ~7.3 GB and a build transiently
+  needs a third image's worth of space (current + previous + the new one) plus
+  build cache. Rule: `df -h /` first; if under ~12 GB free, `docker builder
+  prune -af` and drop the oldest image tag before building. A build that dies
+  at `exporting to image / no space left` leaves a partial tagged image —
+  remove it (`docker rmi <tag>`) before retrying, or the retry unpacks over it.
+- Prune by **image tag, not commit ancestry**: the previous release image is
+  the last *deployed tag*, which a multi-commit push can move past `HEAD~1`.
 - `git pull` REPLACES tracked files via rename, so a bind-mounted file inside a
   long-running container (the Caddyfile) keeps serving the OLD inode. After any
   Caddyfile change: `docker compose ... up -d --force-recreate caddy`.
