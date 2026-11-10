@@ -26,6 +26,12 @@
   color: var(--muted);
   font-size: 0.92rem;
   max-width: 46rem;
+  /* the line swaps once when the demo manifest arrives — clamping to two
+     lines keeps the banner height (and the CLS budget) unchanged */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* primary-button link, matches the global <button> surface */
