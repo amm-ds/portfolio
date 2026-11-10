@@ -67,6 +67,7 @@ nav:
           - ADR-0005 plotly-only viz: architecture/adr/0005-plotly-as-only-viz.md
           - ADR-0006 local LLM + eval frameworks: architecture/adr/0006-local-llm-ollama-and-evaluation-frameworks.md
           - ADR-0007 DVC metrics/experiments/registry: architecture/adr/0007-dvc-metrics-experiments-registry.md
+          - ADR-0008 ECharts renderer: architecture/adr/0008-echarts-renderer-plotly-fallback.md
   - Engineering:
       - Playbook: engineering-playbook.md
       - How this was built: site/how-this-was-built.md

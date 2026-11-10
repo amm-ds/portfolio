@@ -70,8 +70,9 @@ models, and the framework logo grid — is a component of the showcase app:
   [deploy/DEPLOY.md](https://github.com/amm-ds/portfolio/blob/main/deploy/DEPLOY.md).
 
 The frameworks behind the work (shown with logos on that page): pydantic,
-pydantic-ai, Ollama, scikit-learn, PyTorch, Polars, Plotly, DVC, uv, FastAPI,
-React, TypeScript, Optuna, RAGAS, pydantic-evals, Hugging Face. Delivery is
+pydantic-ai, Ollama, scikit-learn, PyTorch, Polars, Plotly, Apache ECharts,
+DVC, uv, FastAPI, React, TypeScript, Optuna, RAGAS, pydantic-evals, Hugging
+Face. Delivery is
 cloud-agnostic — AWS, Azure, Google Cloud, or on-premises; Docker + uv + DVC
 pipelines port anywhere, and data stays inside the client's boundary.
 

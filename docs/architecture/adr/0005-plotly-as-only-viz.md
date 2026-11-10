@@ -1,6 +1,6 @@
 # ADR-0005: plotly as the only visualization library
 
-- **Status:** Accepted
+- **Status:** Accepted; frontend rendering amended by ADR-0008
 - **Date:** 2026-10-12
 
 ## Context
