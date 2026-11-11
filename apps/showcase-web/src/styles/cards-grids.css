@@ -29,7 +29,7 @@
 }
 
 .study-card:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-bright);
   text-decoration: none;
   transform: translateY(-2px);
 }
@@ -267,7 +267,7 @@
 }
 
 .app-card:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-bright);
   transform: translateY(-2px);
 }
 

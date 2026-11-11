@@ -42,7 +42,7 @@
 }
 
 .demo-error-actions button:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-bright);
   color: var(--accent-bright);
 }
 
@@ -415,7 +415,7 @@ button:disabled {
 }
 
 .channel-card:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-bright);
   text-decoration: none;
   transform: translateY(-2px);
 }
@@ -1003,7 +1003,7 @@ button:disabled {
 
 .framework-tile:hover {
   text-decoration: none;
-  border-color: var(--accent);
+  border-color: var(--accent-bright);
 }
 
 /* colored brand icons sit on a light chip so dark marks (ollama, optuna…)
