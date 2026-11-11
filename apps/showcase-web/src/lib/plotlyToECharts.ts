@@ -514,10 +514,10 @@ function formatScatterItem(param: unknown): string {
 
 /** Heatmap cell tooltip: `row · column: value` — no whole-column dumps. */
 function formatHeatmapItem(param: unknown): string {
-  const p = param as { value?: unknown; marker?: string };
+  const p = param as { value?: unknown; data?: { authoredText?: string }; marker?: string };
   if (!Array.isArray(p.value) || p.value.length < 3) return String(p.value ?? "");
   const [x, y, z] = p.value as [unknown, unknown, unknown];
-  const zs = typeof z === "number" ? formatTick(z) : String(z);
+  const zs = p.data?.authoredText ?? (typeof z === "number" ? formatTick(z) : String(z));
   return `${p.marker ?? ""}${String(y)} · ${String(x)}: ${zs}`;
 }
 
@@ -1077,6 +1077,25 @@ export function plotlyToECharts(
       const yCat = ysRaw.some((v) => typeof v === "string");
       if (xCat) xInfoH.type = "category";
       if (yCat) yInfoH.type = "category";
+      // authored per-cell text (plotly `text` + `texttemplate`, e.g. the
+      // correlation heatmap's np.round(r, 2)) wins over reformatting the z
+      // value — the generator already chose the precision
+      let textGrid: string[][] | null = null;
+      const rawText = t.text;
+      if (rawText !== undefined && rawText !== null) {
+        const rec = asRecord(rawText);
+        let grid: unknown[][] | null = null;
+        if (Array.isArray(rawText)) {
+          grid = rawText as unknown[][];
+        } else if ("bdata" in rec && Array.isArray(rec.shape) && rec.shape.length === 2) {
+          const flat = decodeBdata(rec);
+          const [rowsT, colsT] = rec.shape as [number, number];
+          grid = Array.from({ length: rowsT }, (_, j) => flat.slice(j * colsT, (j + 1) * colsT));
+        }
+        if (grid && grid.length === ysRaw.length && grid.every((r) => Array.isArray(r) && r.length === xsRaw.length)) {
+          textGrid = grid.map((r) => r.map((v) => (v === null || v === undefined ? "" : String(num(v) ?? v))));
+        }
+      }
       const items: unknown[] = [];
       let zMin = Infinity;
       let zMax = -Infinity;
@@ -1103,6 +1122,7 @@ export function plotlyToECharts(
               typeof yv === "string" ? yv.replace(BR_RE, "\n") : yv,
               zv,
             ],
+            ...(textGrid && textGrid[j][k] ? { authoredText: textGrid[j][k] } : {}),
           });
         }
       }
@@ -1122,10 +1142,11 @@ export function plotlyToECharts(
                 show: true,
                 fontSize: 10,
                 color: palette.textColor,
-                formatter: (p: { value?: unknown[] }) =>
-                  Array.isArray(p.value) && typeof p.value[2] === "number"
+                formatter: (p: { value?: unknown[]; data?: { authoredText?: string } }) =>
+                  p.data?.authoredText ??
+                  (Array.isArray(p.value) && typeof p.value[2] === "number"
                     ? formatTick(p.value[2])
-                    : "",
+                    : ""),
               },
             }
           : {}),

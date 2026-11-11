@@ -595,6 +595,13 @@ describe("supportsECharts", () => {
             [0.2, 1, 0.87654321],
             [-0.35, 0.87654321, 1],
           ],
+          // authored per-cell text wins over reformatting z
+          text: [
+            ["1.00", "0.20", "-0.35"],
+            ["0.20", "1.00", "0.88"],
+            ["-0.35", "0.88", "1.00"],
+          ],
+          texttemplate: "%{text}",
           colorscale: [
             [0, "#f472b6"],
             [1, "#2dd4bf"],
@@ -607,9 +614,19 @@ describe("supportsECharts", () => {
     const option = asOpt(plotlyToECharts(payload, "dark"));
     const series = (option.series as Array<Record<string, unknown>>)[0];
     expect((series.label as { show: boolean }).show).toBe(true); // 9 cells <= 144
+    const labelFormatter = (series.label as { formatter: (p: unknown) => string }).formatter;
+    expect(labelFormatter({ value: ["b", "q", 0.87654321], data: { authoredText: "0.88" } })).toBe(
+      "0.88",
+    );
+    expect(labelFormatter({ value: ["a", "p", 1], data: {} })).toBe("1");
     const tooltip = option.tooltip as { trigger: string; formatter: (p: unknown) => string };
     expect(tooltip.trigger).toBe("item");
-    expect(tooltip.formatter({ value: ["a", "q", 0.87654321], marker: "" })).toBe("q · a: 0.876543");
+    expect(
+      tooltip.formatter({ value: ["a", "q", 0.87654321], data: { authoredText: "0.88" }, marker: "" }),
+    ).toBe("q · a: 0.88");
+    expect(tooltip.formatter({ value: ["a", "q", 0.87654321], data: {}, marker: "" })).toBe(
+      "q · a: 0.876543",
+    );
     const visualMap = option.visualMap as { text?: string[] };
     expect(visualMap.text?.[0]).toBe("Pearson r");
   });
