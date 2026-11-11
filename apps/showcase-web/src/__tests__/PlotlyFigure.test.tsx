@@ -104,7 +104,7 @@ describe("PlotlyFigure", () => {
     render(<PlotlyFigure pid="p" name="light_traces" />);
     await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
     expect(mocks.react.mock.calls[0][1]).toEqual([
-      { type: "scatter", line: { color: "#0f766e", width: 2 }, marker: { color: "#b45309" } },
+      { type: "scatter", line: { color: "#14b8a6", width: 2 }, marker: { color: "#b45309" } },
       { type: "pie", marker: { colors: ["#7c3aed", "#636EFA"] } },
     ]);
     // the fetched payload itself is never mutated
@@ -341,7 +341,7 @@ describe("buildLayout", () => {
     expect(dark.template).toBe(raw.template);
     const light = buildLayout(raw, 1000, "light");
     expect(asRecord(asRecord(light.template).layout).colorway).toEqual([
-      "#0f766e",
+      "#14b8a6",
       "#0284c7",
       "#636EFA",
     ]);
@@ -438,7 +438,7 @@ describe("reskinTraces", () => {
     const out = reskinTraces(AUTHORED, "light");
     expect(out[0]).toEqual({
       type: "scatter",
-      line: { color: "#0f766e", width: 2 },
+      line: { color: "#14b8a6", width: 2 },
       marker: { color: "#0284c7", size: 8 },
       fillcolor: "rgba(45,212,191,0.25)", // rgba washes are not table keys
       y: [1, 2, 3],
@@ -447,12 +447,12 @@ describe("reskinTraces", () => {
       type: "pie",
       marker: { colors: ["#7c3aed", "#db2777", "#636EFA"] }, // plotly default untouched
     });
-    expect(out[2]).toEqual({ type: "bar", marker: { color: ["#0f766e", "#475569"] } });
+    expect(out[2]).toEqual({ type: "bar", marker: { color: ["#14b8a6", "#475569"] } });
   });
 
   it("matches color keys case-insensitively", () => {
     const out = reskinTraces([{ line: { color: "#2DD4BF" } }], "light");
-    expect(out[0]).toEqual({ line: { color: "#0f766e" } });
+    expect(out[0]).toEqual({ line: { color: "#14b8a6" } });
   });
 
   it("returns dark-theme traces unchanged (identity)", () => {

@@ -114,7 +114,7 @@ describe("ReportView", () => {
     // light-surface counterparts; unknown colors are never in the table
     expect(doc).toContain("TRACE_COLORS");
     expect(doc).toContain("restyleTraces");
-    expect(doc).toContain('"#2dd4bf":"#0f766e"');
+    expect(doc).toContain('"#2dd4bf":"#14b8a6"');
     expect(doc).toContain('"#64748b":"#475569"');
     // …plus the template colorway, from which implicit trace colors derive
     expect(doc).toContain("mappedColorway");
