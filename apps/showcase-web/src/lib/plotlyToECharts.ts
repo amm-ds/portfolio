@@ -349,9 +349,9 @@ interface AnnotationPoint {
   fontSize: number;
   position: string;
   /** y given as an axis fraction ("y domain"), resolved after extents */
-  yFraction?: { index: number; frac: number };
+  yFraction?: { index: number; frac: number; log?: boolean };
   /** x given as an axis fraction ("x domain"), resolved after extents */
-  xFraction?: { index: number; frac: number };
+  xFraction?: { index: number; frac: number; log?: boolean };
 }
 
 interface ShapeLine {
@@ -603,13 +603,25 @@ export function plotlyToECharts(
     return remapColor(raw, theme);
   };
   const xAdd = (idx: number, v: number | undefined) => {
-    // log axes can't use linear extents or non-positive values: leave them
-    // to echarts' own log autoscale
-    if (axisAt(true, idx).type === "log") return;
+    if (axisAt(true, idx).type === "log") {
+      // log axes can't take linear extents or non-positive values, but they
+      // DO take their own positive data extent: plotly fits the data range
+      // on a log autorange, while echarts' own log autoscale snaps outward
+      // to powers of ten and strands the curve in part of the canvas
+      if (typeof v === "number" && Number.isFinite(v) && v > 0) {
+        xExtents.set(idx, extentAdd(xExtents.get(idx) ?? null, v));
+      }
+      return;
+    }
     xExtents.set(idx, extentAdd(xExtents.get(idx) ?? null, v));
   };
   const yAdd = (idx: number, v: number | undefined) => {
-    if (axisAt(false, idx).type === "log") return;
+    if (axisAt(false, idx).type === "log") {
+      if (typeof v === "number" && Number.isFinite(v) && v > 0) {
+        yExtents.set(idx, extentAdd(yExtents.get(idx) ?? null, v));
+      }
+      return;
+    }
     yExtents.set(idx, extentAdd(yExtents.get(idx) ?? null, v));
   };
   const registerCategory = (info: AxisInfo, label: string) => {
@@ -1243,10 +1255,18 @@ export function plotlyToECharts(
         color: remapColor(typeof font.color === "string" ? font.color : palette.textColor, theme),
         fontSize,
         position: xanchor === "right" ? "right" : "top",
-        xFraction: { index: xIdx, frac: num(a.x) ?? 1 },
+        xFraction: {
+          index: xIdx,
+          frac: num(a.x) ?? 1,
+          log: axisAt(true, xIdx).type === "log",
+        },
       };
       if (yIsFraction) {
-        fracPoint.yFraction = { index: yIdx ?? 0, frac: num(a.y) ?? 1 };
+        fracPoint.yFraction = {
+          index: yIdx ?? 0,
+          frac: num(a.y) ?? 1,
+          log: yIdx !== null && axisAt(false, yIdx).type === "log",
+        };
       } else {
         const yVal = num(a.y);
         if (yVal !== undefined && yIdx !== null) yAdd(yIdx, yVal);
@@ -1272,7 +1292,11 @@ export function plotlyToECharts(
       position: xanchor === "right" ? "right" : "top",
     };
     if (yIsFraction) {
-      point.yFraction = { index: yIdx ?? 0, frac: num(a.y) ?? 1 };
+      point.yFraction = {
+        index: yIdx ?? 0,
+        frac: num(a.y) ?? 1,
+        log: yIdx !== null && axisAt(false, yIdx).type === "log",
+      };
     } else {
       const yVal = num(a.y);
       if (yVal !== undefined && yIdx !== null) yAdd(yIdx, yVal);
@@ -1684,10 +1708,19 @@ export function plotlyToECharts(
       }
     } else if (info.type !== "category") {
       if (ext) {
-        const span = ext.max - ext.min;
-        const pad = span > 0 ? span * 0.05 : Math.max(1, Math.abs(ext.max) * 0.05);
-        opt.min = ext.min - pad;
-        opt.max = ext.max + pad;
+        if (info.raw.type === "log") {
+          // plotly's log autorange fits the data extent exactly; echarts'
+          // own autoscale snaps to powers of ten and strands the curve in
+          // part of the canvas. Materialize the exact positive extent: a
+          // pad would only dirty the boundary tick (0.00430458… vs 0.005).
+          opt.min = ext.min;
+          opt.max = ext.max;
+        } else {
+          const span = ext.max - ext.min;
+          const pad = span > 0 ? span * 0.05 : Math.max(1, Math.abs(ext.max) * 0.05);
+          opt.min = ext.min - pad;
+          opt.max = ext.max + pad;
+        }
       }
       // an axis with no data emits no min/max at all — no synthetic [0,1]
     }
@@ -1738,7 +1771,9 @@ export function plotlyToECharts(
   const yAxisOptions = yInstances.map((inst, i) => buildAxis(inst.info, inst.gridIndex, overlayOf(i)));
 
   // resolve axis-fraction annotation coordinates against the final extents;
-  // a fraction without a real extent can't be placed — drop the point
+  // a fraction without a real extent can't be placed — drop the point. Log
+  // extents interpolate in log space (a linear fraction of a log window
+  // would land the annotation on the wrong side of the axis).
   for (const [g, points] of annPointsByGrid) {
     annPointsByGrid.set(
       g,
@@ -1746,12 +1781,18 @@ export function plotlyToECharts(
         if (p.yFraction) {
           const ext = yExtents.get(p.yFraction.index);
           if (!ext) return false;
-          p.y = ext.min + p.yFraction.frac * (ext.max - ext.min);
+          p.y =
+            p.yFraction.log && ext.min > 0
+              ? ext.min * Math.pow(ext.max / ext.min, p.yFraction.frac)
+              : ext.min + p.yFraction.frac * (ext.max - ext.min);
         }
         if (p.xFraction) {
           const ext = xExtents.get(p.xFraction.index);
           if (!ext) return false;
-          p.x = ext.min + p.xFraction.frac * (ext.max - ext.min);
+          p.x =
+            p.xFraction.log && ext.min > 0
+              ? ext.min * Math.pow(ext.max / ext.min, p.xFraction.frac)
+              : ext.min + p.xFraction.frac * (ext.max - ext.min);
         }
         return true;
       }),

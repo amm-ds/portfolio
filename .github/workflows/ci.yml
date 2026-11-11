@@ -93,6 +93,11 @@ jobs:
         # above 1.5 MiB per figure, warn above 500 KiB (audit F-02 gate).
         if: needs.changes.outputs.python == 'true'
         run: uv run python scripts/check_figure_budget.py
+      - name: Figure axis limits
+        # Authored axis windows must not clip trace data; off-unit over-wide
+        # windows are flagged (the threshold_sweep log-axis class of bug).
+        if: needs.changes.outputs.python == 'true'
+        run: uv run python scripts/check_figure_axes.py
       - name: Release-artifact contract
         # Every shipped project exposes metrics/story/report, and the 12→13
         # feature contract stays in sync (external-audit gate).

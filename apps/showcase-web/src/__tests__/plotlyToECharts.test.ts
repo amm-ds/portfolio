@@ -503,8 +503,28 @@ describe("supportsECharts", () => {
     expect(supportsECharts(payload)).toBe(true);
     const option = asOpt(plotlyToECharts(payload, "dark"));
     expect(option.xAxis[0].type).toBe("log");
-    // log axes never pin a zero baseline
-    expect(option.xAxis[0].min).toBeUndefined();
+    // plotly's log autorange fits the data extent exactly (echarts' own
+    // decade snapping would strand the curve in part of the canvas)
+    expect(option.xAxis[0].min).toBe(1);
+    expect(option.xAxis[0].max).toBe(100);
+  });
+
+  it("log window tracks the data extent instead of snapping to decades", () => {
+    const payload: PlotlyPayload = {
+      data: [
+        {
+          type: "scatter",
+          mode: "lines",
+          x: [0.005, 0.01, 0.02, 0.05, 0.1],
+          y: [0.1, 0.2, 0.3, 0.4, 0.5],
+        },
+      ],
+      layout: { xaxis: { type: "log" } },
+    };
+    const option = asOpt(plotlyToECharts(payload, "dark"));
+    // threshold_sweep regression: the window is exactly the data extent
+    expect(option.xAxis[0].min).toBe(0.005);
+    expect(option.xAxis[0].max).toBe(0.1);
   });
 
   it("accepts fill bands (tonexty) as a silent polygon between the pair", () => {
