@@ -835,7 +835,13 @@
 
 .practice-card h3::before {
   content: "[+] ";
-  color: var(--accent-bright);
+  display: inline-block;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: 4px;
+  padding: 0 0.32rem;
+  margin-right: 0.4rem;
+  font-size: 0.82em;
   font-weight: 400;
 }
 
@@ -894,10 +900,14 @@
 }
 
 .timeline-period {
+  display: inline-block;
   font-family: var(--mono);
-  font-size: 0.82rem;
-  color: var(--accent-bright);
-  margin: 0 0 0.2rem;
+  font-size: 0.78rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+  padding: 0.08rem 0.5rem;
+  border-radius: 6px;
+  margin: 0 0 0.35rem;
 }
 
 .timeline-item h3 {
