@@ -1084,12 +1084,18 @@ export function plotlyToECharts(
       const rawText = t.text;
       if (rawText !== undefined && rawText !== null) {
         const rec = asRecord(rawText);
+        const shapeRaw = rec.shape;
+        const shape = Array.isArray(shapeRaw)
+          ? shapeRaw.map(Number)
+          : typeof shapeRaw === "string"
+            ? shapeRaw.split(",").map((s) => Number(s.trim()))
+            : [];
         let grid: unknown[][] | null = null;
         if (Array.isArray(rawText)) {
           grid = rawText as unknown[][];
-        } else if ("bdata" in rec && Array.isArray(rec.shape) && rec.shape.length === 2) {
+        } else if ("bdata" in rec && shape.length === 2 && shape.every((n) => Number.isFinite(n))) {
           const flat = decodeBdata(rec);
-          const [rowsT, colsT] = rec.shape as [number, number];
+          const [rowsT, colsT] = shape;
           grid = Array.from({ length: rowsT }, (_, j) => flat.slice(j * colsT, (j + 1) * colsT));
         }
         if (grid && grid.length === ysRaw.length && grid.every((r) => Array.isArray(r) && r.length === xsRaw.length)) {
