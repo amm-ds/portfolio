@@ -39,11 +39,38 @@ class RouteHead:
     canonical_path: str
     h1: str
     summary: str
+    # Optional structured-data block injected before </head> (not executed,
+    # so the strict script-src CSP does not apply to it).
+    json_ld: str | None = None
+
+
+_PERSON_JSON_LD = """{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Alejandro Mérida Maroto",
+  "url": "https://alejandromerida.dev/",
+  "jobTitle": "Data Scientist, ML & AI Consultant",
+  "sameAs": ["https://github.com/amm-ds", "https://www.linkedin.com/in/alejandro-mérida-maroto"]
+}"""
 
 
 # Hand-authored heads for the non-project routes. Copy mirrors the pages'
 # usePageMeta calls so server output and client output agree.
 _STATIC_HEADS: dict[str, RouteHead] = {
+    "/": RouteHead(
+        title=f"{_BRAND} — Data Scientist & ML/AI Engineer",
+        description=(
+            "Independent ML/AI consultancy — agentic AI & LLM systems, machine "
+            "learning, optimization, data engineering, MLOps. Open to new engagements."
+        ),
+        canonical_path="/",
+        h1="Data Scientist, ML & AI Consultant",
+        summary=(
+            "Independent ML/AI consultancy — agentic AI & LLM systems, machine "
+            "learning, optimization, data engineering, MLOps. Open to new engagements."
+        ),
+        json_ld=_PERSON_JSON_LD,
+    ),
     "/projects": RouteHead(
         title=f"Demos & Experiments · {_BRAND}",
         description=(
@@ -338,4 +365,11 @@ def inject_head(shell: str, path: str) -> str:
     elif "noscript" not in _warned_missing_tags:
         _warned_missing_tags.add("noscript")
         logger.warning("spa head: index.html has no #root div; skipping <noscript> body")
+
+    if head.json_ld is not None:
+        block = f'<script type="application/ld+json">{head.json_ld}</script>'
+        rendered, count = re.subn(r"</head>", block + "</head>", rendered, count=1)
+        if count != 1 and "json_ld" not in _warned_missing_tags:
+            _warned_missing_tags.add("json_ld")
+            logger.warning("spa head: index.html has no </head>; skipping JSON-LD block")
     return rendered

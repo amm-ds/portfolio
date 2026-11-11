@@ -240,14 +240,12 @@ describe("Home (terminal-centered)", () => {
     expect(contactCard.textContent).toContain("replies within 24h on business days");
   });
 
-  it("sets page meta and renders Person JSON-LD", () => {
+  it("sets page meta; Person JSON-LD moved to the served shell", () => {
     renderHome();
     expect(document.title).toContain("Data Scientist, ML & AI Consultant");
-    const ld = document.querySelector('script[type="application/ld+json"]')!;
-    expect(ld).not.toBeNull();
-    const data = JSON.parse(ld.textContent!);
-    expect(data["@type"]).toBe("Person");
-    expect(data.jobTitle).toBe("Data Scientist, ML & AI Consultant");
+    // the API injects the ld+json block into the raw HTML for "/" (spa_heads),
+    // so the client must not render a duplicate
+    expect(document.querySelector('script[type="application/ld+json"]')).toBeNull();
   });
 
   it("is lean: no duplicated services/case-study/frameworks content", () => {

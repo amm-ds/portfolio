@@ -47,7 +47,7 @@ from showcase_api.middleware import (
     RequestIdMiddleware,
     RequestLoggingMiddleware,
 )
-from showcase_api.spa import WEB_DIST, _index_html
+from showcase_api.spa import WEB_DIST, _route_index_html
 from showcase_api.spa import router as spa_router
 
 logger = get_logger(__name__)
@@ -317,7 +317,7 @@ def projects(request: Request) -> Response:
     accept = request.headers.get("accept", "")
     if "text/html" in accept:
         return (
-            HTMLResponse(_index_html(), headers={"Cache-Control": "no-cache"})
+            HTMLResponse(_route_index_html("/projects"), headers={"Cache-Control": "no-cache"})
             if WEB_DIST.exists()
             else JSONResponse({"error": "web build not found"}, status_code=503)
         )

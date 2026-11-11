@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { AVAILABILITY, SITE_NAME } from "../config";
-import { PersonJsonLd, usePageMeta } from "../seo";
+import { usePageMeta } from "../seo";
 import { Terminal } from "../components/Terminal";
 import { useTypedScript } from "../hooks/useTyped";
 
@@ -98,7 +98,6 @@ export function Home() {
 
   return (
     <>
-      <PersonJsonLd />
       <section className="hero">
         <h1>
           <span className="hero-accent">Data</span> Scientist, <span className="hero-accent">ML</span>{" "}

@@ -1407,7 +1407,11 @@ def test_route_head_canonicals_for_legacy_and_report_paths(headed_web_dist) -> N
     assert route_head("/apps/document-review").canonical_path == "/apps/document-intelligence"
     assert route_head("/projects/01-demo/report").canonical_path == "/projects/01-demo"
     assert route_head("/projects/99-nope") is None
-    assert route_head("/") is None  # home keeps the baked shell defaults
+    # home now carries its own head (noscript body + Person JSON-LD); the
+    # shell's baked title/description match it
+    home = route_head("/")
+    assert home is not None and home.canonical_path == "/"
+    assert home.json_ld is not None and '"@type": "Person"' in home.json_ld
 
 
 def test_figures_cache_headers_and_etag(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
