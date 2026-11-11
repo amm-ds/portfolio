@@ -187,6 +187,7 @@
 .story-section .prose ul,
 .story-section .prose ol {
   color: var(--text);
+  opacity: 0.92;
 }
 
 .story-section .prose p {
@@ -240,6 +241,7 @@
 
 .bi-card .bi-body {
   color: var(--text);
+  opacity: 0.92;
   line-height: 1.62;
 }
 
@@ -511,6 +513,7 @@ a.glossary-term:focus-visible {
 
 .data-table td {
   color: var(--text);
+  opacity: 0.92;
 }
 
 .data-table tbody tr:last-child td,
