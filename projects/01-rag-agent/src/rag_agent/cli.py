@@ -21,6 +21,7 @@ from rag_agent.config import RAGConfig
 from rag_agent.corpus import load_corpus, prepare_client_corpus
 from rag_agent.corpus import prepare_corpus as prepare_corpus_impl
 from rag_agent.evaluate import run as run_evaluation
+from rag_agent.evaluate import run_citation_eval as run_citation_evaluation
 from rag_agent.evaluate import run_heldout as run_heldout_evaluation
 from rag_agent.index import (
     CrossEncoderReranker,
@@ -118,6 +119,16 @@ def evaluate(
             "metrics detail.heldout. Needs a provider.",
         ),
     ] = False,
+    citations: Annotated[
+        bool,
+        typer.Option(
+            "--citations",
+            help="Citation-correctness pass: re-answer the sealed set once under the "
+            "champion config with claim-level verify records persisted "
+            "(reports/citation_records_heldout.json, metrics detail.heldout_citations). "
+            "Never touches detail.heldout. Needs a provider.",
+        ),
+    ] = False,
     max_questions: Annotated[
         int | None,
         typer.Option(
@@ -159,19 +170,24 @@ def evaluate(
     config = load_config()
     if reports_dir is not None:
         config.reports_dir = reports_dir
-    if heldout:
+    if heldout or citations:
         if offline:
-            raise typer.BadParameter("--heldout needs a provider and cannot combine with --offline")
+            raise typer.BadParameter(
+                "sealed-set passes need a provider and cannot combine with --offline"
+            )
         if ragas:
-            raise typer.BadParameter("--heldout bounds cost with a verify-on pass only; no --ragas")
+            raise typer.BadParameter(
+                "sealed-set passes bound cost with a verify-on pass only; no --ragas"
+            )
         if max_questions is not None:
             raise typer.BadParameter(
-                "--heldout always runs the full sealed set; no --max-questions"
+                "sealed-set passes always run the full sealed set; no --max-questions"
             )
         if verify is not None:
             config.verify.enabled = verify
+        runner = run_heldout_evaluation if heldout else run_citation_evaluation
         try:
-            payload = run_heldout_evaluation(config)
+            payload = runner(config)
         except LLMProviderUnavailableError as exc:
             typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
             raise typer.Exit(code=1) from exc
@@ -184,9 +200,11 @@ def evaluate(
             if meter["active"]
             else ""
         )
+        section = "detail.heldout" if heldout else "detail.heldout_citations"
+        artifact = "question_traces_heldout.json" if heldout else "citation_records_heldout.json"
         typer.echo(
-            f"held-out eval written: {config.reports_dir / 'metrics.json'} "
-            f"(detail.heldout, backend={payload['ops']['backend']}{spend})"
+            f"sealed-set eval written: {config.reports_dir / 'metrics.json'} "
+            f"({section}, backend={payload['ops']['backend']}{spend}; {artifact})"
         )
         return
     if offline and ragas:

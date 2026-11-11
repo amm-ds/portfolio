@@ -1505,3 +1505,242 @@ def run_heldout(
         meter["total"]["spend_usd"] if meter["active"] else 0.0,
     )
     return payload
+
+
+def run_citation_eval(
+    config: RAGConfig,
+    judge: RubricJudge | None = None,
+    verifier: ClaimJudge | None = None,
+    embed_fn: EmbedFn | None = None,
+    rerank_fn: RerankFn | None = None,
+    model: "Model | None" = None,
+    meter_active: bool | None = None,
+) -> dict[str, Any]:
+    """Citation-correctness pass over the sealed set (``evaluate --citations``).
+
+    Re-answers the sealed held-out set once under the champion configuration —
+    the same verify-on protocol as :func:`run_heldout` — but persists the
+    claim-level verify records the headline pass aggregates and discards. The
+    measurement subject is the citations: which drafted claims the cited
+    evidence supports at first check, what the repair loop changes, and what
+    survives into the final answer.
+
+    Results land in ``reports/citation_records_heldout.json`` (per-question,
+    per-claim evidence) and ``metrics.json → detail.heldout_citations``.
+    ``detail.heldout`` — the shipped headline — is never touched by this pass;
+    it is a second sample of the same process, reported separately on purpose.
+
+    The same validation gate runs first and the same overrides serve tests;
+    see :func:`run_heldout` for the shared protocol.
+    """
+    start_metering(active=meter_active)  # fresh spend-ledger window for this run
+    articles = load_corpus(config)
+    tuning = load_questions(config, articles)
+    heldout = load_heldout_questions(config, articles)
+    if not heldout:
+        raise RuntimeError("no held-out questions resolved against the corpus")
+    chosen = config.retrieval_best
+    if chosen is None:
+        raise RuntimeError("config.retrieval_best is required for the citation run")
+
+    embed_fn_override = embed_fn is not None
+    if embed_fn is None:
+        embed_fn = SentenceTransformerEmbedder(chosen.embedding_model)
+    if rerank_fn is None:
+        rerank_fn = CrossEncoderReranker(config.reranker_model)
+    arm = next(a for a in EMBEDDING_ARMS if a[0] == chosen.embedding_slug)
+    if embed_fn_override:
+        # Test override: search the fixture index for the chosen chunk size.
+        index_dir = config.index_path(chosen.chunk_size)
+    else:
+        index_dir = (
+            config.index_path(chosen.chunk_size)
+            if chosen.embedding_slug == "minilm"
+            else config.index_dir / f"chunks_{chosen.chunk_size}_{chosen.embedding_slug}"
+        )
+    retriever = Retriever.from_index_dir(
+        config,
+        index_dir,
+        embed_fn,
+        rerank_fn if chosen.rerank else None,
+        query_prefixed(embed_fn, arm[2]),
+    )
+
+    problems = validate_heldout_set(config, heldout, tuning, retriever, articles)
+    if problems:
+        for problem in problems:
+            logger.error("held-out validation: %s", problem)
+        raise RuntimeError(
+            f"held-out validation failed with {len(problems)} problem(s); refusing to score it"
+        )
+
+    agent = build_agent(config, model=model)
+    rag_run = run_rag_eval(config, agent, retriever, heldout, judge=judge, verifier=verifier)
+
+    # Linkage: run_rag_eval appends one VerifyReport per answered question, in
+    # question order, for exactly the traces with format_ok=True (reports are
+    # stamped with their question since wave 17 — the zip is checked, not
+    # assumed).
+    answered = [
+        (q, t, latency)
+        for q, t, latency in zip(heldout, rag_run.traces, rag_run.latencies_s, strict=True)
+        if t.format_ok
+    ]
+    if len(answered) != len(rag_run.verify_reports):
+        raise RuntimeError(
+            f"verify-report/trace mismatch: {len(rag_run.verify_reports)} reports for "
+            f"{len(answered)} answered questions; citation records would misalign"
+        )
+    records: list[dict[str, Any]] = []
+    for (question, trace, latency), report in zip(
+        answered,
+        rag_run.verify_reports,
+        strict=False,  # length checked above
+    ):
+        if report.question and report.question != question.question:
+            raise RuntimeError(
+                f"verify-report linkage broken: report question {report.question!r} != "
+                f"trace question {question.question!r}"
+            )
+        records.append(
+            {
+                "question": question.question,
+                "category": question.category,
+                "expected_behavior": question.expected_behavior,
+                "verdict": classify_question(trace),
+                "top_rank": trace.top_rank,
+                "retrieved_relevant": trace.retrieved_relevant,
+                "cited_relevant": trace.cited_relevant,
+                "abstained": trace.abstained or report.abstained,
+                "verify_skipped": report.skipped,
+                "support_fraction": report.support_fraction,
+                "n_repair_calls": report.n_repair_calls,
+                "n_judge_calls": report.n_judge_calls,
+                "latency_s": round(latency, 3),
+                "claims": [
+                    {
+                        "claim": c.claim,
+                        "supported": c.supported,
+                        "reason": c.reason,
+                        "repaired": c.repaired,
+                        "dropped": c.dropped,
+                    }
+                    for c in report.claims
+                ],
+                "citations": report.citations,
+            }
+        )
+
+    verified = [r for r in records if not r["verify_skipped"]]
+    all_claims = [c for r in verified for c in r["claims"]]
+    drafted = len(all_claims)
+    supported_first = sum(1 for c in all_claims if c["supported"] and not c["repaired"])
+    repaired = sum(1 for c in all_claims if c["repaired"])
+    dropped = sum(1 for c in all_claims if c["dropped"])
+    surviving = sum(1 for c in all_claims if c["supported"] and not c["dropped"])
+    first_flags = [1.0 if (c["supported"] and not c["repaired"]) else 0.0 for c in all_claims]
+    surviving_denominator = drafted - dropped
+
+    support_fractions = [r["support_fraction"] for r in verified]
+    floor_flags = [
+        1.0 if r["support_fraction"] >= config.verify.min_support else 0.0 for r in verified
+    ]
+
+    by_verdict: dict[str, dict[str, Any]] = {}
+    for r in verified:
+        bucket = by_verdict.setdefault(
+            r["verdict"], {"n_answers": 0, "support_fractions": [], "first_flags": []}
+        )
+        bucket["n_answers"] += 1
+        bucket["support_fractions"].append(r["support_fraction"])
+        bucket["first_flags"].extend(
+            1.0 if (c["supported"] and not c["repaired"]) else 0.0 for c in r["claims"]
+        )
+    by_verdict_out = {
+        verdict: {
+            "n_answers": bucket["n_answers"],
+            "mean_support_fraction": (
+                sum(bucket["support_fractions"]) / len(bucket["support_fractions"])
+            ),
+            "claim_support_rate_first_check": (
+                sum(bucket["first_flags"]) / len(bucket["first_flags"])
+                if bucket["first_flags"]
+                else None
+            ),
+        }
+        for verdict, bucket in sorted(by_verdict.items())
+    }
+
+    composition: dict[str, int] = {}
+    for q in heldout:
+        key = f"{q.category}/{q.expected_behavior}"
+        composition[key] = composition.get(key, 0) + 1
+
+    records_path = config.reports_dir / "citation_records_heldout.json"
+    records_path.parent.mkdir(parents=True, exist_ok=True)
+    records_path.write_text(json.dumps(records, indent=2) + "\n", encoding="utf-8")
+
+    payload: dict[str, Any] = {
+        "n_questions": len(heldout),
+        "composition": composition,
+        "claims": {
+            "drafted": drafted,
+            "supported_first_check": supported_first,
+            "support_rate_first_check": (supported_first / drafted if drafted else None),
+            "support_rate_first_check_ci95": (
+                list(bootstrap_ci(first_flags, seed=config.seed)) if drafted else None
+            ),
+            "repaired": repaired,
+            "dropped": dropped,
+            "surviving": surviving,
+            "support_rate_final": (
+                surviving / surviving_denominator if surviving_denominator else None
+            ),
+        },
+        "answers": {
+            "n_verified": len(verified),
+            "n_verify_abstentions": sum(1 for r in verified if r["abstained"]),
+            "floor": config.verify.min_support,
+            "mean_support_fraction": (
+                sum(support_fractions) / len(support_fractions) if support_fractions else None
+            ),
+            "mean_support_fraction_ci95": (
+                list(bootstrap_ci(support_fractions, seed=config.seed))
+                if support_fractions
+                else None
+            ),
+            "share_at_or_above_floor": (
+                sum(floor_flags) / len(floor_flags) if floor_flags else None
+            ),
+        },
+        "by_verdict": by_verdict_out,
+        "verify": _verify_stats(config, rag_run),
+        "ops": {
+            "backend": inference_backend(),
+            "p50_latency_s": rag_run.p50_latency_s,
+            "p95_latency_s": rag_run.p95_latency_s,
+        },
+        "meter": get_meter().snapshot(),
+        "records_path": str(records_path),
+        "note": (
+            "citation-correctness pass: the sealed set re-answered once under the "
+            "champion config with claim-level verify records persisted; reported "
+            "separately from detail.heldout, which this pass never touches"
+        ),
+    }
+
+    metrics_path = config.reports_dir / "metrics.json"
+    if metrics_path.exists():
+        metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    else:
+        metrics = {"detail": {}}
+    metrics.setdefault("detail", {})["heldout_citations"] = payload
+    metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+    meter = payload["meter"]
+    logger.info(
+        "citation eval written: %s (backend=%s, metered spend=%.4f USD cloud-equivalent)",
+        metrics_path,
+        payload["ops"]["backend"],
+        meter["total"]["spend_usd"] if meter["active"] else 0.0,
+    )
+    return payload

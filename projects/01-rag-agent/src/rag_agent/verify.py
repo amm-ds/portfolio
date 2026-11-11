@@ -88,6 +88,8 @@ class VerifyReport:
 
     enabled: bool = True
     skipped: bool = False  # agent already abstained: nothing to verify
+    question: str = ""  # stamped by verify_result: joins the report to its question
+    citations: list[dict[str, str]] = field(default_factory=list)  # chunk_id/article_id, same
     claims: list[ClaimCheck] = field(default_factory=list)
     support_fraction: float = 1.0
     n_repair_calls: int = 0
@@ -258,6 +260,10 @@ def verify_result(
     """
     start = time.perf_counter()
     report = VerifyReport(final_summary=result.summary)
+    report.question = question
+    report.citations = [
+        {"chunk_id": c.chunk_id, "article_id": c.article_id} for c in result.citations
+    ]
     try:
         _verify(question, result, retriever, config, judge, report)
     except Exception as exc:  # pragma: no cover - defensive (broad: loop must not break answers)

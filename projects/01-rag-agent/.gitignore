@@ -19,6 +19,8 @@
 # …and the generation pass's per-question traces (55 sealed answers; same
 # evidence role as the committed tuning traces).
 !/reports/question_traces_heldout.json
+# …and the citation pass's claim-level records (per-claim verify evidence).
+!/reports/citation_records_heldout.json
 /reports/figures/*.html
 # The sealed held-out golden set is authored source data (like
 # src/rag_agent/eval_questions.json), not a regenerable artifact: track it even
