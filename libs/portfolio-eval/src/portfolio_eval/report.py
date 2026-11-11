@@ -85,7 +85,7 @@ class EvalReport:
         # overflowing; tabindex/region keep the scroller reachable by keyboard
         # (axe scrollable-region-focusable, wave R1)
         self.sections.append(
-            f'<h2>{heading}</h2>'
+            f"<h2>{heading}</h2>"
             f'<div class="table-wrap" tabindex="0" role="region" '
             f'aria-label="{heading} — scrollable table"><table>{"".join(rows)}</table></div>'
         )
