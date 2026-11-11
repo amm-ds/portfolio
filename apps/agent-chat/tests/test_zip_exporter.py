@@ -7,6 +7,7 @@ import subprocess
 import sys
 import zipfile
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -28,7 +29,7 @@ _SPEC.loader.exec_module(exporter)
 
 
 @pytest.fixture()
-def handoff(tmp_path, monkeypatch):
+def handoff(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> "tuple[Path, Path]":
     """A throwaway git repo shaped like the real one: tmp/apps/agent-chat + tmp/artifacts."""
     root = tmp_path / "repo"
     app = root / "apps" / "agent-chat"
@@ -58,15 +59,16 @@ def run_export() -> Path:
     assert exporter.main() == 0
     zips = sorted((exporter.OUT_DIR).glob("*.zip"))
     assert zips, "no zip produced"
-    return zips[-1]
+    return Path(zips[-1])
 
 
-def manifest(zf_path: Path) -> dict:
+def manifest(zf_path: Path) -> "dict[str, Any]":
     with zipfile.ZipFile(zf_path) as zf:
-        return json.loads(zf.read("STATUS.json"))
+        data: dict[str, Any] = json.loads(zf.read("STATUS.json"))
+    return data
 
 
-def test_runner_state_and_sensitive_files_are_excluded(handoff):
+def test_runner_state_and_sensitive_files_are_excluded(handoff: tuple[Path, Path]) -> None:
     _, app = handoff
     for rel in [
         "node_modules/dep/index.js",
@@ -110,7 +112,7 @@ def test_runner_state_and_sensitive_files_are_excluded(handoff):
     assert "untracked-note.txt" in shipped  # provenance-labeled, still shipped
 
 
-def test_per_file_provenance_and_counts(handoff):
+def test_per_file_provenance_and_counts(handoff: tuple[Path, Path]) -> None:
     meta = manifest(run_export())
     files = meta["files"]
     assert files["src/tracked.py"]["origin"] == "tracked"
@@ -119,7 +121,7 @@ def test_per_file_provenance_and_counts(handoff):
     assert meta["payload_origins"] == {"tracked": 1, "ignored": 1, "untracked": 1}
 
 
-def test_dirty_flag_reports_modified_tracked_file(handoff):
+def test_dirty_flag_reports_modified_tracked_file(handoff: tuple[Path, Path]) -> None:
     _, app = handoff
     (app / "src" / "tracked.py").write_text("changed\n")
     meta = manifest(run_export())
@@ -131,7 +133,9 @@ def test_dirty_flag_reports_modified_tracked_file(handoff):
     assert meta2["dirty"] is True  # still the tracked.py modification
 
 
-def test_versions_increment_and_diff_against_previous(handoff, capsys):
+def test_versions_increment_and_diff_against_previous(
+    handoff: tuple[Path, Path], capsys: pytest.CaptureFixture[str]
+) -> None:
     run_export()
     _, app = handoff
     (app / "new-file.txt").write_text("new")
@@ -142,7 +146,9 @@ def test_versions_increment_and_diff_against_previous(handoff, capsys):
     assert "added (1): new-file.txt" in out
 
 
-def test_fails_clearly_outside_a_git_worktree(tmp_path, monkeypatch, capsys):
+def test_fails_clearly_outside_a_git_worktree(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     root = tmp_path / "not-a-repo"
     app = root / "apps" / "agent-chat"
     app.mkdir(parents=True)

@@ -272,7 +272,9 @@ jobs:
         # subcommand — same pattern as the root gate).
         working-directory: apps/document-intelligence
         run: |
-          uv export --frozen --no-dev -o /tmp/document-intelligence-requirements.txt
+          # --no-emit-project: pip-audit --strict cannot hash the editable
+          # self-package (`-e .`) the standalone export would otherwise emit.
+          uv export --frozen --no-dev --no-emit-project -o /tmp/document-intelligence-requirements.txt
           uvx pip-audit --requirement /tmp/document-intelligence-requirements.txt --strict
       - name: Compose + Postgres end-to-end smoke
         working-directory: apps/document-intelligence
