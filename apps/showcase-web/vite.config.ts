@@ -7,6 +7,9 @@ import react from "@vitejs/plugin-react";
 // client-side page routes, everything with a resource subpath is API.
 const DEMO_API = /^\/demos\/[^/]+\/(manifest|payload|replay|live)(\/|$)/;
 const PROJECT_PAGE = /^\/projects\/\d{2}-[^/]+$/;
+// The API's default dev port is 8000 (see AGENTS.md); override with
+// VITE_API_TARGET when another local service already occupies it.
+const API_TARGET = process.env.VITE_API_TARGET ?? "http://127.0.0.1:8000";
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -14,7 +17,7 @@ export default defineConfig({
     port: 4321,
     proxy: {
       "/projects": {
-        target: "http://127.0.0.1:8000",
+        target: API_TARGET,
         bypass: (req) => {
           const url = req.url ?? "";
           // deep links like /projects/02-demand-forecasting are SPA page
@@ -27,11 +30,11 @@ export default defineConfig({
           return undefined; // /projects/<pid>/<resource> → API
         },
       },
-      "/rag": "http://127.0.0.1:8000",
-      "/health": "http://127.0.0.1:8000",
-      "/contact/unlock": "http://127.0.0.1:8000",
+      "/rag": API_TARGET,
+      "/health": API_TARGET,
+      "/contact/unlock": API_TARGET,
       "/demos": {
-        target: "http://127.0.0.1:8000",
+        target: API_TARGET,
         bypass: (req) => {
           const url = req.url ?? "";
           if (url === "/demos" || DEMO_API.test(url)) return undefined; // proxy
