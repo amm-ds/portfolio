@@ -97,9 +97,7 @@ def evaluate_conformal(
         return cast(float, (df[col] - df[point_col]).mean())
 
     def _per_stratum(df: pl.DataFrame, col: str) -> dict[str, float]:
-        return {
-            s: _coverage(df.filter(pl.col("density_stratum") == s), col) for s in STRATA_NAMES
-        }
+        return {s: _coverage(df.filter(pl.col("density_stratum") == s), col) for s in STRATA_NAMES}
 
     return {
         "method": "one-sided split-conformal offsets per zone-density tercile; "
@@ -150,6 +148,7 @@ def fig_conformal_coverage(block: dict[str, Any]) -> go.Figure:
         title="p90 band coverage: raw quantile vs stratum-conformal",
         yaxis_title="empirical coverage (target 90%)",
     )
+
     def _pct(v: float) -> str:
         return f"{v:.1%}" if v == v else "n/a"
 

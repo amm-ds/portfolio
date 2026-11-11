@@ -197,9 +197,7 @@ def slim_smoke(cfg: ServingConfig, timeout_s: float = 90.0) -> dict[str, Any]:
     import urllib.request
 
     ref = slim_image_ref(cfg)
-    up = _docker(
-        "run", "-d", "--rm", "-p", "8138:8000", "--name", "model-serving-13-slim", ref
-    )
+    up = _docker("run", "-d", "--rm", "-p", "8138:8000", "--name", "model-serving-13-slim", ref)
     if up.returncode != 0:
         return {"passed": False, "error": up.stderr.strip()}
     try:

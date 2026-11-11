@@ -151,8 +151,7 @@ def main() -> int:
         )
         return 1
     print(
-        f"figure-axes: OK ({len(figures)} figures; "
-        f"{len(all_warnings)} over-wide window warning(s))"
+        f"figure-axes: OK ({len(figures)} figures; {len(all_warnings)} over-wide window warning(s))"
     )
     return 0
 
