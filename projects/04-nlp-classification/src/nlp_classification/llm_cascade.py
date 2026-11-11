@@ -64,20 +64,31 @@ class KimiReviewer:
         self.input_tokens = 0
         self.output_tokens = 0
         self.latency_s = 0.0
-        self._agent = Agent(
-            build_model(),
-            output_type=ReviewBatch,
-            system_prompt=(
-                "Classify every AG News headline into exactly one provided class. "
-                "Use only each headline and the class list; never invent another label. "
-                "Return one zero-based label_index and short rationale per input item, "
-                "in exactly the same order and count as the supplied items."
-            ),
-            model_settings=hosted_model_settings() if is_hosted_provider() else None,
-        )
+        # Lazy on purpose: building the agent requires a configured provider,
+        # and tests inject a fake via `reviewer._agent = ...` before first
+        # use. Eager construction made the whole 04 suite depend on a local
+        # Ollama/hosted key — the environment-dependent failure behind the
+        # November nightly streak (CI has no provider at all).
+        self._agent: Agent[None, ReviewBatch] | None = None
+
+    def _ensure_agent(self) -> Agent[None, ReviewBatch]:
+        if self._agent is None:
+            self._agent = Agent(
+                build_model(),
+                output_type=ReviewBatch,
+                system_prompt=(
+                    "Classify every AG News headline into exactly one provided class. "
+                    "Use only each headline and the class list; never invent another label. "
+                    "Return one zero-based label_index and short rationale per input item, "
+                    "in exactly the same order and count as the supplied items."
+                ),
+                model_settings=hosted_model_settings() if is_hosted_provider() else None,
+            )
+        return self._agent
 
     def review(self, texts: list[str], indices: list[int]) -> dict[int, ReviewDecision]:
         decisions: dict[int, ReviewDecision] = {}
+        agent = self._ensure_agent()
         for start in range(0, len(indices), 8):
             batch = indices[start : start + 8]
             items = [{"index": index, "headline": texts[index]} for index in batch]
@@ -86,7 +97,7 @@ class KimiReviewer:
                 f"Items: {json.dumps(items, ensure_ascii=False)}"
             )
             started = time.perf_counter()
-            result = self._agent.run_sync(prompt)
+            result = agent.run_sync(prompt)
             self.latency_s += time.perf_counter() - started
             self.input_tokens += int(result.usage.input_tokens)
             self.output_tokens += int(result.usage.output_tokens)
