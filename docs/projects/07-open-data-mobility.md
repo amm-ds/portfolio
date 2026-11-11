@@ -4,9 +4,9 @@
 trips) + NOAA GHCN-Daily weather · **Status:** flagship — complete
 
 > Next-hour NYC taxi demand by zone, built on 41.2M real 2024 yellow-taxi
-> trips and public weather: on a strict Oct–Dec test holdout the served tuned
+> trips and public weather: on a strict Oct–Dec test holdout the served
 > GBM cuts error 28.3% below same-hour-yesterday (4.68 vs 6.52 MAE); its 90%
-> band reached 91% coverage (sparse zones excepted).
+> band reached 91% coverage (no-borough zones excepted).
 >
 > **TL;DR:** NYC taxi fleet planners staging vehicles and driver shifts one hour
 > ahead across 265 zones — demand must be forecast before it arrives.

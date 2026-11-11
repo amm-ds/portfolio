@@ -100,5 +100,34 @@
       "mae_reduction_pct_vs_temporal_net": 6.03,
       "mape_pct_reduction_pct_vs_temporal_net": -5.63
     }
+  },
+  "conformal": {
+    "method": "one-sided split-conformal offsets per zone-density tercile; calibration = first half of the committed test window, evaluation = second half; offsets from calibration scores y - q90 (marginal per-stratum coverage)",
+    "alpha": 0.1,
+    "calib_rows": 292295,
+    "eval_rows": 292560,
+    "offsets": {
+      "sparse": -1.7970094212776075e-05,
+      "mid": 0.0928305754512273,
+      "dense": 0.18209383821802405
+    },
+    "before": {
+      "coverage_overall": 0.9069114027891715,
+      "coverage_by_stratum": {
+        "sparse": 0.9428330076534767,
+        "mid": 0.8815258563899868,
+        "dense": 0.8959671442687747
+      },
+      "mean_height": 7.032418479260433
+    },
+    "after": {
+      "coverage_overall": 0.9148687448728466,
+      "coverage_by_stratum": {
+        "sparse": 0.9428330076534767,
+        "mid": 0.8986021903820817,
+        "dense": 0.9028532608695652
+      },
+      "mean_height": 7.123708098371789
+    }
   }
 }

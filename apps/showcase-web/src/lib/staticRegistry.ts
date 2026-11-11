@@ -266,6 +266,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "chunk_size_sweep",
       "eda_corpus_composition",
       "failure_taxonomy",
+      "fusion_arm_comparison",
       "kimi_generation_comparison",
       "latency_histogram",
       "model_comparison",
@@ -452,12 +453,12 @@ export const STATIC_STORIES: StaticStorySummary[] = [
     "figure_names": [
       "actual_vs_pred_top5",
       "borough_mae",
+      "conformal_coverage",
       "gbm_vs_nn",
       "hour_borough_heatmap",
       "p90_band",
       "weather_elasticity",
       "zone_demand_map",
-      "zone_fan",
       "zone_hour_heatmap"
     ],
     "has_roadmap": true,

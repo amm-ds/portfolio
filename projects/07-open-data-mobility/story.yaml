@@ -1,9 +1,9 @@
 project_id: 07-open-data-mobility
 short_version: >-
   Next-hour NYC taxi demand by zone, built on 41.2M real 2024 yellow-taxi
-  trips and public weather: on a strict Oct–Dec test holdout the served tuned
+  trips and public weather: on a strict Oct–Dec test holdout the served
   GBM cuts error 28.3% below same-hour-yesterday (4.68 vs 6.52 MAE); its 90%
-  band reached 91% coverage (sparse zones excepted).
+  band reached 91% coverage (no-borough zones excepted).
 figure_captions:
   hour_borough_heatmap: >-
     Full-year mean pickups by hour and borough. Manhattan peaks at 103.7
@@ -20,9 +20,6 @@ figure_captions:
   borough_mae: >-
     Test MAE by borough and run, with same-hour-yesterday lag-24 persistence in grey.
     Manhattan's volume drives absolute error; persistence still edges the default GBM in the Bronx.
-  zone_fan: >-
-    Served-GBM mean and p90 band against actuals for the two busiest zones over
-    14 test days. City-wide empirical coverage is 90.8%.
   gbm_vs_nn: >-
     Q4 run ladder with same-hour-yesterday lag-24 in grey. Served `gbm_tuned` removes
     28.3% of MAE (MASE 0.763); xGB is best on test at −31.2%, while the NN wins MAPE only.
@@ -46,8 +43,8 @@ sections:
       On a strict October–December holdout (584,855 zone-hours) the served
       model cuts average error to 4.68 pickups per hour — 28% below the
       same-hour-yesterday rule — and its 90% upper band covers 90.8% of
-      outcomes. Two flags: sparse zones under-cover at 84.7%; weather
-      links are directional only.
+      outcomes. Two flags: zones without a borough assignment under-cover at
+      84.7%; weather links are directional only.
 
       The pipeline diagram traces one straight path, left to right: two
       public feeds, one prepared zone-hour panel, one forecasting model.
@@ -233,9 +230,14 @@ sections:
       compares each borough's bar against the grey persistence bar —
       Manhattan's absolute error looks largest only because its volume is
       largest, while the Bronx shows the one place persistence still edges
-      the default GBM. In the zone fan figure, use the shaded band as the
-      staffing buffer: plan to the upper line and demand stays under it 9
-      times in 10, except in the flagged sparse zones.
+      the default GBM. In the conformal coverage figure, the band's weak
+      spots move with the slicing: by demand terciles the sparse third was
+      already over-covered at 94.3% while mid (88.2%) and dense (89.6%)
+      sat below target, and split-conformal offsets — +0.09 and +0.18
+      pickups/hour, fit on the first test half, judged on the second —
+      lift them to 89.9% and 90.3% at the same nominal level. The one
+      bucket still under 85% is zones without a borough assignment
+      (84.7%) — flagged, not hidden.
 
       Since training, a drift observatory re-scores each newly published
       month against the persisted model inside a ±15% tolerance — including
@@ -245,9 +247,9 @@ sections:
       to say what holds city-wide and what refuses to transfer.
 
       **Business summary:** Serve it for yellow-taxi next-hour planning, size
-      staffing from the 90% band, and keep the flagged sparse zones on
+      staffing from the 90% band, and keep the flagged no-borough zones on
       manual watch.
-    figures: [actual_vs_pred_top5, borough_mae, zone_fan]
+    figures: [actual_vs_pred_top5, borough_mae, conformal_coverage]
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
   - id: results
     text_md: |
@@ -257,11 +259,13 @@ sections:
       pickups per zone-hour at 18:00 while the Bronx tops out at 0.73.
       That contrast, not any single number, is what the model must
       absorb. The city-wide band figure shows the p90 line tracking
-      actuals at 90.8% coverage — on target where zones are busy, tight at
-      84.7% in sparse zones, and flagged there. The weather elasticity
-      figure reads association only: outer-borough demand dips 7–10% on
-      wet hours, Manhattan holds at 0.97×, EWR rises to 1.08× — no
-      hour-of-week normalization, so not causal.
+      actuals at 90.8% coverage — on target on average. The one bucket
+      under 85% is zones without a borough assignment (84.7%); the named
+      boroughs all sit between 88.6% (Brooklyn) and 98.5% (Staten
+      Island). The weather elasticity figure reads association only:
+      outer-borough demand dips 7–10% on wet hours, Manhattan holds at
+      0.97×, EWR rises to 1.08× — no hour-of-week normalization, so not
+      causal.
 
       Per-service weights are a hard boundary, and it was measured rather
       than assumed. Yellow-trained models lose the green-taxi March test
