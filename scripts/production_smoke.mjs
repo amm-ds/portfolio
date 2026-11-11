@@ -8,6 +8,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const require = createRequire(path.join(ROOT, "apps", "showcase-web", "package.json"));
 const { chromium } = require("playwright");
 const BASE_URL = (process.env.BASE_URL ?? "https://localhost:8443").replace(/\/$/, "");
+const API_URL = (process.env.API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 const errors = [];
 const docResponses = [];
 
@@ -75,13 +76,33 @@ try {
   await page.waitForSelector(".plotly-graph-div .main-svg", { timeout: 45_000 });
   console.log("production figure: Plotly executed with route-scoped CSP");
 
-  const docsResponse = await page.goto(`${BASE_URL}/docs`, {
+  // API docs: the edge intentionally carries NO /docs CSP exception
+  // (external audit F-14 removed it — docs are disabled by default and the
+  // strict same-origin script policy applies everywhere). Through Caddy, an
+  // enabled docs page must arrive WITHOUT the inline exception, and the
+  // strict policy must actively refuse Swagger's inline bootstrap; the
+  // opt-in docs path is verified direct against the API container, where no
+  // edge CSP is injected.
+  const docsEdge = await page.goto(`${BASE_URL}/docs`, {
     waitUntil: "networkidle",
     timeout: 60_000,
   });
-  assert(docsResponse?.status() === 200, "FastAPI docs did not return 200");
-  const docsCsp = docsResponse?.headers()["content-security-policy"] ?? "";
-  assert(docsCsp.includes("script-src 'self' 'unsafe-inline'"), "docs lost their inline bootstrap exception");
+  assert(docsEdge?.status() === 200, "FastAPI docs did not return 200 through the edge");
+  const docsEdgeCsp = docsEdge?.headers()["content-security-policy"] ?? "";
+  assert(
+    docsEdgeCsp.includes("script-src 'self'") && !docsEdgeCsp.includes("'unsafe-inline'"),
+    "edge granted the docs inline-script exception (F-14 regression)",
+  );
+  const edgeRefusals = errors.length;
+  assert(edgeRefusals > 0, "edge docs page raised no CSP refusal — the strict policy is gone");
+  errors.length = 0;
+  console.log("production docs: edge keeps the strict same-origin script policy");
+
+  const apiDocs = await page.goto(`${API_URL}/docs`, {
+    waitUntil: "networkidle",
+    timeout: 60_000,
+  });
+  assert(apiDocs?.status() === 200, "FastAPI docs did not return 200 on the API container");
   try {
     await page.waitForSelector(".swagger-ui .information-container", { timeout: 45_000 });
   } catch (error) {
@@ -99,7 +120,7 @@ try {
     );
     throw error;
   }
-  console.log("production docs: Swagger UI executed");
+  console.log("production docs: Swagger UI executes on the opt-in API path");
 
   assert(errors.length === 0, `CSP/browser errors:\n${errors.join("\n")}`);
   console.log("production-smoke: OK");

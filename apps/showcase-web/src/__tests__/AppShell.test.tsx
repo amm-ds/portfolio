@@ -1,6 +1,6 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { readStylesCss } from "./helpers/css";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../App";
 import { SITE_NAME, SITE_NAME_ROOT, SITE_NAME_SUFFIX } from "../config";
@@ -36,7 +36,7 @@ describe("Nav brand split", () => {
     expect(`${SITE_NAME_ROOT}${SITE_NAME_SUFFIX}`).toBe(SITE_NAME);
     const css = readStylesCss();
     expect(css.match(/\.nav-brand-accent \{[\s\S]*?\n\}/)![0]).toContain(
-      "color: var(--accent);",
+      "color: var(--accent-bright);",
     );
   });
 });
@@ -57,7 +57,7 @@ describe("App shell (temporary smoke)", () => {
     expect(focusables[0]?.getAttribute("href")).toBe("#main");
   });
 
-  it("resets scroll and focuses #main without hiding it behind the nav", async () => {
+  it("leaves initial focus to the browser; moves focus to #main only after client-side navigation", async () => {
     const scrollTo = vi.mocked(window.scrollTo);
     const focus = vi.spyOn(HTMLElement.prototype, "focus");
     render(
@@ -70,13 +70,41 @@ describe("App shell (temporary smoke)", () => {
     expect(document.head.querySelector('meta[name="robots"]')?.getAttribute("content")).toBe(
       "noindex",
     );
-    expect(scrollTo).toHaveBeenCalledWith(0, 0);
-    expect(document.activeElement).toBe(routedMain);
-    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+    // Wave R1 (external evaluation): the initial mount must not steal focus —
+    // on a fresh load the first Tab belongs to the skip link, not the routed
+    // main. No scroll reset either; the browser owns the first paint.
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(document.activeElement).not.toBe(routedMain);
+    expect(focus).not.toHaveBeenCalled();
     const live = screen.getByRole("status", { hidden: true });
     expect(live.className).toBe("visually-hidden");
     // announced via a macrotask after the route meta effect runs
     await waitFor(() => expect(live.textContent).toContain("Page not found"));
+  });
+
+  it("after client-side navigation: resets scroll and focuses #main without hiding it behind the nav", async () => {
+    const scrollTo = vi.mocked(window.scrollTo);
+    const focus = vi.spyOn(HTMLElement.prototype, "focus");
+    const NavigateProbe = () => {
+      const navigate = useNavigate();
+      return (
+        <button type="button" onClick={() => navigate("/no-such-page")}>
+          navigate-probe
+        </button>
+      );
+    };
+    render(
+      <MemoryRouter initialEntries={["/glossary"]}>
+        <NavigateProbe />
+        <App />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(document.title).toContain("Glossary"));
+    fireEvent.click(screen.getByRole("button", { name: "navigate-probe" }));
+    await waitFor(() => expect(document.title).toContain("Page not found"));
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
+    expect(document.activeElement).toBe(document.getElementById("main"));
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
   });
 
   it("scrolls to a glossary hash target after the lazy route mounts", async () => {

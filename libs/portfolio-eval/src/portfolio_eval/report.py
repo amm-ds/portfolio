@@ -28,6 +28,7 @@ body {{ font-family: Inter, system-ui, sans-serif; background: #0f172a; color: #
 h1 {{ color: #2dd4bf; margin-bottom: 0.25rem; }}
 h2 {{ color: #38bdf8; margin: 2.25rem 0 0.75rem; }}
 .table-wrap {{ overflow-x: auto; margin: 1rem 0 1.5rem; }}
+.table-wrap:focus {{ outline: 2px solid #2dd4bf; outline-offset: 2px; border-radius: 4px; }}
 table {{ border-collapse: collapse; width: 100%; margin: 0; font-size: 0.92rem; }}
 th, td {{ border: 1px solid #334155; padding: 0.45rem 0.9rem; text-align: left;
          white-space: nowrap; }}
@@ -80,9 +81,13 @@ class EvalReport:
             tag = "th" if line_no == 0 else "td"
             cells = "".join(f"<{tag}>{c.strip()}</{tag}>" for c in line.strip("|").split("|"))
             rows.append(f"<tr>{cells}</tr>")
-        # wrapped so wide tables scroll within the margins instead of overflowing
+        # wrapped so wide tables scroll within the margins instead of
+        # overflowing; tabindex/region keep the scroller reachable by keyboard
+        # (axe scrollable-region-focusable, wave R1)
         self.sections.append(
-            f'<h2>{heading}</h2><div class="table-wrap"><table>{"".join(rows)}</table></div>'
+            f'<h2>{heading}</h2>'
+            f'<div class="table-wrap" tabindex="0" role="region" '
+            f'aria-label="{heading} — scrollable table"><table>{"".join(rows)}</table></div>'
         )
 
     def add_html(self, heading: str, html: str) -> None:

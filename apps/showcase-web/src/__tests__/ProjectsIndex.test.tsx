@@ -159,12 +159,12 @@ describe("groupByRow", () => {
     expect(title).not.toContain("margin:");
     const prompt = stylesCss.match(/\.study-card h3::before,[\s\S]*?\n\}/)![0];
     expect(prompt).toContain('content: "> ";');
-    expect(prompt).toContain("color: var(--accent);");
+    expect(prompt).toContain("color: var(--accent-bright);");
     // app-card titles carry the same marker on the title link (house
     // .section-title::before visual: green "> ", no glow)
     const appPrompt = stylesCss.match(/\.app-card__title--link::before \{[\s\S]*?\n\}/)![0];
     expect(appPrompt).toContain('content: "> ";');
-    expect(appPrompt).toContain("color: var(--accent);");
+    expect(appPrompt).toContain("color: var(--accent-bright);");
     expect(appPrompt).toContain("text-shadow: none;");
   });
 });
@@ -839,16 +839,16 @@ describe("ProjectsIndex", () => {
     // the "/" marker is its own accent span inside each link; the item text
     // stays muted until hover
     const slashRule = css.match(/\.page-index-slash \{[\s\S]*?\n\}/)![0];
-    expect(slashRule).toContain("color: var(--accent);");
+    expect(slashRule).toContain("color: var(--accent-bright);");
     const hoverRule = css.match(/\.page-index a:hover \{[\s\S]*?\n\}/)![0];
-    expect(hoverRule).toContain("color: var(--accent);");
+    expect(hoverRule).toContain("color: var(--accent-bright);");
     // the index stacks: label line, then one /link per line
     const baseRule = css.match(/\.page-index \{[\s\S]*?\n\}/)![0];
     expect(baseRule).toContain("flex-direction: column;");
     expect(css).toContain(".page-index .page-index-links {");
     // the "index" label keeps the accent; the row is sized up
     expect(css.match(/\.page-index \.page-index-label \{[\s\S]*?\n\}/)![0]).toContain(
-      "color: var(--accent);",
+      "color: var(--accent-bright);",
     );
     expect(baseRule).toContain("font-family: var(--mono);");
     expect(baseRule).toContain("font-size: 1.05rem;");
@@ -908,7 +908,7 @@ describe("ProjectsIndex", () => {
     // ONE rule paints the results chip green on both card kinds — with enough
     // specificity to beat the blue tag treatment below it
     const chipRule = css.match(/\.study-card \.chip\.study-result-chip \{[\s\S]*?\n\}/)![0];
-    expect(chipRule).toContain("color: var(--accent);");
+    expect(chipRule).toContain("color: var(--accent-bright);");
     expect(chipRule).toContain("background: var(--chip-green-bg);");
     expect(chipRule).toContain("border-color: var(--chip-green-border);");
     expect(chipRule).toContain("font-family: var(--mono);");
@@ -950,7 +950,7 @@ describe("ProjectsIndex", () => {
   it("paints card metadata green, stacked and one step below the old 1rem scale", async () => {
     const css = readStylesCss();
     const subRule = css.match(/\.study-sub \{[\s\S]*?\n\}/)![0];
-    expect(subRule).toContain("color: var(--accent);");
+    expect(subRule).toContain("color: var(--accent-bright);");
     // below the old 1rem subtitle scale, clearly smaller than the 1.6rem
     // section titles
     expect(subRule).toContain("font-size: 0.85rem;");

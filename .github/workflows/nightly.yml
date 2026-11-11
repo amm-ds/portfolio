@@ -386,7 +386,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh label create nightly --color f59e0b --description "Nightly validation failure" || true
-      - name: Open failure issue
+      - name: Open or update failure issue
+        # Dedupe (external evaluation P0-3): one open nightly issue at a time —
+        # further failures comment on it with the new run link instead of
+        # opening a duplicate-per-day stream.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEEDS: ${{ toJSON(needs) }}
@@ -402,9 +405,15 @@ jobs:
                   print(f"- {name}: {ctx['result']}")
           PY
           )
-          gh issue create \
-            --title "Nightly validation failed ($(date -u +%Y-%m-%d))" \
-            --label nightly \
-            --body "The overnight validation workflow failed. Failed jobs:${FAILED}
+          BODY="Nightly validation failed. Failed jobs:${FAILED}
           Run: ${RUN_URL}
           Investigate the failing job(s) first; the artifacts attached to the run (M5 reports, offline-sweep reports, repro drift report) carry the evidence."
+          EXISTING=$(gh issue list --label nightly --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY"
+          else
+            gh issue create \
+              --title "Nightly validation failed ($(date -u +%Y-%m-%d))" \
+              --label nightly \
+              --body "$BODY"
+          fi

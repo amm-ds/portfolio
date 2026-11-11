@@ -25,12 +25,12 @@
 
 .nav-brand::before {
   content: "> ";
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 /* the ".dev" brand suffix renders in the accent color */
 .nav-brand-accent {
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .nav-links {
@@ -48,7 +48,7 @@
 
 .nav-links a:hover,
 .nav-links a.active {
-  color: var(--accent);
+  color: var(--accent-bright);
   text-decoration: none;
 }
 
@@ -59,7 +59,7 @@
 }
 
 .nav-links a.github:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-bright);
 }
 
 /* --- Theme switcher: compact segmented mono control in the nav --- */
@@ -91,14 +91,14 @@
 }
 
 .theme-switcher__option:hover:not(:disabled) {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--accent-bright);
+  border-color: var(--accent-bright);
 }
 
 /* active segment: accent border + a translucent accent wash */
 .theme-switcher__option.is-active {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--accent-bright);
+  border-color: var(--accent-bright);
   background: var(--accent-glow);
 }
 
@@ -214,7 +214,7 @@
 
 .terminal-body .cmd::before {
   content: "> ";
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .terminal-body .out {
@@ -230,7 +230,7 @@
 
 .terminal-body .cmd-partial::before {
   content: "> ";
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .terminal-body .cmd-partial {

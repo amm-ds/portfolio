@@ -18,7 +18,7 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .demo-banner-line {
@@ -56,8 +56,8 @@
 }
 
 .chip-link.demo-cta {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--accent-bright);
+  border-color: var(--accent-bright);
   box-shadow: 0 0 10px var(--accent-glow);
 }
 
@@ -70,7 +70,7 @@
 }
 
 .demo-back:hover {
-  color: var(--accent);
+  color: var(--accent-bright);
   text-decoration: none;
 }
 
@@ -83,7 +83,7 @@
 /* house prompt marker, same-line like every section title */
 .demo-title::before {
   content: "> ";
-  color: var(--accent);
+  color: var(--accent-bright);
   text-shadow: none;
 }
 
@@ -109,7 +109,7 @@
 
 .demo-control input[type="range"] {
   width: 260px;
-  accent-color: var(--accent);
+  accent-color: var(--accent-bright);
 }
 
 .demo-presets {
@@ -130,8 +130,8 @@ button.chip.demo-preset {
 }
 
 button.chip.demo-preset:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-bright);
+  color: var(--accent-bright);
 }
 
 /* readout chips + charts */
@@ -144,8 +144,8 @@ button.chip.demo-preset:hover {
 }
 
 .demo-readout.good {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--accent-bright);
+  border-color: var(--accent-bright);
 }
 
 .demo-readout.bad {
@@ -272,7 +272,7 @@ button.chip.demo-preset:hover {
 }
 
 .demo-alarm.alarm {
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .demo-alarm.calm {
@@ -365,7 +365,7 @@ button.chip.demo-preset:hover {
 }
 
 .wb-back:hover {
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .wb-heading .demo-title {
@@ -408,13 +408,13 @@ button.chip.wb-reset {
 
 button.chip.wb-scenario:hover,
 button.chip.wb-reset:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-bright);
+  color: var(--accent-bright);
 }
 
 button.chip.wb-scenario.active {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--accent-bright);
+  border-color: var(--accent-bright);
   box-shadow: 0 0 8px var(--accent-glow);
 }
 
@@ -601,8 +601,8 @@ button.chip.wb-scenario.active {
   flex-shrink: 0;
   font-family: var(--mono);
   font-size: 0.78rem;
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--accent-bright);
+  border-color: var(--accent-bright);
 }
 
 /* preset chips stay on one line each — long labels ellipsis instead of
@@ -642,8 +642,8 @@ button.chip.wb-scenario.active {
 }
 
 button.chip.demo-preset.fwb-active {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-bright);
+  color: var(--accent-bright);
 }
 
 .fwb-store {

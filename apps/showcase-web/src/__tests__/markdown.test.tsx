@@ -354,7 +354,7 @@ describe("prose density (wave 10)", () => {
     expect(css).toContain(".story-section .prose p {\n  margin: 0 0 1.05em;\n}");
     expect(css).toContain("padding-left: 1.5rem;");
     expect(css).toContain(".story-section .prose li {\n  margin-bottom: 0.4rem;\n}");
-    expect(css).toContain(".story-section .prose li::marker {\n  color: var(--accent);\n}");
+    expect(css).toContain(".story-section .prose li::marker {\n  color: var(--accent-bright);\n}");
     // air after a paragraph that introduces a list/table/code/diagram
     expect(css).toContain(".story-section .prose p + ul,");
     expect(css).toContain("margin-top: 1.3rem;");

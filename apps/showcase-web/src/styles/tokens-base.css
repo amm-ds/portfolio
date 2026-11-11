@@ -210,7 +210,7 @@ code {
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 0.05rem 0.35rem;
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 #root {
@@ -256,7 +256,7 @@ code {
 }
 
 .go-card:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-bright);
   text-decoration: none;
   transform: translateY(-2px);
 }
@@ -264,7 +264,7 @@ code {
 .go-card h3 {
   margin: 0 0 0.4rem;
   font-size: 0.95rem;
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .go-card p {
@@ -295,7 +295,7 @@ code {
 
 .roadmap-title::before {
   content: "> ";
-  color: var(--accent);
+  color: var(--accent-bright);
   text-shadow: none;
 }
 
@@ -342,7 +342,7 @@ code {
 }
 
 .roadmap-node.delivered .roadmap-dot {
-  border-color: var(--accent);
+  border-color: var(--accent-bright);
   background: var(--accent);
   box-shadow: 0 0 8px var(--accent-glow);
 }

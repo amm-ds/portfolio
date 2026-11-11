@@ -29,7 +29,7 @@
   border: 1px solid var(--chip-domain-border);
   border-radius: 3px;
   background: var(--chip-domain-bg);
-  color: var(--accent);
+  color: var(--accent-bright);
   font-family: var(--mono);
   font-size: 0.85rem;
   line-height: 1.35;
@@ -66,13 +66,13 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.2rem 0.65rem;
-  color: var(--accent);
+  color: var(--accent-bright);
   line-height: 1.4;
 }
 
 .chip-link:hover {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--accent-bright);
+  border-color: var(--accent-bright);
   text-decoration: none;
 }
 
@@ -101,7 +101,7 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .rail a {
@@ -118,8 +118,8 @@
 }
 
 .rail a.active {
-  color: var(--accent);
-  border-left-color: var(--accent);
+  color: var(--accent-bright);
+  border-left-color: var(--accent-bright);
 }
 
 .rail .rail-num {
@@ -154,12 +154,12 @@
 .story-section h2 {
   font-size: 1.25rem;
   margin: 0 0 0.75rem;
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .story-section h2::before {
   content: "/ ";
-  color: var(--accent);
+  color: var(--accent-bright);
   text-shadow: none;
 }
 
@@ -206,7 +206,7 @@
 }
 
 .story-section .prose li::marker {
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 /* extra air when a paragraph introduces a list, table, code block or diagram */
@@ -235,7 +235,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--accent);
+  color: var(--accent-bright);
   margin: 0 0 0.5rem;
 }
 
@@ -271,12 +271,12 @@
 }
 
 .story-details > summary:hover {
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .story-details[open] > summary {
   margin-bottom: 0.9rem;
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 /* Inline links inside prose/intro text need a non-color cue (axe
@@ -286,7 +286,7 @@
 .section-intro a:not(.glossary-term),
 .bi-card a:not(.glossary-term),
 .glossary-card-hint a {
-  color: var(--accent);
+  color: var(--accent-bright);
   text-decoration: underline;
   text-underline-offset: 0.18em;
 }
@@ -294,7 +294,7 @@
 /* --- Glossary: auto-linked terms in prose + per-project card + /glossary page --- */
 
 a.glossary-term {
-  color: var(--accent);
+  color: var(--accent-bright);
   text-decoration: underline dotted;
   text-underline-offset: 0.18em;
 }
@@ -331,7 +331,7 @@ a.glossary-term:focus-visible {
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .glossary-card-hint {
@@ -340,7 +340,7 @@ a.glossary-term:focus-visible {
 }
 
 .glossary-card-hint a {
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .glossary-card-list {
@@ -364,7 +364,7 @@ a.glossary-term:focus-visible {
 }
 
 .glossary-card-row dt a {
-  color: var(--accent);
+  color: var(--accent-bright);
   text-decoration: none;
 }
 
@@ -418,7 +418,7 @@ a.glossary-term:focus-visible {
 }
 
 .key-concepts-list li::marker {
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .key-concepts-list li p {
@@ -453,7 +453,7 @@ a.glossary-term:focus-visible {
 .glossary-term-name {
   font-family: var(--mono);
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-bright);
   scroll-margin-top: 4rem;
 }
 
@@ -507,7 +507,7 @@ a.glossary-term:focus-visible {
   font-family: var(--mono);
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-bright);
   background: var(--table-head-bg);
 }
 
@@ -541,7 +541,7 @@ a.glossary-term:focus-visible {
 }
 
 .story-metrics-table .value {
-  color: var(--accent);
+  color: var(--accent-bright);
   font-weight: 700;
 }
 
