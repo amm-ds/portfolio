@@ -345,6 +345,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "nab_timelines",
       "nab_tune_surface",
       "pr_curves",
+      "range_pr",
       "telemetry_flags",
       "threshold_sweep"
     ],

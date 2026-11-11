@@ -244,6 +244,23 @@ def evaluate_series(
         detected, in_window = match_events(ts_test[alerts], test_windows, LEAD_STEPS, step_ns)
     rf1 = range_f1(detected, int((~in_window).sum()))
 
+    # range-based PR sweep + alert-budget points (P1): threshold-swept
+    # (range-recall, range-precision) under the project's window matching, and
+    # precision/recall when only the top-k% of scores may alert.
+    if evaluable and test_windows:
+        # local import: range_pr imports match_events/range_f1 from this module
+        from anomaly_detection.range_pr import pa_k as pa_k_eval
+        from anomaly_detection.range_pr import range_pr_area
+
+        range_pr_auc = range_pr_area(scores, ts_test, test_windows, step_ns)
+        pa_k_rows = {
+            f"pa_k_{k:g}": pa_k_eval(scores, ts_test, test_windows, step_ns, k)
+            for k in (0.5, 1.0, 2.0, 5.0)
+        }
+    else:
+        range_pr_auc = None
+        pa_k_rows = {}
+
     # adaptive pass: 10 chunks, drift z vs. the train reference
     chunk_len = int(np.ceil(len(scores) / 10))
     ref_med, ref_iqr = (
@@ -274,6 +291,8 @@ def evaluate_series(
         "alerts_fired": int(alerts.sum()),
         "events_detected": int(sum(detected)),
         "events_missed": int(len(detected) - sum(detected)),
+        "range_pr_auc": range_pr_auc,
+        **pa_k_rows,
         **rf1,
         "adaptive_drift_events": drift_events,
         "adaptive_flags": int(adaptive_flags.sum()),
@@ -322,6 +341,15 @@ def _aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     out["events_missed"] = int(sum(r["events_missed"] for r in rows))
     out["alerts_fired"] = int(sum(r["alerts_fired"] for r in rows))
     out["adaptive_drift_events"] = int(sum(r["adaptive_drift_events"] for r in rows))
+    aucs = [r["range_pr_auc"] for r in rows if r.get("range_pr_auc") is not None]
+    out["range_pr_auc"] = float(np.mean(aucs)) if aucs else None
+    for key in ("pa_k_0.5", "pa_k_1", "pa_k_2", "pa_k_5"):
+        precs = [r[key]["range_precision"] for r in rows if key in r]
+        recs = [r[key]["range_recall"] for r in rows if key in r]
+        out[key] = {
+            "range_precision": float(np.mean(precs)) if precs else None,
+            "range_recall": float(np.mean(recs)) if recs else None,
+        }
     return out
 
 
@@ -349,6 +377,116 @@ def alert_budget_curve(
             rows.append({"budget": float(budget), "range_f1": float(np.mean(f1s))})
         out[label] = rows
     return out
+
+
+def _no_skill_band(
+    results: dict[str, dict[str, Any]], config: AnomalyConfig, n_seeds: int = 16
+) -> dict[str, Any]:
+    """Seeded random-scorer ensemble over the evaluable series: per seed the
+    mean-over-series range-PR area and PA%K precision/recall — the band the
+    champion's numbers are read against (external evaluation P1)."""
+    evaluable = [r for r in results.values() if r["evaluable"] and r["windows"]]
+
+    # local imports: range_pr imports match_events/range_f1 from this module
+    from anomaly_detection.range_pr import band as no_skill_band
+
+    def measure(seed: int) -> dict[str, float]:
+        from anomaly_detection.range_pr import pa_k as pa_k_eval
+        from anomaly_detection.range_pr import range_pr_area
+
+        rng = np.random.default_rng(seed)
+        aucs, precisions, recalls = [], [], []
+        for r in evaluable:
+            scores = rng.random(len(r["scores"]))
+            aucs.append(range_pr_area(scores, r["ts_test"], r["windows"], r["step_ns"]))
+            row = pa_k_eval(scores, r["ts_test"], r["windows"], r["step_ns"], 2.0)
+            precisions.append(row["range_precision"])
+            recalls.append(row["range_recall"])
+        return {
+            "range_pr_auc": float(np.mean(aucs)),
+            "pa_k_precision": float(np.mean(precisions)),
+            "pa_k_recall": float(np.mean(recalls)),
+        }
+
+    stats = no_skill_band(range(config.seed, config.seed + n_seeds), measure)
+    return {"seeds": n_seeds, "series": len(evaluable), **stats}
+
+
+def range_pr_figure(results: dict[str, dict[str, Any]], no_skill: dict[str, Any]) -> go.Figure:
+    """Range-PR under the project's window matching: champion mean curve vs the
+    seeded random band, with the 2% alert-budget operating point marked."""
+    from anomaly_detection.range_pr import interp_precision, range_pr_points
+
+    grid = np.linspace(0.0, 1.0, 51)
+    evaluable = [r for r in results.values() if r["evaluable"] and r["windows"]]
+    champion = np.mean(
+        [
+            interp_precision(
+                *range_pr_points(r["scores"], r["ts_test"], r["windows"], r["step_ns"]), grid
+            )
+            for r in evaluable
+        ],
+        axis=0,
+    )
+    seed_curves = []
+    for seed in range(no_skill["seeds"]):
+        rng = np.random.default_rng(10_000 + seed)
+        per_series = []
+        for r in evaluable:
+            scores = rng.random(len(r["scores"]))
+            per_series.append(
+                interp_precision(
+                    *range_pr_points(scores, r["ts_test"], r["windows"], r["step_ns"]), grid
+                )
+            )
+        seed_curves.append(np.mean(per_series, axis=0))
+    band_lo = np.percentile(seed_curves, 2.5, axis=0)
+    band_hi = np.percentile(seed_curves, 97.5, axis=0)
+
+    fig = go.Figure()
+    fig.add_scatter(
+        x=grid, y=band_hi, mode="lines", showlegend=False, line={"width": 0}, hoverinfo="skip"
+    )
+    fig.add_scatter(
+        x=grid,
+        y=band_lo,
+        mode="lines",
+        name="no-skill band (p2.5-p97.5, 16 seeds)",
+        fill="tonexty",
+        fillcolor="rgba(148,163,184,0.25)",
+        line={"width": 0},
+    )
+    fig.add_scatter(
+        x=grid,
+        y=champion,
+        mode="lines",
+        name="champion (mean over series)",
+        line={"color": "#2dd4bf", "width": 2.5},
+    )
+    pa2 = [r["pa_k_2"] for r in results.values() if r.get("pa_k_2")]
+    if pa2:
+        fig.add_scatter(
+            x=[float(np.mean([p["range_recall"] for p in pa2]))],
+            y=[float(np.mean([p["range_precision"] for p in pa2]))],
+            mode="markers",
+            name="PA%2 operating point",
+            marker={"color": "#f472b6", "size": 12, "symbol": "diamond"},
+        )
+    fig.update_layout(
+        title="Range precision vs recall under window matching",
+        xaxis_title="range recall",
+        yaxis_title="range precision",
+        yaxis={"range": [0, 1.05]},
+    )
+    add_takeaway(
+        fig,
+        (
+            f"threshold sweep, project window semantics — champion vs a 16-seed random band; "
+            f"no-skill area {no_skill['range_pr_auc']['mean']:.3f} "
+            f"[{no_skill['range_pr_auc']['p2.5']:.3f}, {no_skill['range_pr_auc']['p97.5']:.3f}]"
+        ),
+    )
+    return apply_theme(fig)
 
 
 def nab_figures(
@@ -478,7 +616,9 @@ def run_nab(config: AnomalyConfig) -> dict[str, Any]:
             )
 
     budget_curve = alert_budget_curve(results, config)
+    no_skill = _no_skill_band(results, config)
     figures = nab_figures(results, budget_curve)
+    figures["range_pr"] = range_pr_figure(results, no_skill)
     for name, fig in figures.items():
         save_json(fig, config.figures_dir / f"{name}.json")
 
@@ -493,6 +633,7 @@ def run_nab(config: AnomalyConfig) -> dict[str, Any]:
         },
         "by_family": {fam: _aggregate(rs) for fam, rs in by_family.items()},
         "overall": _aggregate(list(results.values())),
+        "no_skill": no_skill,
         "lead_steps": LEAD_STEPS,
         "event_rule": (
             "window detected if >=1 alert inside; range precision over alerts outside windows"

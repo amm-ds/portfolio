@@ -61,6 +61,14 @@ but emits **1,609 raw alerts**. Episode deduplication and the 24-hour cap cut
 that load to **80 pages** and raise range-F1 to **0.315**, with range recall
 moving from 0.729 to 0.562.
 
+A threshold sweep under the project's window matching puts the headline on a
+no-skill footing: the champion's **range-PR area is 0.804** against a 16-seed
+random band at **0.228 [0.081, 0.401]**, and **precision at a 2% alert budget
+is 0.527** (recall 0.944) against a no-skill **0.082 [0.063, 0.105]** — six
+times the no-skill precision while still touching nearly every window. At 0.5%
+of the stream precision reads 0.680; at 5%, 0.234 (see `reports/nab_metrics.json
+→ no_skill` and the `range_pr` figure).
+
 The current rank-average ensemble uses rolling features and the frozen 2%
 budget with a 24-hour cap. It improves the operating point without selecting
 on the test window.

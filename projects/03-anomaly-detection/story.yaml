@@ -244,7 +244,7 @@ sections:
     **Business summary:** Budget the pages, then combine the detectors:
     35 pages instead of 1,609, each incident paged about once a day,
     at 0.13–0.25 recall cost.
-  figures: [pr_curves, threshold_sweep, adaptive_stream]
+  figures: [pr_curves, range_pr, adaptive_stream]
 - id: results
   text_md: |
     **What the evidence shows, panel by panel.** The timeline-panels
@@ -258,6 +258,17 @@ sections:
     The alert-budget figure then prices the trade: range-F1 against the
     alert budget per NAB group. Only IsolationForest sits on that curve —
     it is a budget dial, not a detector ranking.
+
+    The range-PR figure answers the threshold question directly. Sweeping
+    the alert threshold over the score quantiles — under the project's own
+    window matching, not pointwise labels — the champion's range-PR area is
+    **0.804** against a 16-seed random band at **0.228 [0.081, 0.401]**: the
+    ranking is real, not prevalence restated. At the operating points an
+    on-call team actually lives at, precision at a fixed alert budget reads
+    **0.680** (0.5% of the stream), **0.632** (1%), **0.527** (2%), and
+    **0.234** (5%), recall 0.944 across the evaluable windows. The no-skill
+    precision at 2% is 0.082 [0.063, 0.105] — the champion pages six times
+    more precisely than chance while still touching nearly every window.
 
     **The candidate that changes the recommendation is a number, not a
     panel.** The sweep's rank-average ensemble posts budgeted range
@@ -345,6 +356,18 @@ sections:
     | realAWSCloudwatch | 0.404 | 0.088 | 3/3 (132) |
     | **overall** | **0.527** | **0.157** | **16/17 (1,609)** |
 
+    Range-PR sweep + no-skill controls (threshold sweep over score quantiles,
+    window matching throughout; artifact `reports/nab_metrics.json → no_skill`):
+
+    | measure | champion | no-skill band (16 seeds) |
+    |---|---|---|
+    | range-PR area | **0.804** | 0.228 [0.081, 0.401] |
+    | precision at 0.5% of stream | 0.680 | — |
+    | precision at 1% of stream | 0.632 | — |
+    | precision at 2% of stream (recall 0.944) | 0.527 | 0.082 [0.063, 0.105] |
+    | precision at 5% of stream | 0.234 | — |
+    | no-skill recall at 2% | — | 0.885 [0.806, 0.962] |
+
     Sweep cells, raw → budgeted stream (alerts | range recall | range-F1):
 
     | sweep cell | alerts | range recall | range-F1 |
@@ -430,7 +453,7 @@ sections:
     the three families at the documented default (2%, 24 h) — 35 pages at
     range-F1 0.533, recall 0.604 — with no tuning required; all of it
     reproducible.
-  figures: []
+  figures: [threshold_sweep]
 roadmap:
 - status: delivered
   text: "Built the NAB event-aware evaluation contract: past-only splits, frozen threshold, seeded floor."
