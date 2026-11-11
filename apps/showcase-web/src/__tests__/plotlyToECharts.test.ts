@@ -225,7 +225,7 @@ describe("plotlyToECharts over the committed churn figures", () => {
     ]);
     const light = asOpt(plotlyToECharts(payload, "light"));
     expect(light.series[0].data.map((d: { itemStyle: { color: string } }) => d.itemStyle.color)).toEqual([
-      "#14b8a6",
+      "#0f766e",
       "#475569",
     ]);
   });

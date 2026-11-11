@@ -78,8 +78,8 @@ describe("theme tokens", () => {
     }
     // light values are darker variants, safe on the light paper
     for (const declaration of [
-      "--chart-teal: #2dd4bf;",
-      "--chart-teal-light: #5eead4;",
+      "--chart-teal: #0f766e;",
+      "--chart-teal-light: #0d9488;",
       "--chart-pink: #be185d;",
       "--chart-amber: #b45309;",
       "--chart-lilac: #7c3aed;",

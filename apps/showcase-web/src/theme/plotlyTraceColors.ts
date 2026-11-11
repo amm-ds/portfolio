@@ -11,7 +11,7 @@ export const LIGHT_TRACE_COLOR_MAP: Record<string, string> = {
   "#94a3b8": "#64748b",
   "#0f172a": "#1e293b",
   "#fbbf24": "#b45309",
-  "#2dd4bf": "#14b8a6",
+  "#2dd4bf": "#0f766e",
   "#38bdf8": "#0284c7",
   "#a78bfa": "#7c3aed",
   "#f472b6": "#db2777",
