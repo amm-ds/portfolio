@@ -128,6 +128,7 @@ def confusion_matrix_figure(
             text=cm,
             texttemplate="%{text}",
             colorscale="Teal",
+            colorbar={"title": "items"},
         )
     )
     fig.update_layout(
