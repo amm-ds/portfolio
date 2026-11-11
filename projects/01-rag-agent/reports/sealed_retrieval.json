@@ -44,5 +44,20 @@
     "recall_at_10": 1.0,
     "n": 10
   },
-  "method_note": "Protocol: RAW retrieval layer only \u2014 dense/BM25/RRF candidates, top-10 (served) and top-50 (failure taxonomy), rerank OFF. Two cautions. (1) The 40 expansion questions passed the answerability gate (a relevant chunk sits in the production retriever's top-10), so the full-55 numbers describe retrieval on validated-answerable questions, not a stress test. (2) The original 15 questions read recall@5 0.90 at this raw layer \u2014 the committed 'sealed recall@5 0.600' is a DIFFERENT layer: the operational fetch of the sealed generation pass (reranked, top-3 citations). The two are not comparable; the raw layer says retrieval per se rarely fails on these questions, so the sealed loss concentrates at the rerank/top-k operating point \u2014 measured with the champion config by the generation pass, which is where the per-question failure taxonomy completes."
+  "method_note": "Protocol: RAW retrieval layer only \u2014 dense/BM25/RRF candidates, top-10 (served) and top-50 (failure taxonomy), rerank OFF. Two cautions. (1) The 40 expansion questions passed the answerability gate (a relevant chunk sits in the production retriever's top-10), so the full-55 numbers describe retrieval on validated-answerable questions, not a stress test. (2) The original 15 questions read recall@5 0.90 at this raw layer \u2014 the committed 'sealed recall@5 0.600' is a DIFFERENT layer: the operational fetch of the sealed generation pass (reranked, top-3 citations). The two are not comparable; the raw layer says retrieval per se rarely fails on these questions, so the sealed loss concentrates at the rerank/top-k operating point \u2014 measured with the champion config by the generation pass, which is where the per-question failure taxonomy completes.",
+  "generation_pass_failures": {
+    "n_failures": 11,
+    "taxonomy": {
+      "generation_unsupported_retrieval_perfect": 9,
+      "topk_demotion": 1,
+      "abstention_format_slip": 1
+    },
+    "headline": "9 of 11 failures retrieved the relevant article at rank 1 (fetched AND cited) yet kept unsupported claims - the bottleneck is generation grounding, not retrieval; 1 top-k demotion (relevant at rank 7, outside the fetch; the harness verdict reads retrieval-miss); 0 raw retrieval misses in the top-50; 1 abstention format slip among the 13 unanswerable (refusal accuracy 12/13 = 0.923).",
+    "examples": {
+      "topk_demotion": "How does C4 carbon fixation concentrate carbon dioxide for t (top_rank 7)",
+      "generation_unsupported_retrieval_perfect": "Where is geothermal power used in the United Kingdom?",
+      "abstention_format_slip": "What is the intended cruise speed of the Boom Overture supersonic airliner?"
+    },
+    "source": "reports/question_traces_heldout.json (55-question sealed pass, kimi-for-coding, metered $1.95 cloud-equivalent)"
+  }
 }

@@ -52,7 +52,7 @@ export const AUTO_01_RAG_AGENT_4_SPEC = {
     },
     {
       id: "s15",
-      label: "Sealed 15-question set, · scored once",
+      label: "Sealed 55-question set · scored once",
       kind: "data",
       facts: [],
     },

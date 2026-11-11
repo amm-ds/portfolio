@@ -16,6 +16,9 @@
 # …and the expanded sealed set's retrieval-side read + failure taxonomy
 # (Project A); the generation-side numbers land in metrics.json detail.
 !/reports/sealed_retrieval.json
+# …and the generation pass's per-question traces (55 sealed answers; same
+# evidence role as the committed tuning traces).
+!/reports/question_traces_heldout.json
 /reports/figures/*.html
 # The sealed held-out golden set is authored source data (like
 # src/rag_agent/eval_questions.json), not a regenerable artifact: track it even

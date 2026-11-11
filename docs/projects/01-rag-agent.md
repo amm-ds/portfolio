@@ -2,10 +2,10 @@
 
 **Domain:** Agentic AI / LLM · **Data:** Wikipedia (HF, real) · **Status:** Flagship — complete
 
-> A cited QA assistant over 593 pinned Wikipedia articles. Tuning set (65
-> questions): selected kimi-for-coding scores 46 correct, 17
-> unsupported-claim outcomes. Sealed held-out (15 questions): 11 of 15
-> correct; recall@5 falls 0.831 → 0.600. Auditable, not unattended-ready.
+> A cited QA assistant over 593 pinned Wikipedia articles. Tuning (65 q): 46
+> correct, 17 unsupported-claim outcomes. Sealed held-out (55 q): 44 of 55
+> correct; 9 of 11 failures kept unsupported claims despite rank-1 retrieval;
+> refusal accuracy 0.92. Auditable, not unattended-ready.
 >
 > Teams routing questions at a knowledge base need answers they can audit —
 > every claim traced to a source, every unsupported claim dropped or refused.
@@ -106,15 +106,25 @@ run records are in `projects/01-rag-agent/reports/`.
 ### Held-out confirmation
 
 All tuning numbers above come from the 65 tuning questions. A sealed
-15-question held-out set — written fresh after tuning froze (8 single-hop, 2
-multi-hop, 5 unanswerable), gated for corpus support, absent terms, and Jaccard
-separation — is scored separately by `evaluate --heldout` without RAGAS and
-reported under `metrics.json → detail.heldout`. Selected `kimi-for-coding`
-reaches recall@5 **0.600**, recall@10 0.667, and MRR@5 0.567 (random 0.022).
-On the 10 answerable questions, rubric faithfulness is 0.64, answer relevance
-0.595, and context recall 0.9; all 5 required refusals succeed. The pass meters
-**61 calls and $0.240699 cloud-equivalent**, with p50 28.025 s and p95 52.176 s.
-The recall gap is a warning against generalizing from one Wikipedia slice.
+55-question held-out set — written fresh after tuning froze (32 single-hop,
+10 multi-hop, 13 unanswerable; the original 15 questions plus 40 gated
+expansions), gated for corpus support, absent terms, and Jaccard separation —
+is scored separately by `evaluate --heldout` without RAGAS and reported under
+`metrics.json → detail.heldout`. The selected `kimi-for-coding` pass keeps
+44 of 55 answers correct (0.80, CI [0.69, 0.89]); operational retrieval reads
+recall@5 **0.745**, recall@10 0.764, and MRR@5 0.718 (random 0.055). On the
+42 answerable questions, rubric faithfulness is 0.6338 [0.5726, 0.7021],
+answer relevance 0.7114, and context recall 0.9762; 12 of 13 required
+refusals succeed (accuracy 0.92, CI [0.77, 1.0]). The pass meters **241
+calls and $1.950667 cloud-equivalent** under the $3.00 cap, with p50
+24.443 s and p95 126.811 s.
+
+The failure taxonomy is the honest headline: of the 11 failures, 9 retrieved
+the relevant article at rank 1 (fetched and cited) yet kept unsupported
+claims, one was a top-k demotion (relevant at rank 7, outside the fetch),
+and none was a raw retrieval miss. The expansion questions passed an
+answerability gate, so their retrieval reads are consistency checks, not
+stress tests — generation grounding, not retrieval, remains the bottleneck.
 
 ## Links
 

@@ -262,6 +262,18 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 
 ## 6. Changelog
 
+- 0.8.0 (2026-11-11) — sealed held-out expanded 15 → 55 questions (original
+  15 plus 40 expansions gated for support, absent terms, Jaccard separation,
+  and answerability). The verify-on generation pass keeps 44/55 correct
+  (0.80, CI [0.69, 0.89]): taxonomy 44 correct / 9 unsupported-claim / 1
+  retrieval-miss / 1 format-failure; operational recall@5 0.745, refusal
+  accuracy 0.92 (12/13); 241 calls and $1.950667 cloud-equivalent under the
+  $3.00 cap. The per-question failure taxonomy is the headline: 9 of 11
+  failures retrieved the relevant article at rank 1 yet kept unsupported
+  claims — grounding, not retrieval, is the bottleneck. Supersedes the
+  15-question `detail.heldout` values quoted under 0.7.0. Evidence:
+  `metrics.json → detail.heldout`, `sealed_retrieval.json`,
+  `question_traces_heldout.json`.
 - 0.7.0 (2026-11-07) — selected `kimi-for-coding` after the provider comparison:
   46 correct / 17 unsupported / 2 retrieval-miss / no format failures across 65
   tuning questions; rubric faithfulness 0.6209, RAGAS faithfulness 0.7337, and

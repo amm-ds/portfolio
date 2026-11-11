@@ -8,7 +8,7 @@ and cross-encoder reranking.
 The runtime default is local Ollama (`qwen3.6:35b-a3b-q4_K_M`); any
 OpenAI-compatible endpoint uses the same path. There is no runtime mock.
 **`kimi-for-coding` is the selected provider for the reported evaluation**,
-which covers a 65-question tuning set and a sealed 15-question held-out set.
+which covers a 65-question tuning set and a sealed 55-question held-out set.
 
 - Design record and history: [DESIGN.md](DESIGN.md)
 - Evidence: `reports/metrics.json`, `reports/cost_telemetry.json`,
@@ -87,24 +87,33 @@ in the headline table. Retrieval remains stronger than generation grounding.
 
 ### Sealed held-out set
 
-The held-out set contains 15 fresh questions: 8 single-hop, 2 multi-hop, and 5
-unanswerable. Programmatic gates check corpus support, absent terms, and
-Jaccard separation from the tuning set before scoring. The selected hosted pass
-uses verification and the rubric judge, without RAGAS.
+The held-out set holds 55 fresh questions: 32 single-hop, 10 multi-hop, and
+13 unanswerable — the original 15 plus 40 expansions written after tuning
+froze. Programmatic gates check corpus support, absent terms, and Jaccard
+separation from the tuning set before scoring; the 40 expansions also pass an
+answerability gate. The selected hosted pass uses verification and the rubric
+judge, without RAGAS.
 
 | metric | sealed held-out result |
 |---|---:|
-| retrieval recall@5 / recall@10 | 0.600 / 0.667 |
-| retrieval MRR@5 (random floor) | 0.567 (0.022) |
-| rubric faithfulness, 10 answerable | 0.64 |
-| rubric answer relevance, 10 answerable | 0.595 |
-| rubric context recall, 10 answerable | 0.9 |
-| required refusals | 5/5 |
-| latency p50 / p95 | 28.025 s / 52.176 s |
-| whole-pass meter | 61 calls / $0.240699 cloud-equivalent |
+| failure taxonomy | 44 correct / 9 unsupported-claim / 1 retrieval-miss / 1 format-failure |
+| correct share (95% CI) | **0.80 [0.69, 0.89]** |
+| operational retrieval recall@5 / recall@10 | 0.745 / 0.764 |
+| retrieval MRR@5 (random floor) | 0.718 (0.055) |
+| rubric faithfulness, 42 answerable | 0.6338 [0.5726, 0.7021] |
+| rubric answer relevance, 42 answerable | 0.7114 |
+| rubric context recall, 42 answerable | 0.9762 |
+| required refusals | 12/13 (accuracy 0.92, CI [0.77, 1.0]) |
+| latency p50 / p95 | 24.443 s / 126.811 s |
+| whole-pass meter | 241 calls / $1.950667 cloud-equivalent |
 
-Held-out retrieval is harder than tuning-set retrieval. The sealed set is one
-small slice, not evidence of broad-corpus or unattended readiness.
+The failure taxonomy is the headline: of the 11 failures, 9 retrieved the
+relevant article at rank 1 (fetched and cited) yet kept unsupported claims,
+one was a top-k demotion (relevant at rank 7, outside the fetch), and none
+was a raw retrieval miss. Held-out retrieval reads are bounded by the
+answerability gate, so the honest read is that generation grounding — not
+retrieval — remains the bottleneck. The sealed set is still one small slice,
+not evidence of broad-corpus or unattended readiness.
 
 ### Cost and budget operation
 
@@ -114,15 +123,15 @@ successful calls are metered. Tuning cost is reported as answer generation per
 query before judging and verification; no replacement end-to-end tuning-suite
 total is claimed.
 
-The sealed 15-question pass meters:
+The sealed 55-question pass meters:
 
 | phase | calls | cloud-equivalent spend |
 |---|---:|---:|
-| agent | 14 | $0.144457 |
-| judge | 28 | $0.037550 |
-| verify | 19 | $0.058692 |
+| agent | 54 | $1.574388 |
+| judge | 108 | $0.145988 |
+| verify | 79 | $0.230291 |
 | RAGAS | 0 | $0.000000 |
-| **total** | **61** | **$0.240699** |
+| **total** | **241** | **$1.950667** |
 
 `LLM_COST_LIMIT_USD` caps each run through the platform spend ledger. A cap
 violation stops the CLI with setup guidance; it does not silently select a
@@ -145,7 +154,8 @@ Exact telemetry is in `reports/metrics.json → detail.heldout.meter`.
 ## Limits
 
 Answers are not trustworthy unattended: the selected tuning pass retains 17
-unsupported-claim outcomes and held-out recall@5 falls to 0.600. Local repair
+unsupported-claim outcomes, and the sealed pass keeps 44 of 55 correct with
+9 of 11 failures grounded anyway at rank-1 retrieval. Local repair
 is weak, and local verification gains come mainly through abstention. Broader
 corpus quality and always-on public chat remain unproven; `RAG_CHAT_ENABLED=1`
 stays opt-in and hosted calls require an explicit budget.

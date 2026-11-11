@@ -257,53 +257,53 @@
       "avg_output_tokens": 1310.0615384615385
     },
     "heldout": {
-      "n_questions": 15,
+      "n_questions": 55,
       "composition": {
-        "single_hop/answer": 8,
-        "multi_hop/answer": 2,
-        "unanswerable/abstain": 5
+        "single_hop/answer": 32,
+        "multi_hop/answer": 10,
+        "unanswerable/abstain": 13
       },
       "retrieval": {
-        "recall@5": 0.6,
-        "recall@10": 0.6666666666666666,
-        "mrr@5": 0.5666666666666667,
-        "n_questions": 15,
-        "random_recall@5": 0.06666666666666667,
-        "random_mrr@5": 0.02222222222222222,
-        "delta_mrr@5_vs_random": 0.5444444444444444
+        "recall@5": 0.7454545454545455,
+        "recall@10": 0.7636363636363637,
+        "mrr@5": 0.7181818181818181,
+        "n_questions": 55,
+        "random_recall@5": 0.05454545454545454,
+        "random_mrr@5": 0.0303030303030303,
+        "delta_mrr@5_vs_random": 0.6878787878787879
       },
       "rag": {
-        "n_questions": 10,
-        "faithfulness": 0.64,
-        "answer_relevance": 0.595,
-        "context_recall": 0.9
+        "n_questions": 42,
+        "faithfulness": 0.6338,
+        "answer_relevance": 0.7114,
+        "context_recall": 0.9762
       },
       "faithfulness": {
-        "mean": 0.6399999999999999,
+        "mean": 0.6338095238095238,
         "ci95": [
-          0.485,
-          0.785
+          0.5726,
+          0.7021
         ]
       },
       "taxonomy": {
         "counts": {
-          "correct": 11,
+          "correct": 44,
           "retrieval-miss": 1,
-          "unsupported-claim": 2,
+          "unsupported-claim": 9,
           "format-failure": 1
         },
-        "correct_share": 0.7333333333333333,
+        "correct_share": 0.8,
         "correct_share_ci95": [
-          0.4667,
-          0.9333
+          0.6909,
+          0.8909
         ]
       },
       "abstention": {
-        "n_unanswerable": 5,
-        "n_answerable": 10,
-        "refusal_accuracy": 0.8,
+        "n_unanswerable": 13,
+        "n_answerable": 42,
+        "refusal_accuracy": 0.9230769230769231,
         "refusal_accuracy_ci95": [
-          0.4,
+          0.7692,
           1.0
         ],
         "cite_when_expected": 1.0,
@@ -311,28 +311,28 @@
           1.0,
           1.0
         ],
-        "false_abstention_rate": 0.0,
+        "false_abstention_rate": 0.023809523809523808,
         "false_abstention_rate_ci95": [
           0.0,
-          0.0
+          0.0714
         ]
       },
       "verify": {
         "enabled": true,
         "min_support": 0.6,
         "max_repair_calls": 2,
-        "n_answers_verified": 14,
-        "n_verify_abstentions": 0,
-        "n_verify_skipped": 4,
-        "total_repair_calls": 5,
-        "mean_support_fraction": 0.9812,
-        "mean_verify_latency_s": 16.097,
-        "verify_latency_share_of_answer": 0.2488
+        "n_answers_verified": 54,
+        "n_verify_abstentions": 1,
+        "n_verify_skipped": 12,
+        "total_repair_calls": 19,
+        "mean_support_fraction": 0.9721,
+        "mean_verify_latency_s": 16.841,
+        "verify_latency_share_of_answer": 0.3524
       },
       "ops": {
         "backend": "env:kimi-for-coding",
-        "p50_latency_s": 28.02486087498255,
-        "p95_latency_s": 52.17561695794575
+        "p50_latency_s": 24.442790375091136,
+        "p95_latency_s": 126.81147087505087
       },
       "meter": {
         "active": true,
@@ -340,25 +340,25 @@
         "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
         "phases": {
           "agent": {
-            "calls": 14,
-            "input_tokens": 169185,
-            "output_tokens": 14785,
-            "cached_input_tokens": 119808,
-            "spend_usd": 0.144457
+            "calls": 54,
+            "input_tokens": 3592417,
+            "output_tokens": 67770,
+            "cached_input_tokens": 3270144,
+            "spend_usd": 1.574388
           },
           "judge": {
-            "calls": 28,
-            "input_tokens": 20406,
-            "output_tokens": 4286,
+            "calls": 108,
+            "input_tokens": 78308,
+            "output_tokens": 16920,
             "cached_input_tokens": 0,
-            "spend_usd": 0.03755
+            "spend_usd": 0.145988
           },
           "verify": {
-            "calls": 19,
-            "input_tokens": 27109,
-            "output_tokens": 9195,
-            "cached_input_tokens": 7424,
-            "spend_usd": 0.058692
+            "calls": 79,
+            "input_tokens": 94881,
+            "output_tokens": 38054,
+            "cached_input_tokens": 24007,
+            "spend_usd": 0.230291
           },
           "ragas": {
             "calls": 0,
@@ -369,13 +369,13 @@
           }
         },
         "total": {
-          "calls": 61,
-          "input_tokens": 216700,
-          "output_tokens": 28266,
-          "cached_input_tokens": 127232,
-          "spend_usd": 0.240699
+          "calls": 241,
+          "input_tokens": 3765606,
+          "output_tokens": 122744,
+          "cached_input_tokens": 3294151,
+          "spend_usd": 1.950667
         },
-        "ledger_spend_usd": 0.240699,
+        "ledger_spend_usd": 1.950667,
         "budget_usd": 3.0
       },
       "traces_path": "reports/question_traces_heldout.json",

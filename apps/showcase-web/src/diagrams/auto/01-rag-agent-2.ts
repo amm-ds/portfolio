@@ -28,7 +28,7 @@ export const AUTO_01_RAG_AGENT_2_SPEC = {
     },
     {
       id: "ev",
-      label: "Scored evaluation · 65 tuning, 15 sealed",
+      label: "Scored evaluation · 65 tuning, 55 sealed",
       kind: "model",
       facts: [],
     },

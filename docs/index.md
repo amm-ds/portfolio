@@ -15,7 +15,8 @@ baseline, an honest delta, and the code to verify it.
 - **[RAG & agentic assistant](projects/01-rag-agent.md)** — answers only from
   retrieved evidence with per-claim citations; selected `kimi-for-coding`
   improves rubric faithfulness to 0.6209 while 17/65 tuning answers still keep
-  unsupported claims, and sealed recall falls from 0.831 to 0.600.
+  unsupported claims; the sealed 55-question pass keeps 44/55 correct, 9 of 11
+  failures grounded anyway at rank-1 retrieval.
 
 ## Measured results, three of them
 

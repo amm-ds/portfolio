@@ -42,7 +42,7 @@ export const CARD_DOES: Record<string, string> = {
  *  **bold** so the result scans at a glance. */
 export const CARD_ACHIEVES: Record<string, string> = {
   "01-rag-agent":
-    "On the **65-question tuning set** the right passage is found **83% of the time**, yet **17 of 65** audited answers kept unsupported claims; the sealed **15-question held-out** pass keeps just **11 of 15** answers correct — auditable, not yet trustworthy unattended.",
+    "On the **65-question tuning set** the right passage is found **83% of the time**, yet **17 of 65** audited answers kept unsupported claims; the sealed **55-question held-out** pass keeps **44 of 55** correct, and **9 of 11 failures** kept unsupported claims despite rank-1 retrieval — auditable, not yet trustworthy unattended.",
   "02-demand-forecasting":
     "A stability-screened ensemble of pooled LightGBM fits reaches **0.6161** vs the naive floor's **0.8929** official WRMSSE (**−31.0%**) on the scored-once competition window.",
   "03-anomaly-detection":

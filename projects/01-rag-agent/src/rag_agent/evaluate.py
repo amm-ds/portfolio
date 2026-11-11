@@ -20,11 +20,11 @@ Pipeline blocks, all writing into ``config.reports_dir``:
     stays $0 API cost.
 
 A separate ``run_heldout`` (wave 16, ``evaluate --heldout``) measures a sealed
-15-question held-out golden set — written fresh, never tuned against — and
-reports it under ``metrics detail.heldout``, apart from the tuning set: the
-same retrieval metrics plus one verify-on agent pass (agent + verify + rubric
-judge, deliberately no RAGAS to bound hosted cost) with bootstrap CIs on
-faithfulness and the failure taxonomy.
+55-question held-out golden set — written fresh, never tuned against (15
+original + 40 gated expansions) — and reports it under ``metrics detail.
+heldout``, apart from the tuning set: the same retrieval metrics plus one
+verify-on agent pass (agent + verify + rubric judge, deliberately no RAGAS to
+bound hosted cost) with bootstrap CIs on faithfulness and the failure taxonomy.
 """
 
 import json
