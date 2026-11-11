@@ -113,6 +113,25 @@ const PRACTICES = [
   },
 ];
 
+const AI_DISCLOSURE: readonly { title: string; text: string }[] = [
+  {
+    title: "multiple agents, one bar",
+    text: "specialist agents explore, implement and evaluate, each briefed per task; every output passes the same review bar before it ships — no unreviewed merges, ever.",
+  },
+  {
+    title: "human in the loop",
+    text: "I set the architecture and the acceptance criteria; agents draft, test and refine. An owner review round gates every publication — structured feedback, several rounds per release, scope agreed up front.",
+  },
+  {
+    title: "reports & context",
+    text: "agents work from committed evidence — metrics, traces, evaluation reports, audit findings — and every change lands with its verification report. Each claim on this site traces to a committed artifact.",
+  },
+  {
+    title: "architect-level standards",
+    text: "eight ADRs, an engineering playbook, typed contracts and machine-checked gates (lint, types, tests, figure budgets) keep agent-written code at the bar a senior review would set.",
+  },
+];
+
 export function About() {
   usePageMeta({
     title: "About",
@@ -131,18 +150,10 @@ export function About() {
           I design, build and evaluate ML systems end to end, and I keep the code, metrics
           and case studies public and auditable.
         </p>
-        <p>
-          <a
-            href="https://amm-ds.github.io/portfolio/site/how-this-was-built/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            How this portfolio was built — AI use disclosed →
-          </a>
-        </p>
         <PageIndex
           items={[
             { id: "how-i-work", label: "how I work" },
+            { id: "ai-disclosure", label: "AI use, disclosed" },
             { id: "experience", label: "experience" },
           ]}
         />
@@ -163,6 +174,32 @@ export function About() {
           </Card>
         ))}
       </div>
+
+      <h2 className="section-title" id="ai-disclosure">
+        AI use, disclosed
+      </h2>
+      <p className="section-intro">
+        This site and its thirteen case studies were built with AI coding agents under
+        human direction — the workflow behind the work, stated plainly rather than
+        polished over.
+      </p>
+      <div className="practices-grid">
+        {AI_DISCLOSURE.map((p) => (
+          <Card key={p.title} className="practice-card">
+            <h3>{p.title}</h3>
+            <p>{p.text}</p>
+          </Card>
+        ))}
+      </div>
+      <p>
+        <a
+          href="https://amm-ds.github.io/portfolio/site/how-this-was-built/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          The full write-up — how this portfolio was built →
+        </a>
+      </p>
 
       <h2 className="section-title" id="experience">experience</h2>
       <ol className="timeline">

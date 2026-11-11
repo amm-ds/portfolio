@@ -34,8 +34,9 @@ describe("shared page indexes", () => {
 
   it("indexes the about sections", () => {
     render(<MemoryRouter><About /></MemoryRouter>);
-    expect(indexHrefs()).toEqual(["#how-i-work", "#experience"]);
+    expect(indexHrefs()).toEqual(["#how-i-work", "#ai-disclosure", "#experience"]);
     expect(document.getElementById("how-i-work")).not.toBeNull();
+    expect(document.getElementById("ai-disclosure")).not.toBeNull();
     expect(document.getElementById("experience")).not.toBeNull();
   });
 

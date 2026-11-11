@@ -192,9 +192,12 @@ describe("About page", () => {
 
   it("opens 'how I work' as nine client-facing practice cards with the services card geometry", () => {
     renderAbout();
-    const cards = document.querySelectorAll(".practice-card");
+    const grids = document.querySelectorAll(".practices-grid");
+    expect(grids).toHaveLength(2); // practices + the AI-use disclosure grid
+    const cards = grids[0].querySelectorAll(".practice-card");
     expect(cards).toHaveLength(9);
-    const text = document.querySelector(".practices-grid")!.textContent!;
+    expect(grids[1].querySelectorAll(".practice-card")).toHaveLength(4);
+    const text = grids[0].textContent!;
     for (const practice of [
       "full repository handover",
       "measured against your baseline",
@@ -215,8 +218,9 @@ describe("About page", () => {
     expect(text).not.toContain("plain-language reporting");
     // client-facing framing: what the client receives, not internal plumbing
     expect(screen.getByText(/Nine practices shape every engagement/i)).toBeInTheDocument();
-    // importance cards, not a narrative strip
-    expect(document.querySelectorAll(".practices-grid")).toHaveLength(1);
+    // importance cards, not a narrative strip — one grid for the nine
+    // practices, a second for the four AI-use disclosure cards
+    expect(document.querySelectorAll(".practices-grid")).toHaveLength(2);
     expect(document.querySelector(".practices-strip")).toBeNull();
     // "how I work" is the FIRST section right after the profile intro
     const firstTitle = document.querySelector(".section-title")!;
