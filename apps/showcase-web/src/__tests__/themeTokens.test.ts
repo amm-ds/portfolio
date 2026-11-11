@@ -37,7 +37,7 @@ describe("theme tokens", () => {
       "--muted: #4e6276;",
       "--dim: #536578;",
       "--accent: #14b8a6;",
-      "--accent-bright: #0a5750;",
+      "--accent-bright: #0f766e",
       "--secondary: #0369a1;",
       "--danger: #b4233a;",
       "--warning: #92400e;",
