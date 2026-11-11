@@ -57,7 +57,7 @@
 
 .chip-link.demo-cta {
   color: var(--accent-bright);
-  border-color: var(--accent-bright);
+  border-color: var(--accent);
   box-shadow: 0 0 10px var(--accent-glow);
 }
 
@@ -130,7 +130,7 @@ button.chip.demo-preset {
 }
 
 button.chip.demo-preset:hover {
-  border-color: var(--accent-bright);
+  border-color: var(--accent);
   color: var(--accent-bright);
 }
 
@@ -145,7 +145,7 @@ button.chip.demo-preset:hover {
 
 .demo-readout.good {
   color: var(--accent-bright);
-  border-color: var(--accent-bright);
+  border-color: var(--accent);
 }
 
 .demo-readout.bad {
@@ -408,13 +408,13 @@ button.chip.wb-reset {
 
 button.chip.wb-scenario:hover,
 button.chip.wb-reset:hover {
-  border-color: var(--accent-bright);
+  border-color: var(--accent);
   color: var(--accent-bright);
 }
 
 button.chip.wb-scenario.active {
   color: var(--accent-bright);
-  border-color: var(--accent-bright);
+  border-color: var(--accent);
   box-shadow: 0 0 8px var(--accent-glow);
 }
 
@@ -602,7 +602,7 @@ button.chip.wb-scenario.active {
   font-family: var(--mono);
   font-size: 0.78rem;
   color: var(--accent-bright);
-  border-color: var(--accent-bright);
+  border-color: var(--accent);
 }
 
 /* preset chips stay on one line each — long labels ellipsis instead of
@@ -642,7 +642,7 @@ button.chip.wb-scenario.active {
 }
 
 button.chip.demo-preset.fwb-active {
-  border-color: var(--accent-bright);
+  border-color: var(--accent);
   color: var(--accent-bright);
 }
 
