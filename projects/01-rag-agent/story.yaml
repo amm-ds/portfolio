@@ -243,8 +243,9 @@ sections:
     Sparse+dense fusion is the current production default, so the comparison
     runs retrieval-only (rerank off, no LLM calls): dense, BM25 (k1=1.2,
     b=0.75), and RRF k=60 over the top-50 lists. On tuning, RRF ties dense
-    exactly (recall@5 0.831 both; MRR@5 0.724 vs 0.718) with nDCG@10 slightly
-    lower (0.700 vs 0.714); BM25 alone reaches 0.738. On the sealed set the
+    (recall@5 Δ 0.000; MRR@5 +0.006 for RRF) with nDCG@10 slightly
+    lower (0.700 vs 0.714); BM25 alone reaches 0.738 (−0.093 vs
+    dense). On the sealed set the
     raw layer reads dense recall@5 0.976 vs BM25 0.952 and RRF 0.952 — a
     consistency read, not a stress test; RRF again does not beat dense. At
     this scale fusion buys no measured recall for its extra latency; the
@@ -347,8 +348,15 @@ sections:
     | Retrieval configuration | recall@5 | recall@10 | MRR@5 |
     |---|---|---|---|
     | MiniLM, 200-token chunks | **0.831** | 0.846 | **0.808** |
-    | lexical word match | 0.677 | 0.754 | 0.500 |
-    | seeded random | 0.031 | 0.046 | 0.018 |
+    | lexical word match (baseline) | 0.677 | 0.754 | 0.500 |
+    | seeded random (chance floor) | 0.031 | 0.046 | 0.018 |
+
+    Delta over the baselines — the column a client should read first:
+
+    | Δ vs baseline | recall@5 | recall@10 | MRR@5 |
+    |---|---:|---:|---:|
+    | over lexical word match | **+0.154** | +0.092 | **+0.308** |
+    | over seeded random | +0.800 | +0.800 | +0.790 |
 
     | Generation metric | Incumbent | Selected `kimi-for-coding` |
     |---|---:|---:|
@@ -368,7 +376,8 @@ sections:
     - Sealed held-out pass (55 questions: 32 single-hop, 10 multi-hop, 13
       unanswerable): 44 correct / 9 unsupported-claim / 1 retrieval-miss / 1
       format-failure (0.80 correct, CI [0.69, 0.89]); operational recall@5
-      0.745, recall@10 0.764, MRR@5 0.718 (random 0.055); on 42 answerable
+      0.745 (+0.691 over the 0.055 random floor), recall@10 0.764, MRR@5
+      0.718 (+0.688 over 0.030); on 42 answerable
       questions, rubric faithfulness 0.6338 [0.5726, 0.7021], answer relevance
       0.7114, context recall 0.9762; 12/13 required refusals (accuracy 0.92,
       CI [0.77, 1.0]); 241 calls and $1.950667 cloud-equivalent under the

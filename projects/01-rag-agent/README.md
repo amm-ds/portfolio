@@ -100,6 +100,7 @@ judge, without RAGAS.
 | correct share (95% CI) | **0.80 [0.69, 0.89]** |
 | operational retrieval recall@5 / recall@10 | 0.745 / 0.764 |
 | retrieval MRR@5 (random floor) | 0.718 (0.055) |
+| Δ over the random floor | recall@5 +0.691 · MRR@5 +0.688 |
 | rubric faithfulness, 42 answerable | 0.6338 [0.5726, 0.7021] |
 | rubric answer relevance, 42 answerable | 0.7114 |
 | rubric context recall, 42 answerable | 0.9762 |

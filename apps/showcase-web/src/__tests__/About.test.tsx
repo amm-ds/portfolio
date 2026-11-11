@@ -196,7 +196,7 @@ describe("About page", () => {
     expect(grids).toHaveLength(2); // practices + the AI-use disclosure grid
     const cards = grids[0].querySelectorAll(".practice-card");
     expect(cards).toHaveLength(9);
-    expect(grids[1].querySelectorAll(".practice-card")).toHaveLength(4);
+    expect(grids[1].querySelectorAll(".practice-card")).toHaveLength(3);
     const text = grids[0].textContent!;
     for (const practice of [
       "full repository handover",

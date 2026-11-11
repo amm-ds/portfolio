@@ -120,11 +120,7 @@ const AI_DISCLOSURE: readonly { title: string; text: string }[] = [
   },
   {
     title: "human in the loop",
-    text: "I set the architecture and the acceptance criteria; agents draft, test and refine. An owner review round gates every publication — structured feedback, several rounds per release, scope agreed up front.",
-  },
-  {
-    title: "reports & context",
-    text: "agents work from committed evidence — metrics, traces, evaluation reports, audit findings — and every change lands with its verification report. Each claim on this site traces to a committed artifact.",
+    text: "I set the architecture and the acceptance criteria; agents draft, test and refine from committed evidence — metrics, traces, evaluation reports. An owner review round gates every publication, and every change lands with its verification report.",
   },
   {
     title: "architect-level standards",
