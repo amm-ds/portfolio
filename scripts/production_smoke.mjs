@@ -89,8 +89,11 @@ try {
   });
   assert(docsEdge?.status() === 200, "FastAPI docs did not return 200 through the edge");
   const docsEdgeCsp = docsEdge?.headers()["content-security-policy"] ?? "";
+  // The strict policy carries 'unsafe-inline' in STYLE-src (renderer-injected
+  // inline styles) — the F-14 invariant is about SCRIPT-src only.
+  const edgeScriptSrc = /script-src ([^;]+)/.exec(docsEdgeCsp)?.[1] ?? "";
   assert(
-    docsEdgeCsp.includes("script-src 'self'") && !docsEdgeCsp.includes("'unsafe-inline'"),
+    edgeScriptSrc.includes("'self'") && !edgeScriptSrc.includes("'unsafe-inline'"),
     "edge granted the docs inline-script exception (F-14 regression)",
   );
   const edgeRefusals = errors.length;
