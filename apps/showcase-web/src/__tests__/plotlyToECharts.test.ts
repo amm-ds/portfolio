@@ -527,6 +527,93 @@ describe("supportsECharts", () => {
     expect(option.xAxis[0].max).toBe(0.1);
   });
 
+  it("tooltips round like the axis ticks, cap at 8 entries, and group repeats", () => {
+    const payload: PlotlyPayload = {
+      data: [
+        { type: "scatter", mode: "lines", name: "a", x: [1, 2], y: [0.123456789, 0.2] },
+        { type: "scatter", mode: "lines", name: "b", x: [1, 2], y: [0.123456789, 0.4] },
+      ],
+      layout: {},
+    };
+    const option = asOpt(plotlyToECharts(payload, "dark"));
+    const tooltip = option.tooltip as { formatter: (p: unknown) => string };
+    const params = [
+      ...Array.from({ length: 12 }, (_, i) => ({
+        seriesName: `s${i}`,
+        value: [1, 0.5],
+        marker: "",
+        axisValueLabel: "x = 1",
+      })),
+      // a duplicate of s0's rendered value — must collapse, not double-list
+      { seriesName: "s0-dup", value: [1, 0.5], marker: "", axisValueLabel: "x = 1" },
+    ];
+    const html = tooltip.formatter(params);
+    const lines = html.split("<br/>").filter((l) => l.includes(":"));
+    expect(lines.length).toBe(8);
+    expect(html).toContain("+5 more"); // 12 unique + 1 duplicate - 8 shown
+    const rounded = asOpt(
+      plotlyToECharts(
+        {
+          data: [{ type: "scatter", mode: "lines", name: "a", x: [1], y: [0.123456789] }],
+          layout: {},
+        },
+        "dark",
+      ),
+    ).tooltip as { formatter: (p: unknown) => string };
+    expect(rounded.formatter([{ seriesName: "a", value: [1, 0.123456789], marker: "", axisValueLabel: "1" }])).toContain(
+      "0.123457",
+    );
+  });
+
+  it("dense all-scatter charts switch to the single-point item tooltip", () => {
+    const many = (offset: number) => ({
+      type: "scatter" as const,
+      mode: "markers" as const,
+      name: `s${offset}`,
+      x: Array.from({ length: 400 }, (_, i) => i),
+      y: Array.from({ length: 400 }, (_, i) => i + offset),
+    });
+    const option = asOpt(
+      plotlyToECharts({ data: [many(0), many(1000)], layout: {} }, "dark"),
+    );
+    const tooltip = option.tooltip as { trigger: string; formatter: (p: unknown) => string };
+    expect(tooltip.trigger).toBe("item"); // 800 points > 500 threshold
+    const html = tooltip.formatter({ seriesName: "s0", value: [3, 3], marker: "" });
+    expect(html).toContain("s0");
+    expect(html).toContain("3"); // rounded single point, no x-bin dump
+  });
+
+  it("heatmaps get cell labels, an item tooltip with the value, and the colorbar title", () => {
+    const payload = {
+      data: [
+        {
+          type: "heatmap",
+          x: ["a", "b", "c"],
+          y: ["p", "q", "r"],
+          z: [
+            [1, 0.2, -0.35],
+            [0.2, 1, 0.87654321],
+            [-0.35, 0.87654321, 1],
+          ],
+          colorscale: [
+            [0, "#f472b6"],
+            [1, "#2dd4bf"],
+          ],
+          colorbar: { title: { text: "Pearson r" } },
+        },
+      ],
+      layout: {},
+    } as unknown as PlotlyPayload;
+    const option = asOpt(plotlyToECharts(payload, "dark"));
+    const series = (option.series as Array<Record<string, unknown>>)[0];
+    expect((series.label as { show: boolean }).show).toBe(true); // 9 cells <= 144
+    const tooltip = option.tooltip as { trigger: string; formatter: (p: unknown) => string };
+    expect(tooltip.trigger).toBe("item");
+    expect(tooltip.formatter({ value: ["a", "q", 0.87654321], marker: "" })).toBe("q · a: 0.876543");
+    const visualMap = option.visualMap as { text?: string[] };
+    expect(visualMap.text?.[0]).toBe("Pearson r");
+  });
+
   it("accepts fill bands (tonexty) as a silent polygon between the pair", () => {
     const payload: PlotlyPayload = {
       data: [

@@ -458,6 +458,69 @@ function formatTick(v: number): string {
   return String(Number(v.toPrecision(6)));
 }
 
+// --- tooltips: rounded, capped, grouped -------------------------------------
+
+const TOOLTIP_MAX_ENTRIES = 8;
+
+/** Axis-trigger tooltip: numbers shaped like the axis ticks (formatTick), at
+ *  most TOOLTIP_MAX_ENTRIES series lines with a +N-more tail, and identical
+ *  series+value runs collapsed into one line (the "many repeated entries"
+ *  class of popup noise on dense charts). */
+function formatAxisTooltip(params: unknown): string {
+  const list = Array.isArray(params) ? params : [params];
+  const rows: string[] = [];
+  const seen = new Set<string>();
+  let hidden = 0;
+  for (const raw of list) {
+    const p = raw as {
+      seriesName?: string;
+      value?: unknown;
+      marker?: string;
+      axisValueLabel?: string;
+      axisValue?: string | number;
+    };
+    const value = Array.isArray(p.value) ? p.value[p.value.length - 1] : p.value;
+    const numeric = typeof value === "number" ? value : Number(value);
+    const text = Number.isFinite(numeric) ? formatTick(numeric) : String(value ?? "—");
+    const key = `${p.seriesName ?? ""}${text}`;
+    if (seen.has(key)) {
+      hidden += 1;
+      continue;
+    }
+    seen.add(key);
+    if (rows.length >= TOOLTIP_MAX_ENTRIES) {
+      hidden += 1;
+      continue;
+    }
+    rows.push(`${p.marker ?? ""}${p.seriesName ?? ""}: ${text}`);
+  }
+  const head = list[0] as { axisValueLabel?: string; axisValue?: string | number } | undefined;
+  const header =
+    head?.axisValueLabel ?? (head?.axisValue !== undefined ? formatTick(Number(head.axisValue)) : "");
+  const more = hidden > 0 ? `<br/>+${hidden} more` : "";
+  const body = rows.join("<br/>");
+  return header ? `${header}<br/>${body}${more}` : `${body}${more}`;
+}
+
+/** Dense-scatter item tooltip: the single nearest point, rounded like ticks. */
+function formatScatterItem(param: unknown): string {
+  const p = param as { seriesName?: string; value?: unknown; marker?: string };
+  if (!Array.isArray(p.value)) return String(p.value ?? "");
+  const [x, y] = p.value as [unknown, unknown];
+  const xs = typeof x === "number" ? formatTick(x) : String(x);
+  const ys = typeof y === "number" ? formatTick(y) : String(y);
+  return `${p.marker ?? ""}${p.seriesName ?? ""}<br/>${xs}, ${ys}`;
+}
+
+/** Heatmap cell tooltip: `row · column: value` — no whole-column dumps. */
+function formatHeatmapItem(param: unknown): string {
+  const p = param as { value?: unknown; marker?: string };
+  if (!Array.isArray(p.value) || p.value.length < 3) return String(p.value ?? "");
+  const [x, y, z] = p.value as [unknown, unknown, unknown];
+  const zs = typeof z === "number" ? formatTick(z) : String(z);
+  return `${p.marker ?? ""}${String(y)} · ${String(x)}: ${zs}`;
+}
+
 /** The payload's authored [min, max] for this axis, or null when absent.
  *  A null side means "auto" and falls back to the data extent (unpadded). */
 function authoredAxisRange(
@@ -591,7 +654,7 @@ export function plotlyToECharts(
   const namedSeries: string[] = [];
   /** value axes that carry outside bar labels ("0.616 (−31%)"): headroom */
   const labelHeadroomAxes = new Set<string>();
-  let heatmapVisual: { min: number; max: number; colors: string[] } | null = null;
+  let heatmapVisual: { min: number; max: number; colors: string[]; title?: string } | null = null;
 
   const traceColor = (i: number, explicit: unknown): string => {
     const raw =
@@ -1043,8 +1106,41 @@ export function plotlyToECharts(
           });
         }
       }
-      series.push({ type: "heatmap", name, gridIndex, xIdx, yIdx, data: items, z: 1 });
-      heatmapVisual = { min: zMin, max: zMax, colors };
+      series.push({
+        type: "heatmap",
+        name,
+        gridIndex,
+        xIdx,
+        yIdx,
+        data: items,
+        z: 1,
+        // small matrices read better with the value printed in the cell;
+        // large ones stay clean and rely on the cell tooltip
+        ...(xsRaw.length * ysRaw.length <= 144
+          ? {
+              label: {
+                show: true,
+                fontSize: 10,
+                color: palette.textColor,
+                formatter: (p: { value?: unknown[] }) =>
+                  Array.isArray(p.value) && typeof p.value[2] === "number"
+                    ? formatTick(p.value[2])
+                    : "",
+              },
+            }
+          : {}),
+      });
+      const colorbarTitle = asRecord(
+        asRecord(asRecord(t.marker).colorbar).title ?? asRecord(t.colorbar).title,
+      ).text;
+      heatmapVisual = {
+        min: zMin,
+        max: zMax,
+        colors,
+        ...(typeof colorbarTitle === "string" && colorbarTitle
+          ? { title: colorbarTitle.replace(BR_RE, " ") }
+          : {}),
+      };
     }
   }
 
@@ -1975,6 +2071,20 @@ export function plotlyToECharts(
   }
   const dataSeries = series.filter((s) => !s.silent);
   const cartesianSeries = dataSeries.filter((s) => s.type !== "funnel");
+  const totalPoints = cartesianSeries.reduce(
+    (n, s) => n + (Array.isArray(s.data) ? (s.data as unknown[]).length : 0),
+    0,
+  );
+  const allScatter =
+    cartesianSeries.length > 0 && cartesianSeries.every((s) => s.type === "scatter");
+  const allHeatmap =
+    cartesianSeries.length > 0 && cartesianSeries.every((s) => s.type === "heatmap");
+  // dense scatter clouds (temp_vs_rentals: seasons x thousands of rows) bury
+  // the reader in whole-x-bin dumps under an axis trigger — report the
+  // single nearest point instead; pure heatmaps use a cell tooltip; line/bar
+  // charts keep the axis trigger with the capped grouped formatter
+  const itemTrigger = (allScatter && totalPoints > 500) || allHeatmap;
+  const itemFormatter = allHeatmap ? formatHeatmapItem : formatScatterItem;
   const option: Record<string, unknown> = {
     backgroundColor: "rgba(0,0,0,0)",
     textStyle: { fontFamily, color: baseColor, fontSize },
@@ -1991,11 +2101,12 @@ export function plotlyToECharts(
     series,
     tooltip: {
       confine: true,
-      trigger: cartesianSeries.length === 0 ? "item" : "axis",
+      trigger: cartesianSeries.length === 0 || itemTrigger ? "item" : "axis",
       backgroundColor: HOVER_BG,
       borderColor: HOVER_BORDER,
       textStyle: { color: HOVER_TEXT, fontSize: 12, fontFamily },
       axisPointer: { type: "line", lineStyle: { color: palette.axisLineColor } },
+      formatter: itemTrigger ? itemFormatter : formatAxisTooltip,
     },
   };
   if (legend) option.legend = legend;
@@ -2012,6 +2123,10 @@ export function plotlyToECharts(
       calculable: false,
       inRange: { color: heatmapVisual.colors },
       textStyle: { color: palette.textColor, fontSize: 11 },
+      // the plotly colorbar title becomes the legend's top-end label
+      ...(heatmapVisual.title
+        ? { text: [heatmapVisual.title, formatTick(heatmapVisual.min)] }
+        : {}),
     };
   }
   return option as unknown as EChartsOption;
