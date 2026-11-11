@@ -127,7 +127,7 @@ export function DocumentIntelligenceArticle() {
               className={active === section.id ? "active" : ""}
               aria-current={active === section.id ? "location" : undefined}
             >
-              <span className="rail-num">{String(index + 1).padStart(2, "0")}</span>
+              <span className="rail-num">{String(index + 1).padStart(2, "0")}</span>{" "}
               {section.title.toLowerCase()}
             </a>
           ))}

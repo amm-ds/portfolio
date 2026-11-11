@@ -58,7 +58,7 @@ export function CaseStudy({
             >
               <span className="rail-num">
                 /{String(i + 1).padStart(2, "0")}
-              </span>
+              </span>{" "}
               {s.title.toLowerCase()}
             </a>
           ))}
