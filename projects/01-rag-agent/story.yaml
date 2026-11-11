@@ -203,10 +203,10 @@ sections:
     ```diagram auto-01-rag-agent-3
     ```
 
-    Treat this contract as the checklist every number survives. Three judges
-    stay separate because they see different failure modes: the rubric judge
+    Three judges stay separate — they see different failure
+    modes: the rubric judge
     applies the failure taxonomy, RAGAS scores faithfulness and relevancy,
-    the claim verifier checks each claim at the 0.6 floor. The seeded floors
+    the claim verifier checks each claim at 0.6 support. The seeded floors
     stop a headline restating how easy the task is; the sealed set, written
     after tuning froze and scored once, cannot be overfit; the meters keep a
     pass affordable.
@@ -218,21 +218,26 @@ sections:
     context precision and recall are 0.7609 and 0.9826. The selected pass:
     46 correct, 17 unsupported-claim, 2 retrieval-miss, 0 format-failure
     outcomes; refusal accuracy 1.0, false-abstention 0.0545,
-    cite-when-expected 0.9636. Answer generation costs $0.000906/query before
-    judge and verify costs, at p50 25.888 s and p95 108.836 s. No replacement
-    total tuning-suite cost is claimed.
+    cite-when-expected 0.9636. Answer generation runs $0.000906/query before
+    judge/verify (p50 25.888 s, p95 108.836 s). No replacement tuning-suite
+    total is claimed.
 
     The sealed set is now 55 questions (32 single-hop, 10 multi-hop, 13
     unanswerable), expanded from 15 after tuning froze. The pass keeps 44 of
     55 correct (0.80, CI [0.69, 0.89]); operational recall@5 is 0.745 vs a
     0.055 random floor; rubric faithfulness 0.63 [0.57, 0.70], context recall
     0.976; 12 of 13 refusals succeed (0.92, CI [0.77, 1.0]), one false
-    abstention. The pass meters $1.95 cloud-equivalent. Expansions passed an
+    abstention. The pass meters $1.95 cloud-equivalent (p50 24.443 s, p95
+    126.811 s per answer). Expansions passed an
     answerability gate, so retrieval reads high by construction — the honest
-    headline is the failure taxonomy: of 11 failures, 9 retrieved the
-    relevant article at rank 1 yet kept unsupported claims, one was a top-k
-    demotion (rank 7), none a raw miss. Generation grounding, not retrieval,
-    is the bottleneck — per-question this time.
+    headline is the failure taxonomy: of 11 failures, 9 retrieved the right
+    article at rank 1 yet kept unsupported claims, one was a top-k demotion,
+    none a raw miss — generation grounding, not retrieval, is the bottleneck.
+
+    A citation-correctness pass re-answers the sealed set once with per-claim
+    records persisted (`evaluate --citations`, $1.58 cloud-equivalent — a
+    second sample under `detail.heldout_citations`); the claim-level read
+    lives with the results.
 
     **Hybrid retrieval evaluated out of the box — the champion holds.**
     Sparse+dense fusion is the current production default, so the comparison
@@ -241,19 +246,17 @@ sections:
     exactly (recall@5 0.831 both; MRR@5 0.724 vs 0.718) with nDCG@10 slightly
     lower (0.700 vs 0.714); BM25 alone reaches 0.738. On the sealed set the
     raw layer reads dense recall@5 0.976 vs BM25 0.952 and RRF 0.952 — a
-    consistency read, not a stress test, since the expansions passed the
-    answerability gate; RRF again does not beat dense. At this scale fusion
-    buys no measured recall for its extra latency; the dense+rerank champion
-    is unchanged. The comparison is the reusable asset, one command away
+    consistency read, not a stress test; RRF again does not beat dense. At
+    this scale fusion buys no measured recall for its extra latency; the
+    dense+rerank champion is unchanged. The comparison is the reusable asset
     (`uv run python -m rag_agent.cli fusion`).
 
     What do numbers that survive this gate allow us to claim?
 
     **Business summary:** Selected `kimi-for-coding` improves faithfulness
-    but still leaves 17 unsupported-claim outcomes in 65 tuning answers; the
-    sealed 55-question pass keeps 44 correct, failures concentrated in
-    generation grounding (9 of 11 right article at rank 1); hybrid fusion
-    ties dense.
+    but leaves 17 unsupported-claim outcomes in 65 tuning answers; the sealed
+    pass keeps 44 correct, failures concentrated in grounding (9 of 11 right
+    article at rank 1); hybrid fusion ties dense.
   figures: [latency_histogram, kimi_generation_comparison, fusion_arm_comparison]
   metrics_keys:
   - retrieval_chunks_200
@@ -288,6 +291,12 @@ sections:
     multi-hop grounding failure, a support-floor abstention — show failure
     instead of hiding it. No quality claim is made for any corpus beyond
     this one.
+
+    The citation pass reads the same failure at claim level: the five
+    unsupported-claim answers drafted claims at 0.74 first-check support
+    against 0.93 for correct answers — 258 claims over 42 verified answers,
+    16 repaired, 11 dropped, mean answer support 0.98. The verifier bounds,
+    repairs, and abstains; it does not turn weak drafts into grounded ones.
 
     What exactly survives into the record?
 
@@ -364,6 +373,12 @@ sections:
       0.7114, context recall 0.9762; 12/13 required refusals (accuracy 0.92,
       CI [0.77, 1.0]); 241 calls and $1.950667 cloud-equivalent under the
       $3.00 cap; p50 24.443 s, p95 126.811 s.
+    - Citation-correctness pass (second sealed sample, claim-level records
+      persisted): 258 claims over 42 verified answers; first-check support
+      0.903 CI [0.868, 0.938]; 16 repaired / 11 dropped; the five
+      unsupported-claim answers drafted at 0.74 first-check support vs 0.93
+      for correct; 236 calls and $1.583466 cloud-equivalent; p50 25.351 s,
+      p95 84.681 s.
 
     ```diagram auto-01-rag-agent-4
     ```

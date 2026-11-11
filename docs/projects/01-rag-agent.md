@@ -126,6 +126,15 @@ and none was a raw retrieval miss. The expansion questions passed an
 answerability gate, so their retrieval reads are consistency checks, not
 stress tests — generation grounding, not retrieval, remains the bottleneck.
 
+A citation-correctness pass re-answers the sealed set once with claim-level
+verify records persisted (`evaluate --citations`, `metrics.json →
+detail.heldout_citations`; the headline `detail.heldout` is untouched): 258
+claims over 42 verified answers, first-check support 0.903 CI [0.868, 0.938],
+16 repaired / 11 dropped, and the five unsupported-claim answers drafted at
+0.74 first-check support vs 0.93 for correct ones — the verifier bounds and
+repairs, it does not ground weak drafts. That pass meters 236 calls /
+$1.583466 cloud-equivalent.
+
 ## Links
 
 - [Project README](https://github.com/amm-ds/portfolio/tree/main/projects/01-rag-agent/README.md) — results, reproduce instructions, client-facing summary

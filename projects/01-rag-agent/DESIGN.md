@@ -262,6 +262,15 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 
 ## 6. Changelog
 
+- 0.9.0 (2026-11-11) — citation-correctness pass (`evaluate --citations`): the
+  sealed set re-answered once with claim-level verify records persisted
+  (`reports/citation_records_heldout.json`, `metrics.json →
+  detail.heldout_citations`; `detail.heldout` untouched). 258 claims over 42
+  verified answers: first-check support 0.903 CI [0.868, 0.938], 16 repaired,
+  11 dropped; the five unsupported-claim answers drafted at 0.74 first-check
+  support vs 0.93 for correct. 236 calls, $1.583466 cloud-equivalent
+  (p50 25.351 s, p95 84.681 s). `VerifyReport` now stamps question +
+  citations; record-to-question linkage is checked, not assumed.
 - 0.8.0 (2026-11-11) — sealed held-out expanded 15 → 55 questions (original
   15 plus 40 expansions gated for support, absent terms, Jaccard separation,
   and answerability). The verify-on generation pass keeps 44/55 correct

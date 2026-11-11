@@ -115,6 +115,16 @@ answerability gate, so the honest read is that generation grounding — not
 retrieval — remains the bottleneck. The sealed set is still one small slice,
 not evidence of broad-corpus or unattended readiness.
 
+A dedicated citation-correctness pass re-answers the sealed set once with
+claim-level verify records persisted (`evaluate --citations`, reported under
+`metrics.json → detail.heldout_citations`; the headline `detail.heldout` is
+never touched). Across 42 verified answers: 258 claims drafted, 0.903
+supported by the cited passage at first check (CI [0.868, 0.938]), 16
+repaired, 11 dropped, mean answer support 0.978 — and the five
+unsupported-claim answers drafted at 0.74 first-check support vs 0.93 for
+correct ones. The pass meters 236 calls / $1.583466 cloud-equivalent
+(p50 25.351 s, p95 84.681 s).
+
 ### Cost and budget operation
 
 Costs use the public reference rate card ($1/Mtok input, $4/Mtok output, cached
