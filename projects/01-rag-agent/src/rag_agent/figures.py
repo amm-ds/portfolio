@@ -53,24 +53,29 @@ def _finish_themed(
 
 def sweep_figure(
     scores: list[RetrievalScores],
-    random_scores: list[RetrievalScores] | None = None,
     lexical_scores: list[RetrievalScores] | None = None,
 ) -> go.Figure:
-    """Chunk-size sweep: grouped bars with value labels + the two retrieval floors.
+    """Chunk-size sweep: grouped bars with value labels + the lexical floor.
 
     Readability contract (wave 16, viewer report "chunk size 600 has no bars"):
     the x-axis is **categorical** — chunk sizes are a deliberate 2x grid
     (200/400/800), no 600 configuration exists anywhere in the sweep, and a
     continuous axis left a suggestive void between bars. Every bar carries its
-    value label, the chosen size is starred, and zero-valued random-floor points
-    are labelled and annotated as measurements rather than left as empty space.
+    value label.
 
-    Legend contract (wave 17, viewer report "legend unreadable on the title"):
-    with the two-line title + subtitle annotation, the theme's top-pinned
-    horizontal legend collides with the text — and the seven long series names
-    ("random baseline recall@5 (seeded floor)") cannot fit the standard's
-    140 px right margin. Deliberate exception: the legend stays **below**
-    the plot, bottom-center, and the bottom margin carries it.
+    Baseline contract (wave 19, viewer report "the random baseline is useless
+    [plotted] — and the amber bottom label is unreadable"): the plotted
+    baseline is the **lexical (word-match) floor**, the comparator a client
+    would ask about before buying embeddings. The seeded-random floor stays a
+    **metric, not a line** — it reads 0.02-0.03 at every size (near-zero by
+    construction at 593 articles), so it is tabulated in the conclusions'
+    exact-numbers table and named in the takeaway instead of squashing two
+    flat dashed lines and their labels into the plot's bottom edge.
+
+    Readability contract (wave 18, viewer report "star unreadable on the
+    bars"): the chosen marker rides in a dedicated band above the bar labels
+    (the y-range is padded to 1.1 for it), and the legend follows the house
+    standard (right).
     """
     sizes = [s.chunk_size for s in scores]
     labels = [str(s) for s in sizes]
@@ -102,12 +107,12 @@ def sweep_figure(
     )
     if lexical_scores:
         # Deterministic word-match floor: the fair naive comparator a client
-        # would ask about before buying embeddings (chance → lexical → embeddings).
+        # would ask about before buying embeddings (lexical → embeddings).
         lex_recall = [s.recall_at_5 for s in lexical_scores]
         lex_mrr = [s.mrr_at_5 for s in lexical_scores]
         fig.add_trace(
             go.Scatter(
-                name="lexical (word match) recall@5",
+                name="lexical recall@5",
                 x=labels,
                 y=lex_recall,
                 mode="lines+markers+text",
@@ -118,7 +123,7 @@ def sweep_figure(
         )
         fig.add_trace(
             go.Scatter(
-                name="lexical (word match) mrr@5",
+                name="lexical mrr@5",
                 x=labels,
                 y=lex_mrr,
                 mode="lines+markers+text",
@@ -127,55 +132,6 @@ def sweep_figure(
                 line={"dash": "dot", "color": "#34d399", "width": 2},
             )
         )
-    if random_scores:
-        # Flat dashed reference series so the embedding gain is visible.
-        rnd_recall = [s.recall_at_5 for s in random_scores]
-        rnd_mrr = [s.mrr_at_5 for s in random_scores]
-        fig.add_trace(
-            go.Scatter(
-                name="random baseline recall@5 (seeded floor)",
-                x=labels,
-                y=rnd_recall,
-                mode="lines+markers+text",
-                text=[f"{v:.3f}" for v in rnd_recall],
-                textposition="top center",
-                line={"dash": "dash", "color": "#f472b6", "width": 2},
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                name="random baseline mrr@5 (seeded floor)",
-                x=labels,
-                y=rnd_mrr,
-                mode="lines+markers+text",
-                text=[f"{v:.3f}" for v in rnd_mrr],
-                textposition="bottom center",
-                line={"dash": "dot", "color": "#fbbf24", "width": 2},
-            )
-        )
-        # A zero on the floor is a real measurement (chance found nothing), not
-        # a missing bar — say so on the figure instead of leaving a void.
-        zero_labels = [label for label, v in zip(labels, rnd_recall, strict=True) if v == 0.0]
-        for label in zero_labels:
-            fig.add_annotation(
-                # Categorical-axis annotations must use the integer category
-                # index: string coordinates break grouped-bar rendering
-                # (verified against kaleido 1.5 / plotly.js, wave 16).
-                x=labels.index(label),
-                xref="x",
-                y=0.0,
-                yref="y",
-                text="0 — seeded chance floor, not a missing bar",
-                showarrow=True,
-                arrowhead=2,
-                ax=0,
-                ay=-40,
-                font={"size": 11, "color": "#fbbf24"},
-                bgcolor="#0f172a",
-                bordercolor="#fbbf24",
-                borderwidth=1,
-                borderpad=3,
-            )
     fig.update_layout(
         barmode="group",
         title="Retrieval recall vs chunk size",
@@ -185,32 +141,16 @@ def sweep_figure(
             "categoryarray": labels,
             "title": "chunk size (tokens)",
         },
-        yaxis={"title": "score", "range": [0, 1.0]},
-    )
-    tested = " / ".join(labels)
-    fig.add_annotation(
-        text=(
-            f"Chunk sizes tested: {tested} (2x grid; chosen {chosen_size}). "
-            "The axis is categorical — no 600-token configuration exists."
-        ),
-        xref="paper",
-        yref="paper",
-        x=0.02,
-        # Above the two-line title: the deep bottom margin (legend below the
-        # plot) shrinks the plot area, so 1.16 would land inside the title.
-        y=1.30,
-        xanchor="left",
-        yanchor="bottom",
-        showarrow=False,
-        font={"size": 12, "color": "#e2e8f0"},
-        align="left",
+        # Padded to 1.1 so the chosen marker rides in a clear band above the
+        # bar labels (wave 18: at paper-y 0.97 it sat on the bars).
+        yaxis={"title": "score", "range": [0, 1.1]},
     )
     fig.add_annotation(
         text=f"★ chosen: {chosen_size}-token chunks",
         xref="x",
         x=labels.index(str(chosen_size)),
-        yref="paper",
-        y=0.97,
+        yref="y",
+        y=1.03,
         showarrow=False,
         font={"size": 12, "color": "#2dd4bf"},
         xanchor="center",
@@ -218,23 +158,11 @@ def sweep_figure(
     fig = _finish_themed(
         fig,
         takeaway=(
-            "recall@5, recall@10, MRR@5 — 65 golden questions; random + lexical floors dashed"
+            f"recall@5, recall@10, MRR@5 — 65 golden questions; lexical "
+            f"(word-match) floor dashed; seeded random floor 0.02-0.03 "
+            f"tabulated in Exact numbers · categorical axis: "
+            f"{' / '.join(labels)} only, no 600-token configuration exists"
         ),
-    )
-    # Exceptional margins: the caption annotation sits ABOVE the two-line
-    # title (deep bottom margin for the below-plot legend shrinks the plot
-    # area, so y=1.30 would land inside the title) and the bottom-center
-    # legend (deliberate exception — seven long series names cannot fit the
-    # standard 140 px right margin) needs the deeper bottom band.
-    fig.update_layout(margin={"t": 160, "b": 115})
-    fig.update_layout(
-        legend={
-            "orientation": "h",
-            "yanchor": "top",
-            "y": -0.24,
-            "x": 0.5,
-            "xanchor": "center",
-        }
     )
     return fig
 

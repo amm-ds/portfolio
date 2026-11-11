@@ -422,7 +422,7 @@ roadmap:
 figure_captions:
   eda_corpus_composition: "The bounded Wikipedia corpus: articles per topic and word-length distribution across all 593 articles. Coverage is near-balanced; the long tail is truncated at 12,000 characters."
   retrieval_funnel: "Across 65 golden questions, 975 embedding candidates narrow to 195 reranked passages; 54 questions retain a relevant article in the final top-3. Reranking improves rank quality, not recall@5."
-  chunk_size_sweep: "Retrieval recall for 200/400/800-token chunks against seeded-random and lexical floors on the 65-question set. All three sizes tie at recall@5 0.831; 200 tokens minimizes context cost."
+  chunk_size_sweep: "Retrieval recall for 200/400/800-token chunks against the lexical word-match floor on the 65-question set. All three sizes tie at recall@5 0.831; 200 tokens minimizes context cost. The seeded-random floor (0.02-0.03) is a metric, not a line — tabulated in Exact numbers."
   latency_histogram: "Per-answer latency for the selected hosted 65-question run: p50 25.888 s and p95 108.836 s."
   kimi_generation_comparison: "Selected kimi-for-coding versus the incumbent on 65 tuning questions. Rubric faithfulness and answer relevance improve, RAGAS faithfulness reaches 0.7337, and RAGAS answer relevancy regresses from 0.8775 to 0.8602."
   model_comparison: "MiniLM and BGE-small tie at recall@5 0.831 on the 65-question set; MiniLM has slightly higher MRR@5 (0.808 vs 0.805). The smaller CPU model is therefore the measured default here."

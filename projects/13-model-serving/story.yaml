@@ -249,29 +249,6 @@ sections:
         tabular model, and a `chown` after `COPY` doubled the venv layer
         until measured — both are things only a measured build reveals.
 
-      ## Protocol
-
-      - Reproduction: same pinned zip (sha256 gate), same recipe and seed 42;
-        scored once on the frozen 8-week test window.
-      - Parity: 512-row seeded probe grid; max-abs on raw network output;
-        gate enforced before benchmark or docker stages run.
-      - Benchmark: subprocess service per backend, warm-up excluded, 300
-        requests per concurrency cell (1/4/16/64), median of 3 repeats, batch
-        sizes 1/8/32/128 saturated, fresh-process RSS probes.
-      - Docker: repo-root build context, frozen uv lockfile, non-root,
-        healthcheck-gated readiness, compose smoke on /health /ready /predict.
-
-      ## Limits
-
-      - Single laptop, no GPU, one worker: absolute numbers do not transfer;
-        curve shapes and the paired deltas are the transferable read.
-      - Driver and service share the CPU: high-concurrency cells measure
-        contention, not pure service capacity.
-      - Cost is electricity-only with a declared 65 W draw — no wall meter,
-        no amortized hardware.
-      - A production build would strip the unused CUDA stack and torch from
-        the ONNX-only image; that variant is deliberately not built here.
-
       ## Exact numbers
 
       ONNX backend, median of 3 repeats; 300 requests per concurrency level (20
@@ -298,25 +275,35 @@ sections:
 
       ## Protocol
 
-      Both backends run as real subprocess services behind the same FastAPI app,
-      and both saw byte-identical request streams from a seeded probe grid
-      (seed 42) — the saturated-cell deltas are paired, not incidental. Warm-up is
-      excluded, repeats are median-of-3, and fresh-process RSS is probed three
-      times per backend. Concurrency sweep 1/4/16/64, batch sizes 1/8/32/128; the
-      benchmark stage itself runs in 25.1 s.
+      - Reproduction: same pinned zip (sha256 gate), same recipe and seed 42;
+        scored once on the frozen 8-week test window.
+      - Parity: 512-row seeded probe grid; max-abs on raw network output;
+        gate enforced before benchmark or docker stages run.
+      - Benchmark: both backends run as real subprocess services behind the
+        same FastAPI app, on byte-identical seeded request streams (seed 42) —
+        the saturated-cell deltas are paired, not incidental; warm-up excluded,
+        300 requests per concurrency cell (1/4/16/64), median of 3 repeats,
+        batch sizes 1/8/32/128 saturated, fresh-process RSS probed three times
+        per backend; the benchmark stage itself runs in 25.1 s.
+      - Docker: repo-root build context, frozen uv lockfile, non-root,
+        healthcheck-gated readiness, compose smoke on /health /ready /predict.
 
       ## Limits
 
-      - One laptop, shared CPU: absolute numbers move about ±30% with machine load
-        (the committed concurrency-4 medians span 933–970 req/s across the two
-        backends) — the shape,
-        the concurrency-4 knee and the batch amortization, is the durable finding.
+      - Single laptop, no GPU, one worker, shared CPU: absolute numbers do not
+        transfer — committed concurrency-4 medians span 933–970 req/s across
+        the two backends — and high-concurrency cells measure contention, not
+        pure service capacity; curve shapes, the concurrency-4 knee and batch
+        amortization are the durable read.
       - No TLS, auth, multi-worker or GPU path; the paired harness needs both
-        backends, so the torch-free slim image is future work.
-      - The 3.3 GB NVIDIA stack inside the image is never loaded by this CPU
-        service — measured, documented, not yet removed.
-      - The electricity-cost framing depends on the declared 65 W and $0.30 per
-        kWh; re-derive on your hardware before quoting the number.
+        backends, so a torch-free native image is future work.
+      - The ~3.3 GB NVIDIA/CUDA stack inside the full image is never loaded by
+        this CPU service — measured and documented; the ONNX-only slim image
+        (`Dockerfile.slim`, 291 MB, smoke-passed) is the built answer, and
+        stripping the stack from the *native* image is the remaining variant.
+      - Cost is electricity-only at a declared 65 W and $0.30 per kWh — no
+        wall meter, no amortized hardware; re-derive on your hardware before
+        quoting the number.
 
       **Business summary:** A champion model, served, measured, and containerized
       end to end — gates first, honest numbers second, and the limits written

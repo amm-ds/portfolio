@@ -302,8 +302,11 @@ def tune_figure(selection: dict[str, Any]) -> go.Figure:
                 row=1,
                 col=col,
             )
+    # Viewer report (wave 19): "autolimit also the y axis" — the authored
+    # [0, 1.05] window flattened the curves into the bottom of the canvas;
+    # the data spans well inside the unit interval, so the axis autoranges.
     fig.update_xaxes(type="log", title="per-series cooldown (hours, log)")
-    fig.update_yaxes(title="validation range-F1 (budgeted stream)", range=[0, 1.05])
+    fig.update_yaxes(title="validation range-F1 (budgeted stream)")
     fig.update_layout(title="Train-side operating-point selection surfaces (NAB)")
     add_takeaway(
         fig,

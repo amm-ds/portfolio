@@ -290,31 +290,6 @@ sections:
         problem — as long as the convention is written into the contract and
         the gate bounds how much is missing.
 
-      ## Protocol
-
-      - **Split:** time-based — final 8 weeks (1,344 rows) scored once; the 8
-        weeks before are validation (HPO objective, early stopping, champion
-        pick); training is everything earlier (14,523 rows after the 168-row
-        lag warm-up).
-      - **Judging:** MAE in rentals/hour primary; RMSE secondary; MAPE floored
-        at 1 rental; seasonal-naive floor as comparator.
-      - **Uncertainty:** 2,000 paired bootstrap resamples of the per-row MAE
-        delta; the CI prices row noise, not selection.
-      - **Synthetic twin:** same schema, seeded generator — CI evidence only,
-        never a substitute for the real-data results.
-
-      ## Limits
-
-      - The test window is scored once per candidate; every modeling choice
-        used validation, so no test-set optimism is hiding in the picks — but
-        the margin is a single-window confirmation, not a deployment guarantee.
-      - Lags are positional: around the 165 missing hours, "same hour last
-        week" drifts by an hour of wall-clock time.
-      - MAPE denominators are floored at 1 rental; near-zero hours keep MAPE
-        high for every candidate.
-      - One city, two seasons, holiday effects as binary flags: transfer is
-        plausible, not measured.
-
       ## Exact numbers
 
       Test window: the final 8 weeks of the 2011-2012 hourly series (1,344 rows),
@@ -339,24 +314,35 @@ sections:
 
       ## Protocol
 
-      Time-based split: the final 8 weeks are the test window (scored once), the 8
-      weeks before it are validation (model selection, the HPO objective, early
-      stopping, the ablation), everything earlier is training; lag features read
-      only the past. The UCI zip is sha256-gated; the 165 real missing hours are
-      bounded by a 2% DQ gate, and lags are positional. Train stage 50.8 s plus
-      evaluate 0.5 s on a 16-core arm64 laptop (torch pinned to one thread);
-      seed 42 throughout.
+      - **Split:** time-based — final 8 weeks (1,344 rows) scored once; the 8
+        weeks before are validation (HPO objective, early stopping, champion
+        pick, ablation); training is everything earlier (14,523 rows after the
+        168-row lag warm-up); lag features read only the past. The UCI zip is
+        sha256-gated; the 165 real missing hours are bounded by a 2% DQ gate,
+        and lags are positional.
+      - **Judging:** MAE in rentals/hour primary; RMSE secondary; MAPE floored
+        at 1 rental; seasonal-naive floor as comparator.
+      - **Uncertainty:** 2,000 paired bootstrap resamples of the per-row MAE
+        delta; the CI prices row noise, not selection.
+      - **Synthetic twin:** same schema, seeded generator — CI evidence only,
+        never a substitute for the real-data results.
+      - **Compute:** seed 42 throughout; train stage 50.8 s plus evaluate
+        0.5 s on a 16-core arm64 laptop (torch pinned to one thread).
 
       ## Limits
 
       - Model selection, early stopping and the ablation choice used validation
-        only; the test window is scored once per candidate.
-      - MAPE denominators are floored at 1 rental; near-zero hours inflate MAPE
-        even when the absolute error is small — read MAE first.
-      - Two seasons, one city, one system: transfer to other fleets or regimes is
+        only; the test window is scored once per candidate — no test-set
+        optimism is hiding in the picks, but the margin is a single-window
+        confirmation, not a deployment guarantee.
+      - Lags are positional: around the 165 missing hours, "same hour last
+        week" drifts by an hour of wall-clock time.
+      - MAPE denominators are floored at 1 rental; near-zero hours keep MAPE
+        high for every candidate — read MAE first.
+      - One city, two seasons, holiday effects as binary flags: transfer is
         plausible, not measured.
-      - The MLP vs LightGBM test-MAE gap (25.43 vs 25.37) sits inside noise; the
-        champion label is a validation artifact, not a neural-net victory.
+      - The MLP vs LightGBM test-MAE gap (25.43 vs 25.37) sits inside noise;
+        the champion label is a validation artifact, not a neural-net victory.
 
       **Business summary:** The full record — one sha256-pinned series, one
       seeded ladder, one scored-once window — with the limits stated next to

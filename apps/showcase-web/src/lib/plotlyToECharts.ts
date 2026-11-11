@@ -1247,6 +1247,11 @@ export function plotlyToECharts(
         __binWidth: binWidth,
         z: 2,
       });
+      // the counts must feed the value-axis extent: the trace-parse branch
+      // only pinned the zero baseline, so without this the axis extent is
+      // {0, 0} → the exact-axis pin resolves max = 1 and every bar renders
+      // at full height ("bars are 100% in all cases")
+      yAdd(plan.yIdx, counts.reduce((a, c) => Math.max(a, c), 0) / norm);
       if (plan.name && !namedSeries.includes(plan.name)) namedSeries.push(plan.name);
     }
   }
@@ -2086,7 +2091,13 @@ export function plotlyToECharts(
 
   // --- series axis indices + assemble ------------------------------------------------------
   for (const draft of series) {
-    if (draft.type === "funnel") continue; // not cartesian
+    if (draft.type === "funnel") {
+      // "top: 12%" is a fraction of the CONTAINER: the two-line title block
+      // (headline + wrapped subtitle) overlapped the first stage. Anchor the
+      // funnel below the measured title band instead.
+      draft.top = Math.round(topBand + 8);
+      continue; // not cartesian
+    }
     draft.xAxisIndex = Math.max(
       0,
       xInstances.findIndex((inst) => inst.gridIndex === draft.gridIndex),

@@ -30,7 +30,7 @@ from typing import Any, cast
 REPO = Path(__file__).resolve().parents[1]
 
 _CLIP_TOLERANCE = 1e-9
-_OVERSHOOT_WARN_RATIO = 5.0
+_OVERSHOOT_WARN_RATIO = 4.0
 
 _BDATA_FMT = {
     "f8": ("d", 8),
@@ -56,12 +56,16 @@ def decode_array(value: object) -> list[float]:
     return []
 
 
-def axis_ranges(payload: dict[str, Any]) -> list[tuple[str, dict[str, Any], list[float]]]:
-    """(layout axis key, axis dict, trace values bound to that axis).
+def axis_ranges(
+    payload: dict[str, Any],
+) -> list[tuple[str, dict[str, Any], list[float], bool]]:
+    """(layout axis key, axis dict, trace values bound to that axis, has_line).
 
     Subplot-aware: each trace carries ``xaxis``/``yaxis`` refs ("y", "y3")
     naming the layout axis ("yaxis", "yaxis3") it draws on. Values pooled
-    across axes would false-flag a correctly-scaled subplot panel.
+    across axes would false-flag a correctly-scaled subplot panel. ``has_line``
+    is True when a non-bar trace (scatter/line) draws on the axis — the
+    unit-window convention is judged only for those (bars pin zero).
     """
     layout = payload.get("layout", {})
     data = payload.get("data", [])
@@ -74,7 +78,11 @@ def axis_ranges(payload: dict[str, Any]) -> list[tuple[str, dict[str, Any], list
         key = f"{'x' if is_x else 'y'}axis{suffix}"
         if key not in axes:
             raw = layout.get(key)
-            axes[key] = {"values": [], "raw": raw if isinstance(raw, dict) else {}}
+            axes[key] = {
+                "values": [],
+                "raw": raw if isinstance(raw, dict) else {},
+                "line": False,
+            }
         return axes[key]
 
     for trace in data:
@@ -82,10 +90,14 @@ def axis_ranges(payload: dict[str, Any]) -> list[tuple[str, dict[str, Any], list
             continue
         xb = bucket(trace.get("xaxis", "x"), True)
         yb = bucket(trace.get("yaxis", "y"), False)
+        is_bar = trace.get("type") in ("bar", "histogram")
+        if not is_bar:
+            xb["line"] = True
+            yb["line"] = True
         cast(list[float], xb["values"]).extend(decode_array(trace.get("x")))
         cast(list[float], yb["values"]).extend(decode_array(trace.get("y")))
     return [
-        (key, cast(dict[str, Any], b["raw"]), cast(list[float], b["values"]))
+        (key, cast(dict[str, Any], b["raw"]), cast(list[float], b["values"]), bool(b["line"]))
         for key, b in axes.items()
     ]
 
@@ -97,7 +109,7 @@ def check_figure(path: Path) -> tuple[list[str], list[str]]:
         payload = json.loads(path.read_text())
     except (OSError, ValueError) as e:
         return [f"{path.name}: unreadable payload ({e})"], []
-    for key, axis, values in axis_ranges(payload):
+    for key, axis, values, has_line in axis_ranges(payload):
         finite = [v for v in values if math.isfinite(v)]
         if not finite:
             continue
@@ -122,8 +134,19 @@ def check_figure(path: Path) -> tuple[list[str], list[str]]:
         span_range = hi - lo
         # rate/metric axes conventionally occupy the full unit interval even
         # when one curve hugs a corner — that is a plotting convention, not
-        # wasted canvas. Flag only windows that are both wide AND off-unit.
-        unit_window = lo >= 0 and 1 <= hi <= 1.1 and all(0 <= v <= 1.05 for v in finite)
+        # wasted canvas. Two carve-outs, both wave-19:
+        # - a LINE/SCATTER axis whose data spans less than half the unit
+        #   window is not using the convention (nab_tune_surface's
+        #   [0, 1.05] window flattened 0.08-0.32 curves into the plot's
+        #   foot) — flag it like any other over-wide window;
+        # - a BAR axis keeps the convention at any span: bars pin the zero
+        #   baseline, and trimming them would be the misleading axis.
+        unit_window = (
+            lo >= 0
+            and 1 <= hi <= 1.1
+            and all(0 <= v <= 1.05 for v in finite)
+            and (not has_line or span_data >= 0.5)
+        )
         if span_data > 0 and span_range > span_data * _OVERSHOOT_WARN_RATIO and not unit_window:
             warnings.append(
                 f"{path.name} {key}: authored window {span_range:.4g} is "

@@ -107,38 +107,21 @@ def test_retrieval_scores_as_run() -> None:
 def test_figures_render(scores_sample: list[RetrievalScores]) -> None:
     fig = sweep_figure(scores_sample)
     assert fig.data and len(fig.data) == 3
-    fig_random = sweep_figure(scores_sample, scores_sample)  # reuse as random baseline
-    assert len(fig_random.data) == 5  # 3 bars + 2 dashed reference series
-    assert any("random" in trace.name for trace in fig_random.data)
-    # Legend contract (viewer report "legend unreadable on the title"): below
-    # the plot, bottom-center — never top-pinned over the two-line title.
-    legend = fig_random.layout.legend.to_plotly_json()
-    assert legend["orientation"] == "h" and legend["y"] < 0 and legend["x"] == 0.5
-    fig_lex = sweep_figure(scores_sample, scores_sample, scores_sample)
-    assert len(fig_lex.data) == 7  # + 2 lexical (word match) reference series
-    assert any("lexical (word match)" in (trace.name or "") for trace in fig_lex.data)
+    fig_lex = sweep_figure(scores_sample, scores_sample)  # reuse as lexical floor
+    assert len(fig_lex.data) == 5  # 3 bars + 2 lexical (word match) reference series
+    assert any("lexical" in (trace.name or "") for trace in fig_lex.data)
+    # Baseline contract (wave 19): the seeded-random floor is a metric, not a
+    # line — no random traces are plotted, and the legend follows the house
+    # standard (right) instead of the retired below-plot exception.
+    assert all("random" not in (trace.name or "").lower() for trace in fig_lex.data)
+    legend = fig_lex.layout.legend.to_plotly_json()
+    assert not (legend.get("orientation") == "h" and (legend.get("y") or 0) < 0)
     # Readability contract (viewer report "chunk size 600 has no bars"):
-    # categorical axis (no implied 600 gap), value labels on every bar, an
-    # explicit sizes-tested caption, and zero floor points annotated not voided.
-    assert fig_random.layout.xaxis.type == "category"
-    assert all(trace.text for trace in fig_random.data[:3])
-    annotation_texts = [a.text for a in fig_random.layout.annotations]
-    assert any("no 600" in t or "categorical" in t for t in annotation_texts)
-    zero_random = sweep_figure(
-        scores_sample,
-        [
-            RetrievalScores(
-                chunk_size=s.chunk_size,
-                recall_at_5=0.0,
-                recall_at_10=0.0,
-                mrr_at_5=0.0,
-                n_questions=s.n_questions,
-            )
-            for s in scores_sample
-        ],
-    )
-    zero_texts = [a.text for a in zero_random.layout.annotations]
-    assert any("not a missing bar" in (t or "") for t in zero_texts)
+    # categorical axis (no implied 600 gap), value labels on every bar, and
+    # the tested-sizes note lives in the takeaway subtitle next to the title.
+    assert fig_lex.layout.xaxis.type == "category"
+    assert all(trace.text for trace in fig_lex.data[:3])
+    assert "no 600" in fig_lex.layout.title.text
     fig2 = latency_figure([0.1, 0.2, 0.3, 0.4])
     assert fig2.data
 

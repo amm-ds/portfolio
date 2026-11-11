@@ -157,6 +157,43 @@ describe("plotlyToECharts over the committed churn figures", () => {
     }
   });
 
+  it("sets the count-histogram y-extent from the bin counts (regression: axis pinned to [0,1])", () => {
+    // 01's real latency histogram: 65 latencies, peak bin count well above 1.
+    // Wave-18 viewer report: "bars are 100% in all cases, chart irrelevant" —
+    // the trace-parse branch only pinned the zero baseline, so the exact-axis
+    // extent resolved {0,0} → max 1 and every count clipped to full height.
+    const payload = JSON.parse(
+      readFileSync(
+        resolve(process.cwd(), "../../projects/01-rag-agent/reports/figures/latency_histogram.json"),
+        "utf8",
+      ),
+    ) as PlotlyPayload;
+    const option = asOpt(plotlyToECharts(payload, "dark"));
+    const hist = option.series.find((s) => s.type === "bar")!;
+    const maxCount = Math.max(...hist.data.map((d: { value: number[] }) => d.value[1]));
+    expect(maxCount).toBeGreaterThan(1);
+    expect(option.yAxis[0].max).toBeGreaterThan(maxCount);
+    expect(option.yAxis[0].max).toBeLessThanOrEqual(maxCount * 1.2);
+  });
+
+  it("anchors funnels below the two-line title band (regression: subtitle overlapped stage 1)", () => {
+    // 01's real retrieval funnel. Wave-18 viewer report: "funnel is good but
+    // subtitle overlaps" — the funnel top was "12%" of the CONTAINER, landing
+    // inside the headline+subtitle block.
+    const payload = JSON.parse(
+      readFileSync(
+        resolve(process.cwd(), "../../projects/01-rag-agent/reports/figures/retrieval_funnel.json"),
+        "utf8",
+      ),
+    ) as PlotlyPayload;
+    const option = asOpt(plotlyToECharts(payload, "dark"));
+    const funnel = option.series.find((s) => s.type === "funnel")!;
+    expect(typeof funnel.top).toBe("number");
+    const blockBottom =
+      Math.max(...option.title.map((t) => (t.top as number) + (t.textStyle?.fontSize ?? 12) * 2.5));
+    expect(funnel.top as number).toBeGreaterThanOrEqual(blockBottom - 8);
+  });
+
   it("maps the heatmap to a visualMap + heatmap series", () => {
     const option = asOpt(plotlyToECharts(loadFigure("cost_surface"), "dark"));
     const heatmapIdx = option.series.findIndex((s) => s.type === "heatmap");

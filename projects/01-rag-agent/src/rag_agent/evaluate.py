@@ -541,7 +541,7 @@ def run_retrieval_sweep(
         scores,
         random_scores,
         lexical_scores,
-        sweep_figure(scores, random_scores, lexical_scores),
+        sweep_figure(scores, lexical_scores),
     )
 
 
