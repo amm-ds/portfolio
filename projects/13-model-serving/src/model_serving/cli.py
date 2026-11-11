@@ -50,6 +50,18 @@ def docker(params_file: OptParams = Path("params.yaml")) -> None:
     docker_core(load_config(params_file))
 
 
+@app.command(name="docker-slim")
+def docker_slim_cmd(params_file: OptParams = Path("params.yaml")) -> None:
+    """ONNX-only slim image: build, measure against the full image, smoke.
+
+    The audit's confession-to-headline before/after — ships without torch
+    (parity-gated export), records reports/docker_slim.json.
+    """
+    from model_serving.dockerbuild import docker_slim
+
+    docker_slim(load_config(params_file))
+
+
 @app.command()
 def report(params_file: OptParams = Path("params.yaml")) -> None:
     """Assemble metrics.json, figures, report.html + results.md from the artifacts."""

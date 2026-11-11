@@ -4,18 +4,23 @@ Both backends implement the same contract: apply the train-fitted input
 standardization, run the persisted graph, invert the y standardization. A
 backend is a plain class (not a protocol zoo) because there are exactly two,
 paired by the benchmark; ``BackendName`` is the single switch.
+
+Torch is imported lazily (native backend only): the ONNX-only serving image
+ships without torch — 6.5 GB down to a few hundred MB — and the parity gate
+guarantees both backends agree where both exist.
 """
 
 import json
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
-import torch
 from portfolio_core.logging import get_logger
 
-from model_serving.mlp import RentalMLP
 from model_serving.service.schemas import NUMERIC_FIELDS, FeatureRow
+
+if TYPE_CHECKING:
+    from model_serving.mlp import RentalMLP
 
 log = get_logger(__name__)
 
@@ -50,7 +55,11 @@ class ModelLoader:
         self._session: Any = None
 
         if backend == "native":
-            model = RentalMLP(
+            import torch  # lazy: the ONNX-only image ships without torch
+
+            from model_serving import mlp as mlp_module
+
+            model = mlp_module.RentalMLP(
                 n_numeric=int(arch["n_numeric"]),
                 embed_dim=int(arch["embed_dim"]),
                 hidden_dims=[int(h) for h in arch["hidden_dims"]],
@@ -77,6 +86,8 @@ class ModelLoader:
             return np.asarray(out, dtype=float)
         if self._model is None:
             raise RuntimeError(f"backend {self.backend} holds no native model")
+        import torch  # lazy: native path only, like the loader above
+
         torch.set_num_threads(1)  # multi-thread predict deadlocks on the shared libomp
         with torch.no_grad():
             t_hour = torch.tensor(hour, dtype=torch.long)

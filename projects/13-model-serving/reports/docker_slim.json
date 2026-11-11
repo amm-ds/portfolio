@@ -1,0 +1,20 @@
+{
+  "dockerfile": "Dockerfile.slim",
+  "build_context": "repository root (explicit minimal pin set; no workspace sync)",
+  "daemon_available": true,
+  "note": "SERVING_BACKEND is fixed to onnx; requesting native fails loudly with ImportError by design (the full image keeps both backends).",
+  "full_image": 6466.488628,
+  "image_id": "sha256:3b51676b3bb37245d0e086cc8aaad91a162a0767cf060652ecf6156b6e0f000b",
+  "image_ref": "portfolio-model-serving:13-slim",
+  "base_python_slim_mb": 144.607058,
+  "venv_mb": 149.0,
+  "models_mb": 1.0,
+  "total_mb": 291.224863,
+  "smoke": {
+    "passed": true,
+    "prediction": 92.41112111957341
+  },
+  "measured": true,
+  "reduction_x": 22.2,
+  "docker_runtime_s": 18.487
+}

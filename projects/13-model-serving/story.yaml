@@ -202,7 +202,7 @@ sections:
         ahead at the saturated cells; zero errors across the 4,320 requests
         per backend in the committed benchmark.
       - Batch: ~56k rows/s at size 128 on both backends, flat per-request latency under saturation.
-      - Footprint: fresh-process RSS 298 vs 318 MB; image 6.5 GB measured (145 MB base, 6.2 GB venv, 1 MB model), dominated by torch and the 3.3 GB CUDA stack a CPU service never loads.
+      - Footprint: fresh-process RSS 298 vs 318 MB; image 6.5 GB measured (145 MB base, 6.2 GB venv, 1 MB model), dominated by torch and the 3.3 GB CUDA stack a CPU service never loads. The slim ONNX-only image (`Dockerfile.slim`, `docker-slim` command) measures 291 MB against that 6,466 MB — 22.2× smaller, venv 149 MB — with a direct smoke against a running container (`/ready` gate plus one contract-shaped prediction, recorded in `reports/docker_slim.json`).
       - Cost: about $0.000012 per 1k predictions at the committed
         concurrency-16 basis (median-of-repeats throughput on this host,
         65 W and $0.30 per kWh declared); the throughput peak itself sits
@@ -210,13 +210,16 @@ sections:
       - Container: compose smoke passes — the api serves a real prediction to the one-shot smoke service behind a healthcheck-gated dependency.
 
       What was skipped: TLS/auth (out of scope for a study), multi-worker or
-      multi-replica serving, GPU serving, and a torch-free slim image — the
-      paired harness needs both backends in one process tree.
+      multi-replica serving, and GPU serving. The torch-free slim image is
+      skipped no longer — it ships alongside the full image: torch imports
+      moved behind the native backend (the ONNX path never loads them), the
+      slim build pins six locked dependencies plus portfolio-core `--no-deps`,
+      and the parity gate is why dropping the framework is safe.
 
       **Business summary:** The shipped answer: gated artifact, honest
-      numbers (1.6 ms p50, ~950 req/s knee, ~56k rows/s batched, 6.5 GB image,
-      ~$0.000012 per 1k predictions), and a backend choice made on
-      deployability, not a noisy ~15% delta.
+      numbers (1.6 ms p50, ~950 req/s knee, ~56k rows/s batched, 6.5 GB full
+      image with a 291 MB ONNX-only sibling, ~$0.000012 per 1k predictions),
+      and a backend choice made on deployability, not a noisy ~15% delta.
     figures: [footprint_cost_bars]
   - id: conclusions
     text_md: |

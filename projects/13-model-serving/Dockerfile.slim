@@ -1,0 +1,61 @@
+# syntax=docker/dockerfile:1
+# ONNX-only serving image — the slim counterpart of ./Dockerfile.
+#
+# Ships without torch: the native backend exists for the train stage and the
+# parity benchmark, serving does not need it. The export-time parity gate
+# (max-abs 7.2e-07 on 512 seeded probe rows, tolerance 1e-4) guarantees the
+# ONNX graph is behaviorally identical to the native model, so the runtime
+# loses nothing but several gigabytes. External audit pass 4: ship the
+# before/after instead of describing it.
+#
+# Pinned to the versions in the committed uv.lock; the package is copied as
+# source on PYTHONPATH (not pip-installed) so no project dependency beyond
+# this list is pulled. SERVING_BACKEND is fixed to onnx — requesting the
+# native backend fails loudly at startup with an ImportError, by design.
+#
+# Build from the REPOSITORY ROOT:
+#
+#   docker build -f projects/13-model-serving/Dockerfile.slim \
+#     -t portfolio-model-serving:13-slim .
+
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS build
+WORKDIR /app
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
+# portfolio-core only (logging + base schemas) — installed WITHOUT its
+# dependency tree: the package __init__ resolves to pydantic + pydantic-settings
+# at import time, and the rest of its declared tree (polars, plotly, pydantic-ai)
+# is train/report-stage weight the service never touches.
+COPY libs ./libs
+RUN uv venv /app/.venv \
+    && uv pip install --python /app/.venv/bin/python --no-deps ./libs/portfolio-core \
+    && uv pip install --python /app/.venv/bin/python \
+        "pydantic==2.14.1" \
+        "pydantic-settings==2.15.0" \
+        "fastapi==0.143.0" \
+        "uvicorn==0.54.0" \
+        "onnxruntime==1.31.1" \
+        "numpy==2.5.4"
+# Source on PYTHONPATH (not installed): importing the package must not drag
+# train-stage dependencies into the runtime.
+COPY projects/13-model-serving/src/model_serving /app/model_serving
+
+FROM python:3.12-slim AS runtime
+WORKDIR /app
+RUN useradd --system --uid 10001 --create-home appuser
+# --chown at COPY: a later `chown -R` would duplicate the whole venv into a
+# new layer and double the image.
+COPY --from=build --chown=appuser:appuser /app/.venv /app/.venv
+COPY --from=build --chown=appuser:appuser /app/model_serving /app/model_serving
+# Staged by `python -m model_serving.cli docker` from data/models/ (mlp.pt,
+# model.onnx, mlp_arch.json, mlp_meta.json, feature_contract.json).
+COPY --chown=appuser:appuser projects/13-model-serving/image/serving /app/models
+ENV PATH="/app/.venv/bin:$PATH" \
+    MODELS_DIR=/app/models \
+    PYTHONPATH=/app \
+    SERVING_BACKEND=onnx \
+    PYTHONUNBUFFERED=1
+USER appuser
+EXPOSE 8000
+HEALTHCHECK --interval=15s --timeout=3s --start-period=25s --retries=8 \
+  CMD ["python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=2)"]
+CMD ["python", "-m", "uvicorn", "--factory", "--host", "0.0.0.0", "--port", "8000", "model_serving.service.app:create_app"]

@@ -163,3 +163,132 @@ def docker_core(cfg: ServingConfig) -> Path:
     out.write_text(json.dumps(result, indent=2) + "\n")
     log.info("docker: measured=%s -> %s", result["measured"], out)
     return out
+
+
+SLIM_DOCKERFILE = "Dockerfile.slim"
+
+
+def slim_image_ref(cfg: ServingConfig) -> str:
+    """The ONNX-only image tag, derived from the full image ref."""
+    return f"{cfg.image_ref}-slim"
+
+
+def build_slim_image(cfg: ServingConfig) -> str:
+    """ONNX-only multi-stage build; returns the image id."""
+    r = _docker(
+        "build",
+        "--quiet",
+        "-f",
+        f"projects/13-model-serving/{SLIM_DOCKERFILE}",
+        "-t",
+        slim_image_ref(cfg),
+        ".",
+        cwd=repo_root(),
+    )
+    return r.stdout.strip().splitlines()[-1]
+
+
+def slim_smoke(cfg: ServingConfig, timeout_s: float = 90.0) -> dict[str, Any]:
+    """Run the slim image directly: /ready gate + one contract-shaped predict.
+
+    The compose stack pins the full image, so the slim smoke runs a plain
+    container and asserts the same readiness contract the healthcheck uses.
+    """
+    import urllib.request
+
+    ref = slim_image_ref(cfg)
+    up = _docker(
+        "run", "-d", "--rm", "-p", "8138:8000", "--name", "model-serving-13-slim", ref
+    )
+    if up.returncode != 0:
+        return {"passed": False, "error": up.stderr.strip()}
+    try:
+        deadline = time.perf_counter() + timeout_s
+        ready = False
+        while time.perf_counter() < deadline:
+            probe = _docker(
+                "exec", "model-serving-13-slim", "python", "-c", _READY_PROBE, check=False
+            )
+            if probe.returncode == 0:
+                ready = True
+                break
+            time.sleep(2.0)
+        if not ready:
+            return {"passed": False, "error": "slim container did not become ready in time"}
+        payload = json.dumps(
+            {
+                "row": {
+                    "hour": 9,
+                    "temp": 0.5,
+                    "hum": 0.6,
+                    "windspeed": 0.2,
+                    "weathersit": 1,
+                    "hour_sin": 0.9,
+                    "hour_cos": -0.4,
+                    "weekday_sin": 0.7,
+                    "weekday_cos": 0.7,
+                    "month_sin": 0.2,
+                    "month_cos": 1.0,
+                    "holiday": 0,
+                    "workingday": 1,
+                    "cnt_lag_1h": 100.0,
+                    "cnt_lag_24h": 120.0,
+                    "cnt_lag_168h": 110.0,
+                }
+            }
+        ).encode()
+        req = urllib.request.Request(
+            "http://127.0.0.1:8138/predict",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:  # noqa: S310 - localhost smoke
+                body = json.loads(resp.read().decode())
+        except Exception as e:
+            return {"passed": False, "error": f"predict probe failed: {e}"}
+        prediction = body.get("prediction")
+        ok = isinstance(prediction, (int, float))
+        return {"passed": ok, "prediction": prediction}
+    finally:
+        _docker("rm", "-f", "model-serving-13-slim", check=False)
+
+
+_READY_PROBE = (
+    "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=2)"
+)
+
+
+def docker_slim(cfg: ServingConfig) -> Path:
+    """Build the ONNX-only image, measure it against the recorded full image,
+    smoke it, and write ``reports/docker_slim.json`` (the audit's
+    confession-to-headline before/after)."""
+    started = time.perf_counter()
+    result: dict[str, Any] = {
+        "dockerfile": SLIM_DOCKERFILE,
+        "build_context": "repository root (explicit minimal pin set; no workspace sync)",
+        "daemon_available": docker_available(),
+        "note": "SERVING_BACKEND is fixed to onnx; requesting native fails loudly "
+        "with ImportError by design (the full image keeps both backends).",
+    }
+    full_path = cfg.reports_dir / "docker_run.json"
+    if full_path.exists():
+        result["full_image"] = json.loads(full_path.read_text()).get("total_mb")
+    if result["daemon_available"]:
+        stage_artifacts(cfg)
+        result["image_id"] = build_slim_image(cfg)
+        result["image_ref"] = slim_image_ref(cfg)
+        result.update(image_footprint(slim_image_ref(cfg)))
+        result["smoke"] = slim_smoke(cfg)
+        result["measured"] = True
+        if result.get("full_image") and result.get("total_mb"):
+            result["reduction_x"] = round(result["full_image"] / result["total_mb"], 2)
+    else:
+        result["measured"] = False
+        result["note"] += " Docker daemon unavailable — not built."
+    result["docker_runtime_s"] = round(time.perf_counter() - started, 3)
+    out = cfg.reports_dir / "docker_slim.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(result, indent=2) + "\n")
+    log.info("docker slim: measured=%s -> %s", result["measured"], out)
+    return out
