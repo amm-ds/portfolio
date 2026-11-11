@@ -111,6 +111,7 @@ stages:
     deps:
       - src/mobility/evaluate.py
       - src/mobility/geo.py
+      - src/mobility/conformal.py
       - reports/models/predictions.parquet
       - data/curated
     outs:

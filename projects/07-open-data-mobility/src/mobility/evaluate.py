@@ -751,8 +751,12 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
     )
 
     p90_col = "y_p90_tuned" if "y_p90_tuned" in preds.columns else "y_p90"
+    point_col = "y_gbm_tuned" if "y_gbm_tuned" in preds.columns else "y_gbm"
     coverage = p90_coverage(preds, p90_col)
     coverage_borough = p90_coverage_by_borough(preds, p90_col)
+    from mobility.conformal import evaluate_conformal, fig_conformal_coverage
+
+    conformal = evaluate_conformal(preds, p90_col, point_col)
     importance_fig = None
     has_gbm_model = (cfg.models_dir / "gbm_tuned.joblib").exists() or (
         cfg.models_dir / "gbm_mean.joblib"
@@ -769,6 +773,7 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
         "weather_elasticity": fig_weather_elasticity(weather),
         "p90_band": fig_p90_band(preds),
         "p90_calibration": fig_p90_calibration(coverage_borough),
+        "conformal_coverage": fig_conformal_coverage(conformal),
         "gbm_vs_nn": add_takeaway(
             fig_gbm_vs_nn(runs),
             f"MASE 1.0 = persistence parity (dotted); grey = naive_lag24; "
@@ -804,6 +809,7 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
         "mae_ranking": ranking["ranking"],
     }
     metrics["deltas"] = baseline_deltas(runs)
+    metrics["conformal"] = conformal
     (cfg.reports_dir / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
 
     report = EvalReport(title="Project 07 — Urban Mobility Demand Intelligence")
