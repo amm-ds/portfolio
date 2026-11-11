@@ -846,13 +846,9 @@ describe("ProjectsIndex", () => {
     const baseRule = css.match(/\.page-index \{[\s\S]*?\n\}/)![0];
     expect(baseRule).toContain("flex-direction: column;");
     expect(css).toContain(".page-index .page-index-links {");
-    // the "index" label rides the turquoise chip (uniform with the other
-    // brand markers); the row is sized up
+    // the "index" label keeps the accent; the row is sized up
     expect(css.match(/\.page-index \.page-index-label \{[\s\S]*?\n\}/)![0]).toContain(
-      "background: var(--accent);",
-    );
-    expect(css.match(/\.page-index \.page-index-label \{[\s\S]*?\n\}/)![0]).toContain(
-      "color: var(--accent-ink);",
+      "color: var(--accent-bright);",
     );
     expect(baseRule).toContain("font-family: var(--mono);");
     expect(baseRule).toContain("font-size: 1.05rem;");
