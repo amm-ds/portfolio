@@ -8,6 +8,8 @@ measurements (from :mod:`rag_agent.reporting`) and return ``go.Figure`` objects;
 writing to disk happens in :mod:`rag_agent.reporting`.
 """
 
+from typing import Any
+
 import numpy as np
 import plotly.graph_objects as go
 from portfolio_core.plotting import add_takeaway, apply_theme, style_runs
@@ -454,3 +456,48 @@ def frontier_figure(
         yaxis_title="answer relevance",
     )
     return _finish_themed(fig, showlegend=False)  # single unnamed trace
+
+
+def fusion_arm_figure(block: dict[str, Any]) -> go.Figure:
+    """Dense / BM25 / RRF(k=60) retrieval arms on the tuning and sealed sets.
+
+    One panel per split, one bar group per metric — the three-way comparison
+    the technical audit asked for (pass 4), computed retrieval-only so the
+    arms isolate ranking quality from generation.
+    """
+    import plotly.express as px
+
+    rows = []
+    for split in ("tuning", "sealed"):
+        for arm, scores in block[split].items():
+            for metric in ("recall_at_5", "recall_at_10", "mrr_at_5", "ndcg_at_10"):
+                rows.append(
+                    {
+                        "split": split,
+                        "arm": arm,
+                        "metric": metric.replace("_", "@", 1).replace("_", " "),
+                        "value": scores[metric],
+                    }
+                )
+    fig = px.bar(
+        rows,
+        x="metric",
+        y="value",
+        color="arm",
+        barmode="group",
+        facet_col="split",
+        title="Retrieval arms: dense vs BM25 vs RRF (rerank off, no LLM)",
+        labels={"value": "score", "metric": "metric", "arm": "arm"},
+        category_orders={"arm": ["dense", "bm25", "rrf"]},
+    )
+    fig.update_yaxes(range=[0.0, 1.0])
+    rrf_r5 = block["sealed"].get("rrf", {}).get("recall_at_5", 0.0)
+    dense_r5 = block["sealed"].get("dense", {}).get("recall_at_5", 0.0)
+    delta = rrf_r5 - dense_r5
+    add_takeaway(
+        fig,
+        f"sealed set: RRF recall@5 {rrf_r5:.3f} vs dense {dense_r5:.3f} "
+        f"({'+' if delta >= 0 else ''}{delta:.3f}) — fusion compared out of the box "
+        "(k=60, no tuning); generation path unchanged",
+    )
+    return apply_theme(fig)

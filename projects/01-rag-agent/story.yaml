@@ -229,12 +229,25 @@ sections:
     pass meters 61 calls and $0.240699 cloud-equivalent, with p50 28.025 s and
     p95 52.176 s.
 
+    **Hybrid retrieval evaluated out of the box — the champion holds.**
+    Sparse+dense fusion is the current production default, so the comparison
+    runs retrieval-only (rerank off, no LLM calls): dense, BM25 (k1=1.2,
+    b=0.75), and RRF k=60 over both top-50 lists, on both sets. On tuning,
+    RRF ties dense exactly (recall@5 0.831 both; MRR@5 0.724 vs 0.718) with
+    nDCG@10 slightly lower (0.700 vs 0.714); BM25 alone reaches 0.738. On the
+    sealed set dense and BM25 both read 0.600 recall@5 and RRF 0.533 — inside
+    the binomial noise of fifteen questions. At this corpus scale fusion buys
+    no measured recall for its extra latency; the dense+rerank champion is
+    unchanged. The reusable asset is the comparison itself, one command away
+    (`uv run python -m rag_agent.cli fusion`).
+
     What do numbers that survive this gate allow us to claim?
 
     **Business summary:** Selected `kimi-for-coding` improves faithfulness but
     still leaves 17 unsupported-claim outcomes in 65 tuning answers; sealed
-    recall drops to 0.600, and RAGAS answer relevancy regresses to 0.8602.
-  figures: [latency_histogram, kimi_generation_comparison]
+    recall drops to 0.600, RAGAS answer relevancy regresses to 0.8602, and
+    out-of-the-box hybrid fusion ties dense instead of beating it.
+  figures: [latency_histogram, kimi_generation_comparison, fusion_arm_comparison]
   metrics_keys:
   - retrieval_chunks_200
   - retrieval_random_chunks_200

@@ -10,6 +10,9 @@
 # /projects/01-rag-agent/{metrics,report}) — same rationale as DEPLOY.md.
 !/reports/metrics.json
 !/reports/report.html
+# …and the retrieval-arm comparison the evaluation section cites — every
+# public number traces to a committed artifact.
+!/reports/fusion.json
 /reports/figures/*.html
 # The sealed held-out golden set is authored source data (like
 # src/rag_agent/eval_questions.json), not a regenerable artifact: track it even

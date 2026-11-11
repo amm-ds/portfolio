@@ -44,6 +44,8 @@ from pydantic_ai import Agent, AgentRunResult
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from pydantic_ai.models import Model
 
 from rag_agent.agent import build_agent
@@ -70,7 +72,12 @@ from rag_agent.index import (
     chunk_articles,
 )
 from rag_agent.judge import RubricJudge, build_judge
-from rag_agent.lexical import lexical_ranks
+from rag_agent.lexical import (
+    Bm25Index,
+    lexical_ranks,
+    ndcg_at_k,
+    reciprocal_rank_fusion,
+)
 from rag_agent.metering import get_meter, start_metering
 from rag_agent.ragas_eval import RagasRow, ensure_ragas_importable, run_ragas
 from rag_agent.reporting import (
@@ -403,6 +410,69 @@ def first_relevant_rank(citations: list[Citation], relevant_article_ids: list[st
         if citation.article_id in relevant:
             return i
     return None
+
+
+def first_relevant_rank_ids(ranked_article_ids: list[str], relevant: set[str]) -> int | None:
+    """1-based rank of the first relevant article in a ranked id list."""
+    for i, aid in enumerate(ranked_article_ids, start=1):
+        if aid in relevant:
+            return i
+    return None
+
+
+def fusion_comparison(
+    config: RAGConfig,
+    questions: list[EvalQuestion],
+    articles: list[Article],
+    embed_fn: EmbedFn,
+) -> dict[str, dict[str, float]]:
+    """Three-way retrieval comparison: dense / BM25 / RRF(k=60), no LLM.
+
+    External audit pass 4: hybrid sparse+dense is the current production
+    default and a dense-only pipeline is dated. Retrieval-only — reranking
+    off, so the three arms compete on pure retrieval; the champion generation
+    path (dense + rerank) is untouched either way. nDCG@10 uses binary gains
+    (whole-article relevance; the eval set carries no per-chunk grades).
+    """
+    size = min(config.chunk_sizes)
+    chunks = chunk_articles(articles, size=size, overlap=config.chunk_overlap)
+    chunk_by_id = {c.chunk_id: c for c in chunks}
+    bm25 = Bm25Index(chunks)
+    dense = Retriever.from_index_dir(config, config.index_path(size), embed_fn, None)
+
+    results: dict[str, dict[str, float]] = {}
+    for arm in ("dense", "bm25", "rrf"):
+        ranks: list[int | None] = []
+        ndcgs: list[float] = []
+        for q in questions:
+            relevant = set(q.relevant_article_ids)
+            if arm == "dense":
+                ranked_top = [c.article_id for c in dense.search(q.question, top_k=10)]
+            elif arm == "bm25":
+                ids = bm25.ranking(q.question)[:10]
+                ranked_top = [chunk_by_id[cid].article_id for cid in ids]
+            else:
+                bm = bm25.ranking(q.question)[:50]
+                de = [c.chunk_id for c in dense.search(q.question, top_k=50)]
+                fused = reciprocal_rank_fusion([bm, de])[:10]
+                ranked_top = [chunk_by_id[cid].article_id for cid in fused]
+            ranks.append(first_relevant_rank_ids(ranked_top, relevant))
+            ndcgs.append(ndcg_at_k(ranked_top, q.relevant_article_ids, k=10))
+        results[arm] = {
+            "recall_at_5": recall_at_k(ranks, 5),
+            "recall_at_10": recall_at_k(ranks, 10),
+            "mrr_at_5": mrr_at_5(ranks),
+            "ndcg_at_10": float(sum(ndcgs) / len(ndcgs)) if ndcgs else 0.0,
+            "n_questions": float(len(questions)),
+        }
+        logger.info(
+            "fusion arm=%s recall@5=%.3f mrr@5=%.3f ndcg@10=%.3f",
+            arm,
+            results[arm]["recall_at_5"],
+            results[arm]["mrr_at_5"],
+            results[arm]["ndcg_at_10"],
+        )
+    return results
 
 
 def random_ranks(
@@ -1258,6 +1328,39 @@ def run(
         chosen_tokens,
         rag_stage.wall_time_s,
     )
+
+
+def run_fusion(config: RAGConfig) -> "Path":
+    """Dense / BM25 / RRF(k=60) retrieval arms on the tuning + sealed sets.
+
+    Retrieval-only (rerank off, no LLM calls) — the champion generation path
+    is untouched. Writes ``reports/fusion.json`` and the
+    ``fusion_arm_comparison`` figure; the story cites the sealed-set read.
+    """
+    from portfolio_core.plotting import save_html, save_json
+
+    from rag_agent.figures import fusion_arm_figure
+
+    articles = load_corpus(config)
+    embed_fn = SentenceTransformerEmbedder(config.embedding_model)
+    tuning = load_questions(config, articles)
+    heldout = load_heldout_questions(config, articles)
+    block = {
+        "method": "retrieval-only three-way: dense (minilm, rerank off) / "
+        "BM25 (k1=1.2, b=0.75) / RRF k=60 over dense+BM25 top-50; "
+        "nDCG@10 with binary (whole-article) gains",
+        "tuning": fusion_comparison(config, tuning, articles, embed_fn),
+        "sealed": fusion_comparison(config, heldout, articles, embed_fn),
+        "champion_reference": "production path is dense + rerank "
+        "(see ablations.rerank); these arms isolate pure retrieval quality",
+    }
+    out = config.reports_dir / "fusion.json"
+    out.write_text(json.dumps(block, indent=2) + "\n", encoding="utf-8")
+    fig = fusion_arm_figure(block)
+    save_json(fig, config.reports_dir / "figures" / "fusion_arm_comparison.json")
+    save_html(fig, config.reports_dir / "figures" / "fusion_arm_comparison.html")
+    logger.info("fusion comparison -> %s", out)
+    return out
 
 
 def run_heldout(

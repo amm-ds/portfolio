@@ -1,0 +1,50 @@
+{
+  "method": "retrieval-only three-way: dense (minilm, rerank off) / BM25 (k1=1.2, b=0.75) / RRF k=60 over dense+BM25 top-50; nDCG@10 with binary (whole-article) gains",
+  "tuning": {
+    "dense": {
+      "recall_at_5": 0.8307692307692308,
+      "recall_at_10": 0.8461538461538461,
+      "mrr_at_5": 0.717948717948718,
+      "ndcg_at_10": 0.7135461524312098,
+      "n_questions": 65.0
+    },
+    "bm25": {
+      "recall_at_5": 0.7384615384615385,
+      "recall_at_10": 0.7692307692307693,
+      "mrr_at_5": 0.6253846153846153,
+      "ndcg_at_10": 0.6272490032410771,
+      "n_questions": 65.0
+    },
+    "rrf": {
+      "recall_at_5": 0.8307692307692308,
+      "recall_at_10": 0.8461538461538461,
+      "mrr_at_5": 0.7238461538461538,
+      "ndcg_at_10": 0.7004915167757448,
+      "n_questions": 65.0
+    }
+  },
+  "sealed": {
+    "dense": {
+      "recall_at_5": 0.6,
+      "recall_at_10": 0.6666666666666666,
+      "mrr_at_5": 0.5666666666666667,
+      "ndcg_at_10": 0.5753953169047639,
+      "n_questions": 15.0
+    },
+    "bm25": {
+      "recall_at_5": 0.6,
+      "recall_at_10": 0.6,
+      "mrr_at_5": 0.5166666666666667,
+      "ndcg_at_10": 0.511650233627354,
+      "n_questions": 15.0
+    },
+    "rrf": {
+      "recall_at_5": 0.5333333333333333,
+      "recall_at_10": 0.6,
+      "mrr_at_5": 0.5,
+      "ndcg_at_10": 0.5162717964224611,
+      "n_questions": 15.0
+    }
+  },
+  "champion_reference": "production path is dense + rerank (see ablations.rerank); these arms isolate pure retrieval quality"
+}

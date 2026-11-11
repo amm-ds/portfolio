@@ -240,6 +240,21 @@ def rebuild_report() -> None:
 
 
 @app.command()
+def fusion() -> None:
+    """Dense / BM25 / RRF(k=60) retrieval arms on tuning + sealed sets.
+
+    Retrieval-only (rerank off, no LLM calls); writes reports/fusion.json and
+    the fusion_arm_comparison figure. Compares out of the box (k=60, no
+    tuning) whether fusion beats dense — the champion path is untouched.
+    """
+    from rag_agent.evaluate import run_fusion
+
+    config = load_config()
+    path = run_fusion(config)
+    typer.echo(f"fusion comparison written to {path}")
+
+
+@app.command()
 def chat(
     question: Annotated[
         str | None, typer.Argument(help="Single question mode (non-interactive).")
