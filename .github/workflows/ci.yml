@@ -46,6 +46,7 @@ jobs:
               - 'scripts/axe_check.mjs'
             agent_chat:
               - 'apps/agent-chat/**'
+              - 'scripts/export_agent_chat_zip.py'
               - '.github/workflows/ci.yml'
             document_intelligence:
               - 'apps/document-intelligence/**'

@@ -17,6 +17,7 @@ import argparse
 import hashlib
 import json
 import subprocess
+import sys
 import zipfile
 from dataclasses import dataclass
 from datetime import datetime
@@ -39,11 +40,21 @@ EXCLUDE_DIRS = {
     ".ruff_cache",
     ".git",
     "agent_chat_memory",
+    # test-runner state (external evaluation P1-4): never part of a handoff
+    "test-results",
+    "playwright-report",
+    "coverage",
+    ".nyc_output",
+    "htmlcov",
 }
 EXCLUDE_FILES = {".DS_Store", "agent_chat.db", ".env"}
 EXCLUDE_SUFFIXES = {".pyc"}
 # reproducible data (corpus + vector index): rebuilt by the app's own pipeline
 EXCLUDE_PREFIXES = ("data/raw/", "data/index/")
+
+
+class ExportError(RuntimeError):
+    """Fatal export problem (e.g. not inside a git worktree)."""
 
 
 @dataclass
@@ -59,13 +70,40 @@ class ExportMeta:
 
 
 def git(*args: str) -> str:
-    return subprocess.run(  # noqa: S603 - fixed git binary + static args
+    proc = subprocess.run(  # noqa: S603 - fixed git binary + static args
         ["/usr/bin/env", "git", *args],
         capture_output=True,
         text=True,
         cwd=REPO,
         check=False,
-    ).stdout.strip()
+    )
+    if proc.returncode != 0:
+        raise ExportError(f"git {' '.join(args)} failed: {proc.stderr.strip()}")
+    return proc.stdout.strip()
+
+
+def provenance() -> dict[str, set[str]]:
+    """Classify every app-relative path as tracked / ignored / untracked.
+
+    The payload can carry files git does not track (focused reports the
+    collaborator wants) — the manifest records their origin per file so a
+    ``dirty: false`` export can no longer smuggle in bytes that are not
+    provably from the named commit (external evaluation P1-4)."""
+    tracked = {
+        Path(p).relative_to("apps/agent-chat").as_posix()
+        for p in git("ls-files", "--", "apps/agent-chat").splitlines()
+        if p.strip()
+    }
+    ignored: set[str] = set()
+    untracked: set[str] = set()
+    for line in git(
+        "status", "--porcelain", "--ignored=matching", "--", "apps/agent-chat"
+    ).splitlines():
+        if line.startswith("!! "):
+            ignored.add(Path(line[3:].strip()).relative_to("apps/agent-chat").as_posix())
+        elif line.startswith("?? "):
+            untracked.add(Path(line[3:].strip()).relative_to("apps/agent-chat").as_posix())
+    return {"tracked": tracked, "ignored": ignored, "untracked": untracked}
 
 
 def sha256(path: Path) -> str:
@@ -77,9 +115,22 @@ def sha256(path: Path) -> str:
 class FileEntry(TypedDict):
     bytes: int
     sha256: str
+    origin: str  # "tracked" | "ignored" | "untracked" (see provenance())
 
 
-def collect_files() -> dict[str, FileEntry]:
+def _classify(rel: str, origins: dict[str, set[str]]) -> str:
+    for origin in ("tracked", "ignored", "untracked"):
+        bucket = origins[origin]
+        if rel in bucket:
+            return origin
+        # git collapses fully-ignored directories to the dir path — treat any
+        # path under a listed dir as that origin
+        if any(rel.startswith(parent + "/") for parent in bucket):
+            return origin
+    return "untracked"
+
+
+def collect_files(origins: dict[str, set[str]]) -> dict[str, FileEntry]:
     files: dict[str, FileEntry] = {}
     for path in sorted(APP.rglob("*")):
         if not path.is_file():
@@ -92,7 +143,11 @@ def collect_files() -> dict[str, FileEntry]:
             continue
         if any(rel.startswith(p) for p in EXCLUDE_PREFIXES):
             continue
-        files[rel] = {"bytes": path.stat().st_size, "sha256": sha256(path)}
+        files[rel] = {
+            "bytes": path.stat().st_size,
+            "sha256": sha256(path),
+            "origin": _classify(rel, origins),
+        }
     return files
 
 
@@ -165,10 +220,19 @@ def main() -> int:
             )
         return 0
 
-    files = collect_files()
-    sha = git("rev-parse", "HEAD")
-    porcelain = git("status", "--porcelain")
+    try:
+        origins = provenance()
+        files = collect_files(origins)
+        sha = git("rev-parse", "HEAD")
+        porcelain = git("status", "--porcelain")
+    except ExportError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
     dirty_files = [line.strip() for line in porcelain.splitlines() if line.strip()]
+    origin_counts = {
+        origin: sum(1 for f in files.values() if f["origin"] == origin)
+        for origin in ("tracked", "ignored", "untracked")
+    }
     prev = previous_export()
     prev_meta: dict[str, Any] | None = prev[1] if prev else None
     version = (int(prev_meta["version"]) + 1) if prev_meta else 1
@@ -188,6 +252,7 @@ def main() -> int:
             "git_sha": sha,
             "dirty": bool(dirty_files),
             "dirty_files": dirty_files,
+            "payload_origins": origin_counts,
             "excludes": sorted(EXCLUDE_DIRS | EXCLUDE_FILES) + list(EXCLUDE_PREFIXES),
             "file_count": len(files),
             "total_bytes": total_bytes,
@@ -199,7 +264,9 @@ def main() -> int:
     print(f"export -> {zip_path.relative_to(REPO)}")
     summary = (
         f"  v{version} | {sha[:7]}{'-dirty' if dirty_files else ''} | "
-        f"{len(files)} files | {total_bytes / 1024:.0f} KiB"
+        f"{len(files)} files | {total_bytes / 1024:.0f} KiB | "
+        f"origins: {origin_counts['tracked']} tracked / "
+        f"{origin_counts['ignored']} ignored / {origin_counts['untracked']} untracked"
     )
     print(summary)
     if dirty_files:
