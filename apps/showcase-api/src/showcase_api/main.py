@@ -49,6 +49,7 @@ from showcase_api.middleware import (
 )
 from showcase_api.spa import WEB_DIST, _route_index_html
 from showcase_api.spa import router as spa_router
+from showcase_api.vitals import router as vitals_router
 
 logger = get_logger(__name__)
 
@@ -229,6 +230,7 @@ def readiness() -> JSONResponse:
 # The direct phone line never ships in the frontend bundle; the page reveals
 # it only after this one deliberate step. CONTACT_PHONE is set per deployment.
 app.include_router(contact_router)
+app.include_router(vitals_router)
 
 
 def _serving_ready(serving_dir: Path, extra_json: tuple[str, ...] = ()) -> bool:

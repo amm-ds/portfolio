@@ -105,6 +105,49 @@ def test_contact_unlock_fails_closed_when_unconfigured(monkeypatch) -> None:  # 
     assert "phone" not in r.json()
 
 
+def test_vitals_appends_and_validates(monkeypatch, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    store = tmp_path / "vitals.jsonl"
+    monkeypatch.setenv("VITALS_PATH", str(store))
+    batch = {
+        "vitals": [
+            {
+                "metric": "LCP",
+                "value": 1200,
+                "route": "/projects/01-rag-agent",
+                "device": "desktop",
+                "sha": "abc12345",
+            },
+            {"metric": "CLS", "value": 0.04, "route": "/", "device": "mobile", "sha": "abc12345"},
+        ]
+    }
+    assert client.post("/vitals", json=batch).status_code == 204
+    lines = [json.loads(line) for line in store.read_text().splitlines()]
+    assert [(line["metric"], line["device"]) for line in lines] == [
+        ("LCP", "desktop"),
+        ("CLS", "mobile"),
+    ]
+    assert "ts" in lines[0] and lines[0]["sha"] == "abc12345"
+
+
+def test_vitals_rejects_bad_payloads(monkeypatch, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("VITALS_PATH", str(tmp_path / "vitals.jsonl"))
+    base = {"metric": "LCP", "value": 1, "route": "/", "device": "desktop", "sha": "abcdef12"}
+
+    def one(**overrides: object) -> int:
+        payload = {**base, **overrides}
+        return client.post("/vitals", json={"vitals": [payload]}).status_code
+
+    assert one() == 204
+    assert one(metric="FID") == 422  # not in the allowed set
+    assert one(metric="lcp") == 422  # case-sensitive
+    assert one(value=-1) == 422
+    assert one(device="tv") == 422
+    assert one(sha="ab") == 422  # below the 3-char floor
+    assert one(route="x" * 200) == 422
+    assert client.post("/vitals", json={"vitals": []}).status_code == 422
+    assert client.post("/vitals", json={"nope": 1}).status_code == 422
+
+
 def test_console_script_invokes_uvicorn(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     import uvicorn
     from showcase_api.__main__ import main as launch

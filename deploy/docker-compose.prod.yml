@@ -40,6 +40,10 @@ services:
       # Append-only log of phone-unlock submissions (valid + invalid), one
       # JSON line each. Root-only on the host volume; unset disables storage.
       CONTACT_STORE_PATH: ${CONTACT_STORE_PATH:-/data/contact_unlock.jsonl}
+      # Privacy-preserving field Web Vitals (LCP/INP/CLS by route, device
+      # class and release SHA — no identifiers; see showcase_api/vitals.py).
+      # Retention: last 50k entries / 30 days. Same volume as the contact log.
+      VITALS_PATH: ${VITALS_PATH:-/data/vitals.jsonl}
     volumes:
       - contact-store:/data
     extra_hosts:
