@@ -1,92 +1,468 @@
 [
- {
-  "question": "What role does Photosystem II play in the light-dependent reactions of photosynthesis?",
-  "relevant_titles": ["Photosystem II"],
-  "category": "single_hop",
-  "expected_behavior": "answer"
- },
- {
-  "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
-  "relevant_titles": ["C4 carbon fixation"],
-  "category": "single_hop",
-  "expected_behavior": "answer"
- },
- {
-  "question": "What is the function of a plastid in a plant cell?",
-  "relevant_titles": ["Plastid"],
-  "category": "single_hop",
-  "expected_behavior": "answer"
- },
- {
-  "question": "What is aircraft upset and why is it dangerous for flight safety?",
-  "relevant_titles": ["Aircraft upset"],
-  "category": "single_hop",
-  "expected_behavior": "answer"
- },
- {
-  "question": "Where is geothermal power used in the United Kingdom?",
-  "relevant_titles": ["Geothermal power in the United Kingdom"],
-  "category": "single_hop",
-  "expected_behavior": "answer"
- },
- {
-  "question": "What are building-integrated photovoltaics?",
-  "relevant_titles": ["Building-integrated photovoltaics"],
-  "category": "single_hop",
-  "expected_behavior": "answer"
- },
- {
-  "question": "How does a convolutional neural network process grid-like data such as images?",
-  "relevant_titles": ["Convolutional neural network"],
-  "category": "single_hop",
-  "expected_behavior": "answer"
- },
- {
-  "question": "What is the climate of Mars like?",
-  "relevant_titles": ["Climate of Mars"],
-  "category": "single_hop",
-  "expected_behavior": "answer"
- },
- {
-  "question": "How does the Aviation Section of the U.S. Signal Corps fit into the early history of aviation?",
-  "relevant_titles": ["Aviation Section, U.S. Signal Corps", "History of aviation"],
-  "category": "multi_hop",
-  "expected_behavior": "answer"
- },
- {
-  "question": "How does boosting combine weak learners, and how does ensemble averaging differ from it?",
-  "relevant_titles": ["Boosting (machine learning)", "Ensemble averaging (machine learning)"],
-  "category": "multi_hop",
-  "expected_behavior": "answer"
- },
- {
-  "question": "What year did the Titanic sink?",
-  "category": "unanswerable",
-  "expected_behavior": "abstain",
-  "absent_terms": ["Titanic"]
- },
- {
-  "question": "What is the chemical structure of insulin?",
-  "category": "unanswerable",
-  "expected_behavior": "abstain",
-  "absent_terms": ["insulin"]
- },
- {
-  "question": "How does a lithium-ion battery store energy?",
-  "category": "unanswerable",
-  "expected_behavior": "abstain",
-  "absent_terms": ["lithium"]
- },
- {
-  "question": "Who wrote the novel Pride and Prejudice?",
-  "category": "unanswerable",
-  "expected_behavior": "abstain",
-  "absent_terms": ["Pride and Prejudice", "Austen"]
- },
- {
-  "question": "What is CRISPR gene editing and how does it work?",
-  "category": "unanswerable",
-  "expected_behavior": "abstain",
-  "absent_terms": ["CRISPR"]
- }
+  {
+    "question": "What role does Photosystem II play in the light-dependent reactions of photosynthesis?",
+    "relevant_titles": [
+      "Photosystem II"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+    "relevant_titles": [
+      "C4 carbon fixation"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is the function of a plastid in a plant cell?",
+    "relevant_titles": [
+      "Plastid"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is aircraft upset and why is it dangerous for flight safety?",
+    "relevant_titles": [
+      "Aircraft upset"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "Where is geothermal power used in the United Kingdom?",
+    "relevant_titles": [
+      "Geothermal power in the United Kingdom"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What are building-integrated photovoltaics?",
+    "relevant_titles": [
+      "Building-integrated photovoltaics"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How does a convolutional neural network process grid-like data such as images?",
+    "relevant_titles": [
+      "Convolutional neural network"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is the climate of Mars like?",
+    "relevant_titles": [
+      "Climate of Mars"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How does the Aviation Section of the U.S. Signal Corps fit into the early history of aviation?",
+    "relevant_titles": [
+      "Aviation Section, U.S. Signal Corps",
+      "History of aviation"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How does boosting combine weak learners, and how does ensemble averaging differ from it?",
+    "relevant_titles": [
+      "Boosting (machine learning)",
+      "Ensemble averaging (machine learning)"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What year did the Titanic sink?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Titanic"
+    ]
+  },
+  {
+    "question": "What is the chemical structure of insulin?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "insulin"
+    ]
+  },
+  {
+    "question": "How does a lithium-ion battery store energy?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "lithium"
+    ]
+  },
+  {
+    "question": "Who wrote the novel Pride and Prejudice?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Pride and Prejudice",
+      "Austen"
+    ]
+  },
+  {
+    "question": "What is CRISPR gene editing and how does it work?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "CRISPR"
+    ]
+  },
+  {
+    "question": "How does a narrow-body aircraft differ from a wide-body aircraft?",
+    "relevant_titles": [
+      "Narrow-body aircraft"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is the Memphis Belle known for?",
+    "relevant_titles": [
+      "Memphis Belle (aircraft)"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What was the Kamikaze aircraft of 1937 known for?",
+    "relevant_titles": [
+      "Kamikaze (1937 aircraft)"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is Dutch roll and how is it controlled on swept-wing aircraft?",
+    "relevant_titles": [
+      "Aircraft dynamic modes"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How were the Hiyō-class aircraft carriers adapted from ocean liners, and what was the fate of the name ship Hiyō?",
+    "relevant_titles": [
+      "Japanese aircraft carrier Hiyō",
+      "Hiyō-class aircraft carrier"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How did the origins of the Japanese carriers Unryū and Zuihō differ, and how did each meet her end?",
+    "relevant_titles": [
+      "Japanese aircraft carrier Unryū",
+      "Japanese aircraft carrier Zuihō"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is the intended cruise speed of the Boom Overture supersonic airliner?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Boom Overture",
+      "Overture"
+    ]
+  },
+  {
+    "question": "How does Stratolaunch launch rockets into orbit from the air?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Stratolaunch"
+    ]
+  },
+  {
+    "question": "How does the PS10 solar power plant convert sunlight into electricity?",
+    "relevant_titles": [
+      "PS10 solar power plant"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+    "relevant_titles": [
+      "Small wind turbine"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What design feature of the quietrevolution turbine avoids the pulsations that affect straight-bladed Darrieus turbines?",
+    "relevant_titles": [
+      "Quietrevolution wind turbine"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What efficiency limits do third-generation photovoltaic cells try to overcome?",
+    "relevant_titles": [
+      "Third-generation photovoltaic cell"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How does the Andasol solar power station keep generating electricity after sunset?",
+    "relevant_titles": [
+      "Andasol Solar Power Station"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "Why has geothermal power not succeeded in Australia despite its promising hot granite resources?",
+    "relevant_titles": [
+      "Geothermal power in Australia",
+      "Geothermal energy"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How does the MeyGen tidal stream project off Scotland generate electricity?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "MeyGen",
+      "tidal stream"
+    ]
+  },
+  {
+    "question": "How does a vanadium flow battery store surplus renewable energy?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "vanadium",
+      "flow battery"
+    ]
+  },
+  {
+    "question": "What is a large language model and how does it generate text?",
+    "relevant_titles": [
+      "Large language model"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is a hyperparameter and how does it differ from a parameter learned during training?",
+    "relevant_titles": [
+      "Hyperparameter (machine learning)"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How does active learning reduce the cost of labeling data?",
+    "relevant_titles": [
+      "Active learning (machine learning)"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How does the weighted majority algorithm combine predictions from a pool of algorithms?",
+    "relevant_titles": [
+      "Weighted majority algorithm (machine learning)"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How does a bidirectional recurrent neural network draw on both past and future context?",
+    "relevant_titles": [
+      "Bidirectional recurrent neural networks"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How does a general regression neural network differ from a probabilistic neural network?",
+    "relevant_titles": [
+      "General regression neural network",
+      "Probabilistic neural network"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is CV dazzle and how does it relate to adversarial attacks on machine learning?",
+    "relevant_titles": [
+      "Computer vision dazzle",
+      "Adversarial machine learning"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How does the AdamW optimizer differ from Adam when training a model?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "AdamW"
+    ]
+  },
+  {
+    "question": "What is a climate stabilization wedge?",
+    "relevant_titles": [
+      "Climate stabilization wedge"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is the subnivean climate and which animals depend on it?",
+    "relevant_titles": [
+      "Subnivean climate"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is the climate of Vancouver like?",
+    "relevant_titles": [
+      "Climate of Vancouver"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How does the climate of Alaska vary from region to region?",
+    "relevant_titles": [
+      "Climate of Alaska"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How can climate change increase the risk of species extinctions?",
+    "relevant_titles": [
+      "Extinction risk from climate change"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How do climate change conspiracy theories relate to organized climate change denial?",
+    "relevant_titles": [
+      "Climate change conspiracy theory",
+      "Climate change denial"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is a climate appraisal and how does it fit into climate risk management?",
+    "relevant_titles": [
+      "Climate appraisal",
+      "Climate risk management"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How does marine cloud brightening using stratocumulus clouds cool the planet?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "cloud brightening",
+      "stratocumulus"
+    ]
+  },
+  {
+    "question": "What is the role of Photosystem I in the light reactions of photosynthesis?",
+    "relevant_titles": [
+      "Photosystem I"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "Why do C3 plants struggle to grow in hot, dry conditions?",
+    "relevant_titles": [
+      "C3 carbon fixation"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is alarm photosynthesis?",
+    "relevant_titles": [
+      "Alarm photosynthesis"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is unusual about chlorophyll f?",
+    "relevant_titles": [
+      "Chlorophyll f"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is protochlorophyllide and why can it be dangerous to plants in the light?",
+    "relevant_titles": [
+      "Protochlorophyllide"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "What is the Joint Center for Artificial Photosynthesis and how does its mission fit the field of artificial photosynthesis?",
+    "relevant_titles": [
+      "Joint Center for Artificial Photosynthesis",
+      "Artificial photosynthesis"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer"
+  },
+  {
+    "question": "How does phytochrome-mediated shade avoidance alter photosynthesis in understory plants?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "phytochrome",
+      "shade avoidance",
+      "understory"
+    ]
+  },
+  {
+    "question": "What role does photosystem III play in cave-dwelling cyanobacteria?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "photosystem III",
+      "cave-dwelling"
+    ]
+  }
 ]

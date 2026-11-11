@@ -13,6 +13,9 @@
 # …and the retrieval-arm comparison the evaluation section cites — every
 # public number traces to a committed artifact.
 !/reports/fusion.json
+# …and the expanded sealed set's retrieval-side read + failure taxonomy
+# (Project A); the generation-side numbers land in metrics.json detail.
+!/reports/sealed_retrieval.json
 /reports/figures/*.html
 # The sealed held-out golden set is authored source data (like
 # src/rag_agent/eval_questions.json), not a regenerable artifact: track it even

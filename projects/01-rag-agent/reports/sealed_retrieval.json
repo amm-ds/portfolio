@@ -1,0 +1,48 @@
+{
+  "n_answerable": 42,
+  "n_unanswerable": 13,
+  "arms": {
+    "dense": {
+      "recall_at_5": 0.9762,
+      "recall_at_10": 1.0,
+      "mrr_at_5": 0.9034,
+      "ndcg_at_10": 0.9226,
+      "failure_taxonomy_top50": {
+        "served_top5": 41,
+        "served_top10": 1,
+        "candidate_pool": 0,
+        "retrieval_miss": 0
+      }
+    },
+    "bm25": {
+      "recall_at_5": 0.9524,
+      "recall_at_10": 0.9762,
+      "mrr_at_5": 0.8829,
+      "ndcg_at_10": 0.8967,
+      "failure_taxonomy_top50": {
+        "served_top5": 40,
+        "served_top10": 1,
+        "candidate_pool": 1,
+        "retrieval_miss": 0
+      }
+    },
+    "rrf": {
+      "recall_at_5": 0.9524,
+      "recall_at_10": 0.9762,
+      "mrr_at_5": 0.8929,
+      "ndcg_at_10": 0.9068,
+      "failure_taxonomy_top50": {
+        "served_top5": 40,
+        "served_top10": 1,
+        "candidate_pool": 1,
+        "retrieval_miss": 0
+      }
+    }
+  },
+  "original_15_stress_subset": {
+    "recall_at_5": 0.9,
+    "recall_at_10": 1.0,
+    "n": 10
+  },
+  "method_note": "Protocol: RAW retrieval layer only \u2014 dense/BM25/RRF candidates, top-10 (served) and top-50 (failure taxonomy), rerank OFF. Two cautions. (1) The 40 expansion questions passed the answerability gate (a relevant chunk sits in the production retriever's top-10), so the full-55 numbers describe retrieval on validated-answerable questions, not a stress test. (2) The original 15 questions read recall@5 0.90 at this raw layer \u2014 the committed 'sealed recall@5 0.600' is a DIFFERENT layer: the operational fetch of the sealed generation pass (reranked, top-3 citations). The two are not comparable; the raw layer says retrieval per se rarely fails on these questions, so the sealed loss concentrates at the rerank/top-k operating point \u2014 measured with the champion config by the generation pass, which is where the per-question failure taxonomy completes."
+}
