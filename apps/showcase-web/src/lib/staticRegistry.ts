@@ -419,9 +419,9 @@ export const STATIC_STORIES: StaticStorySummary[] = [
   },
   {
     "figure_names": [
-      "alns_convergence_C101",
       "eda_instance_map",
       "family_gap",
+      "frontier_gap_time",
       "gap_pct",
       "pareto_gap_runtime",
       "route_map_C101",

@@ -233,15 +233,36 @@ def _build_model(
 
 
 def _solve(
-    model: cp_model.CpModel, time_limit_s: float, seed: int
+    model: cp_model.CpModel,
+    time_limit_s: float,
+    seed: int,
+    incumbent_log: list[tuple[float, float]] | None = None,
 ) -> tuple[cp_model.CpSolver, "cp_model.CpSolverStatus", float]:
-    """Single-worker, fixed-seed solve against the wall-time budget."""
+    """Single-worker, fixed-seed solve against the wall-time budget.
+
+    ``incumbent_log`` (frontier runs) receives ``(wall_s, objective)`` for
+    every improving incumbent — CP-SAT's contribution to the gap-vs-time
+    frontier alongside the ALNS time trace."""
+
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = time_limit_s
     solver.parameters.num_search_workers = 1
     solver.parameters.random_seed = seed
     t0 = time.perf_counter()
-    status = solver.solve(model)
+    callback: cp_model.CpSolverSolutionCallback | None = None
+    if incumbent_log is not None:
+        target = incumbent_log  # narrowed non-optional for the callback closure
+
+        class _Recorder(cp_model.CpSolverSolutionCallback):
+            def __init__(self) -> None:
+                super().__init__()
+                self._t0 = time.perf_counter()
+
+            def on_solution_callback(self) -> None:
+                target.append((time.perf_counter() - self._t0, self.objective_value))
+
+        callback = _Recorder()
+    status = solver.solve(model, callback) if callback is not None else solver.solve(model)
     return solver, status, time.perf_counter() - t0
 
 
@@ -273,6 +294,7 @@ def ortools_cp(
     max_vehicles: int = 20,
     fleet_slack: int = 3,
     seed: int = 42,
+    incumbent_log: list[tuple[float, float]] | None = None,
 ) -> RoutePlan:
     """Time-bounded CP-SAT solution of the VRPTW, hinted by ``hint``.
 
@@ -283,13 +305,14 @@ def ortools_cp(
     consecutive-compatible (necessary condition), which keeps the model small
     enough for the wall-time limit. Feasibility of the returned plan is
     re-verified by ``_finish``; if the limit expires before CP-SAT confirms a
-    solution, the hint is returned unchanged.
+    solution, the hint is returned unchanged. ``incumbent_log`` additionally
+    records ``(wall_s, objective)`` per improving incumbent (frontier runs).
     """
     fleet = min(problem.max_vehicles, max_vehicles, hint.n_vehicles + fleet_slack)
     model, arcs, dist, n = _build_model(problem, fleet)
     _add_solution_hint(model, arcs, hint, fleet, n)
 
-    solver, status, runtime = _solve(model, time_limit_s, seed)
+    solver, status, runtime = _solve(model, time_limit_s, seed, incumbent_log)
     logger.info(
         "ortools_cp %s: status=%s objective=%s bound=%s (%.1fs)",
         problem.name,

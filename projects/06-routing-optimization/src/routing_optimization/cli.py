@@ -19,7 +19,7 @@ from portfolio_core.logging import get_logger, setup_logging
 from portfolio_core.schemas import DatasetContract
 
 from routing_optimization.config import VRPConfig, get_vrp_config
-from routing_optimization.evaluate import run_evaluate, run_solve
+from routing_optimization.evaluate import run_evaluate, run_frontier, run_solve
 
 logger = get_logger(__name__)
 
@@ -101,6 +101,17 @@ def evaluate() -> None:
     """Compute gaps vs best-known, figures and the HTML report."""
     path = run_evaluate(get_vrp_config())
     typer.echo(f"metrics written to {path}")
+
+
+@app.command()
+def frontier() -> None:
+    """Anytime gap-vs-time frontier (ALNS vs hinted CP-SAT, wall-clock cap).
+
+    Long-running benchmark arm; results merge into metrics.json on the next
+    evaluate run. Machine-tagged — a performance artifact, not determinism.
+    """
+    path = run_frontier(get_vrp_config())
+    typer.echo(f"frontier written to {path}")
 
 
 @app.command(name="all")

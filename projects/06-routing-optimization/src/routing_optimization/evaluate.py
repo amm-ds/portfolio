@@ -959,6 +959,132 @@ def _metrics_payload(
     }
 
 
+# --- Anytime frontier (external audit pass 4) ---------------------------------
+
+FRONTIER_BUCKETS_S: tuple[float, ...] = (0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0)
+FRONTIER_CAP_S = 30.0
+
+
+def _gap_series_at(
+    series: list[tuple[float, float]], buckets: tuple[float, ...], best_known: float
+) -> list[float]:
+    """Gap% at each bucket from a time-stamped incumbent series (monotone best).
+
+    Entries after the last bucket are ignored; a bucket with no incumbent yet
+    reads NaN so the aggregation stays honest about who has answered by when.
+    """
+    out: list[float] = []
+    idx = 0
+    best = float("inf")
+    for bucket in buckets:
+        while idx < len(series) and series[idx][0] <= bucket:
+            best = min(best, series[idx][1])
+            idx += 1
+        out.append(gap_pct(best, best_known) if best < float("inf") else float("nan"))
+    return out
+
+
+def _median(values: list[float]) -> float:
+    vals = sorted(v for v in values if v == v)  # NaN-filter
+    n = len(vals)
+    if n == 0:
+        return float("nan")
+    mid = n // 2
+    return vals[mid] if n % 2 else (vals[mid - 1] + vals[mid]) / 2.0
+
+
+def evaluate_frontier(cfg: VRPConfig) -> dict[str, Any]:
+    """Anytime gap-vs-time frontier, ALNS vs hinted CP-SAT, every instance.
+
+    Both solvers run against the same wall-clock cap with incumbent
+    timestamps; per-instance gap% vs best-known is read at fixed buckets and
+    aggregated (median + mean). Time-budgeted search is hardware-dependent
+    by construction: the block carries machine tags like the other benchmark
+    arms (cf. 08) — a performance artifact, not a determinism claim. The
+    headline ALNS / CP-SAT numbers come from the deterministic iteration-
+    budgeted runs and are unchanged by this arm.
+    """
+    import platform
+
+    best_known = load_best_known(cfg.best_known_path, cfg.best_known_supplement_path)
+    alns_gaps: list[list[float]] = []
+    cpsat_gaps: list[list[float]] = []
+    n_instances = 0
+    for inst in cfg.instances:
+        path = cfg.raw_dir / f"{inst}.txt"
+        problem = parse_solomon_file(path, name=inst)
+        ref = best_known.get(canonical_instance_name(inst))
+        if ref is None:
+            continue
+        n_instances += 1
+        start = clarke_wright_savings(problem)
+
+        time_trace: list[tuple[float, float]] = []
+        alns(
+            problem,
+            start,
+            seed=cfg.seed,
+            max_iterations=50_000_000,
+            time_limit_s=FRONTIER_CAP_S,
+            time_trace=time_trace,
+        )
+        alns_gaps.append(_gap_series_at(time_trace, FRONTIER_BUCKETS_S, ref))
+
+        incumbent_log: list[tuple[float, float]] = [
+            # the hinted start IS CP-SAT's feasible t=0 incumbent: the solver
+            # improves on it or returns it unchanged. Without the seed the
+            # anytime curve reads "no solution for 30 s", which misrepresents
+            # the hinted arm (solution callbacks only fire on improvements).
+            (0.0, float(round(start.total_distance))),
+        ]
+        ortools_cp(
+            problem,
+            start,
+            time_limit_s=FRONTIER_CAP_S,
+            seed=cfg.seed,
+            incumbent_log=incumbent_log,
+        )
+        cpsat_gaps.append(_gap_series_at(incumbent_log, FRONTIER_BUCKETS_S, ref))
+        logger.info("frontier %s done (%d/%d)", inst, n_instances, len(cfg.instances))
+
+    def _agg(rows: list[list[float]]) -> dict[str, list[float]]:
+        cols = list(zip(*rows, strict=True))
+        return {
+            "median": [_median(list(col)) for col in cols],
+            "mean": [
+                float(sum(vals) / len(vals))
+                if (vals := [v for v in col if v == v])
+                else float("nan")
+                for col in cols
+            ],
+        }
+
+    return {
+        "method": "anytime frontier: same wall-clock cap per instance, incumbent "
+        "timestamps, gap% vs best-known at fixed buckets, median/mean over instances",
+        "time_cap_s": FRONTIER_CAP_S,
+        "buckets_s": list(FRONTIER_BUCKETS_S),
+        "n_instances": n_instances,
+        "machine": platform.machine(),
+        "platform": platform.platform(),
+        "alns": _agg(alns_gaps),
+        "cp_sat": _agg(cpsat_gaps),
+    }
+
+
+def run_frontier(cfg: VRPConfig) -> Path:
+    """Run the frontier arm and write ``reports/frontier.json`` + its figure."""
+    block = evaluate_frontier(cfg)
+    out = cfg.reports_dir / "frontier.json"
+    out.write_text(json.dumps(block, indent=2) + "\n")
+    from routing_optimization.figures import frontier_figure
+
+    save_json(frontier_figure(block), cfg.reports_dir / "figures" / "frontier_gap_time.json")
+    save_html(frontier_figure(block), cfg.reports_dir / "figures" / "frontier_gap_time.html")
+    logger.info("frontier -> %s", out)
+    return out
+
+
 def run_evaluate(cfg: VRPConfig) -> Path:
     """Compute gaps, build figures and write all evaluation artifacts."""
     solutions_path = cfg.reports_dir / "solutions.json"
@@ -978,6 +1104,11 @@ def run_evaluate(cfg: VRPConfig) -> Path:
     unhinted = _unhinted_summary(solutions, cfg)
     _write_results_md(cfg, reports, unhinted)
     metrics = _metrics_payload(evaluations, solutions, stats)
+    # The anytime frontier is a separate long-running arm (one wall-clock
+    # benchmark); when its artifact exists it is carried into metrics as-is.
+    frontier_path = cfg.reports_dir / "frontier.json"
+    if frontier_path.exists():
+        metrics["frontier"] = json.loads(frontier_path.read_text())
     metrics_path = cfg.reports_dir / "metrics.json"
     metrics_path.write_text(json.dumps(metrics, indent=2))
     _write_report_html(cfg, figures, reports)

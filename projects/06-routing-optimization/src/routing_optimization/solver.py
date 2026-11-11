@@ -15,6 +15,7 @@ routing primitives) are re-exported here for backward compatibility.
 
 import math
 import random
+import time
 from typing import Literal
 
 from portfolio_core.logging import get_logger
@@ -376,6 +377,30 @@ def _sa_accept(delta: float, temp: float, rng: random.Random) -> bool:
     return delta <= _EPS or rng.random() < math.exp(-delta / max(temp, 1e-9))
 
 
+def _time_exceeded(t_start: float, it: int, time_limit_s: float | None) -> bool:
+    """Wall-clock cutoff for anytime/frontier runs (time, not iterations, is
+    the budget). Checked every 64 iterations so the clock read does not
+    dominate the search loop; identical semantics to the inline form."""
+    return (
+        time_limit_s is not None and it % 64 == 0 and time.perf_counter() - t_start >= time_limit_s
+    )
+
+
+def _record_incumbent(
+    trace: list[float] | None,
+    time_trace: list[tuple[float, float]] | None,
+    elapsed_s: float,
+    best: float,
+) -> None:
+    """Append the current best to the iteration trace and/or the
+    time-stamped trace (frontier runs); extracted to keep ``alns`` under
+    the complexity budget."""
+    if trace is not None:
+        trace.append(best)
+    if time_trace is not None:
+        time_trace.append((elapsed_s, best))
+
+
 def alns(
     problem: Problem,
     start: RoutePlan,
@@ -387,6 +412,8 @@ def alns(
     destroy_q: int = 10,
     trace: list[float] | None = None,
     stats: dict[str, list[list[float]]] | None = None,
+    time_limit_s: float | None = None,
+    time_trace: list[tuple[float, float]] | None = None,
     vehicle_penalty: float = 0.0,
 ) -> RoutePlan:
     """Adaptive large-neighborhood search (Ropke & Pisinger, 2006).
@@ -431,12 +458,14 @@ def alns(
     best = [list(r) for r in current]
     best_dist = current_dist
     best_obj = current_obj
-    if trace is not None:
-        trace.append(best_dist)
+    t_start = time.perf_counter()
+    _record_incumbent(trace, time_trace, 0.0, best_dist)
 
     temp0 = 0.05 * start.total_distance
     temp_end = 1e-3
     for it in range(max_iterations):
+        if _time_exceeded(t_start, it, time_limit_s):
+            break
         if it > 0 and it % segment_length == 0:
             for i in range(3):
                 if counts_d[i] > 0:
@@ -479,8 +508,7 @@ def alns(
                 best_obj = new_obj
         scores_d[di] += score
         scores_r[0] += score
-        if trace is not None:
-            trace.append(best_dist)
+        _record_incumbent(trace, time_trace, time.perf_counter() - t_start, best_dist)
 
     solver_name = "alns_fleet" if vehicle_penalty > 0 else "alns"
     return _finish(problem, solver_name, best, dist)

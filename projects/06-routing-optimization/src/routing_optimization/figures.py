@@ -9,7 +9,7 @@ pipeline.
 """
 
 import math
-from typing import TypedDict
+from typing import Any, TypedDict
 
 import plotly.express as px
 import plotly.graph_objects as go
@@ -441,6 +441,56 @@ def alns_convergence_figure(history: AlnsConvergenceHistory, instance: str) -> g
         f"{iterations[-1]} iterations; weights re-balanced every segment",
     )
     return apply_theme(fig, height=720)
+
+
+def frontier_figure(block: dict[str, Any]) -> go.Figure:
+    """Gap-vs-time anytime frontier: ALNS vs hinted CP-SAT at fixed buckets.
+
+    Median gap% across instances with the mean as a faint second series —
+    the shape of the trade (who answers first, who finishes lower) is the
+    point, not any single bucket.
+    """
+    buckets = block["buckets_s"]
+    fig = go.Figure()
+    for key, label, color in (
+        ("alns", "ALNS (hand-written)", "#2dd4bf"),
+        ("cp_sat", "CP-SAT (hinted)", "#fbbf24"),
+    ):
+        series = block[key]
+        fig.add_scatter(
+            x=buckets,
+            y=series["median"],
+            mode="lines+markers",
+            name=f"{label} — median",
+            line={"color": color, "width": 2.5},
+        )
+        fig.add_scatter(
+            x=buckets,
+            y=series["mean"],
+            mode="lines",
+            name=f"{label} — mean",
+            line={"color": color, "width": 1, "dash": "dot"},
+            showlegend=False,
+        )
+    fig.update_layout(
+        title="Anytime frontier: gap to best-known vs wall-clock",
+        xaxis_title="wall-clock budget (s, log scale)",
+        yaxis_title="gap to best-known (%)",
+        xaxis_type="log",
+    )
+    alns_median = block["alns"]["median"]
+    final_median = next((g for g in reversed(alns_median) if g == g), float("nan"))
+    cp_median = block["cp_sat"]["median"]
+    cp_final = next((g for g in reversed(cp_median) if g == g), float("nan"))
+    add_takeaway(
+        fig,
+        f"{block['n_instances']} instances, same {block['time_cap_s']:.0f}s cap per solver, "
+        "median across instances — at the cap: "
+        f"ALNS {final_median:.2f}% vs CP-SAT {cp_final:.2f}%. "
+        "A performance artifact (machine-tagged), not a determinism claim; "
+        "the headline numbers use iteration budgets.",
+    )
+    return apply_theme(fig)
 
 
 # ---------------------------------------------------------------------------

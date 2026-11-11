@@ -212,9 +212,9 @@ sections:
       **What the measured numbers support — and what they do not.** The
       three figures in this section each answer a different doubt: the
       family-gap figure — does the mean hide spread?; the runtime-gap
-      figure — what do the gaps cost in time?; the convergence figure —
-      does the search visibly improve? Read them in that order before
-      trusting any average; each doubt maps to a bullet below.
+      figure — what do the gaps cost in time?; the anytime frontier
+      figure — who improves faster from the same start? Read them in that
+      order before trusting any average; each doubt maps to a bullet below.
 
       - These are means over 56 instances, not a claim that every problem
         carries a 4.23% gap or +3.73 trucks; the per-instance spread
@@ -227,16 +227,22 @@ sections:
         4.23% above on the road.
       - Runtimes come from one shared, load-sensitive machine: context, not
         stable benchmarks. The runtime-gap figure pairs the two anyway.
-      - The convergence figure shows the search on C101: distance falls
-        1,046.5 → 860.2 (−17.8%) over 120 iterations.
+      - The anytime frontier gives both solvers the same Clarke-Wright
+        construction and a 30-second wall-clock cap, one worker each:
+        the hand-written search improves the start from a 6.6% median gap
+        to best-known level by 10 seconds, while single-worker CP-SAT
+        holds near its 17.6% starting gap for the whole window. The
+        headline hinted arm — CP-SAT seeded with the tuned two-opt plan —
+        is a different, complementary comparison.
 
       The conclusions hold the full record — exact per-instance tables, the
       ladder definition, the protocol, and the reproduction commands.
 
       **Business summary:** Read the mean with its spread: 4.23% average,
-      worst residual 19.48%, eight references beaten — and runtimes from
-      one shared machine.
-    figures: [family_gap, pareto_gap_runtime, alns_convergence_C101]
+      worst residual 19.48%, eight references beaten — and from the same
+      cold start the custom search reaches reference quality ten times
+      faster than the exact solver's single worker.
+    figures: [family_gap, pareto_gap_runtime, frontier_gap_time]
   - id: conclusions
     text_md: |
       ## Results summary
@@ -366,9 +372,9 @@ figure_captions:
   solver_profile: >-
     Total distance per instance for all eight ladder solvers. Savings construction removes most
     of the randomized floor; ALNS has a single-digit mean gap to best-known on every family.
-  alns_convergence_C101: >-
-    ALNS best-found distance and adapted destroy-operator weights on C101.
-    Distance falls 1,046.5 → 860.2 (−17.8%) over 120 iterations.
+  frontier_gap_time: >-
+    Median gap to best-known vs wall-clock for ALNS and single-worker CP-SAT
+    from the same Clarke-Wright construction, all 56 instances, 30 s cap.
   gap_pct: >-
     Per-instance distance gap to published best-known for every solver. ALNS averages
     4.23% over 56 instances versus 13.63% for tuned 2-opt and undercuts 8 references.
