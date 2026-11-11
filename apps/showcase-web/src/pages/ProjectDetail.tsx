@@ -49,21 +49,13 @@ function bakedDetailFor(id: string): Detail | null {
   return { title: card.title, domain: card.domain, techniques: card.techniques };
 }
 
-// --- Evaluation-report probe ---------------------------------------------------
-// The API serves the full HTML report at /projects/{id}/report and 404s when the
-// pipeline has not produced one. Probe availability with a bodyless HEAD once
-// per id (module-level cache, promise deduped); GET remains for the report page.
-const reportProbeCache = new Map<string, Promise<boolean>>();
-
-function hasReport(projectId: string): Promise<boolean> {
-  let probe = reportProbeCache.get(projectId);
-  if (!probe) {
-    probe = fetch(`/projects/${projectId}/report`, { method: "HEAD" })
-      .then((res) => res.ok)
-      .catch(() => false);
-    reportProbeCache.set(projectId, probe);
-  }
-  return probe;
+// --- Evaluation-report availability --------------------------------------------
+// Baked at build time by scripts/gen_static_registry.py (has_report): the
+// header renders the report link with its final geometry on first paint.
+// The previous post-mount HEAD probe inserted the link late and grew the
+// header — a measured CLS source (external evaluation P1-1).
+function bakedHasReport(projectId: string): boolean {
+  return STATIC_PROJECTS.find((p) => p.id === projectId)?.has_report ?? false;
 }
 
 export function ProjectDetail() {
@@ -92,7 +84,7 @@ export function ProjectDetail() {
   const bakedDetail = useMemo(() => bakedDetailFor(id), [id]);
   const headerDetail = detail ?? bakedDetail;
   const [liveDemo, setLiveDemo] = useState<{ href: string; line: string } | null>(null);
-  const [reportOk, setReportOk] = useState(false);
+  const hasReport = useMemo(() => bakedHasReport(id), [id]);
   const [attempt, setAttempt] = useState(0);
 
   usePageMeta({
@@ -130,18 +122,6 @@ export function ProjectDetail() {
 
   const demoHref = liveDemo?.href ?? bakedDemo?.href ?? null;
   const demoLine = liveDemo?.line ?? bakedDemo?.line ?? GENERIC_DEMO_LINE;
-
-  // Evaluation report link: probe once per id (cached module-level).
-  useEffect(() => {
-    let cancelled = false;
-    setReportOk(false);
-    hasReport(id)
-      .then((ok) => !cancelled && setReportOk(ok))
-      .catch(() => !cancelled && setReportOk(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -292,7 +272,7 @@ export function ProjectDetail() {
             <a className="chip-link" href={docsUrl(id)} target="_blank" rel="noreferrer">
               [docs]
             </a>
-            {reportOk && (
+            {hasReport && (
               <Link className="chip-link" to={`/projects/${id}/report`}>
                 [full evaluation report]
               </Link>

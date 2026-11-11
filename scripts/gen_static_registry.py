@@ -53,6 +53,10 @@ export interface StaticProject {
   data: string;
   status: "flagship" | "working" | "planned";
   order: number;
+  /** True when projects/<id>/reports/report.html ships in this commit — the
+   * detail header renders the report link on first paint instead of probing
+   * after mount (the late insertion was a measured CLS source). */
+  has_report: boolean;
 }
 
 /** Structural story summary — section/figure/metric ids only, no prose. */
@@ -144,6 +148,11 @@ def build() -> str:
     projects = [m.model_dump() for m in load_index(PROJECTS_ROOT)]
     if not projects:
         sys.exit("gen_static_registry: no projects/*/portfolio.yaml found")
+    # Bake report availability (filesystem truth at bake time) so the detail
+    # header's report link renders with final geometry on first paint.
+    for project in projects:
+        pid = str(project["id"])
+        project["has_report"] = (PROJECTS_ROOT / pid / "reports" / "report.html").is_file()
     demos = [to_registry_entry(m) for m in load_demo_index(PROJECTS_ROOT)]
 
     out = HEADER + TS_TYPES

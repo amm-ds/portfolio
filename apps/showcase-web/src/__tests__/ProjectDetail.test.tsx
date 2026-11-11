@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readStylesCss } from "./helpers/css";
+import { STATIC_PROJECTS } from "../lib/staticRegistry";
 import { ProjectDetail } from "../pages/ProjectDetail";
 
 const PROJECT = {
@@ -136,9 +137,10 @@ describe("ProjectDetail story handling", () => {
       "href",
       "https://github.com/amm-ds/portfolio/tree/main/projects/01-rag-agent",
     );
-    // header links use the spaced chip pattern
+    // header links use the spaced chip pattern: code, docs, the report link
+    // (baked has_report), and repo
     const metaLinks = document.querySelectorAll(".meta-links .chip-link");
-    expect(metaLinks).toHaveLength(3);
+    expect(metaLinks).toHaveLength(4);
   });
 
   it("shows the run-pipeline hint when both story and metrics are missing", async () => {
@@ -236,9 +238,16 @@ describe("ProjectDetail story handling", () => {
     expect(link.getAttribute("href")).toBe("/projects/02-demand-forecasting/report");
     expect(link.getAttribute("target")).toBeNull();
     expect(link.classList.contains("chip-link")).toBe(true);
-    expect(fetch).toHaveBeenCalledWith("/projects/02-demand-forecasting/report", {
+    // availability is baked into the static registry — no post-mount HEAD
+    // probe (the late insertion was a measured CLS source)
+    expect(fetch).not.toHaveBeenCalledWith("/projects/02-demand-forecasting/report", {
       method: "HEAD",
     });
+  });
+
+  it("renders the report link from the baked registry on first paint", () => {
+    const card = STATIC_PROJECTS.find((p) => p.id === "07-open-data-mobility");
+    expect(card?.has_report).toBe(true);
   });
 
   it("keeps the detail lead full width and preserves the header action row spacing", () => {

@@ -13,6 +13,10 @@ export interface StaticProject {
   data: string;
   status: "flagship" | "working" | "planned";
   order: number;
+  /** True when projects/<id>/reports/report.html ships in this commit — the
+   * detail header renders the report link on first paint instead of probing
+   * after mount (the late insertion was a measured CLS source). */
+  has_report: boolean;
 }
 
 /** Structural story summary — section/figure/metric ids only, no prose. */
@@ -39,6 +43,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
   {
     "data": "Wikipedia (HF, real)",
     "domain": "Agentic AI / LLM",
+    "has_report": true,
     "id": "01-rag-agent",
     "order": 1,
     "status": "flagship",
@@ -56,6 +61,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
   {
     "data": "Walmart M5 full panel (real, sha256-pinned)",
     "domain": "Time-series forecasting",
+    "has_report": true,
     "id": "02-demand-forecasting",
     "order": 2,
     "status": "working",
@@ -73,6 +79,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
   {
     "data": "NAB telemetry (real) + seeded synthetic stream",
     "domain": "Unsupervised ML / telemetry",
+    "has_report": true,
     "id": "03-anomaly-detection",
     "order": 3,
     "status": "working",
@@ -90,6 +97,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
   {
     "data": "AG News (HF, real)",
     "domain": "Deep learning NLP",
+    "has_report": true,
     "id": "04-nlp-classification",
     "order": 4,
     "status": "working",
@@ -107,6 +115,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
   {
     "data": "IBM telco churn (real, sha256-pinned) + synthetic CI twin",
     "domain": "Classical ML",
+    "has_report": true,
     "id": "05-ml-pipeline-churn",
     "order": 5,
     "status": "working",
@@ -123,6 +132,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
   {
     "data": "CVRPLIB Solomon VRPTW (real benchmark)",
     "domain": "Combinatorial optimization",
+    "has_report": true,
     "id": "06-routing-optimization",
     "order": 6,
     "status": "working",
@@ -140,6 +150,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
   {
     "data": "NYC TLC + NOAA (real, GB-scale)",
     "domain": "Data engineering + ML",
+    "has_report": true,
     "id": "07-open-data-mobility",
     "order": 7,
     "status": "flagship",
@@ -157,6 +168,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
   {
     "data": "Fixed synthetic 8-prompt structured-output suite (no download)",
     "domain": "Model serving & inference optimization",
+    "has_report": true,
     "id": "08-inference-serving",
     "order": 8,
     "status": "working",
@@ -174,6 +186,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
   {
     "data": "Synthetic 12-doc \"Atlas Valley\" handbook + read-only Wikipedia slice from project 01 (CC BY-SA)",
     "domain": "Agentic AI / multi-step LLM workflows",
+    "has_report": true,
     "id": "09-agentic-workflows",
     "order": 9,
     "status": "working",
@@ -192,6 +205,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
   {
     "data": "Hillstrom email marketing (MineThatData, ~64k customers, sha256-pinned)",
     "domain": "Decision Science",
+    "has_report": true,
     "id": "10-uplift-experimentation",
     "order": 10,
     "status": "working",
@@ -208,6 +222,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
   {
     "data": "NYC TLC yellow taxi 2024-01 (real parquet slice, sha-pinned) + seeded synthetic CI/scalability tracks",
     "domain": "Data engineering",
+    "has_report": true,
     "id": "11-data-engineering",
     "order": 11,
     "status": "working",
@@ -226,6 +241,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
   {
     "data": "UCI Bike Sharing, Capital Bikeshare hourly (real, sha256-pinned) + seeded synthetic CI twin",
     "domain": "Classical ML + Deep Learning",
+    "has_report": true,
     "id": "12-tabular-ml-lifecycle",
     "order": 12,
     "status": "working",
@@ -243,6 +259,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
   {
     "data": "Champion MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly)",
     "domain": "Model serving & deployment",
+    "has_report": true,
     "id": "13-model-serving",
     "order": 13,
     "status": "working",
