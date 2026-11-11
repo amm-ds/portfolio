@@ -833,7 +833,6 @@ button:disabled {
   font-size: 0.95rem;
   line-height: 1.55;
   color: var(--text);
-  opacity: 0.92;
 }
 
 /* --- Case study layout: prose and figures share the full-width container --- */
