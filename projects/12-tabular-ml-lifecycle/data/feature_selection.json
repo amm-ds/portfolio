@@ -1,0 +1,113 @@
+{
+  "dataset_contract": "data/dataset_contract.json",
+  "leakage_policy": "Lag features at time t read only rental counts strictly before t (pandas shift); validation and test lags read their own past, which is available at prediction time \u2014 never the future. The first max(lag_hours) training rows lose their NaN lag rows. Standardization is fitted on the training window inside the sklearn Pipeline (train statistics only). Lags are positional over the observed sequence: the UCI series has ~1% missing hours (January 2011 outages), so a positional 168-step lag is 'same hour last week' give or take the outage gaps.",
+  "split": {
+    "scheme": "time-based",
+    "val_weeks": 8,
+    "test_weeks": 8,
+    "n_train": 14523,
+    "n_val": 1344,
+    "n_test": 1344,
+    "note": "test = the final test_weeks of the series (24x7 rows per week), scored once; val = the val_weeks immediately before it; everything earlier is training. Windows are contiguous row blocks, strictly time-ordered, non-overlapping \u2014 whole calendar weeks on the complete synthetic grid, approximately on the real series."
+  },
+  "candidates": [
+    "temp",
+    "atemp",
+    "hum",
+    "windspeed",
+    "weathersit",
+    "hour_sin",
+    "hour_cos",
+    "weekday_sin",
+    "weekday_cos",
+    "month_sin",
+    "month_cos",
+    "holiday",
+    "workingday",
+    "cnt_lag_1h",
+    "cnt_lag_24h",
+    "cnt_lag_168h"
+  ],
+  "selected": [
+    "temp",
+    "hum",
+    "windspeed",
+    "weathersit",
+    "hour_sin",
+    "hour_cos",
+    "weekday_sin",
+    "weekday_cos",
+    "month_sin",
+    "month_cos",
+    "holiday",
+    "workingday",
+    "cnt_lag_1h",
+    "cnt_lag_24h",
+    "cnt_lag_168h"
+  ],
+  "mi_scores": {
+    "temp": 0.1578242885973662,
+    "atemp": 0.1644816595425933,
+    "hum": 0.10473249114458305,
+    "windspeed": 0.01785929108740092,
+    "weathersit": 0.025684547211384245,
+    "hour_sin": 0.3301374489241793,
+    "hour_cos": 0.32818170253510015,
+    "weekday_sin": 0.02266679861895371,
+    "weekday_cos": 0.008367194300208158,
+    "month_sin": 0.027063834852562252,
+    "month_cos": 0.059455988291212236,
+    "holiday": 0.007724823080596632,
+    "workingday": 0.017258217552050148,
+    "cnt_lag_1h": 0.8875912976178686,
+    "cnt_lag_24h": 0.7633951423769023,
+    "cnt_lag_168h": 0.7117181462591562
+  },
+  "permutation_val_mae_increase": {
+    "temp": -1.8623441370022533,
+    "atemp": 0.12031331327139014,
+    "hum": -0.17199741704602617,
+    "windspeed": 0.03068414925310776,
+    "weathersit": -1.6199270548702516,
+    "hour_sin": -1.643633473337792,
+    "hour_cos": -3.182671125397698,
+    "weekday_sin": -0.009543369613771802,
+    "weekday_cos": 0.016857638926379082,
+    "month_sin": 0.05950906665209175,
+    "month_cos": -0.021016832633742412,
+    "holiday": 0.05084730189167885,
+    "workingday": -0.09394916862964635,
+    "cnt_lag_1h": -64.88360491926443,
+    "cnt_lag_24h": -35.061163788013076,
+    "cnt_lag_168h": -42.396457531481374
+  },
+  "pruned_pairs": [
+    {
+      "dropped": "atemp",
+      "kept": "temp",
+      "r": 0.9873
+    }
+  ],
+  "corr_threshold": 0.9,
+  "scaled_numeric": [
+    "temp",
+    "atemp",
+    "hum",
+    "windspeed",
+    "weathersit",
+    "cnt_lag_1h",
+    "cnt_lag_24h",
+    "cnt_lag_168h"
+  ],
+  "passthrough": [
+    "hour_sin",
+    "hour_cos",
+    "weekday_sin",
+    "weekday_cos",
+    "month_sin",
+    "month_cos",
+    "holiday",
+    "workingday"
+  ],
+  "seed": 42
+}

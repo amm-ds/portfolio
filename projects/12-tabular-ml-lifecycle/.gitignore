@@ -1,0 +1,6 @@
+# The 12->13 feature contract is release-gate input
+# (scripts/check_release_artifacts.py): committed, like 01's golden held-out
+# set, unlike the regenerable parquet/model payloads around it.
+!data/
+data/*
+!data/feature_selection.json

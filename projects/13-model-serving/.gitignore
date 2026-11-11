@@ -3,3 +3,10 @@
 # Committed report artifacts follow 08: figure JSON payloads are committed,
 # self-contained HTML renderings are not.
 /reports/figures/*.html
+# The 12->13 feature contract is release-gate input and is committed; the
+# model payloads around it stay local (same pattern as 01's golden set).
+!data/
+data/*
+!data/models/
+data/models/*
+!data/models/feature_contract.json
