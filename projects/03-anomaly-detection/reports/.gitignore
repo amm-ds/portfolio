@@ -5,4 +5,8 @@
 /residual_probe.json
 /nsl_probe.json
 /nab_metrics.json
+# …except the evaluation contract itself: the range-PR sweep + seeded no-skill
+# band are headline evidence the story cites (same rationale as 01's committed
+# metrics.json), not regenerable without the full NAB pipeline.
+!/nab_metrics.json
 /figures/*.html

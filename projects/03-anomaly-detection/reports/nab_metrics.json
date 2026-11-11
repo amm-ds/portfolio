@@ -1,0 +1,717 @@
+{
+  "data_source": "nab",
+  "series": {
+    "realAWSCloudwatch/ec2_cpu_utilization_24ae8d": {
+      "n_points": 3973,
+      "n_test": 1192,
+      "n_windows": 2,
+      "n_windows_total": 2,
+      "evaluable": true,
+      "point_prevalence": 0.337248322147651,
+      "pr_auc": 0.3871260642610488,
+      "roc_auc": 0.5543406385792556,
+      "alerts_fired": 58,
+      "events_detected": 2,
+      "events_missed": 0,
+      "range_pr_auc": 0.8125,
+      "pa_k_0.5": {
+        "k_pct": 0.5,
+        "alerts": 6,
+        "range_precision": 0.4,
+        "range_recall": 1.0,
+        "range_f1": 0.5714285714285715
+      },
+      "pa_k_1": {
+        "k_pct": 1.0,
+        "alerts": 12,
+        "range_precision": 0.25,
+        "range_recall": 1.0,
+        "range_f1": 0.4
+      },
+      "pa_k_2": {
+        "k_pct": 2.0,
+        "alerts": 24,
+        "range_precision": 0.15384615384615385,
+        "range_recall": 1.0,
+        "range_f1": 0.2666666666666667
+      },
+      "pa_k_5": {
+        "k_pct": 5.0,
+        "alerts": 60,
+        "range_precision": 0.05263157894736842,
+        "range_recall": 1.0,
+        "range_f1": 0.1
+      },
+      "range_precision": 0.05405405405405406,
+      "range_recall": 1.0,
+      "range_f1": 0.10256410256410257,
+      "adaptive_drift_events": 1,
+      "adaptive_flags": 58,
+      "windows": [
+        [
+          "2014-02-26 13:45:00.000000",
+          "2014-02-27 06:25:00.000000"
+        ],
+        [
+          "2014-02-27 08:55:00.000000",
+          "2014-02-28 01:35:00.000000"
+        ]
+      ]
+    },
+    "realAWSCloudwatch/ec2_cpu_utilization_53ea38": {
+      "n_points": 3973,
+      "n_test": 1192,
+      "n_windows": 0,
+      "n_windows_total": 2,
+      "evaluable": false,
+      "point_prevalence": 0.0,
+      "pr_auc": null,
+      "roc_auc": null,
+      "alerts_fired": 8,
+      "events_detected": 0,
+      "events_missed": 0,
+      "range_pr_auc": null,
+      "range_precision": 0.0,
+      "range_recall": 0.0,
+      "range_f1": 0.0,
+      "adaptive_drift_events": 0,
+      "adaptive_flags": 8,
+      "windows": []
+    },
+    "realAWSCloudwatch/ec2_disk_write_bytes_1ef3de": {
+      "n_points": 4671,
+      "n_test": 1402,
+      "n_windows": 0,
+      "n_windows_total": 1,
+      "evaluable": false,
+      "point_prevalence": 0.0,
+      "pr_auc": null,
+      "roc_auc": null,
+      "alerts_fired": 30,
+      "events_detected": 0,
+      "events_missed": 0,
+      "range_pr_auc": null,
+      "range_precision": 0.0,
+      "range_recall": 0.0,
+      "range_f1": 0.0,
+      "adaptive_drift_events": 3,
+      "adaptive_flags": 26,
+      "windows": []
+    },
+    "realAWSCloudwatch/elb_request_count_8c0756": {
+      "n_points": 3973,
+      "n_test": 1192,
+      "n_windows": 1,
+      "n_windows_total": 2,
+      "evaluable": true,
+      "point_prevalence": 0.1686241610738255,
+      "pr_auc": 0.42085079664138225,
+      "roc_auc": 0.6347174320124904,
+      "alerts_fired": 36,
+      "events_detected": 1,
+      "events_missed": 0,
+      "range_pr_auc": 1.0,
+      "pa_k_0.5": {
+        "k_pct": 0.5,
+        "alerts": 6,
+        "range_precision": 0.5,
+        "range_recall": 1.0,
+        "range_f1": 0.6666666666666666
+      },
+      "pa_k_1": {
+        "k_pct": 1.0,
+        "alerts": 12,
+        "range_precision": 0.3333333333333333,
+        "range_recall": 1.0,
+        "range_f1": 0.5
+      },
+      "pa_k_2": {
+        "k_pct": 2.0,
+        "alerts": 24,
+        "range_precision": 0.14285714285714285,
+        "range_recall": 1.0,
+        "range_f1": 0.25
+      },
+      "pa_k_5": {
+        "k_pct": 5.0,
+        "alerts": 60,
+        "range_precision": 0.07142857142857142,
+        "range_recall": 1.0,
+        "range_f1": 0.13333333333333333
+      },
+      "range_precision": 0.14285714285714285,
+      "range_recall": 1.0,
+      "range_f1": 0.25,
+      "adaptive_drift_events": 1,
+      "adaptive_flags": 35,
+      "windows": [
+        [
+          "2014-04-22 11:14:00.000000",
+          "2014-04-23 03:54:00.000000"
+        ]
+      ]
+    },
+    "realKnownCause/ambient_temperature_system_failure": {
+      "n_points": 7208,
+      "n_test": 2163,
+      "n_windows": 1,
+      "n_windows_total": 2,
+      "evaluable": true,
+      "point_prevalence": 0.1678224687933426,
+      "pr_auc": 0.23267472325504931,
+      "roc_auc": 0.6357116620752985,
+      "alerts_fired": 508,
+      "events_detected": 1,
+      "events_missed": 0,
+      "range_pr_auc": 0.02631578947368421,
+      "pa_k_0.5": {
+        "k_pct": 0.5,
+        "alerts": 11,
+        "range_precision": 0.1111111111111111,
+        "range_recall": 1.0,
+        "range_f1": 0.19999999999999998
+      },
+      "pa_k_1": {
+        "k_pct": 1.0,
+        "alerts": 22,
+        "range_precision": 0.05263157894736842,
+        "range_recall": 1.0,
+        "range_f1": 0.1
+      },
+      "pa_k_2": {
+        "k_pct": 2.0,
+        "alerts": 43,
+        "range_precision": 0.02702702702702703,
+        "range_recall": 1.0,
+        "range_f1": 0.052631578947368425
+      },
+      "pa_k_5": {
+        "k_pct": 5.0,
+        "alerts": 108,
+        "range_precision": 0.011363636363636364,
+        "range_recall": 1.0,
+        "range_f1": 0.02247191011235955
+      },
+      "range_precision": 0.0027247956403269754,
+      "range_recall": 1.0,
+      "range_f1": 0.005434782608695652,
+      "adaptive_drift_events": 9,
+      "adaptive_flags": 197,
+      "windows": [
+        [
+          "2014-03-29 15:00:00.000000",
+          "2014-04-20 22:00:00.000000"
+        ]
+      ]
+    },
+    "realKnownCause/machine_temperature_system_failure": {
+      "n_points": 22636,
+      "n_test": 6791,
+      "n_windows": 2,
+      "n_windows_total": 4,
+      "evaluable": true,
+      "point_prevalence": 0.16698571638933882,
+      "pr_auc": 0.5921029157985318,
+      "roc_auc": 0.9234403599791613,
+      "alerts_fired": 538,
+      "events_detected": 2,
+      "events_missed": 0,
+      "range_pr_auc": 0.763157894736842,
+      "pa_k_0.5": {
+        "k_pct": 0.5,
+        "alerts": 34,
+        "range_precision": 0.10526315789473684,
+        "range_recall": 1.0,
+        "range_f1": 0.1904761904761905
+      },
+      "pa_k_1": {
+        "k_pct": 1.0,
+        "alerts": 68,
+        "range_precision": 0.05263157894736842,
+        "range_recall": 1.0,
+        "range_f1": 0.1
+      },
+      "pa_k_2": {
+        "k_pct": 2.0,
+        "alerts": 136,
+        "range_precision": 0.023255813953488372,
+        "range_recall": 1.0,
+        "range_f1": 0.04545454545454545
+      },
+      "pa_k_5": {
+        "k_pct": 5.0,
+        "alerts": 340,
+        "range_precision": 0.01639344262295082,
+        "range_recall": 1.0,
+        "range_f1": 0.03225806451612903
+      },
+      "range_precision": 0.014925373134328358,
+      "range_recall": 1.0,
+      "range_f1": 0.029411764705882353,
+      "adaptive_drift_events": 3,
+      "adaptive_flags": 508,
+      "windows": [
+        [
+          "2014-01-27 14:20:00.000000",
+          "2014-01-29 13:30:00.000000"
+        ],
+        [
+          "2014-02-07 14:55:00.000000",
+          "2014-02-09 14:05:00.000000"
+        ]
+      ]
+    },
+    "realKnownCause/nyc_taxi": {
+      "n_points": 10261,
+      "n_test": 3079,
+      "n_windows": 4,
+      "n_windows_total": 5,
+      "evaluable": true,
+      "point_prevalence": 0.21662877557648588,
+      "pr_auc": 0.46195126188928304,
+      "roc_auc": 0.6686793419210793,
+      "alerts_fired": 179,
+      "events_detected": 3,
+      "events_missed": 1,
+      "range_pr_auc": 0.635080920902667,
+      "pa_k_0.5": {
+        "k_pct": 0.5,
+        "alerts": 15,
+        "range_precision": 1.0,
+        "range_recall": 0.5,
+        "range_f1": 0.6666666666666666
+      },
+      "pa_k_1": {
+        "k_pct": 1.0,
+        "alerts": 31,
+        "range_precision": 1.0,
+        "range_recall": 0.5,
+        "range_f1": 0.6666666666666666
+      },
+      "pa_k_2": {
+        "k_pct": 2.0,
+        "alerts": 62,
+        "range_precision": 0.4,
+        "range_recall": 0.5,
+        "range_f1": 0.4444444444444445
+      },
+      "pa_k_5": {
+        "k_pct": 5.0,
+        "alerts": 154,
+        "range_precision": 0.07692307692307693,
+        "range_recall": 0.75,
+        "range_f1": 0.13953488372093026
+      },
+      "range_precision": 0.057692307692307696,
+      "range_recall": 0.75,
+      "range_f1": 0.10714285714285714,
+      "adaptive_drift_events": 0,
+      "adaptive_flags": 179,
+      "windows": [
+        [
+          "2014-11-25 12:00:00.000000",
+          "2014-11-29 19:00:00.000000"
+        ],
+        [
+          "2014-12-23 11:30:00.000000",
+          "2014-12-27 18:30:00.000000"
+        ],
+        [
+          "2014-12-29 21:30:00.000000",
+          "2015-01-03 04:30:00.000000"
+        ],
+        [
+          "2015-01-24 20:30:00.000000",
+          "2015-01-29 03:30:00.000000"
+        ]
+      ]
+    },
+    "realKnownCause/ec2_request_latency_system_failure": {
+      "n_points": 3973,
+      "n_test": 1192,
+      "n_windows": 2,
+      "n_windows_total": 3,
+      "evaluable": true,
+      "point_prevalence": 0.17701342281879195,
+      "pr_auc": 0.46555573576633025,
+      "roc_auc": 0.7244856056543522,
+      "alerts_fired": 64,
+      "events_detected": 2,
+      "events_missed": 0,
+      "range_pr_auc": 1.0,
+      "pa_k_0.5": {
+        "k_pct": 0.5,
+        "alerts": 6,
+        "range_precision": 1.0,
+        "range_recall": 1.0,
+        "range_f1": 1.0
+      },
+      "pa_k_1": {
+        "k_pct": 1.0,
+        "alerts": 12,
+        "range_precision": 1.0,
+        "range_recall": 1.0,
+        "range_f1": 1.0
+      },
+      "pa_k_2": {
+        "k_pct": 2.0,
+        "alerts": 24,
+        "range_precision": 1.0,
+        "range_recall": 1.0,
+        "range_f1": 1.0
+      },
+      "pa_k_5": {
+        "k_pct": 5.0,
+        "alerts": 60,
+        "range_precision": 0.08333333333333333,
+        "range_recall": 1.0,
+        "range_f1": 0.15384615384615385
+      },
+      "range_precision": 0.08333333333333333,
+      "range_recall": 1.0,
+      "range_f1": 0.15384615384615385,
+      "adaptive_drift_events": 0,
+      "adaptive_flags": 64,
+      "windows": [
+        [
+          "2014-03-18 17:06:00.000000",
+          "2014-03-19 04:16:00.000000"
+        ],
+        [
+          "2014-03-20 21:26:00.000000",
+          "2014-03-21 03:41:00.000000"
+        ]
+      ]
+    },
+    "realTraffic/speed_7578": {
+      "n_points": 1068,
+      "n_test": 321,
+      "n_windows": 2,
+      "n_windows_total": 4,
+      "evaluable": true,
+      "point_prevalence": 0.1806853582554517,
+      "pr_auc": 0.7366221191421792,
+      "roc_auc": 0.8364363445653598,
+      "alerts_fired": 44,
+      "events_detected": 2,
+      "events_missed": 0,
+      "range_pr_auc": 1.0,
+      "pa_k_0.5": {
+        "k_pct": 0.5,
+        "alerts": 2,
+        "range_precision": 1.0,
+        "range_recall": 1.0,
+        "range_f1": 1.0
+      },
+      "pa_k_1": {
+        "k_pct": 1.0,
+        "alerts": 3,
+        "range_precision": 1.0,
+        "range_recall": 1.0,
+        "range_f1": 1.0
+      },
+      "pa_k_2": {
+        "k_pct": 2.0,
+        "alerts": 6,
+        "range_precision": 1.0,
+        "range_recall": 1.0,
+        "range_f1": 1.0
+      },
+      "pa_k_5": {
+        "k_pct": 5.0,
+        "alerts": 16,
+        "range_precision": 0.6666666666666666,
+        "range_recall": 1.0,
+        "range_f1": 0.8
+      },
+      "range_precision": 0.2222222222222222,
+      "range_recall": 1.0,
+      "range_f1": 0.3636363636363636,
+      "adaptive_drift_events": 8,
+      "adaptive_flags": 33,
+      "windows": [
+        [
+          "2015-09-16 13:04:00.000000",
+          "2015-09-16 15:20:00.000000"
+        ],
+        [
+          "2015-09-16 16:00:00.000000",
+          "2015-09-16 18:20:00.000000"
+        ]
+      ]
+    },
+    "realTraffic/speed_6005": {
+      "n_points": 2441,
+      "n_test": 733,
+      "n_windows": 1,
+      "n_windows_total": 1,
+      "evaluable": true,
+      "point_prevalence": 0.32605729877216916,
+      "pr_auc": 0.5703322904422059,
+      "roc_auc": 0.7087984686531261,
+      "alerts_fired": 76,
+      "events_detected": 1,
+      "events_missed": 0,
+      "range_pr_auc": 1.0,
+      "pa_k_0.5": {
+        "k_pct": 0.5,
+        "alerts": 4,
+        "range_precision": 1.0,
+        "range_recall": 1.0,
+        "range_f1": 1.0
+      },
+      "pa_k_1": {
+        "k_pct": 1.0,
+        "alerts": 7,
+        "range_precision": 1.0,
+        "range_recall": 1.0,
+        "range_f1": 1.0
+      },
+      "pa_k_2": {
+        "k_pct": 2.0,
+        "alerts": 15,
+        "range_precision": 1.0,
+        "range_recall": 1.0,
+        "range_f1": 1.0
+      },
+      "pa_k_5": {
+        "k_pct": 5.0,
+        "alerts": 37,
+        "range_precision": 0.125,
+        "range_recall": 1.0,
+        "range_f1": 0.2222222222222222
+      },
+      "range_precision": 0.04,
+      "range_recall": 1.0,
+      "range_f1": 0.07692307692307693,
+      "adaptive_drift_events": 4,
+      "adaptive_flags": 62,
+      "windows": [
+        [
+          "2015-09-16 18:40:00.000000",
+          "2015-09-17 16:24:00.000000"
+        ]
+      ]
+    },
+    "realTraffic/TravelTime_387": {
+      "n_points": 2441,
+      "n_test": 733,
+      "n_windows": 0,
+      "n_windows_total": 3,
+      "evaluable": false,
+      "point_prevalence": 0.0,
+      "pr_auc": null,
+      "roc_auc": null,
+      "alerts_fired": 26,
+      "events_detected": 0,
+      "events_missed": 0,
+      "range_pr_auc": null,
+      "range_precision": 0.0,
+      "range_recall": 0.0,
+      "range_f1": 0.0,
+      "adaptive_drift_events": 0,
+      "adaptive_flags": 26,
+      "windows": []
+    },
+    "realTraffic/occupancy_t4013": {
+      "n_points": 2441,
+      "n_test": 733,
+      "n_windows": 2,
+      "n_windows_total": 2,
+      "evaluable": true,
+      "point_prevalence": 0.34106412005457026,
+      "pr_auc": 0.8770335587118175,
+      "roc_auc": 0.9317846790890268,
+      "alerts_fired": 42,
+      "events_detected": 2,
+      "events_missed": 0,
+      "range_pr_auc": 1.0,
+      "pa_k_0.5": {
+        "k_pct": 0.5,
+        "alerts": 4,
+        "range_precision": 1.0,
+        "range_recall": 1.0,
+        "range_f1": 1.0
+      },
+      "pa_k_1": {
+        "k_pct": 1.0,
+        "alerts": 7,
+        "range_precision": 1.0,
+        "range_recall": 1.0,
+        "range_f1": 1.0
+      },
+      "pa_k_2": {
+        "k_pct": 2.0,
+        "alerts": 15,
+        "range_precision": 1.0,
+        "range_recall": 1.0,
+        "range_f1": 1.0
+      },
+      "pa_k_5": {
+        "k_pct": 5.0,
+        "alerts": 37,
+        "range_precision": 1.0,
+        "range_recall": 1.0,
+        "range_f1": 1.0
+      },
+      "range_precision": 0.6666666666666666,
+      "range_recall": 1.0,
+      "range_f1": 0.8,
+      "adaptive_drift_events": 2,
+      "adaptive_flags": 41,
+      "windows": [
+        [
+          "2015-09-16 00:59:00.000000",
+          "2015-09-16 13:19:00.000000"
+        ],
+        [
+          "2015-09-17 00:20:00.000000",
+          "2015-09-17 13:10:00.000000"
+        ]
+      ]
+    }
+  },
+  "by_family": {
+    "realAWSCloudwatch": {
+      "range_f1": 0.08814102564102565,
+      "range_precision": 0.04922779922779923,
+      "range_recall": 0.5,
+      "pr_auc": 0.4039884304512155,
+      "roc_auc": 0.594529035295873,
+      "series_evaluated": 2,
+      "series_total": 4,
+      "events_detected": 3,
+      "events_missed": 0,
+      "alerts_fired": 132,
+      "adaptive_drift_events": 5,
+      "range_pr_auc": 0.90625,
+      "pa_k_0.5": {
+        "range_precision": 0.45,
+        "range_recall": 1.0
+      },
+      "pa_k_1": {
+        "range_precision": 0.29166666666666663,
+        "range_recall": 1.0
+      },
+      "pa_k_2": {
+        "range_precision": 0.14835164835164835,
+        "range_recall": 1.0
+      },
+      "pa_k_5": {
+        "range_precision": 0.06203007518796992,
+        "range_recall": 1.0
+      }
+    },
+    "realKnownCause": {
+      "range_f1": 0.07395888957589725,
+      "range_precision": 0.03966895245007409,
+      "range_recall": 0.9375,
+      "pr_auc": 0.4380711591772986,
+      "roc_auc": 0.7380792424074727,
+      "series_evaluated": 4,
+      "series_total": 4,
+      "events_detected": 8,
+      "events_missed": 1,
+      "alerts_fired": 1289,
+      "adaptive_drift_events": 12,
+      "range_pr_auc": 0.6061386512782982,
+      "pa_k_0.5": {
+        "range_precision": 0.554093567251462,
+        "range_recall": 0.875
+      },
+      "pa_k_1": {
+        "range_precision": 0.5263157894736842,
+        "range_recall": 0.875
+      },
+      "pa_k_2": {
+        "range_precision": 0.3625707102451289,
+        "range_recall": 0.875
+      },
+      "pa_k_5": {
+        "range_precision": 0.04700337231074936,
+        "range_recall": 0.9375
+      }
+    },
+    "realTraffic": {
+      "range_f1": 0.31013986013986017,
+      "range_precision": 0.23222222222222222,
+      "range_recall": 0.75,
+      "pr_auc": 0.7279959894320677,
+      "roc_auc": 0.8256731641025042,
+      "series_evaluated": 3,
+      "series_total": 4,
+      "events_detected": 5,
+      "events_missed": 0,
+      "alerts_fired": 188,
+      "adaptive_drift_events": 14,
+      "range_pr_auc": 1.0,
+      "pa_k_0.5": {
+        "range_precision": 1.0,
+        "range_recall": 1.0
+      },
+      "pa_k_1": {
+        "range_precision": 1.0,
+        "range_recall": 1.0
+      },
+      "pa_k_2": {
+        "range_precision": 1.0,
+        "range_recall": 1.0
+      },
+      "pa_k_5": {
+        "range_precision": 0.5972222222222222,
+        "range_recall": 1.0
+      }
+    }
+  },
+  "overall": {
+    "range_f1": 0.157413258452261,
+    "range_precision": 0.10703965796669851,
+    "range_recall": 0.7291666666666666,
+    "pr_auc": 0.5271388295453142,
+    "roc_auc": 0.7353771702810167,
+    "series_evaluated": 9,
+    "series_total": 12,
+    "events_detected": 16,
+    "events_missed": 1,
+    "alerts_fired": 1609,
+    "adaptive_drift_events": 31,
+    "range_pr_auc": 0.8041171783459103,
+    "pa_k_0.5": {
+      "range_precision": 0.6795971410006498,
+      "range_recall": 0.9444444444444444
+    },
+    "pa_k_1": {
+      "range_precision": 0.6320662768031189,
+      "range_recall": 0.9444444444444444
+    },
+    "pa_k_2": {
+      "range_precision": 0.5274429041870903,
+      "range_recall": 0.9444444444444444
+    },
+    "pa_k_5": {
+      "range_precision": 0.2337489229206227,
+      "range_recall": 0.9722222222222222
+    }
+  },
+  "no_skill": {
+    "seeds": 16,
+    "series": 9,
+    "range_pr_auc": {
+      "mean": 0.22844412095407318,
+      "p2.5": 0.08081263750953897,
+      "p97.5": 0.400618784265441
+    },
+    "pa_k_precision": {
+      "mean": 0.082277484694561,
+      "p2.5": 0.06295935341501518,
+      "p97.5": 0.10493273719505664
+    },
+    "pa_k_recall": {
+      "mean": 0.8854166666666667,
+      "p2.5": 0.8055555555555556,
+      "p97.5": 0.9618055555555556
+    }
+  },
+  "lead_steps": 0,
+  "event_rule": "window detected if >=1 alert inside; range precision over alerts outside windows"
+}
