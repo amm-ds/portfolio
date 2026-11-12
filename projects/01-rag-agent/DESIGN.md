@@ -283,6 +283,11 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
   diagnostics. Measurement protocol: immutable baseline artifacts; sealed
   re-run + independent set B scored once each under tagged artifacts with
   dataset hash, commit, thresholds, caps, and cost in every run record.
+  Set B (independent, pre-registered targets): overall 0.633 CI
+  [0.467, 0.80] vs target ≥0.60, refusal 0.80, false abstention 0.000 —
+  met; unsupported-claim 9/30 vs ≤6 and answer-expected 0.550 vs ≥0.70 —
+  missed, so the generalization claim stays blocked; unanswerable rows
+  6/6 refused correctly. $2.19 cloud-equivalent.
   Known debt: claim-judge/rubric-judge disagreement (3 rows), retrieval-miss
   embedding limits (2 rows), no lexical gate on plausible-but-irrelevant
   evidence (rows reach the rubric layer instead).
