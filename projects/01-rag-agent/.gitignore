@@ -23,6 +23,9 @@
 !/reports/citation_records_heldout.json
 # …and the stress pass's per-question traces (same evidence role).
 !/reports/question_traces_stress.json
+# …and the R6 sealed re-run + independent set B traces (same evidence role).
+!/reports/question_traces_stress_after_r6.json
+!/reports/question_traces_stress_b.json
 # …and the R6 failure ledger (trace review required before interventions).
 !/reports/stress_failure_ledger.md
 /reports/figures/*.html
@@ -33,3 +36,6 @@
 data/*
 !data/golden_heldout.json
 !data/golden_stress.json
+# …and the R6 independent stress set B (authored + sealed before any R6
+# tuning, like the other sealed sets).
+!data/golden_stress_b.json
