@@ -126,6 +126,17 @@ unsupported-claim answers drafted at 0.74 first-check support vs 0.93 for
 correct ones. The pass meters 236 calls / $1.583466 cloud-equivalent
 (p50 25.351 s, p95 84.681 s).
 
+An independent stress set closes the loop the audits asked for: 30 questions
+admitted at article level only, with no production-retriever answerability
+gate — negation, cross-article comparisons, temporal traps, and six
+questions built to tempt an answer from plausible-but-unjustified chunks.
+The stress pass (`evaluate --stress`, `metrics.json → detail.stress`) keeps
+16 of 30 correct (0.53, CI [0.37, 0.70]) against 0.80 on the gated set; 11
+of the 14 non-correct outcomes keep unsupported claims with retrieval intact;
+refusal accuracy falls to 0.60 (6/10) on the abstain rows. The gated set
+measured consistency — this set measures the drop: 123 calls, $1.932540
+cloud-equivalent.
+
 ### Cost and budget operation
 
 Costs use the public reference rate card ($1/Mtok input, $4/Mtok output, cached

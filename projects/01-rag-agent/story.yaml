@@ -203,24 +203,15 @@ sections:
     ```diagram auto-01-rag-agent-3
     ```
 
-    Three judges stay separate — they see different failure
-    modes: the rubric judge
-    applies the failure taxonomy, RAGAS scores faithfulness and relevancy,
-    the claim verifier checks each claim at 0.6 support. The seeded floors
-    stop a headline restating how easy the task is; the sealed set, written
-    after tuning froze and scored once, cannot be overfit; the meters keep a
-    pass affordable.
-
     Results under this contract select hosted `kimi-for-coding`. Rubric
     faithfulness rises 0.5504 → 0.6209 and answer relevance 0.5573 → 0.6458,
     context recall unchanged at 0.9636. RAGAS faithfulness is
-    0.7337 [0.6562, 0.8131]; answer relevancy regresses 0.8775 → 0.8602;
-    context precision and recall are 0.7609 and 0.9826. The selected pass:
+    0.7337 [0.6562, 0.8131]; answer relevancy regresses 0.8775 → 0.8602.
+    The selected pass:
     46 correct, 17 unsupported-claim, 2 retrieval-miss, 0 format-failure
     outcomes; refusal accuracy 1.0, false-abstention 0.0545,
     cite-when-expected 0.9636. Answer generation runs $0.000906/query before
-    judge/verify (p50 25.888 s, p95 108.836 s). No replacement tuning-suite
-    total is claimed.
+    judge/verify (p50 25.888 s, p95 108.836 s).
 
     The sealed set is now 55 questions (32 single-hop, 10 multi-hop, 13
     unanswerable), expanded from 15 after tuning froze. The pass keeps 44 of
@@ -234,10 +225,19 @@ sections:
     article at rank 1 yet kept unsupported claims, one was a top-k demotion,
     none a raw miss — generation grounding, not retrieval, is the bottleneck.
 
-    A citation-correctness pass re-answers the sealed set once with per-claim
-    records persisted (`evaluate --citations`, $1.58 cloud-equivalent — a
-    second sample under `detail.heldout_citations`); the claim-level read
+    A citation pass re-answers the sealed set once with per-claim records
+    persisted (`--citations`, $1.58, `detail.heldout_citations`); the read
     lives with the results.
+
+    The independent stress set closes the loop both audits asked for: 30
+    questions admitted at article level only, no production-retriever gate —
+    negation, cross-article comparisons, temporal traps, and six built to
+    tempt an answer from plausible-but-unjustified chunks. Scored once under
+    the same protocol (`evaluate --stress`, $1.93, `detail.stress`): 16/30
+    correct (0.53, CI [0.37, 0.70]) against 0.80 on the gated set; 11 of the
+    14 non-correct outcomes keep unsupported claims with retrieval intact;
+    refusal accuracy 0.60 (6/10, CI [0.30, 0.90]) — the temptation rows
+    worked. The gated set measured consistency; this measures the drop.
 
     **Hybrid retrieval evaluated out of the box — the champion holds.**
     Sparse+dense fusion is the current production default, so the comparison
@@ -249,15 +249,14 @@ sections:
     raw layer reads dense recall@5 0.976 vs BM25 0.952 and RRF 0.952 — a
     consistency read, not a stress test; RRF again does not beat dense. At
     this scale fusion buys no measured recall for its extra latency; the
-    dense+rerank champion is unchanged. The comparison is the reusable asset
-    (`uv run python -m rag_agent.cli fusion`).
+    dense+rerank champion is unchanged.
 
     What do numbers that survive this gate allow us to claim?
 
     **Business summary:** Selected `kimi-for-coding` improves faithfulness
     but leaves 17 unsupported-claim outcomes in 65 tuning answers; the sealed
-    pass keeps 44 correct, failures concentrated in grounding (9 of 11 right
-    article at rank 1); hybrid fusion ties dense.
+    pass keeps 44 correct, failures concentrated in grounding; hybrid fusion
+    ties dense.
   figures: [latency_histogram, kimi_generation_comparison, fusion_arm_comparison]
   metrics_keys:
   - retrieval_chunks_200
@@ -388,6 +387,13 @@ sections:
       unsupported-claim answers drafted at 0.74 first-check support vs 0.93
       for correct; 236 calls and $1.583466 cloud-equivalent; p50 25.351 s,
       p95 84.681 s.
+    - Stress pass (independent 30-question set, no answerability gate;
+      `detail.stress`): 16/30 correct (0.53, CI [0.37, 0.70]) against 0.80
+      on the gated held-out set; 11 of the 14 non-correct outcomes are
+      unsupported-claim with retrieval intact; refusal accuracy 0.60 (6/10,
+      CI [0.30, 0.90]) on the abstain rows; rubric faithfulness 0.5175
+      [0.3687, 0.6663]; 123 calls, $1.932540 cloud-equivalent; p50 26.115 s,
+      p95 340.997 s.
 
     ```diagram auto-01-rag-agent-4
     ```

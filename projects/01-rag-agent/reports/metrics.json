@@ -492,6 +492,125 @@
       },
       "records_path": "reports/citation_records_heldout.json",
       "note": "citation-correctness pass: the sealed set re-answered once under the champion config with claim-level verify records persisted; reported separately from detail.heldout, which this pass never touches"
+    },
+    "stress": {
+      "n_questions": 30,
+      "composition": {
+        "single_hop/answer": 8,
+        "multi_hop/answer": 10,
+        "ambiguous/abstain": 4,
+        "ambiguous/answer": 2,
+        "unanswerable/abstain": 6
+      },
+      "retrieval": null,
+      "rag": {
+        "n_questions": 20,
+        "faithfulness": 0.5175,
+        "answer_relevance": 0.6675,
+        "context_recall": 0.9
+      },
+      "faithfulness": {
+        "mean": 0.5175,
+        "ci95": [
+          0.37,
+          0.66
+        ]
+      },
+      "taxonomy": {
+        "counts": {
+          "retrieval-miss": 2,
+          "unsupported-claim": 11,
+          "correct": 16,
+          "format-failure": 1
+        },
+        "correct_share": 0.5333333333333333,
+        "correct_share_ci95": [
+          0.3667,
+          0.7
+        ]
+      },
+      "abstention": {
+        "n_unanswerable": 10,
+        "n_answerable": 20,
+        "refusal_accuracy": 0.6,
+        "refusal_accuracy_ci95": [
+          0.3,
+          0.9
+        ],
+        "cite_when_expected": 0.95,
+        "cite_when_expected_ci95": [
+          0.85,
+          1.0
+        ],
+        "false_abstention_rate": 0.05,
+        "false_abstention_rate_ci95": [
+          0.0,
+          0.15
+        ]
+      },
+      "verify": {
+        "enabled": true,
+        "min_support": 0.6,
+        "max_repair_calls": 2,
+        "n_answers_verified": 29,
+        "n_verify_abstentions": 0,
+        "n_verify_skipped": 7,
+        "total_repair_calls": 7,
+        "mean_support_fraction": 0.9914,
+        "mean_verify_latency_s": 8.549,
+        "verify_latency_share_of_answer": 0.1127
+      },
+      "ops": {
+        "backend": "env:kimi-for-coding",
+        "p50_latency_s": 26.11481075012125,
+        "p95_latency_s": 340.9967297920957
+      },
+      "meter": {
+        "active": true,
+        "model": "kimi-for-coding",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
+        "phases": {
+          "agent": {
+            "calls": 29,
+            "input_tokens": 4783091,
+            "output_tokens": 36832,
+            "cached_input_tokens": 4502155,
+            "spend_usd": 1.778911
+          },
+          "judge": {
+            "calls": 58,
+            "input_tokens": 39553,
+            "output_tokens": 8105,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.071973
+          },
+          "verify": {
+            "calls": 36,
+            "input_tokens": 32867,
+            "output_tokens": 13093,
+            "cached_input_tokens": 5120,
+            "spend_usd": 0.081656
+          },
+          "ragas": {
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.0
+          }
+        },
+        "total": {
+          "calls": 123,
+          "input_tokens": 4855511,
+          "output_tokens": 58030,
+          "cached_input_tokens": 4507275,
+          "spend_usd": 1.93254
+        },
+        "ledger_spend_usd": 1.93254,
+        "budget_usd": 3.0
+      },
+      "traces_path": "reports/question_traces_stress.json",
+      "note": "independent stress set, admitted WITHOUT the production-retriever answerability gate; retrieval failures here are honest signal, reported separately from detail.heldout and detail.heldout_citations"
     }
   },
   "_meta": {
