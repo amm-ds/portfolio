@@ -27,3 +27,43 @@ Derived-claims policy (decides row 4 and similar): R6 disallows derived
 claims — a duration or computation is accepted only if a cited span states it
 verbatim; otherwise the answer abstains on that claim. Explicit arithmetic
 provenance is future work, declared as such.
+
+## Pass A outcomes — scored run (`detail.stress_after_r6`, commit 55dfae0)
+
+Normalized comparison (fixed classifier both sides; baseline row 14
+reclassified budget-terminated): overall 0.500 → 0.733, answer-expected
+0.450 → 0.700, unsupported-claim 11 → 5, refusal accuracy 0.600 → 0.800,
+false abstention 0.050 → 0.050. All frozen-set no-regression gates pass.
+
+| ledger row | baseline → pass A | note |
+|---|---|---|
+| 1 geothermal plants | unsupported → **correct** | number/date span check held |
+| 2 UK 2050 target | unsupported → **correct** | 60%-vs-80% number check held |
+| 3 Fuhrländer until-date | unsupported → **correct** | NFKC span + temporal check held |
+| 4 Aguçadoura duration | unsupported → unsupported | derived duration still asserted; one claim survived (surv=1) and the rubric judge failed it — partial fix, repair accepted wording the judge still rejects. Remaining debt. |
+| 5 C40 vs Mayors | unsupported → **correct** | two-leg synthesis verified |
+| 6 Exeter conclusions | unsupported → **correct** | synthesis now grounded |
+| 7 Portugal wind vs solar | unsupported → **correct** | entity swap caught/answered correctly |
+| 8 RV-7 over RV-6 | unsupported → unsupported | 7 claims survived verify but the rubric judge still scores the answer unfaithful — claim-judge/rubric-judge disagreement, documented below |
+| 9 hottest place | unsupported → unsupported | gate thresholds are 0/0 (lexical gating rejected by calibration), so the row generates; verify passed 2 claims, the rubric judge failed the answer. Refusal now depends on the rubric layer, not the gate. |
+| 10 Nalgae deaths | unsupported → unsupported | same pattern as row 9 |
+| 11 phycocyanin | unsupported → **correct** | refused cleanly (surv=0) |
+| 12 renewable vs all | retrieval-miss → retrieval-miss | known limit, unchanged |
+| 13 most common photosynthesis | retrieval-miss → retrieval-miss | known limit, unchanged |
+| 14 Wave Hub | format-failure → **correct** | root cause was the schema-level abstention block (tool-loop burn); the abstention contract fixed it — refused, surv=0, zero budget terminations in the scored run |
+
+Two rows moved the other way, both accounted for: *surface-light algae*
+(baseline "correct" was a classifier bug — NaN faithfulness fell through to
+correct; honestly an empty-answer both before and after) and *Nalgae
+cyclones* (baseline correct; the rubric judge now rejects the claim set — a
+judge-strictness swing within run-to-run variance, n=1).
+
+Known remaining debt, in order: (a) claim-judge vs rubric-judge
+disagreement — the entailment judge passes claims the rubric judge then
+fails (rows 8, 9, 10; 54/54 drafted claims "survived" this pass while the
+rubric layer failed 5 answers); aligning the two judges is the next lever.
+(b) Rows 9–10 style confabulation on no-evidence questions now reaches the
+rubric layer instead of a gate refusal — cheaper would require a
+retrieval-aware gate, future work. (c) The two genuine retrieval misses
+(rows 12–13) are embedding-model limits; pgvector or a stronger encoder is
+the benchmarked next step, not yet measured.
