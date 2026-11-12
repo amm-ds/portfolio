@@ -102,6 +102,7 @@ class VerifyReport:
     n_drafted: int = 0
     n_mechanical_fail: int = 0
     n_judged: int = 0
+    n_judge_supported: int = 0  # claims the judge confirmed supported (diagnose denominator)
     n_surviving: int = 0
     mechanical_false_rejections: int = 0  # diagnose mode: judge-supported but mech-failed
 
@@ -382,6 +383,7 @@ def _verify(
 
     report.n_judge_calls += 1
     verdicts = judge.verify_claims(question, claims, evidence)
+    report.n_judge_supported += sum(1 for v in verdicts if v.supported)
     checks = [ClaimCheck(claim=v.claim, supported=v.supported, reason=v.reason) for v in verdicts]
 
     # Repair pass: one regeneration call per unsupported claim, budget-capped.
@@ -480,6 +482,7 @@ def _verify_structured(
                     reason=f"mechanical; judge: {verdict.reason}",
                 )
     report.n_judged = len(to_judge)
+    report.n_judge_supported += sum(1 for v in verdicts if v.supported)
 
     # Repair/drop over judge-rejected claims — existing semantics and budget.
     unsupported_idx = [i for i, c in enumerate(checks) if not c.supported]

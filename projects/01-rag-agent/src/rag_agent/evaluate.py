@@ -1093,6 +1093,7 @@ def _verify_stats(config: RAGConfig, rag_run: RAGRun | None) -> dict[str, Any] |
         "n_drafted": sum(r.n_drafted for r in reports),
         "n_mechanical_fail": sum(r.n_mechanical_fail for r in reports),
         "n_judged": sum(r.n_judged for r in reports),
+        "n_judge_supported": sum(r.n_judge_supported for r in reports),
         "n_surviving": sum(r.n_surviving for r in reports),
         "mechanical_false_rejections": sum(r.mechanical_false_rejections for r in reports),
     }
@@ -1797,6 +1798,7 @@ def _claim_accounting(rag_run: RAGRun | None) -> dict[str, Any] | None:
         "n_drafted": sum(r.n_drafted for r in reports),
         "n_mechanical_fail": sum(r.n_mechanical_fail for r in reports),
         "n_judged": sum(r.n_judged for r in reports),
+        "n_judge_supported": sum(r.n_judge_supported for r in reports),
         "n_surviving": sum(r.n_surviving for r in reports),
         "n_dropped": sum(1 for r in reports for c in r.claims if c.dropped),
         "n_repair_calls": sum(r.n_repair_calls for r in reports),
@@ -1832,6 +1834,13 @@ def _stress_run_record(
         )
     except (OSError, subprocess.SubprocessError):
         commit = None
+    try:
+        from portfolio_core.config import get_settings
+
+        s = get_settings()
+        caps = {"max_requests": s.llm_max_requests, "total_tokens_limit": s.llm_total_tokens_limit}
+    except Exception:  # pragma: no cover - defensive (settings must never break the record)
+        caps = None
     return {
         "tag": tag or "(default)",
         "questions_file": str(source),
@@ -1847,6 +1856,7 @@ def _stress_run_record(
             "max_repair_calls": config.verify.max_repair_calls,
             "diagnose_mech": config.verify.diagnose_mech,
         },
+        "caps": caps,
         "timestamp_utc": datetime.now(UTC).isoformat(),
         "spend_usd": meter["total"]["spend_usd"] if meter.get("active") else 0.0,
     }
