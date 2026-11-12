@@ -56,10 +56,22 @@ class DraftedClaim(PortfolioBaseModel):
 
 
 class AnalysisResult(PortfolioBaseModel):
-    """Structured agent output: grounded summary plus supporting citations."""
+    """Structured agent output: grounded summary plus supporting citations.
+
+    Abstention contract (R6): when the evidence cannot answer, the agent
+    outputs the refusal summary with ``confidence < 0.3`` and EMPTY
+    ``citations``/``claims`` — see the field note below.
+    """
 
     summary: str = Field(min_length=1)
-    citations: list[Citation] = Field(min_length=1)
+    # R6: empty citations are the HONEST abstention shape — a refusal has
+    # nothing worth citing. The pre-R6 min_length=1 forced the agent to cite
+    # "the closest passages" to refuse, and on unanswerable questions the
+    # citation mandate sent it into a search/read tool loop that burned the
+    # run's token budget (Wave Hub, stress pass A). Non-abstention answers
+    # with no citations are caught downstream: the entailment judge scores
+    # them against an empty evidence set and they fail as unsupported.
+    citations: list[Citation] = Field(default_factory=list)
     confidence: float = Field(ge=0.0, le=1.0)
     # Schema v2 (R6): per-claim evidence spans. Absent in older runs and
     # mocks — the verify loop falls back to claim-splitting the summary.

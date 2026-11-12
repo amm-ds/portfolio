@@ -43,9 +43,18 @@ def test_analysis_result_confidence_bounds() -> None:
         AnalysisResult(**base, confidence=-0.01)
 
 
-def test_analysis_result_requires_at_least_one_citation() -> None:
-    with pytest.raises(ValidationError):
-        AnalysisResult(summary="s", citations=[], confidence=0.9)
+def test_analysis_result_allows_empty_citations_for_abstention() -> None:
+    """R6: the honest refusal shape is summary + confidence<0.3 + NO citations.
+
+    The pre-R6 min_length=1 citation mandate made abstention unrepresentable
+    and sent the agent into a tool loop on unanswerable questions (Wave Hub,
+    stress pass A). Non-abstention answers with empty citations are still
+    rejected downstream — by the entailment judge, not the schema.
+    """
+    result = AnalysisResult(
+        summary="The retrieved passages do not answer this.", citations=[], confidence=0.2
+    )
+    assert result.citations == [] and result.claims == []
 
 
 def test_eval_question_requires_relevant_articles() -> None:
