@@ -137,11 +137,36 @@ refusal accuracy falls to 0.60 (6/10) on the abstain rows. The gated set
 measured consistency — this set measures the drop: 123 calls, $1.932540
 cloud-equivalent.
 
+R6 hardened grounding against that baseline, measured pre-registered
+(`detail.stress_after_r6`, `reports/question_traces_stress_after_r6.json`,
+per-row outcomes in `reports/stress_failure_ledger.md`): schema-v2 answers
+draft claims with verbatim evidence spans; deterministic number/date/
+negation checks run ahead of the entailment judge; repair-and-drop; the
+evidence gate refuses on empty evidence. Normalized comparison (same
+classifier both sides, baseline row 14 reclassified budget-terminated):
+overall 0.500 → 0.733 (CI [0.567, 0.867]); answer-expected 0.450 → 0.700;
+unsupported claims 11 → 5; refusal accuracy 0.600 → 0.800; false abstention
+0.050 → 0.050. Claim pipeline: 54 drafted / 8 mech-failed / 9 repaired /
+54 surviving; the mech checker's false-rejection rate is 8.6% on tuning
+diagnostics (≤10% guardrail). Latency layers: end-to-end hosted answer p50
+23.0 s / p95 532 s (retrieval + generation + verify/repair in the critical
+path); verify overlay mean 5.9 s (6.6% of answer time); the full 30-question
+pass ran ≈50 min wall at the 80M-token rail, $9.74 cloud-equivalent (129
+calls). The measurement also exposed a schema defect: the pre-R6 citation
+mandate made honest refusal unrepresentable, burning up to ~33M tokens in
+tool loops on unanswerable rows — fixed (refusal = empty citations/claims +
+stop), which is what let all six unanswerable rows refuse correctly.
+Independent set B (`data/golden_stress_b.json`, absolute targets
+pre-registered in the story) is scored once under `detail.stress_b`.
+
 ### Cost and budget operation
 
 Costs use the public reference rate card ($1/Mtok input, $4/Mtok output, cached
-reads at 30%). They are cloud-equivalent estimates, not billed amounts. Only
-successful calls are metered. Tuning cost is reported as answer generation per
+reads at 30%). They are cloud-equivalent estimates, not billed amounts. The
+meter records successful calls; the UsageLimits token counter additionally
+counts failed/retried traffic (cached prefix re-reads and aborted rows) —
+the two diverged by ~5x on one pass, which is how a schema-level tool loop
+was found. Tuning cost is reported as answer generation per
 query before judging and verification; no replacement end-to-end tuning-suite
 total is claimed.
 
