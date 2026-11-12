@@ -239,6 +239,20 @@ sections:
     refusal accuracy 0.60 (6/10, CI [0.30, 0.90]) — the temptation rows
     worked. The gated set measured consistency; this measures the drop.
 
+    The R6 grounding-hardening pass is measured under a pre-registered
+    protocol. The intervention — answers drafted as claims with verbatim
+    evidence spans, deterministic number/date/negation guards ahead of an
+    entailment judge, repair-and-drop, and an inference-time evidence gate —
+    is scored twice: the frozen stress set re-run (`detail.stress_after_r6`)
+    and an independent 30-question set B sealed before any tuning
+    (`data/golden_stress_b.json`, admitted article-level only, like the
+    stress set). Set B has no pre-change baseline, so its targets are
+    absolute — declared here before it is scored: unsupported claims
+    ≤ 6/30, overall correctness ≥ 0.60, answer-expected correctness ≥ 0.70,
+    refusal accuracy ≥ 0.8 on abstain rows, false abstention ≤ 0.10.
+    n=30: every point estimate carries a CI, and a B result is preliminary
+    evidence, not proof of generalization.
+
     **Hybrid retrieval evaluated out of the box — the champion holds.**
     Sparse+dense fusion is the current production default, so the comparison
     runs retrieval-only (rerank off, no LLM calls): dense, BM25 (k1=1.2,
