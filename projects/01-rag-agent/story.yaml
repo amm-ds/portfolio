@@ -253,6 +253,25 @@ sections:
     n=30: every point estimate carries a CI, and a B result is preliminary
     evidence, not proof of generalization.
 
+    The frozen-set re-run passes every no-regression gate (normalized
+    comparison — same classifier both sides, baseline row 14 reclassified
+    budget-terminated): overall 0.500 → 0.733 (CI [0.567, 0.867]),
+    answer-expected 0.450 → 0.700, unsupported claims 11 → 5, refusal
+    accuracy 0.600 → 0.800, false abstention 0.050 → 0.050. All six
+    unanswerable rows refused correctly — enabled by a schema fix the
+    measurement itself exposed: the pre-R6 citation mandate made honest
+    refusal unrepresentable and sent the agent into token-burning tool
+    loops on exactly those rows. Set B bounds the generalization claim:
+    0.633 overall (CI [0.467, 0.80]) clears its 0.60 target, refusal holds
+    at 0.80 with zero false abstentions, but unsupported claims at 9/30
+    and answer-expected at 0.550 miss their pre-registered bars — on unseen
+    adversarial questions the system still over-claims. The hardening is
+    measured progress on the frozen set; broad-corpus readiness is not
+    claimed. Latency, in layers: end-to-end hosted answer p50 23.0 s
+    (p95 532 s) with verify in the critical path; verify overlay mean
+    5.9 s (6.6% of answer time); a full sealed pass runs ≈50 min wall —
+    $9.74 cloud-equivalent on the frozen set, $2.19 on B.
+
     **Hybrid retrieval evaluated out of the box — the champion holds.**
     Sparse+dense fusion is the current production default, so the comparison
     runs retrieval-only (rerank off, no LLM calls): dense, BM25 (k1=1.2,
