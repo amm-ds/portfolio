@@ -7,7 +7,7 @@ Status: implemented and evaluated. See [README](README.md) for results and
 
 | # | Requirement | How it is met |
 |---|---|---|
-| R1 | Answers constrained to retrieved evidence, with citations and measured unsupported-claim failures | Agent tools are the *only* corpus access; the system prompt requires citation and the output schema (`AnalysisResult`) makes citations mandatory; verification and evaluation expose residual grounding failures |
+| R1 | Answers constrained to retrieved evidence, with citations and measured unsupported-claim failures | Agent tools are the *only* corpus access; the system prompt requires citation and the output schema (`AnalysisResult`) pairs every claim with verbatim evidence spans; deterministic span checks + an entailment judge verify each drafted claim; verification and evaluation expose residual grounding failures |
 | R2 | Structured, machine-checkable agent output | `output_type=AnalysisResult` (pydantic); invalid outputs fail the run loudly (`UnexpectedModelBehavior`) |
 | R3 | Works offline / in CI | `evaluate --offline` is the retrieval-only CI path (no LLM calls); without a provider, `evaluate`/`chat` fail loudly with actionable guidance instead of silently degrading (ADR-0004 amended wave 10); test-only mocks live in `portfolio_core.llm.mock_model_for_tests` |
 | R4 | Reproducible data | Deterministic article ids, bounded streaming scan, dataset contract with sha256, DVC stages + lock |
@@ -245,6 +245,8 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 | LLM judge call fails mid-run | That verdict falls back to the keyword judge; the run continues |
 | Claim judge / repair call fails | That batch falls back to keyword entailment / the claim is dropped; the answer path never breaks |
 | Verify support floor breached | Answer falls back to abstention (refusal text + confidence < 0.3), counted by the abstention metrics |
+| Token budget exhausted mid-pass | The UsageLimits cap stops the run (fail-closed); traces classify the row `budget-terminated`, never format-failure; a sealed pass with any budget termination is operationally incomplete and re-run with adequate headroom |
+| Unanswerable question with a citation-mandating schema (R6, fixed) | Pre-R6, honest refusal was schema-invalid and the agent thrashed in search/read tool loops (Wave Hub burned ~33M tokens in one row). Now refusal = summary + confidence < 0.3 + empty citations/claims, and rule 5 says stop; downstream layers (judge, taxonomy) treat citation-free refusals as abstentions |
 | Client corpus has no usable records | `ValueError`/`FileNotFoundError` at intake, before any indexing |
 
 ## 5b. Operations artifacts
@@ -262,6 +264,28 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 
 ## 6. Changelog
 
+- 1.0.0 (2026-11-12) — R6 grounding hardening, measured pre-registered:
+  schema-v2 answers (claims with verbatim spans), deterministic span checks
+  (NFKC substring, number/date/temporal tokens, negation polarity, entity
+  proximity) ahead of the entailment judge, repair-and-drop, an inference-time
+  evidence gate, and a representable abstention contract (empty
+  citations/claims — the pre-R6 citation mandate made honest refusal
+  schema-invalid and sent the agent into token-burning tool loops on
+  unanswerable rows). Gate lexical thresholds were calibrated on an open-gate
+  tuning pass and rejected (zero measured correctness delta post-verify; one
+  measured false refusal on the frozen set at max-similarity 0.17): the gate
+  refuses on empty evidence only and both signals stay in traces. Frozen-set
+  pass A (`detail.stress_after_r6`, $9.74 cloud-equivalent, 80M token rail):
+  overall 0.500 → 0.733, answer-expected 0.450 → 0.700, unsupported-claim
+  11 → 5, refusal accuracy 0.600 → 0.800, false abstention 0.050 → 0.050;
+  claim pipeline 54 drafted / 8 mech-failed / 9 repaired / 54 surviving.
+  Mech-checker false-rejection rate 8.6% (≤10% guardrail) on tuning
+  diagnostics. Measurement protocol: immutable baseline artifacts; sealed
+  re-run + independent set B scored once each under tagged artifacts with
+  dataset hash, commit, thresholds, caps, and cost in every run record.
+  Known debt: claim-judge/rubric-judge disagreement (3 rows), retrieval-miss
+  embedding limits (2 rows), no lexical gate on plausible-but-irrelevant
+  evidence (rows reach the rubric layer instead).
 - 0.9.0 (2026-11-11) — citation-correctness pass (`evaluate --citations`): the
   sealed set re-answered once with claim-level verify records persisted
   (`reports/citation_records_heldout.json`, `metrics.json →
