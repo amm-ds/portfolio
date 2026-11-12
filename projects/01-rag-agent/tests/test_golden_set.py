@@ -75,12 +75,19 @@ def test_classify_question_rules() -> None:
 
 
 def test_classify_question_r6_verdicts() -> None:
-    """R6: token-cap terminations and verify-emptied answers get their own labels."""
+    """R6: token-cap terminations and over-abstention get their own labels."""
     assert classify_question(_trace(format_ok=False, budget_terminated=True)) == "budget-terminated"
     # Answer-expected + evidence found + zero surviving claims = over-abstention.
     assert classify_question(_trace(n_surviving_claims=0)) == "empty-answer"
-    # A genuine abstention (support floor) is NOT an empty answer.
-    assert classify_question(_trace(n_surviving_claims=0, abstained=True)) != "empty-answer"
+    # Answer-expected + evidence found + abstained (gate or support floor):
+    # over-abstention too — NEVER correct (regression: NaN faithfulness used to
+    # fall through ``< 0.5`` and mislabel these rows correct).
+    assert classify_question(_trace(abstained=True)) == "empty-answer"
+    assert classify_question(_trace(n_surviving_claims=0, abstained=True)) == "empty-answer"
+    # NaN faithfulness on a non-abstained row must not fall through to correct.
+    nan_trace = _trace()
+    nan_trace.faithfulness = float("nan")
+    assert classify_question(nan_trace) == "unsupported-claim"
     # None (legacy runs pre-R6) must not trigger the empty-answer rule.
     assert (
         classify_question(_trace(n_surviving_claims=None, faithfulness=0.2)) == "unsupported-claim"

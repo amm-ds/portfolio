@@ -90,12 +90,16 @@ def is_abstention(summary: str, confidence: float) -> bool:
 def classify_question(trace: QuestionTrace) -> str:
     """Failure taxonomy, first match wins (rules documented):
 
-    1. ``format-failure`` — the agent run raised or returned schema-invalid output.
+    1. ``format-failure`` — the agent run raised or returned schema-invalid
+       output (``budget-terminated`` when the error is a usage/budget cap).
     2. abstain-expected + abstained → ``correct`` (refusing is the right answer).
     3. abstain-expected + answered → ``unsupported-claim`` (claims without evidence).
     4. ``retrieval-miss`` — answerable but no relevant chunk in the production top_k.
-    5. R6 ``empty-answer`` — answer-expected, evidence found, but zero claims
-       survived verification (over-abstention is a failure, not a success).
+    5. R6 ``empty-answer`` — answer-expected with evidence present but the
+       system abstained (evidence gate or verify support floor): over-abstention,
+       counted non-correct and folded into the false-abstention rate. Also an
+       answer-expected, non-abstained answer whose verification left zero
+       surviving claims.
     6. ``unsupported-claim`` — relevant evidence found but the judge scores the
        answer below 0.5 (claims not supported by the context).
     7. ``correct`` — everything else.
@@ -108,12 +112,16 @@ def classify_question(trace: QuestionTrace) -> str:
         return "correct" if trace.abstained else "unsupported-claim"
     if not trace.retrieved_relevant:
         return "retrieval-miss"
-    if (
-        trace.n_surviving_claims is not None
-        and not trace.abstained
-        and trace.n_surviving_claims == 0
-    ):
+    # R6: any abstention on an answer-expected row WITH evidence present is
+    # over-abstention (evidence gate or verify support floor) — never correct.
+    # (Before this rule a NaN faithfulness on refused rows fell through the
+    # ``< 0.5`` comparison — NaN compares False — and was mislabeled correct.)
+    if trace.abstained:
         return "empty-answer"
+    if trace.n_surviving_claims is not None and trace.n_surviving_claims == 0:
+        return "empty-answer"
+    if trace.faithfulness != trace.faithfulness:  # NaN guard: never "correct"
+        return "unsupported-claim"
     if trace.faithfulness < 0.5:
         return "unsupported-claim"
     return "correct"
