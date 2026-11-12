@@ -724,6 +724,209 @@
       },
       "traces_path": "reports/question_traces_stress_after_r6.json",
       "note": "independent stress set, admitted WITHOUT the production-retriever answerability gate; retrieval failures here are honest signal, reported separately from detail.heldout and detail.heldout_citations"
+    },
+    "stress_b": {
+      "n_questions": 30,
+      "composition": {
+        "single_hop/answer": 8,
+        "multi_hop/answer": 10,
+        "ambiguous/abstain": 4,
+        "ambiguous/answer": 2,
+        "unanswerable/abstain": 6
+      },
+      "retrieval": null,
+      "rag": {
+        "n_questions": 20,
+        "faithfulness": 0.5525,
+        "answer_relevance": 0.63,
+        "context_recall": 0.95
+      },
+      "faithfulness": {
+        "mean": 0.5525,
+        "ci95": [
+          0.4075,
+          0.6975
+        ]
+      },
+      "taxonomy": {
+        "counts": {
+          "correct": 19,
+          "unsupported-claim": 9,
+          "empty-answer": 1,
+          "retrieval-miss": 1
+        },
+        "correct_share": 0.6333333333333333,
+        "correct_share_ci95": [
+          0.4667,
+          0.8
+        ]
+      },
+      "by_slice": {
+        "single_hop/answer": {
+          "n": 8,
+          "verdicts": {
+            "correct": 2,
+            "unsupported-claim": 4,
+            "empty-answer": 1,
+            "retrieval-miss": 1
+          },
+          "correct_share": 0.25
+        },
+        "multi_hop/answer": {
+          "n": 10,
+          "verdicts": {
+            "correct": 9,
+            "unsupported-claim": 1
+          },
+          "correct_share": 0.9
+        },
+        "ambiguous/abstain": {
+          "n": 4,
+          "verdicts": {
+            "unsupported-claim": 2,
+            "correct": 2
+          },
+          "correct_share": 0.5
+        },
+        "ambiguous/answer": {
+          "n": 2,
+          "verdicts": {
+            "unsupported-claim": 2
+          },
+          "correct_share": 0.0
+        },
+        "unanswerable/abstain": {
+          "n": 6,
+          "verdicts": {
+            "correct": 6
+          },
+          "correct_share": 1.0
+        }
+      },
+      "claim_accounting": {
+        "n_answers_verified": 30,
+        "n_drafted": 53,
+        "n_mechanical_fail": 6,
+        "n_judged": 47,
+        "n_judge_supported": 47,
+        "n_surviving": 51,
+        "n_dropped": 0,
+        "n_repair_calls": 4,
+        "n_verify_abstentions": 0,
+        "mechanical_false_rejections": 0
+      },
+      "budget_terminated": 0,
+      "abstention": {
+        "n_unanswerable": 10,
+        "n_answerable": 20,
+        "refusal_accuracy": 0.8,
+        "refusal_accuracy_ci95": [
+          0.5,
+          1.0
+        ],
+        "cite_when_expected": 1.0,
+        "cite_when_expected_ci95": [
+          1.0,
+          1.0
+        ],
+        "false_abstention_rate": 0.0,
+        "false_abstention_rate_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      "verify": {
+        "enabled": true,
+        "min_support": 0.6,
+        "max_repair_calls": 2,
+        "n_answers_verified": 30,
+        "n_verify_abstentions": 0,
+        "n_verify_skipped": 8,
+        "total_repair_calls": 4,
+        "mean_support_fraction": 1.0,
+        "mean_verify_latency_s": 5.737,
+        "verify_latency_share_of_answer": 0.1261,
+        "diagnose_mech": false,
+        "n_drafted": 53,
+        "n_mechanical_fail": 6,
+        "n_judged": 47,
+        "n_judge_supported": 47,
+        "n_surviving": 51,
+        "mechanical_false_rejections": 0
+      },
+      "ops": {
+        "backend": "env:kimi-for-coding",
+        "p50_latency_s": 17.98966920794919,
+        "p95_latency_s": 156.9111797909718
+      },
+      "meter": {
+        "active": true,
+        "model": "kimi-for-coding",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token — never a billed amount",
+        "phases": {
+          "agent": {
+            "calls": 30,
+            "input_tokens": 5591300,
+            "output_tokens": 34711,
+            "cached_input_tokens": 5224139,
+            "spend_usd": 2.073247
+          },
+          "judge": {
+            "calls": 60,
+            "input_tokens": 37754,
+            "output_tokens": 6984,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.06569
+          },
+          "verify": {
+            "calls": 28,
+            "input_tokens": 26096,
+            "output_tokens": 7482,
+            "cached_input_tokens": 3584,
+            "spend_usd": 0.053515
+          },
+          "ragas": {
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.0
+          }
+        },
+        "total": {
+          "calls": 118,
+          "input_tokens": 5655150,
+          "output_tokens": 49177,
+          "cached_input_tokens": 5227723,
+          "spend_usd": 2.192452
+        },
+        "ledger_spend_usd": 2.192452,
+        "budget_usd": 12.0
+      },
+      "run": {
+        "tag": "_b",
+        "questions_file": "data/golden_stress_b.json",
+        "questions_sha256": "07c11f595f5765f1fbfaee2f226307078a4a9db89dcc23f1cd138068c5783582",
+        "commit": "4841065d8bd0c95ca0342b993500c62ac0661027",
+        "gate": {
+          "min_coverage": 0.0,
+          "min_max_similarity": 0.0
+        },
+        "verify": {
+          "enabled": true,
+          "min_support": 0.6,
+          "max_repair_calls": 2,
+          "diagnose_mech": false
+        },
+        "caps": {
+          "max_requests": 400,
+          "total_tokens_limit": 80000000
+        },
+        "timestamp_utc": "2026-11-12T19:20:50.928834+00:00",
+        "spend_usd": 2.192452
+      },
+      "traces_path": "reports/question_traces_stress_b.json",
+      "note": "independent stress set, admitted WITHOUT the production-retriever answerability gate; retrieval failures here are honest signal, reported separately from detail.heldout and detail.heldout_citations"
     }
   },
   "rag_agent": {
