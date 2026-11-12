@@ -104,6 +104,11 @@ jobs:
         # feature contract stays in sync (external-audit gate).
         if: needs.changes.outputs.python == 'true'
         run: uv run python scripts/check_release_artifacts.py
+      - name: Metrics provenance freshness
+        # _meta blocks (git/lock/params/data-contract identity) must match the
+        # current commit exactly — deterministic, like the other generators.
+        if: needs.changes.outputs.python == 'true'
+        run: uv run python scripts/stamp_metrics_meta.py --check
       - name: Story language lint
         # Plain-language gate over projects/*/story.yaml (stdlib-only script;
         # blocks on ERROR-level findings, reports warnings). Makefile: lint-story.

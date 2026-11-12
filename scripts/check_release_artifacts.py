@@ -42,6 +42,29 @@ def check_completeness() -> list[str]:
     return problems
 
 
+def check_metrics_meta() -> list[str]:
+    """Every metrics artifact carries a valid provenance ``_meta``.
+
+    External evaluation P2-1: artifact identity is part of the release
+    contract, not a courtesy — validated here; freshness (the stamp matching
+    current HEAD/lock/params) is gated by scripts/stamp_metrics_meta.py.
+    """
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "stamp_metrics_meta", REPO / "scripts" / "stamp_metrics_meta.py"
+    )
+    assert spec is not None and spec.loader is not None  # noqa: S101 - static path
+    stamp = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(stamp)
+
+    problems: list[str] = []
+    for path in stamp.metrics_files():
+        block = json.loads(path.read_text(encoding="utf-8")).get("_meta")
+        problems.extend(stamp.validate_block(path.relative_to(REPO), block))
+    return problems
+
+
 def check_12_13_contract() -> list[str]:
     c12_path = PROJECTS / "12-tabular-ml-lifecycle" / "data" / "feature_selection.json"
     c13_path = PROJECTS / "13-model-serving" / "data" / "models" / "feature_contract.json"
@@ -61,12 +84,15 @@ def check_12_13_contract() -> list[str]:
 
 
 def main() -> int:
-    problems = [*check_completeness(), *check_12_13_contract()]
+    problems = [*check_completeness(), *check_12_13_contract(), *check_metrics_meta()]
     if problems:
         for p in problems:
             print("ERROR:", p)
         return 1
-    print("release-artifacts: OK (all shipped projects complete; 12→13 contract in sync)")
+    print(
+        "release-artifacts: OK (all shipped projects complete; 12→13 contract in sync; "
+        "metrics _meta present on every artifact)"
+    )
     return 0
 
 

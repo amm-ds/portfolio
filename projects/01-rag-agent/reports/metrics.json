@@ -1,311 +1,16 @@
 {
-  "retrieval_chunks_200": {
-    "recall@5": 0.8307692307692308,
-    "recall@10": 0.8461538461538461,
-    "mrr@5": 0.8076923076923077
-  },
-  "retrieval_chunks_400": {
-    "recall@5": 0.8307692307692308,
-    "recall@10": 0.8461538461538461,
-    "mrr@5": 0.7915384615384616
-  },
-  "retrieval_chunks_800": {
-    "recall@5": 0.8307692307692308,
-    "recall@10": 0.8461538461538461,
-    "mrr@5": 0.7915384615384616
-  },
-  "retrieval_random_chunks_200": {
-    "recall@5": 0.03076923076923077,
-    "recall@10": 0.046153846153846156,
-    "mrr@5": 0.01846153846153846
-  },
-  "retrieval_random_chunks_400": {
-    "recall@5": 0.0,
-    "recall@10": 0.0,
-    "mrr@5": 0.0
-  },
-  "retrieval_random_chunks_800": {
-    "recall@5": 0.015384615384615385,
-    "recall@10": 0.03076923076923077,
-    "mrr@5": 0.003076923076923077
-  },
-  "retrieval_lexical_chunks_200": {
-    "recall@5": 0.676923076923077,
-    "recall@10": 0.7538461538461538,
-    "mrr@5": 0.49974358974358973
-  },
-  "retrieval_lexical_chunks_400": {
-    "recall@5": 0.6615384615384615,
-    "recall@10": 0.7538461538461538,
-    "mrr@5": 0.5471794871794873
-  },
-  "retrieval_lexical_chunks_800": {
-    "recall@5": 0.6461538461538462,
-    "recall@10": 0.7384615384615385,
-    "mrr@5": 0.493076923076923
-  },
-  "retrieval_model_minilm_chunks_200": {
-    "recall@5": 0.8307692307692308,
-    "recall@10": 0.8461538461538461,
-    "mrr@5": 0.8076923076923077
-  },
-  "retrieval_model_bge_small_chunks_200": {
-    "recall@5": 0.8307692307692308,
-    "recall@10": 0.8461538461538461,
-    "mrr@5": 0.8051282051282052
-  },
-  "retrieval_rerank_on_chunks_200": {
-    "recall@5": 0.8307692307692308,
-    "recall@10": 0.8461538461538461,
-    "mrr@5": 0.8076923076923077
-  },
-  "retrieval_rerank_off_chunks_200": {
-    "recall@5": 0.8307692307692308,
-    "recall@10": 0.8461538461538461,
-    "mrr@5": 0.717948717948718
-  },
-  "retrieval_topk_sweep_chunks_200": {
-    "recall@3": 0.8307692307692308,
-    "recall@5": 0.8307692307692308,
-    "recall@8": 0.8461538461538461,
-    "recall@10": 0.8461538461538461,
-    "mrr@5": 0.8076923076923077
-  },
-  "retrieval_topk_sweep_chunks_400": {
-    "recall@3": 0.8,
-    "recall@5": 0.8307692307692308,
-    "recall@8": 0.8307692307692308,
-    "recall@10": 0.8461538461538461,
-    "mrr@5": 0.7915384615384616
-  },
-  "retrieval_topk_sweep_chunks_800": {
-    "recall@3": 0.8,
-    "recall@5": 0.8307692307692308,
-    "recall@8": 0.8307692307692308,
-    "recall@10": 0.8461538461538461,
-    "mrr@5": 0.7915384615384616
-  },
-  "rag_agent": {
-    "faithfulness": 0.6209,
-    "answer_relevance": 0.6458,
-    "context_recall": 0.9636,
-    "p50_latency_s": 25.88848974998109,
-    "p95_latency_s": 108.8364559590118,
-    "est_cost_usd_per_query": 0.0009063399230769231
-  },
-  "ragas": {
-    "faithfulness": 0.7337,
-    "answer_relevancy": 0.8602,
-    "context_precision": 0.7609,
-    "context_recall": 0.9826
+  "_meta": {
+    "created_at": "2026-11-12T01:55:36+01:00",
+    "data_contract_sha256": "66e4d9f835d5d1d529baab96a726aef57b7fed77f7b59601d610af93cd30d5bc",
+    "git_sha": "b56fa319d7c29bc05ce9e88f8117ab62b1614825",
+    "params_sha256": "d038f3b05432fc18a63c1ab718e12d01513b81e550f71bb30ae9e2f2fe5c5da1",
+    "schema_version": 1,
+    "seed": 42,
+    "uv_lock_sha256": "d4045b62a2c53ef9cad11a657ebb9fdd52fbda00b4266d6d322b288e60cd352f"
   },
   "detail": {
-    "n_questions": 65,
-    "rag_n_questions": 65,
-    "offline": false,
-    "retrieval": {
-      "200": {
-        "recall@5": 0.8307692307692308,
-        "recall@10": 0.8461538461538461,
-        "mrr@5": 0.8076923076923077,
-        "est_input_tokens_per_query": 1199.3,
-        "random_recall@5": 0.03076923076923077,
-        "random_mrr@5": 0.01846153846153846,
-        "delta_mrr@5_vs_random": 0.7892307692307693,
-        "lexical_recall@5": 0.676923076923077,
-        "lexical_mrr@5": 0.49974358974358973,
-        "delta_recall@5_vs_lexical": 0.15384615384615385
-      },
-      "400": {
-        "recall@5": 0.8307692307692308,
-        "recall@10": 0.8461538461538461,
-        "mrr@5": 0.7915384615384616,
-        "est_input_tokens_per_query": 2361.7599999999998,
-        "random_recall@5": 0.0,
-        "random_mrr@5": 0.0,
-        "delta_mrr@5_vs_random": 0.7915384615384616,
-        "lexical_recall@5": 0.6615384615384615,
-        "lexical_mrr@5": 0.5471794871794873,
-        "delta_recall@5_vs_lexical": 0.1692307692307693
-      },
-      "800": {
-        "recall@5": 0.8307692307692308,
-        "recall@10": 0.8461538461538461,
-        "mrr@5": 0.7915384615384616,
-        "est_input_tokens_per_query": 4242.700000000002,
-        "random_recall@5": 0.015384615384615385,
-        "random_mrr@5": 0.003076923076923077,
-        "delta_mrr@5_vs_random": 0.7884615384615385,
-        "lexical_recall@5": 0.6461538461538462,
-        "lexical_mrr@5": 0.493076923076923,
-        "delta_recall@5_vs_lexical": 0.18461538461538463
-      }
-    },
-    "hpo": {
-      "chosen": {
-        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
-        "embedding_slug": "minilm",
-        "chunk_size": 200,
-        "top_k": 3,
-        "rerank": true
-      },
-      "models": {
-        "minilm": {
-          "recall@5": 0.8307692307692308,
-          "recall@10": 0.8461538461538461,
-          "mrr@5": 0.8076923076923077
-        },
-        "bge_small": {
-          "recall@5": 0.8307692307692308,
-          "recall@10": 0.8461538461538461,
-          "mrr@5": 0.8051282051282052
-        }
-      },
-      "rerank_ablation": {
-        "on": {
-          "recall@5": 0.8307692307692308,
-          "mrr@5": 0.8076923076923077
-        },
-        "off": {
-          "recall@5": 0.8307692307692308,
-          "mrr@5": 0.717948717948718
-        }
-      },
-      "topk_grid": {
-        "200": {
-          "recall@3": 0.8307692307692308,
-          "recall@5": 0.8307692307692308,
-          "recall@8": 0.8461538461538461,
-          "recall@10": 0.8461538461538461,
-          "est_input_tokens": {
-            "3": 802.0199999999999,
-            "5": 1199.3,
-            "8": 1791.3800000000008,
-            "10": 2186.6
-          }
-        },
-        "400": {
-          "recall@3": 0.8,
-          "recall@5": 0.8307692307692308,
-          "recall@8": 0.8307692307692308,
-          "recall@10": 0.8461538461538461,
-          "est_input_tokens": {
-            "3": 1521.16,
-            "5": 2361.7599999999998,
-            "8": 3614.9199999999996,
-            "10": 4441.0199999999995
-          }
-        },
-        "800": {
-          "recall@3": 0.8,
-          "recall@5": 0.8307692307692308,
-          "recall@8": 0.8307692307692308,
-          "recall@10": 0.8461538461538461,
-          "est_input_tokens": {
-            "3": 2635.7000000000007,
-            "5": 4242.700000000002,
-            "8": 6548.0599999999995,
-            "10": 8155.540000000002
-          }
-        }
-      },
-      "delta_vs_wave2_default": {
-        "wave2_default": {
-          "embedding_slug": "minilm",
-          "chunk_size": 400,
-          "top_k": 5,
-          "recall@5": 0.8307692307692308
-        },
-        "chosen": {
-          "recall@k": 0.8307692307692308,
-          "mrr@5": 0.8076923076923077
-        },
-        "delta_recall": 0.0,
-        "delta_mrr@5": 0.016153846153846074
-      }
-    },
-    "rag": {
-      "n_questions": 55,
-      "faithfulness": 0.6209,
-      "answer_relevance": 0.6458,
-      "context_recall": 0.9636
-    },
-    "ragas": {
-      "faithfulness": 0.7337,
-      "answer_relevancy": 0.8602,
-      "context_precision": 0.7609,
-      "context_recall": 0.9826
-    },
-    "verify": {
-      "enabled": true,
-      "min_support": 0.6,
-      "max_repair_calls": 2,
-      "n_answers_verified": 65,
-      "n_verify_abstentions": 3,
-      "n_verify_skipped": 10,
-      "total_repair_calls": 33,
-      "mean_support_fraction": 0.9549,
-      "mean_verify_latency_s": 20.264,
-      "verify_latency_share_of_answer": 0.5442
-    },
-    "ops": {
-      "backend": "env:kimi-for-coding",
-      "p50_latency_s": 25.88848974998109,
-      "p95_latency_s": 108.8364559590118,
-      "est_cost_usd_per_query": 0.0009063399230769231,
-      "avg_input_tokens": 27043.707692307693,
-      "avg_output_tokens": 1310.0615384615385
-    },
     "heldout": {
-      "n_questions": 55,
-      "composition": {
-        "single_hop/answer": 32,
-        "multi_hop/answer": 10,
-        "unanswerable/abstain": 13
-      },
-      "retrieval": {
-        "recall@5": 0.7454545454545455,
-        "recall@10": 0.7636363636363637,
-        "mrr@5": 0.7181818181818181,
-        "n_questions": 55,
-        "random_recall@5": 0.05454545454545454,
-        "random_mrr@5": 0.0303030303030303,
-        "delta_mrr@5_vs_random": 0.6878787878787879
-      },
-      "rag": {
-        "n_questions": 42,
-        "faithfulness": 0.6338,
-        "answer_relevance": 0.7114,
-        "context_recall": 0.9762
-      },
-      "faithfulness": {
-        "mean": 0.6338095238095238,
-        "ci95": [
-          0.5726,
-          0.7021
-        ]
-      },
-      "taxonomy": {
-        "counts": {
-          "correct": 44,
-          "retrieval-miss": 1,
-          "unsupported-claim": 9,
-          "format-failure": 1
-        },
-        "correct_share": 0.8,
-        "correct_share_ci95": [
-          0.6909,
-          0.8909
-        ]
-      },
       "abstention": {
-        "n_unanswerable": 13,
-        "n_answerable": 42,
-        "refusal_accuracy": 0.9230769230769231,
-        "refusal_accuracy_ci95": [
-          0.7692,
-          1.0
-        ],
         "cite_when_expected": 1.0,
         "cite_when_expected_ci95": [
           1.0,
@@ -315,228 +20,378 @@
         "false_abstention_rate_ci95": [
           0.0,
           0.0714
+        ],
+        "n_answerable": 42,
+        "n_unanswerable": 13,
+        "refusal_accuracy": 0.9230769230769231,
+        "refusal_accuracy_ci95": [
+          0.7692,
+          1.0
         ]
       },
-      "verify": {
-        "enabled": true,
-        "min_support": 0.6,
-        "max_repair_calls": 2,
-        "n_answers_verified": 54,
-        "n_verify_abstentions": 1,
-        "n_verify_skipped": 12,
-        "total_repair_calls": 19,
-        "mean_support_fraction": 0.9721,
-        "mean_verify_latency_s": 16.841,
-        "verify_latency_share_of_answer": 0.3524
+      "composition": {
+        "multi_hop/answer": 10,
+        "single_hop/answer": 32,
+        "unanswerable/abstain": 13
       },
+      "faithfulness": {
+        "ci95": [
+          0.5726,
+          0.7021
+        ],
+        "mean": 0.6338095238095238
+      },
+      "meter": {
+        "active": true,
+        "budget_usd": 3.0,
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token — never a billed amount",
+        "ledger_spend_usd": 1.950667,
+        "model": "kimi-for-coding",
+        "phases": {
+          "agent": {
+            "cached_input_tokens": 3270144,
+            "calls": 54,
+            "input_tokens": 3592417,
+            "output_tokens": 67770,
+            "spend_usd": 1.574388
+          },
+          "judge": {
+            "cached_input_tokens": 0,
+            "calls": 108,
+            "input_tokens": 78308,
+            "output_tokens": 16920,
+            "spend_usd": 0.145988
+          },
+          "ragas": {
+            "cached_input_tokens": 0,
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "spend_usd": 0.0
+          },
+          "verify": {
+            "cached_input_tokens": 24007,
+            "calls": 79,
+            "input_tokens": 94881,
+            "output_tokens": 38054,
+            "spend_usd": 0.230291
+          }
+        },
+        "total": {
+          "cached_input_tokens": 3294151,
+          "calls": 241,
+          "input_tokens": 3765606,
+          "output_tokens": 122744,
+          "spend_usd": 1.950667
+        }
+      },
+      "n_questions": 55,
+      "note": "sealed held-out set, reported separately from the tuning set; verify-on pass without RAGAS to bound hosted cost",
       "ops": {
         "backend": "env:kimi-for-coding",
         "p50_latency_s": 24.442790375091136,
         "p95_latency_s": 126.81147087505087
       },
-      "meter": {
-        "active": true,
-        "model": "kimi-for-coding",
-        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
-        "phases": {
-          "agent": {
-            "calls": 54,
-            "input_tokens": 3592417,
-            "output_tokens": 67770,
-            "cached_input_tokens": 3270144,
-            "spend_usd": 1.574388
-          },
-          "judge": {
-            "calls": 108,
-            "input_tokens": 78308,
-            "output_tokens": 16920,
-            "cached_input_tokens": 0,
-            "spend_usd": 0.145988
-          },
-          "verify": {
-            "calls": 79,
-            "input_tokens": 94881,
-            "output_tokens": 38054,
-            "cached_input_tokens": 24007,
-            "spend_usd": 0.230291
-          },
-          "ragas": {
-            "calls": 0,
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "cached_input_tokens": 0,
-            "spend_usd": 0.0
-          }
-        },
-        "total": {
-          "calls": 241,
-          "input_tokens": 3765606,
-          "output_tokens": 122744,
-          "cached_input_tokens": 3294151,
-          "spend_usd": 1.950667
-        },
-        "ledger_spend_usd": 1.950667,
-        "budget_usd": 3.0
+      "rag": {
+        "answer_relevance": 0.7114,
+        "context_recall": 0.9762,
+        "faithfulness": 0.6338,
+        "n_questions": 42
+      },
+      "retrieval": {
+        "delta_mrr@5_vs_random": 0.6878787878787879,
+        "mrr@5": 0.7181818181818181,
+        "n_questions": 55,
+        "random_mrr@5": 0.0303030303030303,
+        "random_recall@5": 0.05454545454545454,
+        "recall@10": 0.7636363636363637,
+        "recall@5": 0.7454545454545455
+      },
+      "taxonomy": {
+        "correct_share": 0.8,
+        "correct_share_ci95": [
+          0.6909,
+          0.8909
+        ],
+        "counts": {
+          "correct": 44,
+          "format-failure": 1,
+          "retrieval-miss": 1,
+          "unsupported-claim": 9
+        }
       },
       "traces_path": "reports/question_traces_heldout.json",
-      "note": "sealed held-out set, reported separately from the tuning set; verify-on pass without RAGAS to bound hosted cost"
+      "verify": {
+        "enabled": true,
+        "max_repair_calls": 2,
+        "mean_support_fraction": 0.9721,
+        "mean_verify_latency_s": 16.841,
+        "min_support": 0.6,
+        "n_answers_verified": 54,
+        "n_verify_abstentions": 1,
+        "n_verify_skipped": 12,
+        "total_repair_calls": 19,
+        "verify_latency_share_of_answer": 0.3524
+      }
     },
     "heldout_citations": {
-      "n_questions": 55,
-      "composition": {
-        "single_hop/answer": 32,
-        "multi_hop/answer": 10,
-        "unanswerable/abstain": 13
-      },
-      "claims": {
-        "drafted": 258,
-        "supported_first_check": 233,
-        "support_rate_first_check": 0.9031007751937985,
-        "support_rate_first_check_ci95": [
-          0.8682,
-          0.938
-        ],
-        "repaired": 16,
-        "dropped": 11,
-        "surviving": 247,
-        "support_rate_final": 1.0
-      },
       "answers": {
-        "n_verified": 42,
-        "n_verify_abstentions": 1,
         "floor": 0.6,
         "mean_support_fraction": 0.9775510204081632,
         "mean_support_fraction_ci95": [
           0.9469,
           0.9983
         ],
+        "n_verified": 42,
+        "n_verify_abstentions": 1,
         "share_at_or_above_floor": 0.9761904761904762
       },
       "by_verdict": {
         "correct": {
-          "n_answers": 36,
+          "claim_support_rate_first_check": 0.9310344827586207,
           "mean_support_fraction": 0.9857142857142858,
-          "claim_support_rate_first_check": 0.9310344827586207
+          "n_answers": 36
         },
         "retrieval-miss": {
-          "n_answers": 1,
+          "claim_support_rate_first_check": 0.9411764705882353,
           "mean_support_fraction": 1.0,
-          "claim_support_rate_first_check": 0.9411764705882353
+          "n_answers": 1
         },
         "unsupported-claim": {
-          "n_answers": 5,
+          "claim_support_rate_first_check": 0.7368421052631579,
           "mean_support_fraction": 0.9142857142857143,
-          "claim_support_rate_first_check": 0.7368421052631579
+          "n_answers": 5
         }
       },
-      "verify": {
-        "enabled": true,
-        "min_support": 0.6,
-        "max_repair_calls": 2,
-        "n_answers_verified": 54,
-        "n_verify_abstentions": 1,
-        "n_verify_skipped": 12,
-        "total_repair_calls": 16,
-        "mean_support_fraction": 0.9825,
-        "mean_verify_latency_s": 16.174,
-        "verify_latency_share_of_answer": 0.3795
+      "claims": {
+        "drafted": 258,
+        "dropped": 11,
+        "repaired": 16,
+        "support_rate_final": 1.0,
+        "support_rate_first_check": 0.9031007751937985,
+        "support_rate_first_check_ci95": [
+          0.8682,
+          0.938
+        ],
+        "supported_first_check": 233,
+        "surviving": 247
       },
+      "composition": {
+        "multi_hop/answer": 10,
+        "single_hop/answer": 32,
+        "unanswerable/abstain": 13
+      },
+      "meter": {
+        "active": true,
+        "budget_usd": 3.0,
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token — never a billed amount",
+        "ledger_spend_usd": 1.583466,
+        "model": "kimi-for-coding",
+        "phases": {
+          "agent": {
+            "cached_input_tokens": 2215936,
+            "calls": 54,
+            "input_tokens": 2487624,
+            "output_tokens": 64912,
+            "spend_usd": 1.196107
+          },
+          "judge": {
+            "cached_input_tokens": 0,
+            "calls": 108,
+            "input_tokens": 80794,
+            "output_tokens": 17786,
+            "spend_usd": 0.151938
+          },
+          "ragas": {
+            "cached_input_tokens": 0,
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "spend_usd": 0.0
+          },
+          "verify": {
+            "cached_input_tokens": 28097,
+            "calls": 74,
+            "input_tokens": 101399,
+            "output_tokens": 38423,
+            "spend_usd": 0.235421
+          }
+        },
+        "total": {
+          "cached_input_tokens": 2244033,
+          "calls": 236,
+          "input_tokens": 2669817,
+          "output_tokens": 121121,
+          "spend_usd": 1.583466
+        }
+      },
+      "n_questions": 55,
+      "note": "citation-correctness pass: the sealed set re-answered once under the champion config with claim-level verify records persisted; reported separately from detail.heldout, which this pass never touches",
       "ops": {
         "backend": "env:kimi-for-coding",
         "p50_latency_s": 25.351288290927187,
         "p95_latency_s": 84.68143754103221
       },
-      "meter": {
-        "active": true,
-        "model": "kimi-for-coding",
-        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
-        "phases": {
-          "agent": {
-            "calls": 54,
-            "input_tokens": 2487624,
-            "output_tokens": 64912,
-            "cached_input_tokens": 2215936,
-            "spend_usd": 1.196107
-          },
-          "judge": {
-            "calls": 108,
-            "input_tokens": 80794,
-            "output_tokens": 17786,
-            "cached_input_tokens": 0,
-            "spend_usd": 0.151938
-          },
-          "verify": {
-            "calls": 74,
-            "input_tokens": 101399,
-            "output_tokens": 38423,
-            "cached_input_tokens": 28097,
-            "spend_usd": 0.235421
-          },
-          "ragas": {
-            "calls": 0,
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "cached_input_tokens": 0,
-            "spend_usd": 0.0
-          }
-        },
-        "total": {
-          "calls": 236,
-          "input_tokens": 2669817,
-          "output_tokens": 121121,
-          "cached_input_tokens": 2244033,
-          "spend_usd": 1.583466
-        },
-        "ledger_spend_usd": 1.583466,
-        "budget_usd": 3.0
-      },
       "records_path": "reports/citation_records_heldout.json",
-      "note": "citation-correctness pass: the sealed set re-answered once under the champion config with claim-level verify records persisted; reported separately from detail.heldout, which this pass never touches"
+      "verify": {
+        "enabled": true,
+        "max_repair_calls": 2,
+        "mean_support_fraction": 0.9825,
+        "mean_verify_latency_s": 16.174,
+        "min_support": 0.6,
+        "n_answers_verified": 54,
+        "n_verify_abstentions": 1,
+        "n_verify_skipped": 12,
+        "total_repair_calls": 16,
+        "verify_latency_share_of_answer": 0.3795
+      }
+    },
+    "hpo": {
+      "chosen": {
+        "chunk_size": 200,
+        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+        "embedding_slug": "minilm",
+        "rerank": true,
+        "top_k": 3
+      },
+      "delta_vs_wave2_default": {
+        "chosen": {
+          "mrr@5": 0.8076923076923077,
+          "recall@k": 0.8307692307692308
+        },
+        "delta_mrr@5": 0.016153846153846074,
+        "delta_recall": 0.0,
+        "wave2_default": {
+          "chunk_size": 400,
+          "embedding_slug": "minilm",
+          "recall@5": 0.8307692307692308,
+          "top_k": 5
+        }
+      },
+      "models": {
+        "bge_small": {
+          "mrr@5": 0.8051282051282052,
+          "recall@10": 0.8461538461538461,
+          "recall@5": 0.8307692307692308
+        },
+        "minilm": {
+          "mrr@5": 0.8076923076923077,
+          "recall@10": 0.8461538461538461,
+          "recall@5": 0.8307692307692308
+        }
+      },
+      "rerank_ablation": {
+        "off": {
+          "mrr@5": 0.717948717948718,
+          "recall@5": 0.8307692307692308
+        },
+        "on": {
+          "mrr@5": 0.8076923076923077,
+          "recall@5": 0.8307692307692308
+        }
+      },
+      "topk_grid": {
+        "200": {
+          "est_input_tokens": {
+            "10": 2186.6,
+            "3": 802.0199999999999,
+            "5": 1199.3,
+            "8": 1791.3800000000008
+          },
+          "recall@10": 0.8461538461538461,
+          "recall@3": 0.8307692307692308,
+          "recall@5": 0.8307692307692308,
+          "recall@8": 0.8461538461538461
+        },
+        "400": {
+          "est_input_tokens": {
+            "10": 4441.0199999999995,
+            "3": 1521.16,
+            "5": 2361.7599999999998,
+            "8": 3614.9199999999996
+          },
+          "recall@10": 0.8461538461538461,
+          "recall@3": 0.8,
+          "recall@5": 0.8307692307692308,
+          "recall@8": 0.8307692307692308
+        },
+        "800": {
+          "est_input_tokens": {
+            "10": 8155.540000000002,
+            "3": 2635.7000000000007,
+            "5": 4242.700000000002,
+            "8": 6548.0599999999995
+          },
+          "recall@10": 0.8461538461538461,
+          "recall@3": 0.8,
+          "recall@5": 0.8307692307692308,
+          "recall@8": 0.8307692307692308
+        }
+      }
+    },
+    "n_questions": 65,
+    "offline": false,
+    "ops": {
+      "avg_input_tokens": 27043.707692307693,
+      "avg_output_tokens": 1310.0615384615385,
+      "backend": "env:kimi-for-coding",
+      "est_cost_usd_per_query": 0.0009063399230769231,
+      "p50_latency_s": 25.88848974998109,
+      "p95_latency_s": 108.8364559590118
+    },
+    "rag": {
+      "answer_relevance": 0.6458,
+      "context_recall": 0.9636,
+      "faithfulness": 0.6209,
+      "n_questions": 55
+    },
+    "rag_n_questions": 65,
+    "ragas": {
+      "answer_relevancy": 0.8602,
+      "context_precision": 0.7609,
+      "context_recall": 0.9826,
+      "faithfulness": 0.7337
+    },
+    "retrieval": {
+      "200": {
+        "delta_mrr@5_vs_random": 0.7892307692307693,
+        "delta_recall@5_vs_lexical": 0.15384615384615385,
+        "est_input_tokens_per_query": 1199.3,
+        "lexical_mrr@5": 0.49974358974358973,
+        "lexical_recall@5": 0.676923076923077,
+        "mrr@5": 0.8076923076923077,
+        "random_mrr@5": 0.01846153846153846,
+        "random_recall@5": 0.03076923076923077,
+        "recall@10": 0.8461538461538461,
+        "recall@5": 0.8307692307692308
+      },
+      "400": {
+        "delta_mrr@5_vs_random": 0.7915384615384616,
+        "delta_recall@5_vs_lexical": 0.1692307692307693,
+        "est_input_tokens_per_query": 2361.7599999999998,
+        "lexical_mrr@5": 0.5471794871794873,
+        "lexical_recall@5": 0.6615384615384615,
+        "mrr@5": 0.7915384615384616,
+        "random_mrr@5": 0.0,
+        "random_recall@5": 0.0,
+        "recall@10": 0.8461538461538461,
+        "recall@5": 0.8307692307692308
+      },
+      "800": {
+        "delta_mrr@5_vs_random": 0.7884615384615385,
+        "delta_recall@5_vs_lexical": 0.18461538461538463,
+        "est_input_tokens_per_query": 4242.700000000002,
+        "lexical_mrr@5": 0.493076923076923,
+        "lexical_recall@5": 0.6461538461538462,
+        "mrr@5": 0.7915384615384616,
+        "random_mrr@5": 0.003076923076923077,
+        "random_recall@5": 0.015384615384615385,
+        "recall@10": 0.8461538461538461,
+        "recall@5": 0.8307692307692308
+      }
     },
     "stress": {
-      "n_questions": 30,
-      "composition": {
-        "single_hop/answer": 8,
-        "multi_hop/answer": 10,
-        "ambiguous/abstain": 4,
-        "ambiguous/answer": 2,
-        "unanswerable/abstain": 6
-      },
-      "retrieval": null,
-      "rag": {
-        "n_questions": 20,
-        "faithfulness": 0.5175,
-        "answer_relevance": 0.6675,
-        "context_recall": 0.9
-      },
-      "faithfulness": {
-        "mean": 0.5175,
-        "ci95": [
-          0.37,
-          0.66
-        ]
-      },
-      "taxonomy": {
-        "counts": {
-          "retrieval-miss": 2,
-          "unsupported-claim": 11,
-          "correct": 16,
-          "format-failure": 1
-        },
-        "correct_share": 0.5333333333333333,
-        "correct_share_ci95": [
-          0.3667,
-          0.7
-        ]
-      },
       "abstention": {
-        "n_unanswerable": 10,
-        "n_answerable": 20,
-        "refusal_accuracy": 0.6,
-        "refusal_accuracy_ci95": [
-          0.3,
-          0.9
-        ],
         "cite_when_expected": 0.95,
         "cite_when_expected_ci95": [
           0.85,
@@ -546,155 +401,225 @@
         "false_abstention_rate_ci95": [
           0.0,
           0.15
+        ],
+        "n_answerable": 20,
+        "n_unanswerable": 10,
+        "refusal_accuracy": 0.6,
+        "refusal_accuracy_ci95": [
+          0.3,
+          0.9
         ]
       },
-      "verify": {
-        "enabled": true,
-        "min_support": 0.6,
-        "max_repair_calls": 2,
-        "n_answers_verified": 29,
-        "n_verify_abstentions": 0,
-        "n_verify_skipped": 7,
-        "total_repair_calls": 7,
-        "mean_support_fraction": 0.9914,
-        "mean_verify_latency_s": 8.549,
-        "verify_latency_share_of_answer": 0.1127
+      "composition": {
+        "ambiguous/abstain": 4,
+        "ambiguous/answer": 2,
+        "multi_hop/answer": 10,
+        "single_hop/answer": 8,
+        "unanswerable/abstain": 6
       },
+      "faithfulness": {
+        "ci95": [
+          0.37,
+          0.66
+        ],
+        "mean": 0.5175
+      },
+      "meter": {
+        "active": true,
+        "budget_usd": 3.0,
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token — never a billed amount",
+        "ledger_spend_usd": 1.93254,
+        "model": "kimi-for-coding",
+        "phases": {
+          "agent": {
+            "cached_input_tokens": 4502155,
+            "calls": 29,
+            "input_tokens": 4783091,
+            "output_tokens": 36832,
+            "spend_usd": 1.778911
+          },
+          "judge": {
+            "cached_input_tokens": 0,
+            "calls": 58,
+            "input_tokens": 39553,
+            "output_tokens": 8105,
+            "spend_usd": 0.071973
+          },
+          "ragas": {
+            "cached_input_tokens": 0,
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "spend_usd": 0.0
+          },
+          "verify": {
+            "cached_input_tokens": 5120,
+            "calls": 36,
+            "input_tokens": 32867,
+            "output_tokens": 13093,
+            "spend_usd": 0.081656
+          }
+        },
+        "total": {
+          "cached_input_tokens": 4507275,
+          "calls": 123,
+          "input_tokens": 4855511,
+          "output_tokens": 58030,
+          "spend_usd": 1.93254
+        }
+      },
+      "n_questions": 30,
+      "note": "independent stress set, admitted WITHOUT the production-retriever answerability gate; retrieval failures here are honest signal, reported separately from detail.heldout and detail.heldout_citations",
       "ops": {
         "backend": "env:kimi-for-coding",
         "p50_latency_s": 26.11481075012125,
         "p95_latency_s": 340.9967297920957
       },
-      "meter": {
-        "active": true,
-        "model": "kimi-for-coding",
-        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
-        "phases": {
-          "agent": {
-            "calls": 29,
-            "input_tokens": 4783091,
-            "output_tokens": 36832,
-            "cached_input_tokens": 4502155,
-            "spend_usd": 1.778911
-          },
-          "judge": {
-            "calls": 58,
-            "input_tokens": 39553,
-            "output_tokens": 8105,
-            "cached_input_tokens": 0,
-            "spend_usd": 0.071973
-          },
-          "verify": {
-            "calls": 36,
-            "input_tokens": 32867,
-            "output_tokens": 13093,
-            "cached_input_tokens": 5120,
-            "spend_usd": 0.081656
-          },
-          "ragas": {
-            "calls": 0,
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "cached_input_tokens": 0,
-            "spend_usd": 0.0
-          }
-        },
-        "total": {
-          "calls": 123,
-          "input_tokens": 4855511,
-          "output_tokens": 58030,
-          "cached_input_tokens": 4507275,
-          "spend_usd": 1.93254
-        },
-        "ledger_spend_usd": 1.93254,
-        "budget_usd": 3.0
+      "rag": {
+        "answer_relevance": 0.6675,
+        "context_recall": 0.9,
+        "faithfulness": 0.5175,
+        "n_questions": 20
+      },
+      "retrieval": null,
+      "taxonomy": {
+        "correct_share": 0.5333333333333333,
+        "correct_share_ci95": [
+          0.3667,
+          0.7
+        ],
+        "counts": {
+          "correct": 16,
+          "format-failure": 1,
+          "retrieval-miss": 2,
+          "unsupported-claim": 11
+        }
       },
       "traces_path": "reports/question_traces_stress.json",
-      "note": "independent stress set, admitted WITHOUT the production-retriever answerability gate; retrieval failures here are honest signal, reported separately from detail.heldout and detail.heldout_citations"
+      "verify": {
+        "enabled": true,
+        "max_repair_calls": 2,
+        "mean_support_fraction": 0.9914,
+        "mean_verify_latency_s": 8.549,
+        "min_support": 0.6,
+        "n_answers_verified": 29,
+        "n_verify_abstentions": 0,
+        "n_verify_skipped": 7,
+        "total_repair_calls": 7,
+        "verify_latency_share_of_answer": 0.1127
+      }
+    },
+    "verify": {
+      "enabled": true,
+      "max_repair_calls": 2,
+      "mean_support_fraction": 0.9549,
+      "mean_verify_latency_s": 20.264,
+      "min_support": 0.6,
+      "n_answers_verified": 65,
+      "n_verify_abstentions": 3,
+      "n_verify_skipped": 10,
+      "total_repair_calls": 33,
+      "verify_latency_share_of_answer": 0.5442
     }
   },
-  "_meta": {
-    "golden_set": {
-      "single_hop/answer": 44,
-      "multi_hop/answer": 11,
-      "unanswerable/abstain": 10
-    },
-    "abstention": {
-      "n_unanswerable": 10,
-      "n_answerable": 55,
-      "refusal_accuracy": 1.0,
-      "refusal_accuracy_ci95": [
-        1.0,
-        1.0
-      ],
-      "cite_when_expected": 0.9636363636363636,
-      "cite_when_expected_ci95": [
-        0.9091,
-        1.0
-      ],
-      "false_abstention_rate": 0.05454545454545454,
-      "false_abstention_rate_ci95": [
-        0.0,
-        0.1273
-      ]
-    },
-    "rag_ci": {
-      "faithfulness": {
-        "mean": 0.6209090909090909,
-        "ci95": [
-          0.5555,
-          0.6836
-        ]
-      },
-      "answer_relevance": {
-        "mean": 0.6458181818181818,
-        "ci95": [
-          0.5809,
-          0.7113
-        ]
-      },
-      "context_recall": {
-        "mean": 0.9636363636363636,
-        "ci95": [
-          0.9091,
-          1.0
-        ]
-      }
-    },
-    "taxonomy": {
-      "correct": 46,
-      "unsupported-claim": 17,
-      "retrieval-miss": 2
-    },
-    "ragas_ci": {
-      "faithfulness": {
-        "mean": 0.7337,
-        "ci95": [
-          0.6562,
-          0.8131
-        ]
-      },
-      "answer_relevancy": {
-        "mean": 0.8602,
-        "ci95": [
-          0.7968,
-          0.9126
-        ]
-      },
-      "context_precision": {
-        "mean": 0.7609,
-        "ci95": [
-          0.6545,
-          0.8498
-        ]
-      },
-      "context_recall": {
-        "mean": 0.9826,
-        "ci95": [
-          0.962,
-          0.9979
-        ]
-      }
-    }
+  "rag_agent": {
+    "answer_relevance": 0.6458,
+    "context_recall": 0.9636,
+    "est_cost_usd_per_query": 0.0009063399230769231,
+    "faithfulness": 0.6209,
+    "p50_latency_s": 25.88848974998109,
+    "p95_latency_s": 108.8364559590118
+  },
+  "ragas": {
+    "answer_relevancy": 0.8602,
+    "context_precision": 0.7609,
+    "context_recall": 0.9826,
+    "faithfulness": 0.7337
+  },
+  "retrieval_chunks_200": {
+    "mrr@5": 0.8076923076923077,
+    "recall@10": 0.8461538461538461,
+    "recall@5": 0.8307692307692308
+  },
+  "retrieval_chunks_400": {
+    "mrr@5": 0.7915384615384616,
+    "recall@10": 0.8461538461538461,
+    "recall@5": 0.8307692307692308
+  },
+  "retrieval_chunks_800": {
+    "mrr@5": 0.7915384615384616,
+    "recall@10": 0.8461538461538461,
+    "recall@5": 0.8307692307692308
+  },
+  "retrieval_lexical_chunks_200": {
+    "mrr@5": 0.49974358974358973,
+    "recall@10": 0.7538461538461538,
+    "recall@5": 0.676923076923077
+  },
+  "retrieval_lexical_chunks_400": {
+    "mrr@5": 0.5471794871794873,
+    "recall@10": 0.7538461538461538,
+    "recall@5": 0.6615384615384615
+  },
+  "retrieval_lexical_chunks_800": {
+    "mrr@5": 0.493076923076923,
+    "recall@10": 0.7384615384615385,
+    "recall@5": 0.6461538461538462
+  },
+  "retrieval_model_bge_small_chunks_200": {
+    "mrr@5": 0.8051282051282052,
+    "recall@10": 0.8461538461538461,
+    "recall@5": 0.8307692307692308
+  },
+  "retrieval_model_minilm_chunks_200": {
+    "mrr@5": 0.8076923076923077,
+    "recall@10": 0.8461538461538461,
+    "recall@5": 0.8307692307692308
+  },
+  "retrieval_random_chunks_200": {
+    "mrr@5": 0.01846153846153846,
+    "recall@10": 0.046153846153846156,
+    "recall@5": 0.03076923076923077
+  },
+  "retrieval_random_chunks_400": {
+    "mrr@5": 0.0,
+    "recall@10": 0.0,
+    "recall@5": 0.0
+  },
+  "retrieval_random_chunks_800": {
+    "mrr@5": 0.003076923076923077,
+    "recall@10": 0.03076923076923077,
+    "recall@5": 0.015384615384615385
+  },
+  "retrieval_rerank_off_chunks_200": {
+    "mrr@5": 0.717948717948718,
+    "recall@10": 0.8461538461538461,
+    "recall@5": 0.8307692307692308
+  },
+  "retrieval_rerank_on_chunks_200": {
+    "mrr@5": 0.8076923076923077,
+    "recall@10": 0.8461538461538461,
+    "recall@5": 0.8307692307692308
+  },
+  "retrieval_topk_sweep_chunks_200": {
+    "mrr@5": 0.8076923076923077,
+    "recall@10": 0.8461538461538461,
+    "recall@3": 0.8307692307692308,
+    "recall@5": 0.8307692307692308,
+    "recall@8": 0.8461538461538461
+  },
+  "retrieval_topk_sweep_chunks_400": {
+    "mrr@5": 0.7915384615384616,
+    "recall@10": 0.8461538461538461,
+    "recall@3": 0.8,
+    "recall@5": 0.8307692307692308,
+    "recall@8": 0.8307692307692308
+  },
+  "retrieval_topk_sweep_chunks_800": {
+    "mrr@5": 0.7915384615384616,
+    "recall@10": 0.8461538461538461,
+    "recall@3": 0.8,
+    "recall@5": 0.8307692307692308,
+    "recall@8": 0.8307692307692308
   }
 }
