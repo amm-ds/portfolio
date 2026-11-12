@@ -1,0 +1,188 @@
+[
+ {
+  "question": "Which renewable energy source supplies more electricity than all other renewable sources combined?",
+  "relevant_titles": ["Hydroelectricity"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "As of May 2022, how many geothermal power plants were operating in Australia?",
+  "relevant_titles": ["Geothermal power in Australia"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "What 2050 emissions cut did the UK government first propose in the Climate Change Bill before the 80% target was adopted?",
+  "relevant_titles": ["Climate Change Act 2008"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "How many days per year does San Diego average with measurable precipitation at the National Weather Service office?",
+  "relevant_titles": ["Climate of San Diego"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "Until when was the Fuhrländer Wind Turbine Laasow the tallest wind turbine in the world?",
+  "relevant_titles": ["Fuhrländer Wind Turbine Laasow"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "Which major group of seaweeds includes no known single-celled or colonial species?",
+  "relevant_titles": ["Brown algae"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "With what fraction of surface light can algae living under thick ice carry out photosynthesis?",
+  "relevant_titles": ["Ice algae"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "How long did the Aguçadoura Wave Farm operate after its official opening?",
+  "relevant_titles": ["Renewable energy in Portugal"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "What prompted the 2001 mass resignation from the editorial board of the journal Machine Learning, and what publishing model did the resigning editors support?",
+  "relevant_titles": ["Machine Learning (journal)", "Journal of Machine Learning Research"],
+  "category": "multi_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "How do Tanagra and Waffles differ in how users interact with them?",
+  "relevant_titles": ["Tanagra (machine learning)", "Waffles (machine learning)"],
+  "category": "multi_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "How do the C40 Cities Climate Leadership Group and the Mayors Climate Protection Center differ in scope?",
+  "relevant_titles": ["C40 Cities Climate Leadership Group", "Mayors Climate Protection Center"],
+  "category": "multi_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "What did the 2005 Exeter conference conclude about stabilizing greenhouse gases at 550 ppm, and what stabilization target did the climate stabilization wedge framework set?",
+  "relevant_titles": ["Avoiding Dangerous Climate Change (2005 conference)", "Climate stabilization wedge"],
+  "category": "multi_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "How does Portugal's installed wind capacity compare with its installed solar capacity?",
+  "relevant_titles": ["Wind power in Portugal", "Renewable energy in Portugal"],
+  "category": "multi_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "How did the 2011 and 2022 cyclones named Nalgae differ in peak classification?",
+  "relevant_titles": ["Typhoon Nalgae (2011)", "Tropical Storm Nalgae"],
+  "category": "multi_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "How do the habitats of ice algae and snow algae differ?",
+  "relevant_titles": ["Ice algae", "Snow algae"],
+  "category": "multi_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "Both Andasol and PS10 store solar heat, but only one can supply full-load power for hours after sunset — which one, and why?",
+  "relevant_titles": ["Andasol Solar Power Station", "PS10 solar power plant"],
+  "category": "multi_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "What improvements did the Van's RV-7 bring over the RV-6?",
+  "relevant_titles": ["Van's Aircraft RV-7", "Van's Aircraft RV-6"],
+  "category": "multi_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "How does Portugal use pumped-storage hydroelectricity to make use of its nighttime wind output?",
+  "relevant_titles": ["Renewable energy in Portugal", "Hydroelectricity"],
+  "category": "multi_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "What is the largest wind turbine in the world?",
+  "relevant_titles": [],
+  "category": "ambiguous",
+  "expected_behavior": "abstain"
+ },
+ {
+  "question": "Who owns the Memphis Belle today?",
+  "relevant_titles": ["Memphis Belle (aircraft)"],
+  "category": "ambiguous",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "Where is the hottest place on Earth?",
+  "relevant_titles": [],
+  "category": "ambiguous",
+  "expected_behavior": "abstain"
+ },
+ {
+  "question": "What is the most common form of photosynthesis?",
+  "relevant_titles": ["C3 carbon fixation"],
+  "category": "ambiguous",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "How many people were killed by Typhoon Nalgae?",
+  "relevant_titles": [],
+  "category": "ambiguous",
+  "expected_behavior": "abstain"
+ },
+ {
+  "question": "Which solar power plant is the most efficient in the world?",
+  "relevant_titles": [],
+  "category": "ambiguous",
+  "expected_behavior": "abstain"
+ },
+ {
+  "question": "What is the range of the Aerion AS2 supersonic business jet?",
+  "relevant_titles": [],
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": ["Aerion AS2", "Aerion"]
+ },
+ {
+  "question": "How far can the Heart Aerospace ES-30 fly on battery power alone?",
+  "relevant_titles": [],
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": ["Heart Aerospace", "ES-30"]
+ },
+ {
+  "question": "What capacity was the Wave Hub marine energy project off Cornwall designed to host?",
+  "relevant_titles": [],
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": ["Wave Hub"]
+ },
+ {
+  "question": "How does the EU's Carbon Border Adjustment Mechanism (CBAM) price imported goods?",
+  "relevant_titles": [],
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": ["Carbon Border Adjustment Mechanism", "CBAM"]
+ },
+ {
+  "question": "How does phycocyanin help cyanobacteria harvest light?",
+  "relevant_titles": [],
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": ["phycocyanin"]
+ },
+ {
+  "question": "How does the Mamba language model architecture use selective state space models to avoid attention?",
+  "relevant_titles": [],
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": ["Mamba", "selective state space"]
+ }
+]

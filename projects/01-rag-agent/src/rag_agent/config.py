@@ -156,6 +156,10 @@ class RAGConfig(PortfolioBaseModel):
     index_dir: Path = Path("data/index")
     eval_questions_path: Path = Path("src/rag_agent/eval_questions.json")
     heldout_questions_path: Path = Path("data/golden_heldout.json")
+    # Independent stress set: validated WITHOUT the production-retriever
+    # answerability gate (that gate biases the held-out set toward retrieval
+    # success); article-level support is the only admission criterion.
+    stress_questions_path: Path = Path("data/golden_stress.json")
     reports_dir: Path = Path("reports")
 
     usd_per_mtok_input: float = Field(default=0.15, gt=0)

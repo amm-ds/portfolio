@@ -52,7 +52,7 @@ class EvalQuestion(PortfolioBaseModel):
 
     question: str = Field(min_length=1)
     relevant_article_ids: list[str] = Field(default_factory=list)
-    category: Literal["single_hop", "multi_hop", "unanswerable"] = "single_hop"
+    category: Literal["single_hop", "multi_hop", "unanswerable", "ambiguous"] = "single_hop"
     expected_behavior: Literal["answer", "abstain"] = "answer"
 
     @model_validator(mode="after")

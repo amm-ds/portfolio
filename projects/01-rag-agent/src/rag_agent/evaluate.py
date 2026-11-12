@@ -1507,6 +1507,185 @@ def run_heldout(
     return payload
 
 
+def load_stress_questions(config: RAGConfig, articles: list[Article]) -> list[EvalQuestion]:
+    """Resolve the authored stress set against the corpus (no retriever gate)."""
+    raw = json.loads(config.stress_questions_path.read_text(encoding="utf-8"))
+    return _resolve_questions(raw, articles, source=str(config.stress_questions_path))
+
+
+def validate_stress_set(
+    config: RAGConfig,
+    stress: list[EvalQuestion],
+    tuning: list[EvalQuestion],
+    heldout: list[EvalQuestion],
+    articles: list[Article],
+) -> list[str]:
+    """Gate the stress set before scoring — deliberately WITHOUT the production
+    retriever (that gate biases the held-out set toward retrieval success).
+
+    Admission is article-level only: exact duplicates, absent-term guarantees
+    for ``unanswerable`` rows, and Jaccard separation from BOTH prior sets.
+    ``ambiguous`` abstain rows need no absent_terms — the test is resisting
+    plausible-but-unjustified chunks, not missing entities.
+    """
+    problems: list[str] = []
+    corpus_text = "\n".join(f"{a.title}\n{a.text}" for a in articles).lower()
+    raw = json.loads(config.stress_questions_path.read_text(encoding="utf-8"))
+    absent_terms: dict[str, list[str]] = {}
+    for item in raw:
+        terms = [str(t).lower() for t in item.get("absent_terms", [])]
+        if terms:
+            absent_terms[item["question"]] = terms
+    prior = tuning + heldout
+    prior_questions = {q.question.lower() for q in prior}
+    for question in stress:
+        if question.question.lower() in prior_questions:
+            problems.append(f"stress question duplicates a prior question: {question.question!r}")
+        terms = absent_terms.get(question.question, [])
+        if question.expected_behavior == "abstain" and question.category == "unanswerable":
+            if not terms:
+                problems.append(
+                    f"unanswerable stress question has no absent_terms guarantee: "
+                    f"{question.question!r}"
+                )
+            for term in terms:
+                if term in corpus_text:
+                    problems.append(
+                        f"absent term {term!r} occurs in the corpus — question may be "
+                        f"answerable: {question.question!r}"
+                    )
+        stress_words = _content_words(question.question)
+        for other in prior:
+            other_words = _content_words(other.question)
+            union = stress_words | other_words
+            if not union:
+                continue
+            overlap = len(stress_words & other_words) / len(union)
+            if overlap >= 0.5:
+                problems.append(
+                    f"stress question too similar to a prior question "
+                    f"(Jaccard {overlap:.2f}): {question.question!r} vs {other.question!r}"
+                )
+    return problems
+
+
+def run_stress_eval(
+    config: RAGConfig,
+    judge: RubricJudge | None = None,
+    verifier: ClaimJudge | None = None,
+    embed_fn: EmbedFn | None = None,
+    rerank_fn: RerankFn | None = None,
+    model: "Model | None" = None,
+    meter_active: bool | None = None,
+) -> dict[str, Any]:
+    """Stress pass over the independent sealed set (``evaluate --stress``).
+
+    Same verify-on protocol as the held-out passes, but the question set was
+    admitted WITHOUT the production-retriever answerability gate — retrieval
+    is allowed to fail honestly here, which is the point: the held-out
+    retrieval reads are consistency checks, these are the stress test.
+    Reported under ``metrics.json → detail.stress``; nothing else is touched.
+    """
+    start_metering(active=meter_active)  # fresh spend-ledger window for this run
+    articles = load_corpus(config)
+    tuning = load_questions(config, articles)
+    heldout = load_heldout_questions(config, articles)
+    stress = load_stress_questions(config, articles)
+    if not stress:
+        raise RuntimeError("no stress questions resolved against the corpus")
+    chosen = config.retrieval_best
+    if chosen is None:
+        raise RuntimeError("config.retrieval_best is required for the stress run")
+
+    embed_fn_override = embed_fn is not None
+    if embed_fn is None:
+        embed_fn = SentenceTransformerEmbedder(chosen.embedding_model)
+    if rerank_fn is None:
+        rerank_fn = CrossEncoderReranker(config.reranker_model)
+    arm = next(a for a in EMBEDDING_ARMS if a[0] == chosen.embedding_slug)
+    if embed_fn_override:
+        index_dir = config.index_path(chosen.chunk_size)
+    else:
+        index_dir = (
+            config.index_path(chosen.chunk_size)
+            if chosen.embedding_slug == "minilm"
+            else config.index_dir / f"chunks_{chosen.chunk_size}_{chosen.embedding_slug}"
+        )
+    retriever = Retriever.from_index_dir(
+        config,
+        index_dir,
+        embed_fn,
+        rerank_fn if chosen.rerank else None,
+        query_prefixed(embed_fn, arm[2]),
+    )
+
+    problems = validate_stress_set(config, stress, tuning, heldout, articles)
+    if problems:
+        for problem in problems:
+            logger.error("stress validation: %s", problem)
+        raise RuntimeError(
+            f"stress validation failed with {len(problems)} problem(s); refusing to score it"
+        )
+
+    agent = build_agent(config, model=model)
+    rag_run = run_rag_eval(config, agent, retriever, stress, judge=judge, verifier=verifier)
+
+    correct_flags = [1.0 if classify_question(t) == "correct" else 0.0 for t in rag_run.traces]
+    taxonomy = _taxonomy_counts(rag_run)
+    composition: dict[str, int] = {}
+    for q in stress:
+        key = f"{q.category}/{q.expected_behavior}"
+        composition[key] = composition.get(key, 0) + 1
+    traces_path = write_question_traces(
+        config, rag_run.traces, path=config.reports_dir / "question_traces_stress.json"
+    )
+    payload: dict[str, Any] = {
+        "n_questions": len(stress),
+        "composition": composition,
+        "retrieval": None,
+        "rag": rag_run.eval_result.to_dict(),
+        "faithfulness": {
+            "mean": rag_run.eval_result.faithfulness,
+            "ci95": list(bootstrap_ci(rag_run.faithfulness_rows, seed=config.seed)),
+        },
+        "taxonomy": {
+            "counts": taxonomy,
+            "correct_share": (sum(correct_flags) / len(correct_flags) if correct_flags else 0.0),
+            "correct_share_ci95": list(bootstrap_ci(correct_flags, seed=config.seed)),
+        },
+        "abstention": abstention_report(rag_run.traces, seed=config.seed),
+        "verify": _verify_stats(config, rag_run),
+        "ops": {
+            "backend": inference_backend(),
+            "p50_latency_s": rag_run.p50_latency_s,
+            "p95_latency_s": rag_run.p95_latency_s,
+        },
+        "meter": get_meter().snapshot(),
+        "traces_path": str(traces_path),
+        "note": (
+            "independent stress set, admitted WITHOUT the production-retriever "
+            "answerability gate; retrieval failures here are honest signal, "
+            "reported separately from detail.heldout and detail.heldout_citations"
+        ),
+    }
+
+    metrics_path = config.reports_dir / "metrics.json"
+    if metrics_path.exists():
+        metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    else:
+        metrics = {"detail": {}}
+    metrics.setdefault("detail", {})["stress"] = payload
+    metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+    meter = payload["meter"]
+    logger.info(
+        "stress run written: %s (backend=%s, metered spend=%.4f USD cloud-equivalent)",
+        metrics_path,
+        payload["ops"]["backend"],
+        meter["total"]["spend_usd"] if meter["active"] else 0.0,
+    )
+    return payload
+
+
 def run_citation_eval(
     config: RAGConfig,
     judge: RubricJudge | None = None,

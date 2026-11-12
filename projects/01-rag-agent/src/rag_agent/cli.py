@@ -23,6 +23,7 @@ from rag_agent.corpus import prepare_corpus as prepare_corpus_impl
 from rag_agent.evaluate import run as run_evaluation
 from rag_agent.evaluate import run_citation_eval as run_citation_evaluation
 from rag_agent.evaluate import run_heldout as run_heldout_evaluation
+from rag_agent.evaluate import run_stress_eval as run_stress_evaluation
 from rag_agent.index import (
     CrossEncoderReranker,
     Retriever,
@@ -129,6 +130,15 @@ def evaluate(
             "Never touches detail.heldout. Needs a provider.",
         ),
     ] = False,
+    stress: Annotated[
+        bool,
+        typer.Option(
+            "--stress",
+            help="Stress pass: the independent sealed set admitted WITHOUT the "
+            "production-retriever answerability gate (reports/question_traces_stress.json, "
+            "metrics detail.stress). Needs a provider.",
+        ),
+    ] = False,
     max_questions: Annotated[
         int | None,
         typer.Option(
@@ -170,7 +180,7 @@ def evaluate(
     config = load_config()
     if reports_dir is not None:
         config.reports_dir = reports_dir
-    if heldout or citations:
+    if heldout or citations or stress:
         if offline:
             raise typer.BadParameter(
                 "sealed-set passes need a provider and cannot combine with --offline"
@@ -185,6 +195,27 @@ def evaluate(
             )
         if verify is not None:
             config.verify.enabled = verify
+        if stress:
+            try:
+                payload = run_stress_evaluation(config)
+            except LLMProviderUnavailableError as exc:
+                typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+                raise typer.Exit(code=1) from exc
+            except BudgetExceededError as exc:
+                typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+                raise typer.Exit(code=2) from exc
+            meter = payload["meter"]
+            spend = (
+                f", metered ${meter['total']['spend_usd']:.2f} cloud-equivalent"
+                if meter["active"]
+                else ""
+            )
+            typer.echo(
+                f"sealed-set eval written: {config.reports_dir / 'metrics.json'} "
+                f"(detail.stress, backend={payload['ops']['backend']}{spend}; "
+                f"question_traces_stress.json)"
+            )
+            return
         runner = run_heldout_evaluation if heldout else run_citation_evaluation
         try:
             payload = runner(config)
