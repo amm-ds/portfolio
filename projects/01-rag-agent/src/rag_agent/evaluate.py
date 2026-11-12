@@ -27,11 +27,14 @@ verify-on agent pass (agent + verify + rubric judge, deliberately no RAGAS to
 bound hosted cost) with bootstrap CIs on faithfulness and the failure taxonomy.
 """
 
+import hashlib
 import json
 import random
+import subprocess
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -41,7 +44,7 @@ from portfolio_core.logging import get_logger
 from portfolio_eval.rag import RAGEvalResult
 from pydantic import ValidationError
 from pydantic_ai import Agent, AgentRunResult
-from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.exceptions import UnexpectedModelBehavior, UsageLimitExceeded
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -61,6 +64,7 @@ from rag_agent.figures import (
     sweep_figure,
     taxonomy_figure,
 )
+from rag_agent.gate import assess
 from rag_agent.index import (
     ChunkRecord,
     CrossEncoderReranker,
@@ -165,9 +169,11 @@ def answer_with_output_retries(
 
     Returns ``(result, n_retries, error)``: a successful ``result`` (retries
     counted), or ``(None, n_retries, error)`` when every attempt failed — the
-    caller keeps the format-failure taxonomy label in that case. The USD budget
-    cap (:class:`BudgetExceededError`) always propagates: it must stop the run,
-    never be recorded as a per-question failure.
+    caller keeps the failure taxonomy label in that case. The USD budget cap
+    (:class:`BudgetExceededError`) always propagates: it must stop the run,
+    never be recorded as a per-question failure. Token-cap terminations
+    (pydantic-ai ``UsageLimitExceeded``) return a typed error string instead:
+    the trace classifies them as ``budget-terminated``, never format-failure.
     """
     retries = 0
     while True:
@@ -181,6 +187,8 @@ def answer_with_output_retries(
             return result, retries, ""
         except BudgetExceededError:
             raise
+        except UsageLimitExceeded as exc:  # R6: token-cap termination, typed
+            return None, retries, f"UsageLimitExceeded: {exc}"[:200]
         except (ValidationError, UnexpectedModelBehavior) as exc:
             error = f"{type(exc).__name__}: {exc}"[:200]
             if retries >= max_retries:
@@ -591,6 +599,41 @@ def run_rag_eval(
 
     for question in questions:
         start = time.perf_counter()
+        # R6: retrieval first — the inference-time evidence gate decides, from
+        # inference-observable signals only, whether generation may proceed.
+        evidence = retriever.search(question.question, top_k=config.top_k)
+        relevant = set(question.relevant_article_ids)
+        top10 = retriever.search(question.question, top_k=10)
+        top_rank = first_relevant_rank(top10, question.relevant_article_ids)
+        retrieved_relevant = any(c.article_id in relevant for c in evidence)
+        chunk_texts: list[str] = []
+        for citation in evidence:
+            chunk = retriever.get_chunk(citation.chunk_id)
+            if chunk is not None:
+                chunk_texts.append(chunk.text)
+        gate = assess(question.question, chunk_texts, config.evidence_gate)
+        if gate.refuses:
+            latencies.append(time.perf_counter() - start)
+            traces.append(
+                QuestionTrace(
+                    question=question.question,
+                    category=question.category,
+                    expected_behavior=question.expected_behavior,
+                    top_rank=top_rank,
+                    retrieved_relevant=retrieved_relevant,
+                    cited_relevant=False,
+                    faithfulness=float("nan"),
+                    abstained=True,
+                    format_ok=True,
+                    output_retries=0,
+                    gate_coverage=gate.coverage,
+                    gate_max_similarity=gate.max_similarity,
+                    evidence_score=gate.evidence_score,
+                    gate_refused=True,
+                )
+            )
+            continue
+
         output: AnalysisResult | None = None
         output_retries = 0
         error = ""
@@ -607,18 +650,13 @@ def run_rag_eval(
             raise
         latencies.append(time.perf_counter() - start)
 
-        # Wave 14: verify-then-answer — repair/drop unsupported claims, or fall
-        # back to abstention, BEFORE the answer is judged / fed to RAGAS.
+        # Wave 14 / R6: verify-then-answer — deterministic span checks, then
+        # repair/drop unsupported claims, or fall back to abstention, BEFORE
+        # the answer is judged / fed to RAGAS.
+        vreport = None
         if output is not None and claim_judge is not None:
-            verify_reports.append(
-                verify_result(question.question, output, retriever, config, claim_judge)
-            )
-
-        evidence = retriever.search(question.question, top_k=config.top_k)
-        relevant = set(question.relevant_article_ids)
-        top10 = retriever.search(question.question, top_k=10)
-        top_rank = first_relevant_rank(top10, question.relevant_article_ids)
-        retrieved_relevant = any(c.article_id in relevant for c in evidence)
+            vreport = verify_result(question.question, output, retriever, config, claim_judge)
+            verify_reports.append(vreport)
 
         if output is None:
             traces.append(
@@ -634,6 +672,12 @@ def run_rag_eval(
                     format_ok=False,
                     output_retries=output_retries,
                     error=error,
+                    gate_coverage=gate.coverage,
+                    gate_max_similarity=gate.max_similarity,
+                    evidence_score=gate.evidence_score,
+                    budget_terminated=any(
+                        marker in error for marker in ("UsageLimitExceeded", "BudgetExceeded")
+                    ),
                 )
             )
             continue
@@ -658,6 +702,10 @@ def run_rag_eval(
                 abstained=abstained,
                 format_ok=True,
                 output_retries=output_retries,
+                gate_coverage=gate.coverage,
+                gate_max_similarity=gate.max_similarity,
+                evidence_score=gate.evidence_score,
+                n_surviving_claims=vreport.n_surviving if vreport is not None else None,
             )
         )
         if question.expected_behavior == "answer":
@@ -1507,10 +1555,17 @@ def run_heldout(
     return payload
 
 
-def load_stress_questions(config: RAGConfig, articles: list[Article]) -> list[EvalQuestion]:
-    """Resolve the authored stress set against the corpus (no retriever gate)."""
-    raw = json.loads(config.stress_questions_path.read_text(encoding="utf-8"))
-    return _resolve_questions(raw, articles, source=str(config.stress_questions_path))
+def load_stress_questions(
+    config: RAGConfig, articles: list[Article], path: "Path | None" = None
+) -> list[EvalQuestion]:
+    """Resolve an authored stress set against the corpus (no retriever gate).
+
+    ``path`` overrides the default frozen set — pass B uses this to load its
+    own sealed file through the same resolution rules.
+    """
+    source = path or config.stress_questions_path
+    raw = json.loads(source.read_text(encoding="utf-8"))
+    return _resolve_questions(raw, articles, source=str(source))
 
 
 def validate_stress_set(
@@ -1519,6 +1574,7 @@ def validate_stress_set(
     tuning: list[EvalQuestion],
     heldout: list[EvalQuestion],
     articles: list[Article],
+    path: "Path | None" = None,
 ) -> list[str]:
     """Gate the stress set before scoring — deliberately WITHOUT the production
     retriever (that gate biases the held-out set toward retrieval success).
@@ -1530,7 +1586,7 @@ def validate_stress_set(
     """
     problems: list[str] = []
     corpus_text = "\n".join(f"{a.title}\n{a.text}" for a in articles).lower()
-    raw = json.loads(config.stress_questions_path.read_text(encoding="utf-8"))
+    raw = json.loads((path or config.stress_questions_path).read_text(encoding="utf-8"))
     absent_terms: dict[str, list[str]] = {}
     for item in raw:
         terms = [str(t).lower() for t in item.get("absent_terms", [])]
@@ -1577,20 +1633,30 @@ def run_stress_eval(
     rerank_fn: RerankFn | None = None,
     model: "Model | None" = None,
     meter_active: bool | None = None,
+    questions_path: "Path | None" = None,
+    tag: str = "",
 ) -> dict[str, Any]:
-    """Stress pass over the independent sealed set (``evaluate --stress``).
+    """Stress pass over an independent sealed set (``evaluate --stress``).
 
     Same verify-on protocol as the held-out passes, but the question set was
     admitted WITHOUT the production-retriever answerability gate — retrieval
     is allowed to fail honestly here, which is the point: the held-out
     retrieval reads are consistency checks, these are the stress test.
-    Reported under ``metrics.json → detail.stress``; nothing else is touched.
+    Reported under ``metrics.json → detail.stress<tag>``; nothing else is
+    touched. ``questions_path`` scores a non-default sealed set (pass B),
+    ``tag`` names its artifacts (``question_traces_stress<tag>.json``).
+
+    Every run carries a ``run`` record — questions-file sha256, commit,
+    gate/verify thresholds, timestamp and metered cost — so each sealed pass
+    is individually auditable. The payload adds per-slice verdict breakdowns
+    (``category/expected_behavior``), claim-level accounting from the verify
+    reports, and the budget-terminated count.
     """
     start_metering(active=meter_active)  # fresh spend-ledger window for this run
     articles = load_corpus(config)
     tuning = load_questions(config, articles)
     heldout = load_heldout_questions(config, articles)
-    stress = load_stress_questions(config, articles)
+    stress = load_stress_questions(config, articles, path=questions_path)
     if not stress:
         raise RuntimeError("no stress questions resolved against the corpus")
     chosen = config.retrieval_best
@@ -1619,7 +1685,7 @@ def run_stress_eval(
         query_prefixed(embed_fn, arm[2]),
     )
 
-    problems = validate_stress_set(config, stress, tuning, heldout, articles)
+    problems = validate_stress_set(config, stress, tuning, heldout, articles, path=questions_path)
     if problems:
         for problem in problems:
             logger.error("stress validation: %s", problem)
@@ -1637,8 +1703,9 @@ def run_stress_eval(
         key = f"{q.category}/{q.expected_behavior}"
         composition[key] = composition.get(key, 0) + 1
     traces_path = write_question_traces(
-        config, rag_run.traces, path=config.reports_dir / "question_traces_stress.json"
+        config, rag_run.traces, path=config.reports_dir / f"question_traces_stress{tag}.json"
     )
+    meter = get_meter().snapshot()
     payload: dict[str, Any] = {
         "n_questions": len(stress),
         "composition": composition,
@@ -1653,6 +1720,9 @@ def run_stress_eval(
             "correct_share": (sum(correct_flags) / len(correct_flags) if correct_flags else 0.0),
             "correct_share_ci95": list(bootstrap_ci(correct_flags, seed=config.seed)),
         },
+        "by_slice": _by_slice(rag_run.traces, stress),
+        "claim_accounting": _claim_accounting(rag_run),
+        "budget_terminated": sum(1 for t in rag_run.traces if t.budget_terminated),
         "abstention": abstention_report(rag_run.traces, seed=config.seed),
         "verify": _verify_stats(config, rag_run),
         "ops": {
@@ -1660,7 +1730,8 @@ def run_stress_eval(
             "p50_latency_s": rag_run.p50_latency_s,
             "p95_latency_s": rag_run.p95_latency_s,
         },
-        "meter": get_meter().snapshot(),
+        "meter": meter,
+        "run": _stress_run_record(config, questions_path, tag, meter),
         "traces_path": str(traces_path),
         "note": (
             "independent stress set, admitted WITHOUT the production-retriever "
@@ -1674,16 +1745,104 @@ def run_stress_eval(
         metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     else:
         metrics = {"detail": {}}
-    metrics.setdefault("detail", {})["stress"] = payload
+    metrics.setdefault("detail", {})[f"stress{tag}"] = payload
     metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
-    meter = payload["meter"]
     logger.info(
-        "stress run written: %s (backend=%s, metered spend=%.4f USD cloud-equivalent)",
+        "stress%s run written: %s (backend=%s, metered spend=%.4f USD cloud-equivalent)",
+        tag,
         metrics_path,
         payload["ops"]["backend"],
         meter["total"]["spend_usd"] if meter["active"] else 0.0,
     )
     return payload
+
+
+def _by_slice(traces: list[QuestionTrace], questions: list[EvalQuestion]) -> dict[str, Any]:
+    """Verdict breakdown per ``category/expected_behavior`` slice (R6).
+
+    Traces align 1:1 with questions (every question appends exactly one
+    trace), so the zip is safe. Each slice reports n, the verdict histogram
+    and the correct share — the slice view is what catches a gate that fixes
+    one category by breaking another.
+    """
+    slices: dict[str, dict[str, Any]] = {}
+    for trace, question in zip(traces, questions, strict=True):
+        key = f"{question.category}/{question.expected_behavior}"
+        verdict = classify_question(trace)
+        bucket = slices.setdefault(key, {"n": 0, "verdicts": {}, "correct": 0})
+        bucket["n"] += 1
+        bucket["verdicts"][verdict] = bucket["verdicts"].get(verdict, 0) + 1
+        if verdict == "correct":
+            bucket["correct"] += 1
+    for bucket in slices.values():
+        bucket["correct_share"] = round(bucket["correct"] / bucket["n"], 4) if bucket["n"] else 0.0
+        del bucket["correct"]
+    return slices
+
+
+def _claim_accounting(rag_run: RAGRun | None) -> dict[str, Any] | None:
+    """Totals of the R6 claim pipeline over the verify reports of this run."""
+    if rag_run is None or not rag_run.verify_reports:
+        return None
+    reports = rag_run.verify_reports
+    return {
+        "n_answers_verified": len(reports),
+        "n_drafted": sum(r.n_drafted for r in reports),
+        "n_mechanical_fail": sum(r.n_mechanical_fail for r in reports),
+        "n_judged": sum(r.n_judged for r in reports),
+        "n_surviving": sum(r.n_surviving for r in reports),
+        "n_dropped": sum(1 for r in reports for c in r.claims if c.dropped),
+        "n_repair_calls": sum(r.n_repair_calls for r in reports),
+        "n_verify_abstentions": sum(1 for r in reports if r.abstained),
+        "mechanical_false_rejections": sum(r.mechanical_false_rejections for r in reports),
+    }
+
+
+def _stress_run_record(
+    config: RAGConfig, questions_path: "Path | None", tag: str, meter: dict[str, Any]
+) -> dict[str, Any]:
+    """Audit record stamped on every sealed stress pass (R6).
+
+    Questions-file hash, commit, thresholds and cost make each pass
+    independently reproducible: anyone can confirm which exact inputs produced
+    which numbers. Git SHA is best-effort (absent outside a checkout).
+    """
+    source = questions_path or config.stress_questions_path
+    try:
+        questions_sha256 = hashlib.sha256(source.read_bytes()).hexdigest()
+    except OSError:
+        questions_sha256 = None
+    try:
+        commit = (
+            subprocess.run(
+                ["git", "rev-parse", "HEAD"],  # noqa: S607 - fixed well-known VCS binary
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            ).stdout.strip()
+            or None
+        )
+    except (OSError, subprocess.SubprocessError):
+        commit = None
+    return {
+        "tag": tag or "(default)",
+        "questions_file": str(source),
+        "questions_sha256": questions_sha256,
+        "commit": commit,
+        "gate": {
+            "min_coverage": config.evidence_gate.min_coverage,
+            "min_max_similarity": config.evidence_gate.min_max_similarity,
+        },
+        "verify": {
+            "enabled": config.verify.enabled,
+            "min_support": config.verify.min_support,
+            "max_repair_calls": config.verify.max_repair_calls,
+            "diagnose_mech": config.verify.diagnose_mech,
+        },
+        "timestamp_utc": datetime.now(UTC).isoformat(),
+        "spend_usd": meter["total"]["spend_usd"] if meter.get("active") else 0.0,
+    }
 
 
 def run_citation_eval(
@@ -1757,13 +1916,13 @@ def run_citation_eval(
     rag_run = run_rag_eval(config, agent, retriever, heldout, judge=judge, verifier=verifier)
 
     # Linkage: run_rag_eval appends one VerifyReport per answered question, in
-    # question order, for exactly the traces with format_ok=True (reports are
-    # stamped with their question since wave 17 — the zip is checked, not
-    # assumed).
+    # question order, for exactly the traces with format_ok=True that were not
+    # refused by the R6 evidence gate before generation (reports are stamped
+    # with their question since wave 17 — the zip is checked, not assumed).
     answered = [
         (q, t, latency)
         for q, t, latency in zip(heldout, rag_run.traces, rag_run.latencies_s, strict=True)
-        if t.format_ok
+        if t.format_ok and not t.gate_refused
     ]
     if len(answered) != len(rag_run.verify_reports):
         raise RuntimeError(

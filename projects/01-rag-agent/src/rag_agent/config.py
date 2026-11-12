@@ -11,6 +11,8 @@ from portfolio_core.config import Settings as CoreSettings
 from portfolio_core.schemas import PortfolioBaseModel
 from pydantic import Field, model_validator
 
+from rag_agent.gate import GateConfig
+
 
 class Settings(CoreSettings):
     """RAG-agent settings: platform env handling, no project-specific env vars."""
@@ -125,11 +127,17 @@ class VerifyConfig(PortfolioBaseModel):
     enabled: bool = True
     min_support: float = Field(default=0.6, ge=0.0, le=1.0)
     max_repair_calls: int = Field(default=2, ge=0)
+    # R6 tuning-only diagnostic: also send mechanically-failed claims to the
+    # judge so the checker's false-rejection rate can be measured. Never on
+    # in sealed evaluation passes.
+    diagnose_mech: bool = False
 
 
 class RAGConfig(PortfolioBaseModel):
     """Tunables for corpus preparation, indexing, retrieval and evaluation."""
 
+    # R6 inference-time evidence gate (thresholds from tuning diagnostics only)
+    evidence_gate: GateConfig = Field(default_factory=GateConfig)
     topics: list[str] = Field(default_factory=lambda: list(DEFAULT_TOPICS))
     extra_title_patterns: dict[str, list[str]] = Field(
         default_factory=lambda: {k: list(v) for k, v in DEFAULT_EXTRA_TITLE_PATTERNS.items()}

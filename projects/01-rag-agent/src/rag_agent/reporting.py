@@ -72,6 +72,13 @@ class QuestionTrace:
     format_ok: bool  # False when the agent run raised / output was invalid
     output_retries: int = 0  # wave 15: bounded output-retries before success/failure
     error: str = ""
+    # R6: evidence-gate signals + claim accounting (None when not applicable)
+    gate_coverage: float | None = None
+    gate_max_similarity: float | None = None
+    evidence_score: float | None = None
+    n_surviving_claims: int | None = None
+    budget_terminated: bool = False  # error was a usage/budget cap, not a defect
+    gate_refused: bool = False  # R6: evidence gate refused before generation
 
 
 def is_abstention(summary: str, confidence: float) -> bool:
@@ -87,16 +94,26 @@ def classify_question(trace: QuestionTrace) -> str:
     2. abstain-expected + abstained → ``correct`` (refusing is the right answer).
     3. abstain-expected + answered → ``unsupported-claim`` (claims without evidence).
     4. ``retrieval-miss`` — answerable but no relevant chunk in the production top_k.
-    5. ``unsupported-claim`` — relevant evidence found but the judge scores the
+    5. R6 ``empty-answer`` — answer-expected, evidence found, but zero claims
+       survived verification (over-abstention is a failure, not a success).
+    6. ``unsupported-claim`` — relevant evidence found but the judge scores the
        answer below 0.5 (claims not supported by the context).
-    6. ``correct`` — everything else.
+    7. ``correct`` — everything else.
     """
     if not trace.format_ok:
+        if trace.budget_terminated:
+            return "budget-terminated"
         return "format-failure"
     if trace.expected_behavior == "abstain":
         return "correct" if trace.abstained else "unsupported-claim"
     if not trace.retrieved_relevant:
         return "retrieval-miss"
+    if (
+        trace.n_surviving_claims is not None
+        and not trace.abstained
+        and trace.n_surviving_claims == 0
+    ):
+        return "empty-answer"
     if trace.faithfulness < 0.5:
         return "unsupported-claim"
     return "correct"
@@ -519,6 +536,13 @@ def write_question_traces(
             "output_retries": t.output_retries,
             "verdict": classify_question(t),
             "error": t.error,
+            # R6: evidence-gate signals + claim accounting (None when not applicable)
+            "gate_coverage": t.gate_coverage,
+            "gate_max_similarity": t.gate_max_similarity,
+            "evidence_score": t.evidence_score,
+            "n_surviving_claims": t.n_surviving_claims,
+            "budget_terminated": t.budget_terminated,
+            "gate_refused": t.gate_refused,
         }
         for t in traces
     ]

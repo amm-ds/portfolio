@@ -116,6 +116,9 @@ def embed_fn() -> EmbedFnType:
 
 @pytest.fixture
 def config(tmp_path: Path) -> RAGConfig:
+    # EVERY default path lands under tmp_path: the dataclass defaults are
+    # cwd-relative (data/golden_stress.json et al.) and a test writing through
+    # an un-overridden path clobbers the real sealed sets (it happened).
     return RAGConfig(
         chunk_sizes=[50],
         chunk_overlap=10,
@@ -125,6 +128,7 @@ def config(tmp_path: Path) -> RAGConfig:
         index_dir=tmp_path / "data" / "index",
         eval_questions_path=tmp_path / "eval_questions.json",
         heldout_questions_path=tmp_path / "golden_heldout.json",
+        stress_questions_path=tmp_path / "golden_stress.json",
         reports_dir=tmp_path / "reports",
     )
 

@@ -25,6 +25,7 @@ never make an answer worse than the unverified baseline.
 
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from portfolio_core.llm import build_model
@@ -38,11 +39,11 @@ from pydantic_ai.exceptions import UsageLimitExceeded
 from pydantic_ai.models import Model
 
 from rag_agent.config import RAGConfig
-from rag_agent.index import Retriever
+from rag_agent.index import ChunkRecord, Retriever
 from rag_agent.metering import get_meter
 from rag_agent.provider import model_settings_for_provider
 from rag_agent.reporting import is_abstention
-from rag_agent.schemas import AnalysisResult
+from rag_agent.schemas import AnalysisResult, DraftedClaim
 
 logger = get_logger(__name__)
 
@@ -97,6 +98,12 @@ class VerifyReport:
     abstained: bool = False  # verify-induced abstention (support floor breached)
     final_summary: str = ""
     latency_s: float = 0.0
+    # R6 claim accounting (schema-v2 path; zeros on the legacy path)
+    n_drafted: int = 0
+    n_mechanical_fail: int = 0
+    n_judged: int = 0
+    n_surviving: int = 0
+    mechanical_false_rejections: int = 0  # diagnose mode: judge-supported but mech-failed
 
 
 def split_claims(summary: str) -> list[str]:
@@ -106,6 +113,82 @@ def split_claims(summary: str) -> list[str]:
 
 def _content_words(text: str) -> set[str]:
     return {w.strip(".,;:!?()\"'") for w in text.lower().split()} - _STOPWORDS - {""}
+
+
+# --- R6 deterministic span checks -------------------------------------------------
+
+_NUM_RE = re.compile(r"\d+(?:[.,]\d+)*%?")
+_MONTHS = {
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+}
+_TEMPORAL = {"until", "before", "after", "during", "since"}
+_NEGATIONS = {"no", "not", "never", "none", "without", "nor", "n't"}
+
+
+def check_claim_spans(
+    claim: DraftedClaim, get_chunk: Callable[[str], ChunkRecord | None]
+) -> list[str]:
+    """Deterministic evidence checks for one drafted claim (R6).
+
+    Returns the list of failure reasons — empty means the claim passes. These
+    checks are provenance and class-specific guards (verbatim span, number,
+    date, temporal qualifier, negation polarity, entity proximity); the
+    entailment judge remains the arbiter for paraphrase and relational claims.
+    """
+    from rag_agent.gate import content_words as _cw
+    from rag_agent.gate import normalize as _norm
+
+    reasons: list[str] = []
+    span_texts: list[str] = []
+    for span in claim.spans:
+        chunk = get_chunk(span.chunk_id)
+        if chunk is None:
+            reasons.append(f"span chunk {span.chunk_id!r} unknown")
+            continue
+        norm_span = _norm(span.exact_text)
+        norm_chunk = _norm(chunk.text)
+        if norm_span not in norm_chunk:
+            reasons.append("span not verbatim in its cited chunk")
+        span_texts.append(norm_span)
+    if not span_texts:
+        return reasons or ["no resolvable spans"]
+
+    claim_l = _norm(claim.text)
+    words = _cw(claim.text)
+    others = {w for w in words if not w.isdigit()} - _NEGATIONS - _TEMPORAL - _MONTHS
+
+    for number in dict.fromkeys(_NUM_RE.findall(claim_l)):
+        if not any(number in s for s in span_texts):
+            reasons.append(f"number {number!r} not present in any span")
+            continue
+        for s in span_texts:
+            if number in s and not any(w in s.split() for w in others):
+                reasons.append(f"value {number!r} shares no claim entity in its span")
+                break
+    for token in sorted((words & _MONTHS) | ({w for w in words if w in _TEMPORAL})):
+        if not any(token in s.split() for s in span_texts):
+            reasons.append(f"date/temporal token {token!r} not in any span")
+    claim_neg = bool(_NEGATIONS & words)
+    span_words: set[str] = set()
+    for s in span_texts:
+        span_words |= set(s.split())
+    span_neg = bool(_NEGATIONS & span_words)
+    if claim_neg and not span_neg:
+        reasons.append("claim negated but span is affirmative")
+    elif span_neg and not claim_neg:
+        reasons.append("span negated but claim is affirmative")
+    return list(dict.fromkeys(reasons))
 
 
 class KeywordEntailmentJudge:
@@ -288,6 +371,10 @@ def _verify(
         report.skipped = True
         return
 
+    if result.claims:
+        _verify_structured(question, result, retriever, config, judge, report)
+        return
+
     claims = split_claims(result.summary)
     if not claims:
         return
@@ -323,7 +410,107 @@ def _verify(
 
     surviving = [c for c in checks if c.supported]
     report.claims = checks
+    report.n_surviving = len(surviving)
     report.support_fraction = len(surviving) / len(checks)
+
+    if report.support_fraction < config.verify.min_support:
+        report.abstained = True
+        report.final_summary = ABSTENTION_TEXT
+        result.summary = ABSTENTION_TEXT
+        result.confidence = min(result.confidence, 0.2)
+        return
+
+    report.final_summary = " ".join(c.claim for c in surviving)
+    result.summary = report.final_summary
+
+
+def _verify_structured(
+    question: str,
+    result: AnalysisResult,
+    retriever: Retriever,
+    config: RAGConfig,
+    judge: ClaimJudge,
+    report: VerifyReport,
+) -> None:
+    """R6 schema-v2 path: drafted claims carry verbatim spans.
+
+    Order per claim: deterministic span checks (hard-fail on provenance or
+    class-specific violations: non-verbatim span, number/date/temporal token
+    absent, negation mismatch, value without a claim entity) → entailment
+    judge over the survivors → the existing repair/drop/support-floor flow.
+    In diagnose mode (tuning only) mechanically-failed claims are also judged
+    so the false-rejection rate can be measured.
+    """
+    evidence = evidence_for(result, retriever)
+    diagnose = config.verify.diagnose_mech
+    checks: list[ClaimCheck] = []
+    mech_failed: list[int] = []
+    for drafted in result.claims:
+        reasons = check_claim_spans(drafted, retriever.get_chunk)
+        if reasons:
+            mech_failed.append(len(checks))
+            checks.append(
+                ClaimCheck(claim=drafted.text, supported=False, reason="; ".join(reasons))
+            )
+        else:
+            checks.append(ClaimCheck(claim=drafted.text, supported=True, reason="mechanical"))
+    report.n_drafted = len(checks)
+    report.n_mechanical_fail = len(mech_failed)
+
+    to_judge = [i for i in range(len(checks)) if i not in mech_failed or diagnose]
+    if to_judge:
+        report.n_judge_calls += 1
+        verdicts = judge.verify_claims(question, [checks[i].claim for i in to_judge], evidence)
+        for k, verdict in enumerate(verdicts):
+            i = to_judge[k]
+            prior = checks[i].reason
+            judge_supported = verdict.supported
+            if i in mech_failed:
+                if judge_supported:
+                    report.mechanical_false_rejections += 1
+                checks[i] = ClaimCheck(
+                    claim=verdict.claim,
+                    supported=judge_supported,
+                    reason=f"{prior}; judge: {verdict.reason}",
+                )
+            else:
+                checks[i] = ClaimCheck(
+                    claim=verdict.claim,
+                    supported=judge_supported,
+                    reason=f"mechanical; judge: {verdict.reason}",
+                )
+    report.n_judged = len(to_judge)
+
+    # Repair/drop over judge-rejected claims — existing semantics and budget.
+    unsupported_idx = [i for i, c in enumerate(checks) if not c.supported]
+    budget = config.verify.max_repair_calls
+    repaired_any = 0
+    for i in unsupported_idx[:budget]:
+        if not isinstance(judge, LLMEntailmentJudge):
+            break  # the deterministic judge has no repair capability
+        report.n_repair_calls += 1
+        repaired_any += 1
+        rewritten = judge.repair(question, checks[i].claim, evidence)
+        if not rewritten or rewritten == REPAIR_IMPOSSIBLE:
+            checks[i].dropped = True
+            continue
+        report.n_judge_calls += 1
+        recheck = judge.verify_claims(question, [rewritten], evidence)[0]
+        checks[i] = ClaimCheck(
+            claim=recheck.claim,
+            supported=recheck.supported,
+            reason=f"repair: {recheck.reason}",
+            repaired=True,
+        )
+        if not recheck.supported:
+            checks[i].dropped = True
+    for i in unsupported_idx[budget:]:
+        checks[i].dropped = True
+
+    surviving = [c for c in checks if c.supported and not c.dropped]
+    report.claims = checks
+    report.n_surviving = len(surviving)
+    report.support_fraction = len(surviving) / len(checks) if checks else 1.0
 
     if report.support_fraction < config.verify.min_support:
         report.abstained = True

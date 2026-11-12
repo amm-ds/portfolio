@@ -74,6 +74,19 @@ def test_classify_question_rules() -> None:
     )
 
 
+def test_classify_question_r6_verdicts() -> None:
+    """R6: token-cap terminations and verify-emptied answers get their own labels."""
+    assert classify_question(_trace(format_ok=False, budget_terminated=True)) == "budget-terminated"
+    # Answer-expected + evidence found + zero surviving claims = over-abstention.
+    assert classify_question(_trace(n_surviving_claims=0)) == "empty-answer"
+    # A genuine abstention (support floor) is NOT an empty answer.
+    assert classify_question(_trace(n_surviving_claims=0, abstained=True)) != "empty-answer"
+    # None (legacy runs pre-R6) must not trigger the empty-answer rule.
+    assert (
+        classify_question(_trace(n_surviving_claims=None, faithfulness=0.2)) == "unsupported-claim"
+    )
+
+
 def test_abstention_report() -> None:
     traces = [
         _trace(expected_behavior="abstain", abstained=True),
@@ -224,8 +237,9 @@ def test_taxonomy_figure_renders() -> None:
 
     fig = taxonomy_figure([_trace(), _trace(format_ok=False), _trace(faithfulness=0.1)])
     assert len(fig.data) == 1
-    # order: correct / retrieval-miss / unsupported-claim / format-failure
-    assert list(fig.data[0].y) == [1, 0, 1, 1]
+    # order: correct / retrieval-miss / unsupported-claim / format-failure /
+    # empty-answer / budget-terminated (R6 additions last)
+    assert list(fig.data[0].y) == [1, 0, 1, 1, 0, 0]
 
 
 def test_write_reports_with_traces_and_meta(config: RAGConfig) -> None:

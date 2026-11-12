@@ -108,7 +108,10 @@ def test_run_citation_eval_end_to_end_offline(
     assert lo <= claims["support_rate_first_check"] <= hi
 
     answers = payload["answers"]
-    assert answers["n_verified"] == 2  # canned answer is not an abstention: both verified
+    # R6 evidence gate: the unanswerable row ("who won the battle of hastings")
+    # is refused BEFORE generation — its evidence shares no content word with
+    # the question — so only the answerable row reaches verification.
+    assert answers["n_verified"] == 1
     assert answers["floor"] == config.verify.min_support
     slo, shi = answers["mean_support_fraction_ci95"]
     assert slo <= answers["mean_support_fraction"] <= shi
@@ -118,9 +121,9 @@ def test_run_citation_eval_end_to_end_offline(
     records = json.loads(
         (config.reports_dir / "citation_records_heldout.json").read_text(encoding="utf-8")
     )
-    assert len(records) == payload["n_questions"]
+    assert len(records) == answers["n_verified"]  # gate-refused rows produce no record
     first = records[0]
-    assert first["question"] == HELDOUT_ROWS[0]["question"]
+    assert first["question"] == HELDOUT_ROWS[0]["question"]  # the answered row only
     assert first["citations"] == [{"chunk_id": "c", "article_id": "a"}]
     assert {"claim", "supported", "reason", "repaired", "dropped"} <= set(first["claims"][0])
     assert {r["verdict"] for r in records} == set(payload["by_verdict"])

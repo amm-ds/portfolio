@@ -106,6 +106,31 @@ def build_index(
         typer.echo(f"index ready: {len(chunks)} chunks at {path}")
 
 
+def _run_stress_pass(config: RAGConfig, stress_file: Path | None, stress_tag: str) -> None:
+    """Execute a sealed stress pass and echo where its artifacts landed.
+
+    Extracted from ``evaluate`` to keep that command under the complexity
+    budget; error mapping (provider/budget) mirrors the other sealed passes.
+    """
+    try:
+        payload = run_stress_evaluation(config, questions_path=stress_file, tag=stress_tag)
+    except LLMProviderUnavailableError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    except BudgetExceededError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=2) from exc
+    meter = payload["meter"]
+    spend = (
+        f", metered ${meter['total']['spend_usd']:.2f} cloud-equivalent" if meter["active"] else ""
+    )
+    typer.echo(
+        f"sealed-set eval written: {config.reports_dir / 'metrics.json'} "
+        f"(detail.stress{stress_tag}, backend={payload['ops']['backend']}{spend}; "
+        f"question_traces_stress{stress_tag}.json)"
+    )
+
+
 @app.command()
 def evaluate(
     ragas: Annotated[
@@ -139,6 +164,23 @@ def evaluate(
             "metrics detail.stress). Needs a provider.",
         ),
     ] = False,
+    stress_file: Annotated[
+        Path | None,
+        typer.Option(
+            "--stress-file",
+            help="Score a different sealed stress set (e.g. data/golden_stress_b.json) "
+            "instead of the default frozen one. Requires --stress.",
+        ),
+    ] = None,
+    stress_tag: Annotated[
+        str,
+        typer.Option(
+            "--stress-tag",
+            help="Artifact suffix for a non-default stress pass: traces are written as "
+            "question_traces_stress<TAG>.json and metrics under detail.stress<TAG>. "
+            "Leading underscore is conventional (e.g. _b). Requires --stress.",
+        ),
+    ] = "",
     max_questions: Annotated[
         int | None,
         typer.Option(
@@ -195,26 +237,12 @@ def evaluate(
             )
         if verify is not None:
             config.verify.enabled = verify
+        if stress_file is not None and not stress:
+            raise typer.BadParameter("--stress-file requires --stress")
+        if stress_tag and not stress:
+            raise typer.BadParameter("--stress-tag requires --stress")
         if stress:
-            try:
-                payload = run_stress_evaluation(config)
-            except LLMProviderUnavailableError as exc:
-                typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
-                raise typer.Exit(code=1) from exc
-            except BudgetExceededError as exc:
-                typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
-                raise typer.Exit(code=2) from exc
-            meter = payload["meter"]
-            spend = (
-                f", metered ${meter['total']['spend_usd']:.2f} cloud-equivalent"
-                if meter["active"]
-                else ""
-            )
-            typer.echo(
-                f"sealed-set eval written: {config.reports_dir / 'metrics.json'} "
-                f"(detail.stress, backend={payload['ops']['backend']}{spend}; "
-                f"question_traces_stress.json)"
-            )
+            _run_stress_pass(config, stress_file, stress_tag)
             return
         runner = run_heldout_evaluation if heldout else run_citation_evaluation
         try:

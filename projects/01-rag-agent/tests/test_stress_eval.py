@@ -156,3 +156,130 @@ def test_run_stress_eval_end_to_end_offline(
     assert "stress" in metrics["detail"]
     assert "heldout" not in metrics["detail"]
     assert (config.reports_dir / "question_traces_stress.json").exists()
+
+
+def test_run_stress_eval_r6_accounting_fields(
+    config: RAGConfig,
+    articles: list[Article],
+    embed_fn: EmbedFn,
+    index_dir: Path,
+) -> None:
+    """R6 payload: slices, claim accounting, budget count, audit run record."""
+    _seed(config, articles)
+    config.retrieval_best = _chosen(config)
+    # schema-v2 canned output: one drafted claim with a verbatim span from the
+    # Solar energy article (chunk energy-000#c000) → exercises the structured
+    # verify path (deterministic span checks → judge → survival accounting).
+    span_text = (
+        "Solar energy is radiant light and heat from the Sun "
+        "harnessed using a range of technologies"
+    )
+    v2_canned = json.dumps(
+        {
+            "summary": "Solar energy is radiant light and heat from the Sun.",
+            "citations": [
+                {
+                    "chunk_id": "energy-000#c000",
+                    "article_id": "energy-000",
+                    "title": "Solar energy",
+                    "excerpt": "Solar energy is radiant light and heat",
+                    "score": 1.0,
+                }
+            ],
+            "confidence": 0.8,
+            "claims": [
+                {
+                    "text": f"{span_text}.",
+                    "citation_chunk_ids": ["energy-000#c000"],
+                    "spans": [
+                        {
+                            "chunk_id": "energy-000#c000",
+                            "exact_text": span_text,
+                        }
+                    ],
+                }
+            ],
+        }
+    )
+    payload = run_stress_eval(
+        config,
+        judge=KeywordJudge(),
+        verifier=KeywordEntailmentJudge(),
+        embed_fn=embed_fn,
+        rerank_fn=_keep_order_rerank,
+        model=mock_model_for_tests(v2_canned),
+        meter_active=False,
+    )
+    # per-slice verdict breakdown, one entry per composition key
+    assert set(payload["by_slice"]) == set(payload["composition"])
+    for bucket in payload["by_slice"].values():
+        assert bucket["n"] == sum(bucket["verdicts"].values())
+        assert 0.0 <= bucket["correct_share"] <= 1.0
+    # claim accounting over the verify reports (structured span path)
+    accounting = payload["claim_accounting"]
+    assert accounting is not None
+    assert accounting["n_answers_verified"] >= 1
+    assert accounting["n_drafted"] >= 1
+    assert accounting["n_judged"] >= 1
+    assert accounting["n_surviving"] >= 1
+    assert accounting["n_mechanical_fail"] == 0
+    assert accounting["mechanical_false_rejections"] == 0
+    assert payload["budget_terminated"] == 0
+    # audit run record: hash, thresholds, timestamp, cost
+    run = payload["run"]
+    assert run["questions_sha256"] and len(run["questions_sha256"]) == 64
+    assert run["gate"]["min_coverage"] == config.evidence_gate.min_coverage
+    assert run["verify"]["min_support"] == config.verify.min_support
+    assert run["timestamp_utc"].endswith("+00:00")
+    assert run["spend_usd"] == 0.0  # metering off in tests
+    # traces carry the R6 gate fields
+    traces = json.loads(
+        (config.reports_dir / "question_traces_stress.json").read_text(encoding="utf-8")
+    )
+    for row in traces:
+        assert "gate_coverage" in row and "budget_terminated" in row
+
+
+def test_run_stress_eval_tagged_pass_writes_separate_artifacts(
+    config: RAGConfig,
+    articles: list[Article],
+    embed_fn: EmbedFn,
+    index_dir: Path,
+) -> None:
+    """A non-default sealed set (pass B) lands in its own traces + metrics key."""
+    _seed(config, articles)
+    config.retrieval_best = _chosen(config)
+    set_b = config.corpus_path.parent / "golden_stress_b.json"
+    set_b.write_text(
+        json.dumps(
+            [
+                {
+                    "question": "how do solar panels generate electricity",
+                    "relevant_titles": ["Solar energy"],
+                    "category": "single_hop",
+                    "expected_behavior": "answer",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    payload = run_stress_eval(
+        config,
+        judge=KeywordJudge(),
+        verifier=KeywordEntailmentJudge(),
+        embed_fn=embed_fn,
+        rerank_fn=_keep_order_rerank,
+        model=mock_model_for_tests(CANNED_ANALYSIS_JSON),
+        meter_active=False,
+        questions_path=set_b,
+        tag="_b",
+    )
+    assert payload["n_questions"] == 1
+    assert payload["run"]["tag"] == "_b"
+    metrics = json.loads((config.reports_dir / "metrics.json").read_text(encoding="utf-8"))
+    # the tagged pass gets its own slot without touching the default key
+    assert "stress_b" in metrics["detail"]
+    assert "stress" not in metrics["detail"]
+    tagged_traces = config.reports_dir / "question_traces_stress_b.json"
+    assert tagged_traces.exists()
+    assert not (config.reports_dir / "question_traces_stress.json").exists()

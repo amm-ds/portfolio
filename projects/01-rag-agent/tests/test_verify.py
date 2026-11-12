@@ -280,3 +280,137 @@ def test_run_rag_eval_collects_verify_reports(config: RAGConfig, retriever: Retr
     assert report.support_fraction == 1.0  # canned claim is fully covered
     # The verified summary is what reaches the judge + RAGAS rows.
     assert "photosynthesis" in rag_run.ragas_rows[0].answer.lower()
+
+
+# --- R6 deterministic span checks -------------------------------------------------
+
+from rag_agent.index import ChunkRecord  # noqa: E402
+from rag_agent.schemas import DraftedClaim, EvidenceSpan  # noqa: E402
+from rag_agent.verify import check_claim_spans  # noqa: E402
+
+
+def _chunk_record(chunk_id: str = "c1", text: str = "") -> ChunkRecord:
+    return ChunkRecord(
+        chunk_id=chunk_id,
+        article_id="a1",
+        text=text
+        or (
+            "The Hornsea wind farm is the largest offshore wind farm in the world. "
+            "It has 174 turbines and generates 1.2 GW of electricity since 2020."
+        ),
+        token_count=30,
+        title="Offshore wind power",
+        topic="Energy",
+    )
+
+
+def _claim(
+    text: str,
+    spans: list[tuple[str, str]],
+    chunk_ids: list[str] | None = None,
+) -> DraftedClaim:
+    return DraftedClaim(
+        text=text,
+        citation_chunk_ids=chunk_ids or [s[0] for s in spans],
+        spans=[EvidenceSpan(chunk_id=cid, exact_text=span) for cid, span in spans],
+    )
+
+
+def test_span_check_verbatim_pass() -> None:
+    claim = _claim(
+        "Hornsea is the largest offshore wind farm in the world.",
+        [("c1", "The Hornsea wind farm is the largest offshore wind farm in the world.")],
+    )
+    assert check_claim_spans(claim, lambda cid: _chunk_record(cid)) == []
+
+
+def test_span_check_non_verbatim_span_fails() -> None:
+    claim = _claim(
+        "Hornsea is the largest offshore wind farm.",
+        [("c1", "Hornsea is the biggest offshore wind farm anywhere.")],  # not a substring
+    )
+    reasons = check_claim_spans(claim, lambda cid: _chunk_record(cid))
+    assert any("not verbatim" in r for r in reasons)
+
+
+def test_span_check_unknown_chunk_fails() -> None:
+    claim = _claim(
+        "Hornsea is the largest offshore wind farm in the world.",
+        [("missing", "whatever text")],
+    )
+    reasons = check_claim_spans(claim, lambda cid: None)
+    assert any("unknown" in r for r in reasons)
+
+
+def test_span_check_wrong_number_fails() -> None:
+    claim = _claim(
+        "Hornsea generates 1.5 GW of electricity.",
+        [("c1", "It has 174 turbines and generates 1.2 GW of electricity since 2020.")],
+    )
+    reasons = check_claim_spans(claim, lambda cid: _chunk_record(cid))
+    assert any("1.5" in r and "not present" in r for r in reasons)
+
+
+def test_span_check_number_without_claim_entity_fails() -> None:
+    """A span may contain the number but share no content word with the claim."""
+    claim = _claim(
+        "Hornsea generates 1.2 GW of electricity.",
+        [("c1", "completely unrelated sentence with 1.2 numbers inside")],
+    )
+    reasons = check_claim_spans(
+        claim,
+        lambda cid: _chunk_record("c1", "completely unrelated sentence with 1.2 numbers inside"),
+    )
+    assert any("shares no claim entity" in r for r in reasons)
+
+
+def test_span_check_temporal_qualifier_must_appear_in_span() -> None:
+    claim = _claim(
+        "Hornsea generated electricity until 2021.",
+        [("c1", "It has 174 turbines and generates 1.2 GW of electricity since 2020.")],
+    )
+    reasons = check_claim_spans(claim, lambda cid: _chunk_record(cid))
+    assert any("until" in r for r in reasons)
+
+
+def test_span_check_month_token_must_appear_in_span() -> None:
+    claim = _claim(
+        "Hornsea opened in July 2020.",
+        [("c1", "It has 174 turbines and generates 1.2 GW of electricity since 2020.")],
+    )
+    reasons = check_claim_spans(claim, lambda cid: _chunk_record(cid))
+    assert any("july" in r for r in reasons)
+
+
+def test_span_check_negation_mismatch_fails() -> None:
+    claim = _claim(
+        "Hornsea is not the largest offshore wind farm.",
+        [("c1", "The Hornsea wind farm is the largest offshore wind farm in the world.")],
+    )
+    reasons = check_claim_spans(claim, lambda cid: _chunk_record(cid))
+    assert any("negated" in r for r in reasons)
+
+
+def test_span_check_nfkc_composed_span_matches() -> None:
+    chunk = _chunk_record("c1", "The façade of the turbine hall faces north.")
+    # c + combining cedilla (U+0327) composes to ç under NFKC
+    claim = _claim(
+        "The facade of the turbine hall faces north.",
+        [("c1", "The fac\u0327ade of the turbine hall faces north.")],
+    )
+    assert check_claim_spans(claim, lambda cid: chunk) == []
+
+
+def test_span_check_derived_duration_fails() -> None:
+    """Derived claims are disallowed: a duration computed from two timestamps
+    must appear verbatim in a span — arithmetic provenance is not evidence."""
+    chunk = _chunk_record(
+        "c1",
+        "The flight departed at 08:00 on Monday and landed at 10:30 on Tuesday.",
+    )
+    claim = _claim(
+        "The flight took 26.5 hours.",
+        [("c1", "The flight departed at 08:00 on Monday and landed at 10:30 on Tuesday.")],
+    )
+    reasons = check_claim_spans(claim, lambda cid: chunk)
+    assert any("26.5" in r for r in reasons)

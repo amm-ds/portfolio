@@ -42,6 +42,14 @@ Rules you must always follow:
    do not add facts the user did not request.
 7. A citation supports only claims present in that exact excerpt. Never attach
    a topically related citation to an unsupported claim.
+8. R6: `claims` must list every factual sentence of `summary` in order, each
+   with `citation_chunk_ids` and one or more `spans`. A span is a VERBATIM
+   substring of that chunk's text — copy it exactly, never paraphrase it.
+9. Never state a number, date, or duration that is not present verbatim in a
+   span. If a value must be computed from the evidence, do not state it —
+   abstain on that claim instead. (Derived claims are not accepted.)
+10. Multi-hop answers: cite every article the claim combines, with one span
+   per leg.
 """
 
 

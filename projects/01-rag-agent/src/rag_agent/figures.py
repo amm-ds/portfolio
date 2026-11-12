@@ -306,7 +306,14 @@ def corpus_eda_figure(articles: list[Article]) -> go.Figure:
 
 def taxonomy_figure(traces: list[QuestionTrace]) -> go.Figure:
     """Failure-taxonomy breakdown: counts per deterministic verdict class."""
-    order = ["correct", "retrieval-miss", "unsupported-claim", "format-failure"]
+    order = [
+        "correct",
+        "retrieval-miss",
+        "unsupported-claim",
+        "format-failure",
+        "empty-answer",
+        "budget-terminated",
+    ]
     counts = {label: 0 for label in order}
     for trace in traces:
         counts[classify_question(trace)] += 1
@@ -315,7 +322,14 @@ def taxonomy_figure(traces: list[QuestionTrace]) -> go.Figure:
             go.Bar(
                 x=order,
                 y=[counts[label] for label in order],
-                marker_color=["#34d399", "#fbbf24", "#f472b6", "#a78bfa"],
+                marker_color=[
+                    "#34d399",
+                    "#fbbf24",
+                    "#f472b6",
+                    "#a78bfa",
+                    "#38bdf8",
+                    "#94a3b8",
+                ],
             )
         ]
     )

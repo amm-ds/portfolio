@@ -34,12 +34,36 @@ class Citation(PortfolioBaseModel):
     score: float = Field(default=1.0, ge=0.0)
 
 
+class EvidenceSpan(PortfolioBaseModel):
+    """One verbatim evidence span backing a drafted claim."""
+
+    chunk_id: str = Field(min_length=1)
+    exact_text: str = Field(min_length=1)
+
+
+class DraftedClaim(PortfolioBaseModel):
+    """A claim with its cited chunks and verbatim supporting span(s).
+
+    Schema v2 (R6): claims are drafted WITH evidence — each span must be an
+    exact substring of the cited chunk. Multi-hop claims cite several chunks
+    and may carry several spans. The mechanical checker in ``rag_agent.verify``
+    enforces this before the entailment judge sees anything.
+    """
+
+    text: str = Field(min_length=1)
+    citation_chunk_ids: list[str] = Field(min_length=1)
+    spans: list[EvidenceSpan] = Field(min_length=1)
+
+
 class AnalysisResult(PortfolioBaseModel):
     """Structured agent output: grounded summary plus supporting citations."""
 
     summary: str = Field(min_length=1)
     citations: list[Citation] = Field(min_length=1)
     confidence: float = Field(ge=0.0, le=1.0)
+    # Schema v2 (R6): per-claim evidence spans. Absent in older runs and
+    # mocks — the verify loop falls back to claim-splitting the summary.
+    claims: list[DraftedClaim] = Field(default_factory=list)
 
 
 class EvalQuestion(PortfolioBaseModel):
