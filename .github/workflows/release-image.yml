@@ -2,7 +2,10 @@ name: release-image
 
 # Publish the production image to GHCR on version tags. Human-driven boundary
 # (DEPLOY.md): CI only builds and pushes the image — pulling, restarting,
-# smoke-testing, and rollback stay with the operator on the host.
+# smoke-testing, and rollback stay with the operator on the host. The publish
+# now also produces the supply-chain evidence external evaluation P2-2 asks
+# for: an SPDX SBOM attested onto the image and a keyless cosign signature of
+# the pushed digest (Sigstore OIDC — no long-lived keys).
 
 on:
   push:
@@ -11,6 +14,7 @@ on:
 permissions:
   contents: read
   packages: write
+  id-token: write # cosign keyless signing + attestation (Sigstore OIDC)
 
 env:
   IMAGE: ghcr.io/amm-ds/portfolio
@@ -34,3 +38,20 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
       - name: Push image
         run: docker push --all-tags "${IMAGE}"
+      - name: Resolve pushed digest
+        id: digest
+        run: echo "value=$(docker inspect --format='{{index .RepoDigests 0}}' "${IMAGE}:latest")" >> "$GITHUB_OUTPUT"
+      - name: Install cosign
+        # TODO(pin): move to the repo's SHA-pinning convention once the action
+        # version is validated in a real tag run.
+        uses: sigstore/cosign-installer@v3
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.digest.outputs.value }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+      - name: Attest SBOM to the image
+        run: cosign attest -y --predicate sbom.spdx.json --type spdx "${{ steps.digest.outputs.value }}"
+      - name: Sign the image digest (keyless)
+        run: cosign sign -y "${{ steps.digest.outputs.value }}"

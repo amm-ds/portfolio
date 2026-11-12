@@ -165,6 +165,28 @@ review), rotating `IP_HASH_SALT` (log-hash correlations reset), raising
 `DAILY_LIVE_BUDGET`, and any rollback (record the known-good tag first, then
 re-create the API and re-run the smoke test).
 
+## Supply-chain verification (external evaluation P2-2)
+
+Version tags (`v*`) publish the image to GHCR with evidence attached:
+
+- an SPDX SBOM, attested onto the pushed digest (`cosign attest`, Sigstore
+  OIDC — no long-lived keys); query it with
+  `cosign download attestation <image>@<digest> | jq -r '.payload | @base64d'`
+- a keyless signature of the digest; verify before any GHCR-based deploy with
+
+  ```bash
+  cosign verify \
+    --certificate-identity-regexp 'https://github.com/amm-ds/portfolio/' \
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+    ghcr.io/amm-ds/portfolio@<digest>
+  ```
+
+Verification compares the digest, never a tag: tags are mutable, digests are
+the signed unit. The topology above builds on the host instead of pulling
+GHCR, so this verification applies when a deploy switches to (or audits) the
+registry image; host-built images carry their own evidence in the form of the
+health-SHA check below, and signing them would require cosign on the host.
+
 ## Trusted proxy boundary
 
 Caddy is the sole published service and overwrites forwarding headers before
