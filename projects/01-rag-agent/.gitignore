@@ -23,6 +23,8 @@
 !/reports/citation_records_heldout.json
 # …and the stress pass's per-question traces (same evidence role).
 !/reports/question_traces_stress.json
+# …and the R6 failure ledger (trace review required before interventions).
+!/reports/stress_failure_ledger.md
 /reports/figures/*.html
 # The sealed held-out golden set is authored source data (like
 # src/rag_agent/eval_questions.json), not a regenerable artifact: track it even
