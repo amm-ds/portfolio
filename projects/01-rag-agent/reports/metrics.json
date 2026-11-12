@@ -520,6 +520,210 @@
       "n_verify_skipped": 10,
       "total_repair_calls": 33,
       "verify_latency_share_of_answer": 0.5442
+    },
+    "stress_after_r6": {
+      "n_questions": 30,
+      "composition": {
+        "single_hop/answer": 8,
+        "multi_hop/answer": 10,
+        "ambiguous/abstain": 4,
+        "ambiguous/answer": 2,
+        "unanswerable/abstain": 6
+      },
+      "retrieval": null,
+      "rag": {
+        "n_questions": 20,
+        "faithfulness": 0.6775,
+        "answer_relevance": 0.6575,
+        "context_recall": 0.9
+      },
+      "faithfulness": {
+        "mean": 0.6775,
+        "ci95": [
+          0.5525,
+          0.81
+        ]
+      },
+      "taxonomy": {
+        "counts": {
+          "retrieval-miss": 2,
+          "correct": 22,
+          "empty-answer": 1,
+          "unsupported-claim": 5
+        },
+        "correct_share": 0.7333333333333333,
+        "correct_share_ci95": [
+          0.5667,
+          0.8667
+        ]
+      },
+      "by_slice": {
+        "single_hop/answer": {
+          "n": 8,
+          "verdicts": {
+            "retrieval-miss": 1,
+            "correct": 5,
+            "empty-answer": 1,
+            "unsupported-claim": 1
+          },
+          "correct_share": 0.625
+        },
+        "multi_hop/answer": {
+          "n": 10,
+          "verdicts": {
+            "correct": 8,
+            "unsupported-claim": 2
+          },
+          "correct_share": 0.8
+        },
+        "ambiguous/abstain": {
+          "n": 4,
+          "verdicts": {
+            "correct": 2,
+            "unsupported-claim": 2
+          },
+          "correct_share": 0.5
+        },
+        "ambiguous/answer": {
+          "n": 2,
+          "verdicts": {
+            "correct": 1,
+            "retrieval-miss": 1
+          },
+          "correct_share": 0.5
+        },
+        "unanswerable/abstain": {
+          "n": 6,
+          "verdicts": {
+            "correct": 6
+          },
+          "correct_share": 1.0
+        }
+      },
+      "claim_accounting": {
+        "n_answers_verified": 30,
+        "n_drafted": 54,
+        "n_mechanical_fail": 8,
+        "n_judged": 46,
+        "n_judge_supported": 45,
+        "n_surviving": 54,
+        "n_dropped": 0,
+        "n_repair_calls": 9,
+        "n_verify_abstentions": 0,
+        "mechanical_false_rejections": 0
+      },
+      "budget_terminated": 0,
+      "abstention": {
+        "n_unanswerable": 10,
+        "n_answerable": 20,
+        "refusal_accuracy": 0.8,
+        "refusal_accuracy_ci95": [
+          0.5,
+          1.0
+        ],
+        "cite_when_expected": 0.95,
+        "cite_when_expected_ci95": [
+          0.85,
+          1.0
+        ],
+        "false_abstention_rate": 0.05,
+        "false_abstention_rate_ci95": [
+          0.0,
+          0.15
+        ]
+      },
+      "verify": {
+        "enabled": true,
+        "min_support": 0.6,
+        "max_repair_calls": 2,
+        "n_answers_verified": 30,
+        "n_verify_abstentions": 0,
+        "n_verify_skipped": 9,
+        "total_repair_calls": 9,
+        "mean_support_fraction": 1.0,
+        "mean_verify_latency_s": 5.926,
+        "verify_latency_share_of_answer": 0.0664,
+        "diagnose_mech": false,
+        "n_drafted": 54,
+        "n_mechanical_fail": 8,
+        "n_judged": 46,
+        "n_judge_supported": 45,
+        "n_surviving": 54,
+        "mechanical_false_rejections": 0
+      },
+      "ops": {
+        "backend": "env:kimi-for-coding",
+        "p50_latency_s": 22.971645415993407,
+        "p95_latency_s": 531.9759432079736
+      },
+      "meter": {
+        "active": true,
+        "model": "kimi-for-coding",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token — never a billed amount",
+        "phases": {
+          "agent": {
+            "calls": 30,
+            "input_tokens": 30029680,
+            "output_tokens": 55019,
+            "cached_input_tokens": 29480778,
+            "spend_usd": 9.613212
+          },
+          "judge": {
+            "calls": 60,
+            "input_tokens": 37695,
+            "output_tokens": 6999,
+            "cached_input_tokens": 1536,
+            "spend_usd": 0.064617
+          },
+          "verify": {
+            "calls": 39,
+            "input_tokens": 35656,
+            "output_tokens": 7877,
+            "cached_input_tokens": 9984,
+            "spend_usd": 0.060174
+          },
+          "ragas": {
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.0
+          }
+        },
+        "total": {
+          "calls": 129,
+          "input_tokens": 30103031,
+          "output_tokens": 69895,
+          "cached_input_tokens": 29492298,
+          "spend_usd": 9.738003
+        },
+        "ledger_spend_usd": 9.738003,
+        "budget_usd": 12.0
+      },
+      "run": {
+        "tag": "_after_r6",
+        "questions_file": "data/golden_stress.json",
+        "questions_sha256": "30afe90f04ad06818e4142236fa49573ffb7224918fae248f75dab5afde869f5",
+        "commit": "12eb8a813a53917303385b0d7126050e0fd8cc0a",
+        "gate": {
+          "min_coverage": 0.0,
+          "min_max_similarity": 0.0
+        },
+        "verify": {
+          "enabled": true,
+          "min_support": 0.6,
+          "max_repair_calls": 2,
+          "diagnose_mech": false
+        },
+        "caps": {
+          "max_requests": 400,
+          "total_tokens_limit": 80000000
+        },
+        "timestamp_utc": "2026-11-12T18:50:09.495137+00:00",
+        "spend_usd": 9.738003
+      },
+      "traces_path": "reports/question_traces_stress_after_r6.json",
+      "note": "independent stress set, admitted WITHOUT the production-retriever answerability gate; retrieval failures here are honest signal, reported separately from detail.heldout and detail.heldout_citations"
     }
   },
   "rag_agent": {
