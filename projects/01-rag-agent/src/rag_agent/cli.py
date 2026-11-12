@@ -40,7 +40,13 @@ logger = get_logger(__name__)
 
 
 def load_config() -> RAGConfig:
-    """RAGConfig defaults, overlaid with ``params.yaml`` when present (DVC)."""
+    """RAGConfig defaults, overlaid with ``params.yaml`` when present (DVC).
+
+    Three environment variables then override the evidence-gate thresholds
+    and the verify diagnose flag — diagnostics-only knobs for hosted
+    calibration runs (gate-threshold fitting, mechanical-checker audit).
+    They never change the committed defaults.
+    """
     params_path = Path("params.yaml")
     if params_path.exists():
         import yaml  # type: ignore[import-untyped]  # PyYAML has no stubs; mkdocs transitive dep
@@ -49,8 +55,38 @@ def load_config() -> RAGConfig:
         unknown = set(data) - set(RAGConfig.model_fields)
         if unknown:
             logger.warning("params.yaml has keys outside RAGConfig, ignored: %s", sorted(unknown))
-        return RAGConfig(**{k: v for k, v in data.items() if k in RAGConfig.model_fields})
-    return RAGConfig()
+        config = RAGConfig(**{k: v for k, v in data.items() if k in RAGConfig.model_fields})
+    else:
+        config = RAGConfig()
+    _apply_env_overrides(config)
+    return config
+
+
+def _apply_env_overrides(config: RAGConfig) -> None:
+    """Apply the R6 diagnostics env overrides onto ``config`` in place.
+
+    ``RAG_GATE_MIN_COVERAGE`` / ``RAG_GATE_MIN_MAX_SIMILARITY`` recalibrate
+    the evidence gate (0 opens it: signals still recorded, no refusals except
+    empty evidence); ``VERIFY_DIAGNOSE_MECH=true`` sends mechanically-failed
+    claims to the judge so the checker's false-rejection rate is measurable.
+    Sealed passes stamp the effective values in their run record, so an
+    override can never silently change what a run measured.
+    """
+    import os
+
+    from rag_agent.gate import GateConfig
+
+    updates: dict[str, float] = {}
+    if raw := os.environ.get("RAG_GATE_MIN_COVERAGE"):
+        updates["min_coverage"] = float(raw)
+    if raw := os.environ.get("RAG_GATE_MIN_MAX_SIMILARITY"):
+        updates["min_max_similarity"] = float(raw)
+    if updates:
+        config.evidence_gate = GateConfig(**{**config.evidence_gate.__dict__, **updates})
+        logger.info("env override: evidence_gate=%s", config.evidence_gate)
+    if raw := os.environ.get("VERIFY_DIAGNOSE_MECH"):
+        config.verify.diagnose_mech = raw.strip().lower() in {"1", "true", "yes"}
+        logger.info("env override: verify.diagnose_mech=%s", config.verify.diagnose_mech)
 
 
 @app.command()

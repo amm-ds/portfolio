@@ -1088,6 +1088,13 @@ def _verify_stats(config: RAGConfig, rag_run: RAGRun | None) -> dict[str, Any] |
         "verify_latency_share_of_answer": (
             round(total_verify_s / total_answer_s, 4) if total_answer_s > 0 else None
         ),
+        # R6 claim pipeline (structured path; zeros on legacy split-claims runs)
+        "diagnose_mech": config.verify.diagnose_mech,
+        "n_drafted": sum(r.n_drafted for r in reports),
+        "n_mechanical_fail": sum(r.n_mechanical_fail for r in reports),
+        "n_judged": sum(r.n_judged for r in reports),
+        "n_surviving": sum(r.n_surviving for r in reports),
+        "mechanical_false_rejections": sum(r.mechanical_false_rejections for r in reports),
     }
 
 
