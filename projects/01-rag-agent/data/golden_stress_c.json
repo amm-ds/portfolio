@@ -1,0 +1,490 @@
+[
+ {
+  "question": "In what year did wind power surpass coal in the total electricity balance of Texas for the very first time?",
+  "relevant_titles": [
+   "Wind power in Texas"
+  ],
+  "category": "single_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "In 2020, wind power surpassed coal in the total electricity balance of Texas for the very first time.",
+  "gold_spans": [
+   {
+    "title": "Wind power in Texas",
+    "exact_text": "In 2020, wind power surpassed coal in the total electricity balance of the state for the very first time"
+   }
+  ],
+  "failure_mode": "temporal_trap"
+ },
+ {
+  "question": "What share of total electricity generation in Spain was accounted for by wind power in 2014?",
+  "relevant_titles": [
+   "Wind power in Spain"
+  ],
+  "category": "single_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "In 2014 wind power accounted for 20.2% of total electricity generation in Spain, making it the second most important electricity source after nuclear power (22%).",
+  "gold_spans": [
+   {
+    "title": "Wind power in Spain",
+    "exact_text": "In 2014, a record breaking year for renewable electricity production, wind power accounted for 20.2% of total electricity generation in Spain making it the second most important electricity source after nuclear power (22%)"
+   }
+  ],
+  "failure_mode": "number_trap"
+ },
+ {
+  "question": "What greenhouse gas emissions-reduction target did Executive Order S-3-05 establish for California for 2050?",
+  "relevant_titles": [
+   "Global Warming Solutions Act of 2006"
+  ],
+  "category": "single_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "Executive Order S-3-05 required California to reduce its greenhouse gas emissions to a level 80% below 1990 levels by 2050.",
+  "gold_spans": [
+   {
+    "title": "Global Warming Solutions Act of 2006",
+    "exact_text": "The executive order required the state to reduce its greenhouse gas emissions levels to 2000 levels by 2010, to 1990 levels by 2020, and to a level 80% below 1990 levels by 2050."
+   }
+  ],
+  "failure_mode": "number_trap"
+ },
+ {
+  "question": "LM Wind Power is presented as the largest independent provider globally of what?",
+  "relevant_titles": [
+   "LM Wind Power"
+  ],
+  "category": "single_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "Of wind turbine blades - LM is a wind turbine rotor blades manufacturer presented as the largest independent blade provider globally, not a manufacturer of wind turbines themselves.",
+  "gold_spans": [
+   {
+    "title": "LM Wind Power",
+    "exact_text": "the main stakeholders of LM Wind Power were investment partnerships organized by Doughty Hanson & Co.  Ltd., presenting LM as the largest independent blade provider globally"
+   }
+  ],
+  "failure_mode": "negation"
+ },
+ {
+  "question": "What products does the Renewable Energy Corporation (REC) produce?",
+  "relevant_titles": [
+   "Renewable Energy Corporation"
+  ],
+  "category": "single_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "REC is a solar power company: it produces silicon materials for photovoltaics (PV) applications and multicrystalline wafers, as well as solar cells and modules.",
+  "gold_spans": [
+   {
+    "title": "Renewable Energy Corporation",
+    "exact_text": "The Renewable Energy Corporation (REC) is a solar power company with headquarters in Singapore. REC produces silicon materials for photovoltaics (PV) applications and multicrystalline wafers, as well as solar cells and modules."
+   }
+  ],
+  "failure_mode": "entity_swap"
+ },
+ {
+  "question": "What product family did Apple sell under the AirPort brand?",
+  "relevant_titles": [
+   "AirPort"
+  ],
+  "category": "single_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "Under the AirPort brand Apple sold a discontinued line of wireless routers and network cards developed using Wi-Fi protocols.",
+  "gold_spans": [
+   {
+    "title": "AirPort",
+    "exact_text": "AirPort is a discontinued line of wireless routers and network cards developed by Apple Inc. using Wi-Fi protocols."
+   }
+  ],
+  "failure_mode": "entity_swap"
+ },
+ {
+  "question": "When and where was the first International Conference on Machine Learning held?",
+  "relevant_titles": [
+   "International Conference on Machine Learning"
+  ],
+  "category": "single_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "The first ICML was held in 1980 in Pittsburgh.",
+  "gold_spans": [
+   {
+    "title": "International Conference on Machine Learning",
+    "exact_text": "The first ICML was held 1980 in Pittsburgh."
+   }
+  ],
+  "failure_mode": "temporal_trap"
+ },
+ {
+  "question": "In which organism was chlorophyll d unambiguously identified in the 1990s?",
+  "relevant_titles": [
+   "Chlorophyll d"
+  ],
+  "category": "single_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "Chlorophyll d was unambiguously identified in Acaryochloris marina in the 1990s.",
+  "gold_spans": [
+   {
+    "title": "Chlorophyll d",
+    "exact_text": "It was unambiguously identified in Acaryochloris marina in the 1990s."
+   }
+  ],
+  "failure_mode": "entity_swap"
+ },
+ {
+  "question": "Roughly what share of total installed wind power capacity in the United States is in Texas?",
+  "relevant_titles": [
+   "Wind power in Texas",
+   "Wind power in the United States"
+  ],
+  "category": "multi_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "Texas holds over 30,000 MW of nameplate wind capacity (as of 2020) out of a United States total of 141,300 MW as of January 2023 - roughly one-fifth, or about 21%, of national installed wind capacity.",
+  "gold_spans": [
+   {
+    "title": "Wind power in Texas",
+    "exact_text": "Wind power in Texas, a portion of total energy in Texas, consists of over 150 wind farms, which together have a total nameplate capacity of over 30,000 MW (as of 2020)."
+   },
+   {
+    "title": "Wind power in the United States",
+    "exact_text": "As of January 2023, the total installed wind power nameplate generating capacity in the United States was 141,300 megawatts (MW)."
+   }
+  ],
+  "failure_mode": "two_leg_synthesis"
+ },
+ {
+  "question": "By the end of 2022, which country had more installed solar power capacity, Germany or Spain, and roughly how many times more?",
+  "relevant_titles": [
+   "Solar power in Germany",
+   "Solar power in Spain"
+  ],
+  "category": "multi_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "Germany had more: 67.3 GW of installed solar capacity by the end of 2022, roughly 3.5 times Spain's 19.5 GW.",
+  "gold_spans": [
+   {
+    "title": "Solar power in Germany",
+    "exact_text": "Germany has been among the world's top PV installer for several years, with total installed capacity amounting to 67.3 gigawatts (GW) by the end of 2022."
+   },
+   {
+    "title": "Solar power in Spain",
+    "exact_text": "In 2022, the cumulative total solar power installed was 19.5 GW, of which 17.2 GW were solar PV installations and 2.3 GW were concentrated solar power."
+   }
+  ],
+  "failure_mode": "two_leg_synthesis"
+ },
+ {
+  "question": "How did the origins of the SNC-Lavalin Kerala hydroelectric scandal differ from the origins of the James Bay Cree hydroelectric conflict?",
+  "relevant_titles": [
+   "SNC-Lavalin Kerala hydroelectric scandal",
+   "James Bay Cree hydroelectric conflict"
+  ],
+  "category": "multi_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "The Kerala case began as a financial scandal over a 1995 hydroelectric infrastructure contract with Canada's SNC-Lavalin, with an alleged net loss of 3,745,000,000 rupees to the Indian exchequer. The James Bay conflict began in 1971 as an Indigenous rights struggle: Quebec announced a hydroelectric project in the Baie-James region without informing the Cree or assessing the consequences for them.",
+  "gold_spans": [
+   {
+    "title": "SNC-Lavalin Kerala hydroelectric scandal",
+    "exact_text": "A financial scandal related to a hydroelectric infrastructure contract between the Kerala Government and the Canadian company SNC-Lavalin in 1995 resulted in an alleged net loss to the Indian exchequer of 3,745,000,000 rupees."
+   },
+   {
+    "title": "James Bay Cree hydroelectric conflict",
+    "exact_text": "The Quebec government announced plans in April 1971 for a hydroelectric project in the Baie-James region of northern Quebec."
+   },
+   {
+    "title": "James Bay Cree hydroelectric conflict",
+    "exact_text": "It followed typical practice of neither informing the Cree people living in the area, nor estimating the consequences of the development as far as they were concerned."
+   }
+  ],
+  "failure_mode": "two_leg_synthesis"
+ },
+ {
+  "question": "How does Himachal Pradesh's climate support its hydroelectric power development?",
+  "relevant_titles": [
+   "Climate of Himachal Pradesh",
+   "Hydroelectric power in Himachal Pradesh"
+  ],
+  "category": "multi_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "The monsoon rainy season replenishes the state's streams and natural springs, sustaining the five perennial river basins on which about 27,436 MW of hydroelectric power can be generated.",
+  "gold_spans": [
+   {
+    "title": "Climate of Himachal Pradesh",
+    "exact_text": "The rainy season start at the end of the month of June. The landscape lushes green and fresh. During the season streams and natural springs are replenished."
+   },
+   {
+    "title": "Hydroelectric power in Himachal Pradesh",
+    "exact_text": "About 27,436 MW of hydroelectric power can be generated in the state by the construction of various hydroelectric projects on the five perennial river basins."
+   }
+  ],
+  "failure_mode": "two_leg_synthesis"
+ },
+ {
+  "question": "How do the fates of the restored Liberty Belle and Memphis Belle B-17s differ after their restorations?",
+  "relevant_titles": [
+   "Liberty Belle (aircraft)",
+   "Memphis Belle (aircraft)"
+  ],
+  "category": "multi_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "The restored Liberty Belle flew as a warbird from 2004 until 2011, when it was destroyed in a fire after an emergency landing, while the restored Memphis Belle has been on display at the National Museum of the United States Air Force since May 2018.",
+  "gold_spans": [
+   {
+    "title": "Liberty Belle (aircraft)",
+    "exact_text": "The Liberty Foundation flew a composite B-17 named Liberty Belle (constructed from two damaged aircraft (sn. 44-85734 and the rear part of sn. 44-85813)) as a warbird from 2004 until 2011, when it was destroyed in a fire after an emergency landing."
+   },
+   {
+    "title": "Memphis Belle (aircraft)",
+    "exact_text": "In 2005 restoration began on the Memphis Belle at the National Museum of the United States Air Force at Wright-Patterson AFB in Dayton, Ohio where, since May 2018, it has been on display."
+   }
+  ],
+  "failure_mode": "two_leg_synthesis"
+ },
+ {
+  "question": "How do Griffon Aerospace and Quest Aerospace differ in what they produce?",
+  "relevant_titles": [
+   "Griffon Aerospace",
+   "Quest Aerospace"
+  ],
+  "category": "multi_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "Griffon Aerospace builds full-scale aerospace systems, including manned and unmanned aircraft, UAV ground support systems, and advanced composite structures, whereas Quest Aerospace designs and produces hobbyist model rocket kits.",
+  "gold_spans": [
+   {
+    "title": "Griffon Aerospace",
+    "exact_text": "Griffon designs, develops, and operates aerospace systems including manned and unmanned aircraft, UAV ground support systems, and advanced composite structures."
+   },
+   {
+    "title": "Quest Aerospace",
+    "exact_text": "Quest Aerospace is a company based in Cedar City, UT, United States, that designs and produces model rocket kits."
+   }
+  ],
+  "failure_mode": "two_leg_synthesis"
+ },
+ {
+  "question": "Which concerns raised in the 2015 open letter on artificial intelligence align with issues discussed in the ethics of artificial intelligence?",
+  "relevant_titles": [
+   "Ethics of artificial intelligence",
+   "Open letter on artificial intelligence (2015)"
+  ],
+  "category": "multi_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "The letter's concern about lethal intelligent autonomous weapons aligns with the ethics article's discussion of robots used for military combat with autonomous functions, and its worry about losing control of AI systems to superintelligences aligns with the ethics article's discussion of the Singularity and dangerous superhuman AI.",
+  "gold_spans": [
+   {
+    "title": "Ethics of artificial intelligence",
+    "exact_text": "Some experts and academics have questioned the use of robots for military combat, especially when such robots are given some degree of autonomous functions."
+   },
+   {
+    "title": "Ethics of artificial intelligence",
+    "exact_text": "Vernor Vinge has suggested that a moment may come when some computers are smarter than humans. He calls this \"the Singularity\".  He suggests that it may be somewhat or possibly very dangerous for humans."
+   },
+   {
+    "title": "Open letter on artificial intelligence (2015)",
+    "exact_text": "we could one day lose control of AI systems via the rise of superintelligences that do not act in accordance with human wishes"
+   }
+  ],
+  "failure_mode": "two_leg_synthesis"
+ },
+ {
+  "question": "How does the Quantum AI Lab's work fit within the research area of quantum machine learning?",
+  "relevant_titles": [
+   "Quantum Artificial Intelligence Lab",
+   "Quantum machine learning"
+  ],
+  "category": "multi_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "The lab's goal of pioneering research on how quantum computing might help with machine learning is a practical instance of quantum machine learning, which is defined as the integration of quantum algorithms within machine learning programs.",
+  "gold_spans": [
+   {
+    "title": "Quantum Artificial Intelligence Lab",
+    "exact_text": "joint initiative of NASA, Universities Space Research Association, and Google (specifically, Google Research) whose goal is to pioneer research on how quantum computing might help with machine learning and other difficult computer science problems"
+   },
+   {
+    "title": "Quantum machine learning",
+    "exact_text": "Quantum machine learning is the integration of quantum algorithms within machine learning programs."
+   }
+  ],
+  "failure_mode": "two_leg_synthesis"
+ },
+ {
+  "question": "Despite opposite nutrient levels, both HNLC and LNLC regions have low chlorophyll - what limits productivity in each?",
+  "relevant_titles": [
+   "High-nutrient, low-chlorophyll regions",
+   "Low-nutrient, low-chlorophyll region"
+  ],
+  "category": "multi_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "In HNLC regions macronutrients are abundant - nitrogen is never significantly depleted - yet phytoplankton growth is limited by low concentrations of the micronutrient iron. In LNLC regions productivity is limited by an overall scarcity of nutrients such as nitrogen, phosphorus, or iron, which keeps the rate of primary production and thus chlorophyll concentrations low.",
+  "gold_spans": [
+   {
+    "title": "High-nutrient, low-chlorophyll regions",
+    "exact_text": "In general, nitrogen tends to be a limiting ocean nutrient, but in HNLC regions it is never significantly depleted. Instead, these regions tend to be limited by low concentrations of metabolizable iron."
+   },
+   {
+    "title": "Low-nutrient, low-chlorophyll region",
+    "exact_text": "Low-nutrient, low-chlorophyll (LNLC) regions are aquatic zones that are low in nutrients (such as nitrogen, phosphorus, or iron) and consequently have low rate of primary production, as indicated by low chlorophyll concentrations."
+   }
+  ],
+  "failure_mode": "two_leg_synthesis"
+ },
+ {
+  "question": "How do golden algae and yellow-green algae differ in pigmentation?",
+  "relevant_titles": [
+   "Golden algae",
+   "Yellow-green algae"
+  ],
+  "category": "multi_hop",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "Golden algae (Chrysophyceae) contain the pigment fucoxanthin. Yellow-green algae (Xanthophyceae), unlike other Stramenopiles, have chloroplasts that do not contain fucoxanthin, and it is this absence that accounts for their lighter colour.",
+  "gold_spans": [
+   {
+    "title": "Golden algae",
+    "exact_text": "Chrysophytes contain the pigment fucoxanthin."
+   },
+   {
+    "title": "Yellow-green algae",
+    "exact_text": "Unlike other Stramenopiles (heterokonts), their chloroplasts do not contain fucoxanthin, which accounts for their lighter colour."
+   }
+  ],
+  "failure_mode": "two_leg_synthesis"
+ },
+ {
+  "question": "Which company does the list name as the biggest manufacturer of wind turbines?",
+  "relevant_titles": [
+   "List of wind turbine manufacturers"
+  ],
+  "category": "ambiguous",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "Vestas (Denmark) - identified in the list as the world's largest manufacturer of wind turbines.",
+  "gold_spans": [
+   {
+    "title": "List of wind turbine manufacturers",
+    "exact_text": "Vestas (Denmark) – the world's largest manufacturer of wind turbines"
+   }
+  ],
+  "failure_mode": "superlative_temptation"
+ },
+ {
+  "question": "Which country is the world leader in offshore wind power?",
+  "relevant_titles": [
+   "Wind power in the United Kingdom"
+  ],
+  "category": "ambiguous",
+  "expected_behavior": "answer",
+  "gold_checked": true,
+  "gold_answer": "The United Kingdom - it became the world leader in offshore wind power generation in October 2008, overtaking Denmark.",
+  "gold_spans": [
+   {
+    "title": "Wind power in the United Kingdom",
+    "exact_text": "The United Kingdom became the world leader of offshore wind power generation in October 2008 when it overtook Denmark."
+   }
+  ],
+  "failure_mode": "superlative_temptation"
+ },
+ {
+  "question": "Which wind turbine manufacturer builds the most reliable turbines?",
+  "relevant_titles": [
+   "List of wind turbine manufacturers"
+  ],
+  "category": "ambiguous",
+  "expected_behavior": "abstain"
+ },
+ {
+  "question": "Which aircraft designer had the biggest impact on commercial aviation?",
+  "relevant_titles": [
+   "Van's Aircraft RV-3",
+   "Wright brothers"
+  ],
+  "category": "ambiguous",
+  "expected_behavior": "abstain"
+ },
+ {
+  "question": "Which low-carbon power technology will be cheapest by 2030?",
+  "relevant_titles": [
+   "Outlook on Renewable Energy in America",
+   "Renewable energy commercialization"
+  ],
+  "category": "ambiguous",
+  "expected_behavior": "abstain"
+ },
+ {
+  "question": "What is the most effective way to remove carbon dioxide from the atmosphere?",
+  "relevant_titles": [
+   "Greenhouse gas emissions",
+   "Climate change"
+  ],
+  "category": "ambiguous",
+  "expected_behavior": "abstain"
+ },
+ {
+  "question": "In what year did the first line of the London Underground open to passengers?",
+  "relevant_titles": [],
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": [
+   "London Underground"
+  ]
+ },
+ {
+  "question": "How many legs does a tarantula have?",
+  "relevant_titles": [],
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": [
+   "tarantula"
+  ]
+ },
+ {
+  "question": "From which ore is most of the world's aluminium extracted?",
+  "relevant_titles": [],
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": [
+   "bauxite"
+  ]
+ },
+ {
+  "question": "How does a gecko cling to smooth vertical surfaces?",
+  "relevant_titles": [],
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": [
+   "gecko"
+  ]
+ },
+ {
+  "question": "How long has Jupiter's Great Red Spot been observed?",
+  "relevant_titles": [],
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": [
+   "Jupiter",
+   "Great Red Spot"
+  ]
+ },
+ {
+  "question": "Who was the first person to swim across the English Channel?",
+  "relevant_titles": [],
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": [
+   "Matthew Webb"
+  ]
+ }
+]
