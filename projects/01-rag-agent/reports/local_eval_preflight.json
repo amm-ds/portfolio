@@ -1,0 +1,41 @@
+{
+  "host": {
+    "machine": "arm64",
+    "cpu": "Apple M4 Max",
+    "ram_gb": 137,
+    "os": "26.5"
+  },
+  "ollama_version": "0.40.12",
+  "models": {
+    "qwen3:4b": {
+      "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+      "size_gb": 2.5
+    },
+    "qwen3-embedding:0.6b": {
+      "digest": "ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d",
+      "size_gb": 0.64
+    },
+    "gpt-oss:20b": {
+      "digest": "f38aa0c53da5f8c49d08c43a99df24ff53167fe68e24664a7777288e7656fdfe",
+      "size_gb": 13.79
+    },
+    "qwen3.6:35b-a3b-q4_K_M": {
+      "digest": "07d35212591fc27746f0a317c975a6d68754fb38e9053d82e25f06057af28522",
+      "size_gb": 23.94
+    }
+  },
+  "runtime": {
+    "context_cap": "8K (R7 start; raise only if evidence requires and memory permits)",
+    "temperature": 0.0,
+    "thinking": "disabled (extra_body think:False, wave-10 trade-off)",
+    "concurrency": 1,
+    "warmup": "first call per model loads weights; timings use post-warmup steady state",
+    "generator_candidates": [
+      "qwen3:4b (registry lacks qwen3:4b-instruct-2507 \u2014 documented deviation)"
+    ],
+    "embedding_challenger": "qwen3-embedding:0.6b (tournament arm R2)",
+    "reranker_challenger": "Qwen/Qwen3-Reranker-0.6B via HF cross-encoder (registry lacks qwen3-reranker \u2014 documented deviation)"
+  },
+  "budget": "local inference $0 hosted-equivalent; final hosted reference pass <= $2.50 CE",
+  "date": "2026-11-13"
+}

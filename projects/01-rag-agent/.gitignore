@@ -26,6 +26,10 @@
 # …and the R6 sealed re-run + independent set B traces (same evidence role).
 !/reports/question_traces_stress_after_r6.json
 !/reports/question_traces_stress_b.json
+# …and the R7 measurement reports (tournament, judge calibration, local preflight).
+!/reports/retrieval_tournament/
+!/reports/judge_calibration/
+!/reports/local_eval_preflight.json
 # …and the R6 failure ledger (trace review required before interventions).
 !/reports/stress_failure_ledger.md
 /reports/figures/*.html
