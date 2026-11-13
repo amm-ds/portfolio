@@ -22,6 +22,10 @@ class Chunk(PortfolioBaseModel):
     article_id: str = Field(min_length=1)
     text: str = Field(min_length=1)
     token_count: int = Field(ge=1)
+    # R7 provenance: body offsets into the source article text (0 for legacy
+    # indexes built before offsets were recorded).
+    char_start: int = Field(default=0, ge=0)
+    char_end: int = Field(default=0, ge=0)
 
 
 class Citation(PortfolioBaseModel):
