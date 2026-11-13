@@ -706,6 +706,7 @@ def run_rag_eval(
                 gate_max_similarity=gate.max_similarity,
                 evidence_score=gate.evidence_score,
                 n_surviving_claims=vreport.n_surviving if vreport is not None else None,
+                claim_states=_claim_states(vreport),
             )
         )
         if question.expected_behavior == "answer":
@@ -1069,12 +1070,22 @@ def _run_agent_stage(
 
 
 def _verify_stats(config: RAGConfig, rag_run: RAGRun | None) -> dict[str, Any] | None:
-    """Aggregate verify-then-answer stats over the answered questions."""
+    """Aggregate verify-then-answer stats over the answered questions.
+
+    R7: claim-support metrics (support fraction, retention, repair, drop) are
+    reported separately from answer-level correctness and never blended;
+    ``support_fraction`` is undefined (skipped/None) for reports without
+    claims and is excluded from the mean rather than faked.
+    """
     if rag_run is None or not rag_run.verify_reports:
         return None
     reports = rag_run.verify_reports
     total_verify_s = sum(r.latency_s for r in reports)
     total_answer_s = sum(rag_run.latencies_s)
+    defined = [r.support_fraction for r in reports if r.support_fraction is not None]
+    n_drafted = sum(r.n_drafted for r in reports)
+    n_surviving = sum(r.n_surviving for r in reports)
+    n_dropped = sum(r.n_dropped_total for r in reports)
     return {
         "enabled": config.verify.enabled,
         "min_support": config.verify.min_support,
@@ -1082,19 +1093,38 @@ def _verify_stats(config: RAGConfig, rag_run: RAGRun | None) -> dict[str, Any] |
         "n_answers_verified": len(reports),
         "n_verify_abstentions": sum(1 for r in reports if r.abstained),
         "n_verify_skipped": sum(1 for r in reports if r.skipped),
+        "n_verifier_failures": sum(1 for r in reports if r.verifier_failed),
         "total_repair_calls": sum(r.n_repair_calls for r in reports),
-        "mean_support_fraction": round(sum(r.support_fraction for r in reports) / len(reports), 4),
+        "mean_support_fraction": (round(sum(defined) / len(defined), 4) if defined else None),
         "mean_verify_latency_s": round(total_verify_s / len(reports), 3),
         "verify_latency_share_of_answer": (
             round(total_verify_s / total_answer_s, 4) if total_answer_s > 0 else None
         ),
-        # R6 claim pipeline (structured path; zeros on legacy split-claims runs)
+        # R7 claim pipeline: terminal states reconcile per answer and in aggregate
         "diagnose_mech": config.verify.diagnose_mech,
-        "n_drafted": sum(r.n_drafted for r in reports),
+        "n_drafted": n_drafted,
         "n_mechanical_fail": sum(r.n_mechanical_fail for r in reports),
         "n_judged": sum(r.n_judged for r in reports),
         "n_judge_supported": sum(r.n_judge_supported for r in reports),
-        "n_surviving": sum(r.n_surviving for r in reports),
+        "n_surviving": n_surviving,
+        "n_dropped": n_dropped,
+        "n_accepted_original": sum(
+            1 for r in reports for c in r.claims if c.terminal_state == "accepted_original"
+        ),
+        "n_accepted_repaired": sum(
+            1 for r in reports for c in r.claims if c.terminal_state == "accepted_repaired"
+        ),
+        "n_dropped_original": sum(
+            1 for r in reports for c in r.claims if c.terminal_state == "dropped_original"
+        ),
+        "n_dropped_repaired": sum(
+            1 for r in reports for c in r.claims if c.terminal_state == "dropped_repaired"
+        ),
+        "claim_retention_rate": round(n_surviving / n_drafted, 4) if n_drafted else None,
+        "claim_repair_rate": (
+            round(sum(r.n_repair_calls for r in reports) / n_drafted, 4) if n_drafted else None
+        ),
+        "claim_drop_rate": round(n_dropped / n_drafted, 4) if n_drafted else None,
         "mechanical_false_rejections": sum(r.mechanical_false_rejections for r in reports),
     }
 
@@ -1765,6 +1795,16 @@ def run_stress_eval(
     return payload
 
 
+def _claim_states(report: VerifyReport | None) -> dict[str, int] | None:
+    """Per-question claim terminal-state histogram for the trace (R7 ledger)."""
+    if report is None or not report.claims:
+        return None
+    states: dict[str, int] = {}
+    for check in report.claims:
+        states[check.terminal_state] = states.get(check.terminal_state, 0) + 1
+    return states
+
+
 def _by_slice(traces: list[QuestionTrace], questions: list[EvalQuestion]) -> dict[str, Any]:
     """Verdict breakdown per ``category/expected_behavior`` slice (R6).
 
@@ -1789,20 +1829,44 @@ def _by_slice(traces: list[QuestionTrace], questions: list[EvalQuestion]) -> dic
 
 
 def _claim_accounting(rag_run: RAGRun | None) -> dict[str, Any] | None:
-    """Totals of the R6 claim pipeline over the verify reports of this run."""
+    """R7 claim ledger over the verify reports of this run.
+
+    Terminal states reconcile by construction (finalize_claim_states derives
+    them per claim): drafted = surviving + dropped, surviving =
+    accepted_original + accepted_repaired. Reported separately from
+    answer-level correctness.
+    """
     if rag_run is None or not rag_run.verify_reports:
         return None
     reports = rag_run.verify_reports
+    n_drafted = sum(r.n_drafted for r in reports)
+    n_surviving = sum(r.n_surviving for r in reports)
+    n_dropped = sum(r.n_dropped_total for r in reports)
     return {
         "n_answers_verified": len(reports),
-        "n_drafted": sum(r.n_drafted for r in reports),
+        "n_drafted": n_drafted,
         "n_mechanical_fail": sum(r.n_mechanical_fail for r in reports),
         "n_judged": sum(r.n_judged for r in reports),
         "n_judge_supported": sum(r.n_judge_supported for r in reports),
-        "n_surviving": sum(r.n_surviving for r in reports),
-        "n_dropped": sum(1 for r in reports for c in r.claims if c.dropped),
+        "n_surviving": n_surviving,
+        "n_dropped": n_dropped,
         "n_repair_calls": sum(r.n_repair_calls for r in reports),
         "n_verify_abstentions": sum(1 for r in reports if r.abstained),
+        "n_verifier_failures": sum(1 for r in reports if r.verifier_failed),
+        "n_accepted_original": sum(
+            1 for r in reports for c in r.claims if c.terminal_state == "accepted_original"
+        ),
+        "n_accepted_repaired": sum(
+            1 for r in reports for c in r.claims if c.terminal_state == "accepted_repaired"
+        ),
+        "n_dropped_original": sum(
+            1 for r in reports for c in r.claims if c.terminal_state == "dropped_original"
+        ),
+        "n_dropped_repaired": sum(
+            1 for r in reports for c in r.claims if c.terminal_state == "dropped_repaired"
+        ),
+        "claim_retention_rate": round(n_surviving / n_drafted, 4) if n_drafted else None,
+        "claim_drop_rate": round(n_dropped / n_drafted, 4) if n_drafted else None,
         "mechanical_false_rejections": sum(r.mechanical_false_rejections for r in reports),
     }
 
@@ -1979,6 +2043,7 @@ def run_citation_eval(
                         "reason": c.reason,
                         "repaired": c.repaired,
                         "dropped": c.dropped,
+                        "terminal_state": c.terminal_state,
                     }
                     for c in report.claims
                 ],
@@ -1996,9 +2061,18 @@ def run_citation_eval(
     first_flags = [1.0 if (c["supported"] and not c["repaired"]) else 0.0 for c in all_claims]
     surviving_denominator = drafted - dropped
 
-    support_fractions = [r["support_fraction"] for r in verified]
+    # R7: support_fraction is None when undefined — exclude from means; a
+    # None can never count as "at or above floor".
+    support_fractions = [
+        r["support_fraction"] for r in verified if r["support_fraction"] is not None
+    ]
     floor_flags = [
-        1.0 if r["support_fraction"] >= config.verify.min_support else 0.0 for r in verified
+        1.0
+        if (
+            r["support_fraction"] is not None and r["support_fraction"] >= config.verify.min_support
+        )
+        else 0.0
+        for r in verified
     ]
 
     by_verdict: dict[str, dict[str, Any]] = {}
@@ -2007,7 +2081,8 @@ def run_citation_eval(
             r["verdict"], {"n_answers": 0, "support_fractions": [], "first_flags": []}
         )
         bucket["n_answers"] += 1
-        bucket["support_fractions"].append(r["support_fraction"])
+        if r["support_fraction"] is not None:
+            bucket["support_fractions"].append(r["support_fraction"])
         bucket["first_flags"].extend(
             1.0 if (c["supported"] and not c["repaired"]) else 0.0 for c in r["claims"]
         )

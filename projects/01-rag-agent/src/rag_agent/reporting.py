@@ -79,6 +79,8 @@ class QuestionTrace:
     n_surviving_claims: int | None = None
     budget_terminated: bool = False  # error was a usage/budget cap, not a defect
     gate_refused: bool = False  # R6: evidence gate refused before generation
+    # R7: per-question claim terminal states {accepted_original: n, ...}
+    claim_states: dict[str, int] | None = None
 
 
 def is_abstention(summary: str, confidence: float) -> bool:
@@ -551,6 +553,7 @@ def write_question_traces(
             "n_surviving_claims": t.n_surviving_claims,
             "budget_terminated": t.budget_terminated,
             "gate_refused": t.gate_refused,
+            "claim_states": t.claim_states,
         }
         for t in traces
     ]

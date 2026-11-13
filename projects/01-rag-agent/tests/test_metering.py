@@ -195,7 +195,24 @@ def test_verify_repair_reraises_budget_exceeded(monkeypatch: pytest.MonkeyPatch)
 
     monkeypatch.setattr(meter, "record", boom)
     monkeypatch.setattr(verify_mod, "get_meter", lambda: meter)
-    judge = LLMEntailmentJudge(model=_constant_model(CLAIM_VERDICTS_JSON))
+
+    # R7: the repairer validates its output as RepairedClaim, so the scripted
+    # model must return the structured shape for the repair call to reach the
+    # meter and surface the budget error.
+    repair_json = json.dumps({"claim": "a claim", "spans": [{"chunk_id": "c", "exact_text": "e"}]})
+
+    def respond(messages: list, info: Any) -> ModelResponse:
+        last = messages[-1]
+        text = " ".join(
+            str(p.content)
+            for p in getattr(last, "parts", [])
+            if getattr(p, "content", None) and isinstance(p.content, str)
+        )
+        if "Unsupported sentence:" in text:
+            return ModelResponse(parts=[TextPart(content=repair_json)])
+        return ModelResponse(parts=[TextPart(content=CLAIM_VERDICTS_JSON)])
+
+    judge = LLMEntailmentJudge(model=FunctionModel(respond))
     with pytest.raises(BudgetExceededError):
         judge.verify_claims("q", ["a claim"], "evidence")
     with pytest.raises(BudgetExceededError):

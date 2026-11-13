@@ -20,7 +20,6 @@ from rag_agent.index import Retriever
 from rag_agent.schemas import AnalysisResult, Citation, EvalQuestion
 from rag_agent.verify import (
     ABSTENTION_TEXT,
-    REPAIR_IMPOSSIBLE,
     KeywordEntailmentJudge,
     LLMEntailmentJudge,
     split_claims,
@@ -41,33 +40,55 @@ def _last_text(messages: list[Any]) -> str:
     )
 
 
-def _scripted_model(messages: list[Any], info: Any) -> ModelResponse:
-    """Scripted claim judge + repairer driven by prompt content."""
-    last = _last_text(messages)
-    if "Unsupported sentence:" in last:
-        if "hopeless" in last:
-            return ModelResponse(parts=[TextPart(content=REPAIR_IMPOSSIBLE)])
-        return ModelResponse(parts=[TextPart(content=REPAIRED_CLAIM)])
-    if "Claims to check" in last:
-        claims = []
-        for line in last.split("Claims to check", 1)[1].strip().splitlines():
-            match = re.match(r"^\d+\.\s+(.*)", line.strip())
-            if not match:
-                continue
-            claim = match.group(1).strip()
-            claims.append(
-                {
-                    "claim": claim,
-                    "supported": "unsupported" not in claim,
-                    "reason": "scripted",
-                }
+def scripted_judge(
+    repair_span: tuple[str, str] | None = None,
+    repair_claim: str = REPAIRED_CLAIM,
+) -> LLMEntailmentJudge:
+    """Scripted claim judge + repairer driven by prompt content.
+
+    R7: the repairer speaks the structured contract — JSON with `claim` and
+    verbatim `spans`, or ``{"claim": null}`` when the claim is hopeless.
+    ``repair_span`` must be a (chunk_id, exact_text) pair that resolves in
+    the test index; ``repair_claim`` overrides the repaired sentence.
+    """
+
+    def _model(messages: list[Any], info: Any) -> ModelResponse:
+        last = _last_text(messages)
+        if "Unsupported sentence:" in last:
+            if "hopeless" in last or repair_span is None:
+                impossible = json.dumps({"claim": None, "spans": []})
+                return ModelResponse(parts=[TextPart(content=impossible)])
+            chunk_id, exact_text = repair_span
+            return ModelResponse(
+                parts=[
+                    TextPart(
+                        content=json.dumps(
+                            {
+                                "claim": repair_claim,
+                                "spans": [{"chunk_id": chunk_id, "exact_text": exact_text}],
+                            }
+                        )
+                    )
+                ]
             )
-        return ModelResponse(parts=[TextPart(content=json.dumps({"verdicts": claims}))])
-    raise AssertionError(f"unexpected prompt: {last[:120]}")
+        if "Claims to check" in last:
+            claims = []
+            for line in last.split("Claims to check", 1)[1].strip().splitlines():
+                match = re.match(r"^\d+\.\s+(.*)", line.strip())
+                if not match:
+                    continue
+                claim = match.group(1).strip()
+                claims.append(
+                    {
+                        "claim": claim,
+                        "supported": "unsupported" not in claim,
+                        "reason": "scripted",
+                    }
+                )
+            return ModelResponse(parts=[TextPart(content=json.dumps({"verdicts": claims}))])
+        raise AssertionError(f"unexpected prompt: {last[:120]}")
 
-
-def scripted_judge() -> LLMEntailmentJudge:
-    return LLMEntailmentJudge(model=FunctionModel(_scripted_model))
+    return LLMEntailmentJudge(model=FunctionModel(_model))
 
 
 def make_result(
@@ -133,8 +154,13 @@ def test_all_supported_keeps_summary(config: RAGConfig, retriever: Retriever) ->
 
 
 def test_mixed_claims_repair_path(config: RAGConfig, retriever: Retriever) -> None:
+    # R7: the repaired claim must carry verbatim spans that resolve in the index.
+    chunk = retriever.chunks[0]
     result, report = run_verify(
-        config, retriever, f"{SUPPORTED_CLAIM} {UNSUPPORTED_FIXABLE}", scripted_judge()
+        config,
+        retriever,
+        f"{SUPPORTED_CLAIM} {UNSUPPORTED_FIXABLE}",
+        scripted_judge(repair_span=(chunk.chunk_id, chunk.text[:60])),
     )
     assert report.n_repair_calls == 1
     assert report.support_fraction == 1.0
@@ -144,6 +170,9 @@ def test_mixed_claims_repair_path(config: RAGConfig, retriever: Retriever) -> No
     assert UNSUPPORTED_FIXABLE not in result.summary
     repaired = [c for c in report.claims if c.repaired]
     assert len(repaired) == 1 and repaired[0].supported
+    assert repaired[0].terminal_state == "accepted_repaired"
+    original = [c for c in report.claims if not c.repaired]
+    assert all(c.terminal_state == "accepted_original" for c in original)
 
 
 def test_unrepairable_claim_dropped_without_abstention(
@@ -151,17 +180,19 @@ def test_unrepairable_claim_dropped_without_abstention(
 ) -> None:
     # 2 of 3 claims survive (1 supported + 1 repaired); the hopeless claim is
     # dropped: support 2/3 ≥ 0.6 → answer stands without the dropped claim.
+    chunk = retriever.chunks[0]
     result, report = run_verify(
         config,
         retriever,
         f"{SUPPORTED_CLAIM} {UNSUPPORTED_FIXABLE} {UNSUPPORTED_HOPELESS}",
-        scripted_judge(),
+        scripted_judge(repair_span=(chunk.chunk_id, chunk.text[:60])),
     )
     assert report.n_repair_calls == 2
     assert report.support_fraction == pytest.approx(2 / 3)
     assert not report.abstained
     dropped = [c for c in report.claims if c.dropped]
     assert len(dropped) == 1 and UNSUPPORTED_HOPELESS in dropped[0].claim
+    assert dropped[0].terminal_state == "dropped_repaired"  # repair returned null
     assert UNSUPPORTED_HOPELESS not in result.summary
 
 
@@ -414,3 +445,106 @@ def test_span_check_derived_duration_fails() -> None:
     )
     reasons = check_claim_spans(claim, lambda cid: chunk)
     assert any("26.5" in r for r in reasons)
+
+
+# --- R7 integrity: fail-closed verifier, full-path repairs, claim ledger ----
+
+from rag_agent.verify import (  # noqa: E402
+    TERMINAL_ACCEPTED_ORIGINAL,
+    TERMINAL_ACCEPTED_REPAIRED,
+    TERMINAL_DROPPED_ORIGINAL,
+    TERMINAL_DROPPED_REPAIRED,
+)
+
+
+class _ExplodingJudge:
+    """A claim judge that fails mid-verification (not a budget error)."""
+
+    name = "exploding-judge"
+
+    def verify_claims(self, question: str, claims: list[str], evidence: str) -> Any:
+        raise RuntimeError("judge backend exploded")
+
+    def repair(self, question: str, claim: str, evidence: str) -> Any:
+        raise RuntimeError("judge backend exploded")
+
+
+def test_verifier_failure_abstains_fail_closed(config: RAGConfig, retriever: Retriever) -> None:
+    """R7: a verifier failure must NEVER keep the original answer (fail-open)."""
+    result = make_result(SUPPORTED_CLAIM)
+    report = verify_result(
+        "q?",
+        result,
+        retriever,
+        config,
+        _ExplodingJudge(),  # type: ignore[arg-type]
+    )
+    assert report.verifier_failed
+    assert report.abstained
+    assert report.support_fraction is None
+    assert result.summary == ABSTENTION_TEXT
+    assert result.confidence < 0.3
+    assert report.final_summary == ABSTENTION_TEXT
+
+
+def test_repair_with_non_verbatim_span_is_dropped(config: RAGConfig, retriever: Retriever) -> None:
+    """R7: a repair whose span does not resolve verbatim fails the span checks."""
+    chunk = retriever.chunks[0]
+    _, report = run_verify(
+        config,
+        retriever,
+        UNSUPPORTED_FIXABLE,
+        scripted_judge(repair_span=(chunk.chunk_id, "text that appears nowhere in the chunk")),
+    )
+    assert report.n_repair_calls == 1
+    assert report.abstained  # zero surviving claims → support floor breached
+    assert report.claims[0].terminal_state == TERMINAL_DROPPED_REPAIRED
+
+
+def test_repair_with_unsupported_number_is_dropped(config: RAGConfig, retriever: Retriever) -> None:
+    """R7: a repair introducing a number absent from its span is dropped."""
+    chunk = retriever.chunks[0]
+    _, report = run_verify(
+        config,
+        retriever,
+        UNSUPPORTED_FIXABLE,
+        scripted_judge(
+            repair_span=(chunk.chunk_id, chunk.text[:60]),
+            repair_claim="The answer is 1.5 GW.",
+        ),
+    )
+    assert report.n_repair_calls == 1
+    assert report.claims[0].terminal_state == TERMINAL_DROPPED_REPAIRED
+    assert report.abstained
+
+
+def test_claim_ledger_invariants(config: RAGConfig, retriever: Retriever) -> None:
+    """drafted = surviving + dropped; surviving = accepted_original + accepted_repaired."""
+    chunk = retriever.chunks[0]
+    _, report = run_verify(
+        config,
+        retriever,
+        f"{SUPPORTED_CLAIM} {UNSUPPORTED_FIXABLE} {UNSUPPORTED_HOPELESS}",
+        scripted_judge(repair_span=(chunk.chunk_id, chunk.text[:60])),
+    )
+    assert report.n_drafted == len(report.claims)
+    surviving = sum(1 for c in report.claims if c.supported and not c.dropped)
+    dropped = sum(1 for c in report.claims if c.dropped)
+    assert report.n_drafted == surviving + dropped
+    assert report.n_surviving == surviving
+    assert report.n_dropped_total == dropped
+    states = {c.terminal_state for c in report.claims}
+    assert states <= {
+        TERMINAL_ACCEPTED_ORIGINAL,
+        TERMINAL_ACCEPTED_REPAIRED,
+        TERMINAL_DROPPED_ORIGINAL,
+        TERMINAL_DROPPED_REPAIRED,
+    }
+    assert all(c.terminal_state for c in report.claims)  # none unassigned
+    accepted_original = sum(
+        1 for c in report.claims if c.terminal_state == TERMINAL_ACCEPTED_ORIGINAL
+    )
+    accepted_repaired = sum(
+        1 for c in report.claims if c.terminal_state == TERMINAL_ACCEPTED_REPAIRED
+    )
+    assert surviving == accepted_original + accepted_repaired
