@@ -105,3 +105,17 @@ Alternative if even that is unwanted: no analytics (status quo).
 | **2 (Oracle free)** | **€0** | **yes** | Pages + one tiny ARM VM (provisioning patience) |
 | 2 (Hetzner) | ~€4–5 | yes | Pages + one tiny VM |
 | 3 | ~€4–5 | yes | one VM (you own TLS/CDN/static) |
+
+## Deploy log — 2026-11-13 (R6 grounding-hardening release)
+
+- SHA `ec42efb` (CI green, run 43397307708) deployed via the
+  `/tmp/deploy-<sha>.sh` pattern: `git pull --ff-only` on the host, image
+  `amm-ds-portfolio:ec42efb`, compose up; API healthy, Caddy untouched.
+- `/health` verified: `ready`, sha matches. Home, `/projects/01-rag-agent`,
+  and the metrics endpoint (now serving `detail.stress_after_r6` +
+  `detail.stress_b`) all 200.
+- Incident worth keeping: the metrics-provenance CI gate shipped self-referential
+  (a commit can never contain its own `_meta.git_sha`) and failed every main
+  push after it landed; fixed in `288897b` with a lineage check + full-history
+  checkout. First deploy attempt also aborted on a mistyped pinned SHA — the
+  guard did its job; second attempt clean.
