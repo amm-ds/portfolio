@@ -254,8 +254,8 @@ def test_run_stress_eval_tagged_pass_writes_separate_artifacts(
         json.dumps(
             [
                 {
-                    "question": "how do solar panels generate electricity",
-                    "relevant_titles": ["Solar energy"],
+                    "question": "how do neural networks learn from data",
+                    "relevant_titles": ["Machine learning"],
                     "category": "single_hop",
                     "expected_behavior": "answer",
                 }

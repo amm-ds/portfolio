@@ -1606,6 +1606,29 @@ def load_stress_questions(
     return _resolve_questions(raw, articles, source=str(source))
 
 
+def _validate_gold_row(
+    item: dict[str, Any], text_by_title: dict[str, str], problems: list[str]
+) -> None:
+    """Gate one gold-checked answerable row: gold answer + verbatim gold spans."""
+    gold_answer = str(item.get("gold_answer") or "").strip()
+    if not gold_answer:
+        problems.append(f"answerable stress row has no gold_answer: {item['question']!r}")
+    spans = item.get("gold_spans") or []
+    if not spans:
+        problems.append(f"answerable stress row has no gold_spans: {item['question']!r}")
+    for span in spans:
+        title = span.get("title", "")
+        exact = span.get("exact_text", "")
+        article_text = text_by_title.get(title)
+        if article_text is None:
+            problems.append(f"gold span cites unknown article {title!r}: {item['question']!r}")
+        elif exact not in article_text:
+            problems.append(
+                f"gold span is not verbatim in {title!r}: {exact[:60]!r} "
+                f"({item['question'][:50]!r})"
+            )
+
+
 def validate_stress_set(
     config: RAGConfig,
     stress: list[EvalQuestion],
@@ -1613,6 +1636,7 @@ def validate_stress_set(
     heldout: list[EvalQuestion],
     articles: list[Article],
     path: "Path | None" = None,
+    extra_prior: list[EvalQuestion] | None = None,
 ) -> list[str]:
     """Gate the stress set before scoring — deliberately WITHOUT the production
     retriever (that gate biases the held-out set toward retrieval success).
@@ -1621,16 +1645,26 @@ def validate_stress_set(
     for ``unanswerable`` rows, and Jaccard separation from BOTH prior sets.
     ``ambiguous`` abstain rows need no absent_terms — the test is resisting
     plausible-but-unjustified chunks, not missing entities.
+
+    R7 (set C): answerable rows may opt into adjudication gating with
+    ``gold_checked: true`` — then ``gold_answer`` and ``gold_spans`` (verbatim
+    evidence substrings of the gold articles) are required and gated: a gold
+    span that does not resolve exactly inside its gold article's text fails
+    the set loudly. Sets without the marker (A/B) keep their original
+    admission contract.
     """
     problems: list[str] = []
     corpus_text = "\n".join(f"{a.title}\n{a.text}" for a in articles).lower()
+    text_by_title = {a.title: a.text for a in articles}
     raw = json.loads((path or config.stress_questions_path).read_text(encoding="utf-8"))
     absent_terms: dict[str, list[str]] = {}
     for item in raw:
         terms = [str(t).lower() for t in item.get("absent_terms", [])]
         if terms:
             absent_terms[item["question"]] = terms
-    prior = tuning + heldout
+        if item.get("gold_checked") and item.get("expected_behavior", "answer") == "answer":
+            _validate_gold_row(item, text_by_title, problems)
+    prior = tuning + heldout + list(extra_prior or [])
     prior_questions = {q.question.lower() for q in prior}
     for question in stress:
         if question.question.lower() in prior_questions:
@@ -1723,7 +1757,19 @@ def run_stress_eval(
         query_prefixed(embed_fn, arm[2]),
     )
 
-    problems = validate_stress_set(config, stress, tuning, heldout, articles, path=questions_path)
+    problems = validate_stress_set(
+        config,
+        stress,
+        tuning,
+        heldout,
+        articles,
+        path=questions_path,
+        # Only non-default sets (B/C) gain the fuller prior pool; the frozen
+        # default set keeps its original admission context on re-runs.
+        extra_prior=(
+            _extra_sealed_prior(config, questions_path) if questions_path is not None else []
+        ),
+    )
     if problems:
         for problem in problems:
             logger.error("stress validation: %s", problem)
@@ -1924,6 +1970,29 @@ def _stress_run_record(
         "timestamp_utc": datetime.now(UTC).isoformat(),
         "spend_usd": meter["total"]["spend_usd"] if meter.get("active") else 0.0,
     }
+
+
+def _extra_sealed_prior(config: RAGConfig, active_path: "Path | None") -> list[EvalQuestion]:
+    """Sealed stress sets already in the repo — separation pool for a new set.
+
+    Set C must be fresh against everything scored before it, so the default
+    frozen set (A) and, when present on disk, set B join the tuning+held-out
+    prior. The set currently being scored is excluded (a set is not its own
+    prior); missing files are skipped (tests, early clones).
+    """
+    articles = load_corpus(config)
+    skip = active_path or config.stress_questions_path
+    prior: list[EvalQuestion] = []
+    for path in (
+        config.stress_questions_path,
+        config.stress_questions_path.with_name("golden_stress_b.json"),
+    ):
+        if path.exists() and path != skip:
+            try:
+                prior.extend(load_stress_questions(config, articles, path=path))
+            except (OSError, ValueError):
+                continue
+    return prior
 
 
 def run_citation_eval(
