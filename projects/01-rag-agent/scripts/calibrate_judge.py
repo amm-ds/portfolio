@@ -22,8 +22,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from portfolio_core.logging import get_logger
 from pydantic import BaseModel, Field
+from pydantic_ai.settings import ModelSettings
 from rag_agent.local_models import ollama_available
+
+logger = get_logger(__name__)
 
 ROOT = Path(__file__).resolve().parents[1]
 CAL = ROOT / "data" / "calibration"
@@ -74,7 +78,7 @@ def _cohens_kappa(a: list[bool], b: list[bool]) -> float:
     return (p_o - p_e) / (1 - p_e) if p_e < 1.0 else 1.0
 
 
-def run_claim_judge(model: str, cases: list[dict[str, Any]]) -> list[bool]:
+def run_claim_judge(model: str, cases: list[dict[str, Any]]) -> list[bool | None]:
     """One pinned pass over the claim cases with the local model."""
     import httpx
     from pydantic_ai import Agent
@@ -94,14 +98,20 @@ def run_claim_judge(model: str, cases: list[dict[str, Any]]) -> list[bool]:
             "strict: unsupported means the evidence does not state it. You never "
             "use outside knowledge."
         ),
+        model_settings=ModelSettings(temperature=0.0, extra_body={"think": False}),
+        retries={"output": 2},
     )
-    out: list[bool] = []
+    out: list[bool | None] = []
     for case in cases:
         prompt = CLAIM_PROMPT.format(
             question=case["question"], evidence=case["evidence"], claim=case["claim"]
         )
-        result = agent.run_sync(prompt, model_settings={"temperature": 0.0})
-        out.append(bool(result.output.supported))
+        try:
+            result = agent.run_sync(prompt)
+            out.append(bool(result.output.supported))
+        except Exception as exc:  # broad: one stubborn case must not kill the pass
+            logger.warning("calibration case failed (%s); recording as judge error", exc)
+            out.append(None)  # excluded from the rates, counted separately
     return out
 
 
@@ -119,21 +129,23 @@ def evaluate(model: str, repeat: int) -> dict[str, Any]:
     passes = [run_claim_judge(model, claims) for _ in range(repeat)]
 
     labels = [c["label"] == "supported" for c in claims]
-    fa, fr = [], []
-    for judged, label in zip(passes[0], labels, strict=True):
-        if not label and judged:
-            fa.append(1.0)
-        if label and not judged:
-            fr.append(1.0)
-    fa_rate = sum(fa) / max(len(claims) - sum(labels), 1)
-    fr_rate = sum(fr) / max(sum(labels), 1)
+    judged0 = passes[0]
+    paired = [(j, lab) for j, lab in zip(judged0, labels, strict=True) if j is not None]
+    n_errors = len(judged0) - len(paired)
+    fa = [1.0 for j, lab in paired if (not lab and j)]
+    fr = [1.0 for j, lab in paired if (lab and not j)]
+    n_unsup = sum(1 for _, lab in paired if not lab)
+    n_sup = sum(1 for _, lab in paired if lab)
+    fa_rate = sum(fa) / max(n_unsup, 1)
+    fr_rate = sum(fr) / max(n_sup, 1)
+    flip_pairs = [(a, b) for a, b in zip(*passes) if a is not None and b is not None]
     flips = (
-        sum(1 for a, b in zip(*passes, strict=False) if a != b) / len(claims) if repeat > 1 else 0.0
+        sum(1 for a, b in flip_pairs if a != b) / len(claims) if repeat > 1 and flip_pairs else 0.0
     )
-    kappa = _cohens_kappa(passes[0], labels)
+    kappa = _cohens_kappa([bool(j) for j in judged0 if j is not None], [lab for j, lab in paired])
 
     # Answer-level: judge each answer draft for faithfulness vs its label.
-    ans_judged: list[bool] = []
+    ans_judged: list[bool | None] = []
     for case in answers:
         judged_supported = run_claim_judge(model, [
             {
@@ -144,8 +156,9 @@ def evaluate(model: str, repeat: int) -> dict[str, Any]:
         ])[0]
         ans_judged.append(judged_supported)
     ans_labels = [c["label"] == "correct" for c in answers]
+    ans_paired = [(a, b) for a, b in zip(ans_judged, ans_labels, strict=True) if a is not None]
     ans_agreement = (
-        sum(1 for a, b in zip(ans_judged, ans_labels, strict=True) if a == b) / len(answers)
+        sum(1 for a, b in ans_paired if a == b) / len(ans_paired) if ans_paired else 0.0
     )
 
     gates = {
@@ -155,6 +168,7 @@ def evaluate(model: str, repeat: int) -> dict[str, Any]:
         "cohens_kappa": round(kappa, 4),
         "answer_agreement": round(ans_agreement, 4),
         "repeat_flip_rate": round(flips, 4),
+        "n_judge_errors": n_errors,
         "n_claims": len(claims),
         "n_answers": len(answers),
         "repeat_runs": repeat,
