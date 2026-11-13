@@ -40,7 +40,7 @@ from rag_agent.evaluate import (
 )
 from rag_agent.index import Retriever, SentenceTransformerEmbedder, build_index
 from rag_agent.lexical import Bm25Index, reciprocal_rank_fusion
-from rag_agent.local_models import OllamaEmbedder, OllamaReranker, ollama_available
+from rag_agent.local_models import HfQwenReranker, OllamaEmbedder, ollama_available
 from rag_agent.schemas import Article, EvalQuestion
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -56,13 +56,27 @@ class Arm:
 
 
 def _chunks_for(arm: Arm, articles: list[Article], size: int, overlap: int) -> list[Any]:
-    chunks = []
+    from rag_agent.index import ChunkRecord
+
+    chunks: list[Any] = []
     for article in articles:
         if arm.chunk_mode == "structure":
             cut = chunk_by_structure(article.text, article.article_id, article.title, size, overlap)
         else:
             cut = chunk_by_size(article.text, article.article_id, size, overlap)
-        chunks.extend(cut)
+        chunks.extend(
+            ChunkRecord(
+                chunk_id=c.chunk_id,
+                article_id=c.article_id,
+                text=c.text,
+                token_count=c.token_count,
+                char_start=c.char_start,
+                char_end=c.char_end,
+                title=article.title,
+                topic=article.topic,
+            )
+            for c in cut
+        )
     return chunks
 
 
@@ -82,7 +96,7 @@ def _rerank_fn(slug: str) -> Callable[[str, Sequence[str]], np.ndarray] | None:
 
         return CrossEncoderReranker("cross-encoder/ms-marco-MiniLM-L-6-v2")
     if slug == "qwen3r":
-        return OllamaReranker("qwen3-reranker:0.6b")
+        return HfQwenReranker()
     raise ValueError(slug)
 
 
@@ -166,17 +180,24 @@ def run_arm(
         top = cand[:k]
         latencies.append(time.perf_counter() - start)
 
-        ranked_articles = [c.article_id for c in top]
-        rank = first_relevant_rank_ids(ranked_articles, relevant)
+        # Recall@k / nDCG / MRR measure the CANDIDATE list (top-20), not the
+        # final truncated context — otherwise every recall@k is identical.
+        cand_articles = [c.article_id for c in cand[:20]]
+        rank = first_relevant_rank_ids(cand_articles, relevant)
         ranks.append(rank)
         for kk in rr_at:
             rr_at[kk].append(1.0 if (rank is not None and rank <= kk) else 0.0)
-        # nDCG@10 binary gains, whole-article relevance
-        dcg = sum(
-            (1.0 / np.log2(i + 2)) for i, aid in enumerate(ranked_articles[:10]) if aid in relevant
-        )
+        # nDCG@10 with binary gains counted ONCE per relevant article (several
+        # chunks can share an article — duplicate gains inflated this past 1.0).
+        seen: set[str] = set()
+        dcg = 0.0
+        for i, aid in enumerate(cand_articles[:10]):
+            if aid in relevant and aid not in seen:
+                seen.add(aid)
+                dcg += 1.0 / np.log2(i + 2)
         ideal = min(len(relevant), 10)
         ndcgs.append(dcg / sum(1.0 / np.log2(i + 2) for i in range(ideal)) if ideal else 0.0)
+        ranked_articles = [c.article_id for c in top]
         coverage.append(1.0 if any(aid in relevant for aid in ranked_articles) else 0.0)
         prompt_tokens.append(sum(c.token_count for c in top))
         if q.expected_behavior == "abstain" and top:

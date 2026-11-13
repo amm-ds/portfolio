@@ -1,0 +1,151 @@
+{
+  "sets": [
+    "tuning"
+  ],
+  "n_questions": 65,
+  "ollama_arms_included": true,
+  "promotion_gate": {
+    "R1": {
+      "delta_recall@10": 0.0154,
+      "prompt_token_growth": -0.0091,
+      "p95_growth": -0.189,
+      "clears_promotion_gate": false
+    },
+    "R2": {
+      "delta_recall@10": 0.0154,
+      "prompt_token_growth": -0.0148,
+      "p95_growth": -0.0464,
+      "clears_promotion_gate": false
+    },
+    "R5a": {
+      "delta_recall@10": 0.0154,
+      "prompt_token_growth": 0.004,
+      "p95_growth": 0.107,
+      "clears_promotion_gate": false
+    },
+    "R5b": {
+      "delta_recall@10": 0.0154,
+      "prompt_token_growth": -0.0399,
+      "p95_growth": 0.9908,
+      "clears_promotion_gate": false
+    }
+  },
+  "arms": [
+    {
+      "arm": "R0",
+      "config": {
+        "chunk_mode": "size",
+        "embedding": "minilm",
+        "fusion_rrf": false,
+        "reranker": "msmarco",
+        "chunk_size": 200,
+        "top_k": 5
+      },
+      "n_questions": 65,
+      "recall@5": 0.8153846153846154,
+      "recall@10": 0.8307692307692308,
+      "recall@20": 0.8461538461538461,
+      "ndcg@10": 0.7562787205169098,
+      "mrr@10": 0.8025641025641025,
+      "article_coverage@context": 0.8153846153846154,
+      "unanswerable_false_evidence_proxy": 0.39166666666666666,
+      "est_prompt_tokens_mean": 751.1692307692308,
+      "retrieval_p50_s": 0.845246542012319,
+      "retrieval_p95_s": 1.3270615412387996,
+      "n_index_chunks": 3589
+    },
+    {
+      "arm": "R1",
+      "config": {
+        "chunk_mode": "structure",
+        "embedding": "minilm",
+        "fusion_rrf": false,
+        "reranker": "msmarco",
+        "chunk_size": 200,
+        "top_k": 5
+      },
+      "n_questions": 65,
+      "recall@5": 0.8461538461538461,
+      "recall@10": 0.8461538461538461,
+      "recall@20": 0.8461538461538461,
+      "ndcg@10": 0.7629980192642021,
+      "mrr@10": 0.8184615384615385,
+      "article_coverage@context": 0.8461538461538461,
+      "unanswerable_false_evidence_proxy": 0.4083333333333333,
+      "est_prompt_tokens_mean": 744.3230769230769,
+      "retrieval_p50_s": 0.8108002080116421,
+      "retrieval_p95_s": 1.0762851248960943,
+      "n_index_chunks": 3589
+    },
+    {
+      "arm": "R2",
+      "config": {
+        "chunk_mode": "size",
+        "embedding": "qwen3e",
+        "fusion_rrf": false,
+        "reranker": "msmarco",
+        "chunk_size": 200,
+        "top_k": 5
+      },
+      "n_questions": 65,
+      "recall@5": 0.8307692307692308,
+      "recall@10": 0.8461538461538461,
+      "recall@20": 0.8461538461538461,
+      "ndcg@10": 0.7602983096311318,
+      "mrr@10": 0.8102564102564103,
+      "article_coverage@context": 0.8307692307692308,
+      "unanswerable_false_evidence_proxy": 0.4083333333333333,
+      "est_prompt_tokens_mean": 740.0307692307692,
+      "retrieval_p50_s": 0.8624057499691844,
+      "retrieval_p95_s": 1.2655186917167156,
+      "n_index_chunks": 3589
+    },
+    {
+      "arm": "R5a",
+      "config": {
+        "chunk_mode": "size",
+        "embedding": "minilm",
+        "fusion_rrf": true,
+        "reranker": "msmarco",
+        "chunk_size": 200,
+        "top_k": 5
+      },
+      "n_questions": 65,
+      "recall@5": 0.8307692307692308,
+      "recall@10": 0.8461538461538461,
+      "recall@20": 0.8461538461538461,
+      "ndcg@10": 0.7507041239286093,
+      "mrr@10": 0.8096153846153846,
+      "article_coverage@context": 0.8307692307692308,
+      "unanswerable_false_evidence_proxy": 0.47333333333333333,
+      "est_prompt_tokens_mean": 754.1384615384616,
+      "retrieval_p50_s": 0.9204058330506086,
+      "retrieval_p95_s": 1.4690161917824298,
+      "n_index_chunks": 3589
+    },
+    {
+      "arm": "R5b",
+      "config": {
+        "chunk_mode": "size",
+        "embedding": "minilm",
+        "fusion_rrf": true,
+        "reranker": "qwen3r",
+        "chunk_size": 200,
+        "top_k": 5
+      },
+      "n_questions": 65,
+      "recall@5": 0.8461538461538461,
+      "recall@10": 0.8461538461538461,
+      "recall@20": 0.8461538461538461,
+      "ndcg@10": 0.7497316118378486,
+      "mrr@10": 0.7935897435897437,
+      "article_coverage@context": 0.8461538461538461,
+      "unanswerable_false_evidence_proxy": 0.44833333333333336,
+      "est_prompt_tokens_mean": 721.2153846153847,
+      "retrieval_p50_s": 1.875018582912162,
+      "retrieval_p95_s": 2.6418701667338604,
+      "n_index_chunks": 3589
+    }
+  ],
+  "note": "retrieval-only tournament: no generation, no LLM judging; Ollama arms are local ($0). Gate: >= +5pts recall@10 vs R0, tokens <= +15%, p95 <= +25%. Slice regressions are audited before promotion."
+}
