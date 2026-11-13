@@ -82,7 +82,7 @@ def build_claims(
 ) -> list[dict[str, Any]]:
     rng = random.Random(seed)  # noqa: S311 - seeded eval corruption, not crypto
     by_id = {a.article_id: a for a in articles}
-    cases: list[dict] = []
+    cases: list[dict[str, Any]] = []
     for q in questions:
         if not q.relevant_article_ids or len(cases) >= 200:
             continue
@@ -120,7 +120,7 @@ def build_answers(
 ) -> list[dict[str, Any]]:
     rng = random.Random(seed + 1)  # noqa: S311 - seeded eval corruption
     by_id = {a.article_id: a for a in articles}
-    cases: list[dict] = []
+    cases: list[dict[str, Any]] = []
     for q in questions:
         if len(cases) >= 80 or not q.relevant_article_ids:
             continue
