@@ -11,16 +11,19 @@ generator makes the identity a first-class, versioned contract:
 - ``params_sha256`` — the project's params.yaml (null when absent, justified)
 - ``data_contract_sha256`` — the pinned dataset contract when one exists
 - ``seed`` — top-level ``seed`` from params.yaml (the value the pipeline used)
-- ``created_at`` — last git commit date of the metrics file itself, so a
-  re-stamp at the same commit is byte-identical (CI can gate on freshness
-  exactly like scripts/gen_static_registry.py)
+- ``created_at`` — last git commit date of the metrics file itself
 
 Deterministic: every input is committed state at a given commit. Run after
 changing any metrics artifact:
 
     uv run python scripts/stamp_metrics_meta.py
 
-CI/local contract checks use ``--check`` (exit 1 on any stale block, no writes).
+CI/local contract checks use ``--check`` (exit 1 on any stale block, no
+writes). Freshness is a lineage check, not byte-identity-vs-HEAD (a commit
+can never contain its own hash): ``_meta.git_sha`` must be an ancestor of
+HEAD whose metrics payload — ``_meta`` excluded — is identical to the
+committed payload. Committing a pure re-stamp keeps lineage valid; editing
+metrics numbers without restamping breaks it.
 """
 
 import argparse
@@ -123,6 +126,60 @@ def validate_block(path: Path, block: Any) -> list[str]:
     return problems
 
 
+def canonical_payload(text: str) -> str | None:
+    """JSON payload without the ``_meta`` block, in a stable canonical form."""
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    data.pop("_meta", None)
+    return json.dumps(data, sort_keys=True, ensure_ascii=False)
+
+
+def payload_at(relpath: str, sha: str) -> str | None:
+    proc = subprocess.run(  # noqa: S603 - fixed git binary + static args
+        ["/usr/bin/env", "git", "show", f"{sha}:{relpath}"],
+        capture_output=True,
+        text=True,
+        cwd=ROOT,
+        check=False,
+    )
+    return proc.stdout if proc.returncode == 0 else None
+
+
+def lineage_ok(path: Path, git_sha: str) -> tuple[bool, str]:
+    """The freshness contract: ``git_sha`` labels the commit the metrics
+    payload was generated at. It holds when the stamped commit is in this
+    history and the metrics content there (``_meta`` excluded) is identical
+    to today's — a stamp commit only ever changes ``_meta``, so committing
+    the stamp keeps the lineage valid, while editing numbers without
+    restamping breaks it. (The pre-fix byte-identity-vs-HEAD contract was
+    self-referential — a commit cannot contain its own hash — and failed on
+    every push after the gate landed.)"""
+    rel = str(path.relative_to(ROOT))
+    proc = subprocess.run(  # noqa: S603 - fixed git binary + static args
+        ["/usr/bin/env", "git", "merge-base", "--is-ancestor", git_sha, "HEAD"],
+        capture_output=True,
+        text=True,
+        cwd=ROOT,
+        check=False,
+    )
+    if proc.returncode != 0:
+        return False, f"_meta.git_sha {git_sha[:10]} is not an ancestor of HEAD"
+    historical = payload_at(rel, git_sha)
+    if historical is None:
+        return False, f"artifact did not exist at _meta.git_sha {git_sha[:10]}"
+    current = canonical_payload(path.read_text(encoding="utf-8"))
+    prior = canonical_payload(historical)
+    if current is None or prior is None:
+        return False, "metrics JSON is unparseable"
+    if current != prior:
+        return False, "metrics payload changed since the stamped commit (run stamp_metrics_meta.py)"
+    return True, ""
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -141,15 +198,17 @@ def main() -> int:
     stale: list[str] = []
     problems: list[str] = []
     for path in files:
-        fresh = render(path, head, lock_hash or "")
-        committed = path.read_text(encoding="utf-8")
-        if committed != fresh:
-            stale.append(str(path.relative_to(ROOT)))
-            if not args.check:
-                path.write_text(fresh, encoding="utf-8")
-        # validate the stamped content (what ships), not the pre-write read
-        block = json.loads(fresh).get("_meta")
+        if not args.check:
+            path.write_text(render(path, head, lock_hash or ""), encoding="utf-8")
+        committed = json.loads(path.read_text(encoding="utf-8"))
+        block = committed.get("_meta")
         problems.extend(validate_block(path.relative_to(ROOT), block))
+        if isinstance(block, str) or not isinstance(block, dict):
+            stale.append(str(path.relative_to(ROOT)))
+            continue
+        ok, reason = lineage_ok(path, str(block.get("git_sha", "")))
+        if not ok:
+            stale.append(f"{path.relative_to(ROOT)} ({reason})")
 
     for problem in problems:
         print(f"error: {problem}", file=sys.stderr)
