@@ -24,7 +24,6 @@ from typing import Any
 
 from portfolio_core.logging import get_logger
 from pydantic import BaseModel, Field
-from pydantic_ai.settings import ModelSettings
 from rag_agent.local_models import ollama_available
 
 logger = get_logger(__name__)
@@ -83,12 +82,22 @@ def run_claim_judge(model: str, cases: list[dict[str, Any]]) -> list[bool | None
     import os
 
     os.environ["OLLAMA_MODEL"] = model
+    from portfolio_core.config import Settings
     from portfolio_core.llm import build_model
+    from pydantic_ai import Agent, NativeOutput
     from rag_agent.provider import model_settings_for_provider
 
+    # Local-only by construction: Settings kwargs beat env AND the project
+    # .env file (pydantic-settings precedence), so this judge can never be
+    # silently hosted — the R7 calibration must stay local and independent
+    # of the generation provider. NativeOutput (grammar-constrained JSON)
+    # instead of tool calls: the Ollama /v1 endpoint's tool protocol returns
+    # empty responses for this model (qwen2.5:3b) — documented fallback in
+    # the R7 plan.
+    local_settings = Settings(llm_base_url=None, llm_api_key=None)
     agent = Agent(
-        build_model(),
-        output_type=ClaimVerdict,
+        build_model(settings=local_settings),
+        output_type=NativeOutput(ClaimVerdict),
         system_prompt=(
             "You check whether claims are entailed by retrieved evidence. You are "
             "strict: unsupported means the evidence does not state it. You never "
@@ -134,7 +143,7 @@ def evaluate(model: str, repeat: int) -> dict[str, Any]:
     n_sup = sum(1 for _, lab in paired if lab)
     fa_rate = sum(fa) / max(n_unsup, 1)
     fr_rate = sum(fr) / max(n_sup, 1)
-    flip_pairs = [(a, b) for a, b in zip(*passes) if a is not None and b is not None]
+    flip_pairs = [(a, b) for a, b in zip(*passes, strict=False) if a is not None and b is not None]
     flips = (
         sum(1 for a, b in flip_pairs if a != b) / len(claims) if repeat > 1 and flip_pairs else 0.0
     )
