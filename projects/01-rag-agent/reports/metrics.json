@@ -927,6 +927,218 @@
       "n_verify_skipped": 10,
       "total_repair_calls": 33,
       "verify_latency_share_of_answer": 0.5442
+    },
+    "stress_c": {
+      "n_questions": 30,
+      "composition": {
+        "single_hop/answer": 8,
+        "multi_hop/answer": 10,
+        "ambiguous/answer": 2,
+        "ambiguous/abstain": 4,
+        "unanswerable/abstain": 6
+      },
+      "retrieval": null,
+      "rag": {
+        "n_questions": 20,
+        "faithfulness": 0.375,
+        "answer_relevance": 0.31,
+        "context_recall": 1.0
+      },
+      "faithfulness": {
+        "mean": 0.375,
+        "ci95": [
+          0.205,
+          0.56
+        ]
+      },
+      "taxonomy": {
+        "counts": {
+          "empty-answer": 20,
+          "correct": 10
+        },
+        "correct_share": 0.3333333333333333,
+        "correct_share_ci95": [
+          0.1667,
+          0.5
+        ]
+      },
+      "by_slice": {
+        "single_hop/answer": {
+          "n": 8,
+          "verdicts": {
+            "empty-answer": 8
+          },
+          "correct_share": 0.0
+        },
+        "multi_hop/answer": {
+          "n": 10,
+          "verdicts": {
+            "empty-answer": 10
+          },
+          "correct_share": 0.0
+        },
+        "ambiguous/answer": {
+          "n": 2,
+          "verdicts": {
+            "empty-answer": 2
+          },
+          "correct_share": 0.0
+        },
+        "ambiguous/abstain": {
+          "n": 4,
+          "verdicts": {
+            "correct": 4
+          },
+          "correct_share": 1.0
+        },
+        "unanswerable/abstain": {
+          "n": 6,
+          "verdicts": {
+            "correct": 6
+          },
+          "correct_share": 1.0
+        }
+      },
+      "claim_accounting": {
+        "n_answers_verified": 30,
+        "n_drafted": 39,
+        "n_mechanical_fail": 37,
+        "n_judged": 0,
+        "n_judge_supported": 0,
+        "n_surviving": 0,
+        "n_dropped": 2,
+        "n_repair_calls": 2,
+        "n_verify_abstentions": 29,
+        "n_verifier_failures": 27,
+        "n_accepted_original": 0,
+        "n_accepted_repaired": 0,
+        "n_dropped_original": 0,
+        "n_dropped_repaired": 2,
+        "claim_retention_rate": 0.0,
+        "claim_drop_rate": 0.0513,
+        "mechanical_false_rejections": 0
+      },
+      "budget_terminated": 0,
+      "abstention": {
+        "n_unanswerable": 10,
+        "n_answerable": 20,
+        "refusal_accuracy": 1.0,
+        "refusal_accuracy_ci95": [
+          1.0,
+          1.0
+        ],
+        "cite_when_expected": 0.0,
+        "cite_when_expected_ci95": [
+          0.0,
+          0.0
+        ],
+        "false_abstention_rate": 1.0,
+        "false_abstention_rate_ci95": [
+          1.0,
+          1.0
+        ]
+      },
+      "verify": {
+        "enabled": true,
+        "min_support": 0.6,
+        "max_repair_calls": 2,
+        "n_answers_verified": 30,
+        "n_verify_abstentions": 29,
+        "n_verify_skipped": 1,
+        "n_verifier_failures": 27,
+        "total_repair_calls": 2,
+        "mean_support_fraction": 0.0,
+        "mean_verify_latency_s": 0.805,
+        "verify_latency_share_of_answer": 0.2179,
+        "diagnose_mech": false,
+        "n_drafted": 39,
+        "n_mechanical_fail": 37,
+        "n_judged": 0,
+        "n_judge_supported": 0,
+        "n_surviving": 0,
+        "n_dropped": 2,
+        "n_accepted_original": 0,
+        "n_accepted_repaired": 0,
+        "n_dropped_original": 0,
+        "n_dropped_repaired": 2,
+        "claim_retention_rate": 0.0,
+        "claim_repair_rate": 0.0513,
+        "claim_drop_rate": 0.0513,
+        "mechanical_false_rejections": 0
+      },
+      "ops": {
+        "backend": "env:kimi-for-coding",
+        "p50_latency_s": 3.1741350828669965,
+        "p95_latency_s": 6.191919875098392
+      },
+      "meter": {
+        "active": true,
+        "model": "kimi-for-coding",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token — never a billed amount",
+        "phases": {
+          "agent": {
+            "calls": 30,
+            "input_tokens": 17571,
+            "output_tokens": 6451,
+            "cached_input_tokens": 16367,
+            "spend_usd": 0.031914
+          },
+          "judge": {
+            "calls": 60,
+            "input_tokens": 34054,
+            "output_tokens": 6689,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.06081
+          },
+          "verify": {
+            "calls": 4,
+            "input_tokens": 1998,
+            "output_tokens": 460,
+            "cached_input_tokens": 256,
+            "spend_usd": 0.003659
+          },
+          "ragas": {
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.0
+          }
+        },
+        "total": {
+          "calls": 94,
+          "input_tokens": 53623,
+          "output_tokens": 13600,
+          "cached_input_tokens": 16623,
+          "spend_usd": 0.096383
+        },
+        "ledger_spend_usd": 0.096383,
+        "budget_usd": 6.0
+      },
+      "run": {
+        "tag": "_c",
+        "questions_file": "data/golden_stress_c.json",
+        "questions_sha256": "22a863da1603b39912388c6e9f23d2fe2444edf6156a72850671b71ffaa25fd4",
+        "commit": "2d1c09e217d20fbfe6391ce5ac34ed80eb26b12e",
+        "gate": {
+          "min_coverage": 0.0,
+          "min_max_similarity": 0.0
+        },
+        "verify": {
+          "enabled": true,
+          "min_support": 0.6,
+          "max_repair_calls": 2,
+          "diagnose_mech": false
+        },
+        "caps": {
+          "max_requests": 400,
+          "total_tokens_limit": 80000000
+        },
+        "timestamp_utc": "2026-11-14T12:28:37.052907+00:00",
+        "spend_usd": 0.096383
+      },
+      "traces_path": "reports/question_traces_stress_c.json",
+      "note": "independent stress set, admitted WITHOUT the production-retriever answerability gate; retrieval failures here are honest signal, reported separately from detail.heldout and detail.heldout_citations"
     }
   },
   "rag_agent": {
