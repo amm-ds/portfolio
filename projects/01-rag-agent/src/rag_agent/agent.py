@@ -12,6 +12,8 @@ when neither provider is available, :class:`portfolio_core.llm.LLMProviderUnavai
 raises with setup guidance, and ``chat``/``evaluate`` surface that message.
 """
 
+from typing import Any
+
 from portfolio_core.llm import build_model
 from portfolio_core.logging import get_logger
 from pydantic_ai import Agent
@@ -56,11 +58,27 @@ Rules you must always follow:
 
 
 def build_agent(config: RAGConfig, model: Model | None = None) -> Agent[Retriever, AnalysisResult]:
-    """Build the analysis agent; ``model`` override is for tests (FunctionModel)."""
+    """Build the analysis agent; ``model`` override is for tests (FunctionModel).
+
+    ``RAG_NATIVE_OUTPUT=1`` switches the final answer to grammar-constrained
+    JSON (pydantic-ai NativeOutput) instead of tool-call output — the Ollama
+    /v1 endpoint's tool protocol returns empty responses for some local
+    models (qwen2.5:3b; the R7 judge-calibration finding), so local
+    generation runs use the native path.
+    """
+    import os
+
+    from pydantic_ai import NativeOutput
+
     resolved_model = model if model is not None else build_model()
+    output_type: Any = (
+        NativeOutput(AnalysisResult)
+        if os.environ.get("RAG_NATIVE_OUTPUT", "").strip() in {"1", "true"}
+        else AnalysisResult
+    )
     agent = Agent(
         resolved_model,
-        output_type=AnalysisResult,
+        output_type=output_type,
         deps_type=Retriever,
         system_prompt=SYSTEM_PROMPT,
         model_settings=model_settings_for_provider(),

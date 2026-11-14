@@ -77,8 +77,10 @@ def _cohens_kappa(a: list[bool], b: list[bool]) -> float:
     return (p_o - p_e) / (1 - p_e) if p_e < 1.0 else 1.0
 
 
-def run_claim_judge(model: str, cases: list[dict[str, Any]]) -> list[bool | None]:
-    """One pinned pass over the claim cases with the local model."""
+def run_claim_judge(
+    model: str, cases: list[dict[str, Any]], hosted: bool = False
+) -> list[bool | None]:
+    """One pinned pass over the claim cases with the chosen judge profile."""
     import os
 
     os.environ["OLLAMA_MODEL"] = model
@@ -95,9 +97,17 @@ def run_claim_judge(model: str, cases: list[dict[str, Any]]) -> list[bool | None
     # empty responses for this model (qwen2.5:3b) — documented fallback in
     # the R7 plan.
     local_settings = Settings(llm_base_url=None, llm_api_key=None)  # type: ignore[call-arg]  # pydantic-settings populates by field name
+    if not hosted:
+        agent_settings = local_settings
+        output_type: Any = NativeOutput(ClaimVerdict)
+    else:
+        # Hosted reference: the platform factory (env-configured endpoint),
+        # tool-call output (the hosted provider supports it).
+        agent_settings = Settings()
+        output_type = ClaimVerdict
     agent = Agent(
-        build_model(settings=local_settings),
-        output_type=NativeOutput(ClaimVerdict),
+        build_model(settings=agent_settings),
+        output_type=output_type,
         system_prompt=(
             "You check whether claims are entailed by retrieved evidence. You are "
             "strict: unsupported means the evidence does not state it. You never "
@@ -120,7 +130,7 @@ def run_claim_judge(model: str, cases: list[dict[str, Any]]) -> list[bool | None
     return out
 
 
-def evaluate(model: str, repeat: int) -> dict[str, Any]:
+def evaluate(model: str, repeat: int, hosted: bool = False) -> dict[str, Any]:
     claims = [
         json.loads(line) for line in (CAL / "claims.jsonl").read_text().splitlines() if line.strip()
     ]
@@ -129,7 +139,7 @@ def evaluate(model: str, repeat: int) -> dict[str, Any]:
         for line in (CAL / "answers.jsonl").read_text().splitlines()
         if line.strip()
     ]
-    passes = [run_claim_judge(model, claims) for _ in range(repeat)]
+    passes = [run_claim_judge(model, claims, hosted=hosted) for _ in range(repeat)]
 
     labels = [c["label"] == "supported" for c in claims]
     judged0 = passes[0]
@@ -192,13 +202,20 @@ def evaluate(model: str, repeat: int) -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="qwen3:4b")
+    parser.add_argument(
+        "--hosted",
+        action="store_true",
+        help="use the hosted reference judge instead of local Ollama",
+    )
     parser.add_argument("--repeat", type=int, default=2)
     args = parser.parse_args()
 
     if not ollama_available():
         raise SystemExit("ollama not reachable — start the local server first")
-    gates = evaluate(args.model, args.repeat)
-    out_dir = ROOT / "reports" / "judge_calibration"
+    gates = evaluate(args.model, args.repeat, hosted=args.hosted)
+    out_dir = ROOT / "reports" / (
+        "judge_calibration_hosted" if args.hosted else "judge_calibration"
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / "results.json"
     out.write_text(json.dumps(gates, indent=2) + "\n", encoding="utf-8")

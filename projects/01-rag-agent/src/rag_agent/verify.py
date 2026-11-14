@@ -154,6 +154,11 @@ def _content_words(text: str) -> set[str]:
 
 # --- R6 deterministic span checks -------------------------------------------------
 
+# R8 substantiation: minimum share of a claim's content words that must be
+# covered by the union of its cited spans. Tuning-calibrated; the frozen sets
+# never touch this threshold.
+SUBSTANTIATION_COVERAGE = 0.75
+
 _NUM_RE = re.compile(r"\d+(?:[.,]\d+)*%?")
 _MONTHS = {
     "january",
@@ -173,15 +178,36 @@ _TEMPORAL = {"until", "before", "after", "during", "since"}
 _NEGATIONS = {"no", "not", "never", "none", "without", "nor", "n't"}
 
 
+def _substantiation_failures(others: set[str], span_texts: list[str]) -> list[str]:
+    """R8: the claim's content words must be covered by the span union.
+
+    Span words are unicode-aware (\w matches accented letters) so composed
+    and decomposed forms of the same word count as the same token.
+    """
+    span_union_words: set[str] = set()
+    for text in span_texts:
+        span_union_words |= set(re.findall(r"\w+", text))
+    if not others:
+        return []
+    coverage = len(others & span_union_words) / len(others)
+    if coverage < SUBSTANTIATION_COVERAGE:
+        return [f"claim content words only {coverage:.2f} covered by spans"]
+    return []
+
+
 def check_claim_spans(
     claim: DraftedClaim, get_chunk: Callable[[str], ChunkRecord | None]
 ) -> list[str]:
-    """Deterministic evidence checks for one drafted claim (R6).
+    """Deterministic evidence checks for one drafted claim (R6/R8).
 
     Returns the list of failure reasons — empty means the claim passes. These
     checks are provenance and class-specific guards (verbatim span, number,
     date, temporal qualifier, negation polarity, entity proximity); the
     entailment judge remains the arbiter for paraphrase and relational claims.
+    R8 adds substantiation: a span that is verbatim but topically irrelevant
+    must not count as evidence (coverage of the claim's content words in the
+    span union), so surviving-claim support cannot diverge from answer-level
+    correctness through irrelevant spans.
     """
     from rag_agent.gate import content_words as _cw
     from rag_agent.gate import normalize as _norm
@@ -204,6 +230,8 @@ def check_claim_spans(
     claim_l = _norm(claim.text)
     words = _cw(claim.text)
     others = {w for w in words if not w.isdigit()} - _NEGATIONS - _TEMPORAL - _MONTHS
+
+    reasons.extend(_substantiation_failures(others, span_texts))
 
     for number in dict.fromkeys(_NUM_RE.findall(claim_l)):
         if not any(number in s for s in span_texts):
@@ -266,11 +294,12 @@ Evidence (retrieved passages the answer cites):
 Claims to check (exactly one per numbered line):
 {claims}
 
-For EACH claim decide whether the evidence fully supports it. A claim is
-supported only when the evidence states what the claim asserts; reasonable
-rewording is fine, but any fact, number, or inference NOT present in the
-evidence makes the claim unsupported. Check every claim and keep the claim
-text verbatim in your verdicts."""
+For EACH claim decide whether the evidence fully supports it. Check EVERY part
+of the claim separately: every relation, comparison, qualifier, number, date
+and entity assignment must be entailed by the evidence. Reasonable rewording
+is fine; inference beyond the text is not. Any part that is not supported
+makes the WHOLE claim unsupported. Keep the claim text verbatim in your
+verdicts."""
 
 
 class RepairedClaim(PortfolioBaseModel):

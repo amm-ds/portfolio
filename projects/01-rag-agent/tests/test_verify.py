@@ -29,7 +29,7 @@ from rag_agent.verify import (
 SUPPORTED_CLAIM = "The evidence states this fact."
 UNSUPPORTED_FIXABLE = "This unsupported claim is fixable."
 UNSUPPORTED_HOPELESS = "This unsupported claim is hopeless."
-REPAIRED_CLAIM = "This fixed claim is supported."
+REPAIRED_CLAIM = "Climate change refers to long-term shifts."
 
 
 def _last_text(messages: list[Any]) -> str:
@@ -548,3 +548,26 @@ def test_claim_ledger_invariants(config: RAGConfig, retriever: Retriever) -> Non
         1 for c in report.claims if c.terminal_state == TERMINAL_ACCEPTED_REPAIRED
     )
     assert surviving == accepted_original + accepted_repaired
+
+
+def test_verbatim_but_irrelevant_span_fails_substantiation(
+    config: RAGConfig, retriever: Retriever
+) -> None:
+    """R8: a span verbatim in its chunk but topically irrelevant is dropped.
+
+    The claim's content words are barely covered by the span, so surviving
+    support cannot mask the missing evidence (judge alignment).
+    """
+    chunk = retriever.chunks[0]  # climate-000: about warming, not the claim
+    _, report = run_verify(
+        config,
+        retriever,
+        UNSUPPORTED_FIXABLE,
+        scripted_judge(
+            repair_span=(chunk.chunk_id, chunk.text[:40]),
+            repair_claim="The phugoid oscillation persists for minutes.",
+        ),
+    )
+    # repaired claim text shares almost no content words with the span
+    assert report.claims[0].terminal_state == TERMINAL_DROPPED_REPAIRED
+    assert report.abstained
