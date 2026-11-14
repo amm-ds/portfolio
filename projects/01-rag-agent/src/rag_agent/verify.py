@@ -196,7 +196,9 @@ def _substantiation_failures(others: set[str], span_texts: list[str]) -> list[st
 
 
 def check_claim_spans(
-    claim: DraftedClaim, get_chunk: Callable[[str], ChunkRecord | None]
+    claim: DraftedClaim,
+    get_chunk: Callable[[str], ChunkRecord | None],
+    substantiation: bool = False,
 ) -> list[str]:
     """Deterministic evidence checks for one drafted claim (R6/R8).
 
@@ -231,7 +233,7 @@ def check_claim_spans(
     words = _cw(claim.text)
     others = {w for w in words if not w.isdigit()} - _NEGATIONS - _TEMPORAL - _MONTHS
 
-    reasons.extend(_substantiation_failures(others, span_texts))
+    reasons.extend(_substantiation_failures(others, span_texts) if substantiation else [])
 
     for number in dict.fromkeys(_NUM_RE.findall(claim_l)):
         if not any(number in s for s in span_texts):
@@ -474,6 +476,7 @@ def _repair_and_reverify(
     retriever: Retriever,
     judge: LLMEntailmentJudge,
     report: VerifyReport,
+    substantiation: bool = False,
 ) -> ClaimCheck:
     """R7: a repair restarts the FULL verification path.
 
@@ -495,7 +498,7 @@ def _repair_and_reverify(
         citation_chunk_ids=list(dict.fromkeys(s.chunk_id for s in repaired.spans)),
         spans=repaired.spans,
     )
-    reasons = check_claim_spans(drafted, retriever.get_chunk)
+    reasons = check_claim_spans(drafted, retriever.get_chunk, substantiation=substantiation)
     if reasons:
         return ClaimCheck(
             claim=repaired.claim,
@@ -554,7 +557,14 @@ def _verify(
             break  # the deterministic judge has no repair capability
         report.n_repair_calls += 1
         checks[i] = _repair_and_reverify(
-            question, checks[i].claim, evidence, evidence_ids, retriever, judge, report
+            question,
+            checks[i].claim,
+            evidence,
+            evidence_ids,
+            retriever,
+            judge,
+            report,
+            substantiation=config.verify.substantiation_check,
         )
     # Whatever the repair budget did not cover is dropped.
     for i in unsupported_idx[config.verify.max_repair_calls :]:
@@ -601,7 +611,9 @@ def _verify_structured(
     checks: list[ClaimCheck] = []
     mech_failed: list[int] = []
     for drafted in result.claims:
-        reasons = check_claim_spans(drafted, retriever.get_chunk)
+        reasons = check_claim_spans(
+        drafted, retriever.get_chunk, substantiation=config.verify.substantiation_check
+    )
         if reasons:
             mech_failed.append(len(checks))
             checks.append(
@@ -645,7 +657,14 @@ def _verify_structured(
             break  # the deterministic judge has no repair capability
         report.n_repair_calls += 1
         checks[i] = _repair_and_reverify(
-            question, checks[i].claim, evidence, evidence_ids, retriever, judge, report
+            question,
+            checks[i].claim,
+            evidence,
+            evidence_ids,
+            retriever,
+            judge,
+            report,
+            substantiation=config.verify.substantiation_check,
         )
     for i in unsupported_idx[budget:]:
         checks[i].dropped = True

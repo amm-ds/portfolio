@@ -559,6 +559,9 @@ def test_verbatim_but_irrelevant_span_fails_substantiation(
     support cannot mask the missing evidence (judge alignment).
     """
     chunk = retriever.chunks[0]  # climate-000: about warming, not the claim
+    config = config.model_copy(
+        update={"verify": VerifyConfig(enabled=True, substantiation_check=True)}
+    )
     _, report = run_verify(
         config,
         retriever,

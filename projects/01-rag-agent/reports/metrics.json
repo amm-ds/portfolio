@@ -44,7 +44,7 @@
       "meter": {
         "active": true,
         "budget_usd": 3.0,
-        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token — never a billed amount",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
         "ledger_spend_usd": 1.950667,
         "model": "kimi-for-coding",
         "phases": {
@@ -184,7 +184,7 @@
       "meter": {
         "active": true,
         "budget_usd": 3.0,
-        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token — never a billed amount",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
         "ledger_spend_usd": 1.583466,
         "model": "kimi-for-coding",
         "phases": {
@@ -427,7 +427,7 @@
       "meter": {
         "active": true,
         "budget_usd": 3.0,
-        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token — never a billed amount",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
         "ledger_spend_usd": 1.93254,
         "model": "kimi-for-coding",
         "phases": {
@@ -602,7 +602,7 @@
       "meter": {
         "active": true,
         "budget_usd": 12.0,
-        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token — never a billed amount",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
         "ledger_spend_usd": 9.738003,
         "model": "kimi-for-coding",
         "phases": {
@@ -805,7 +805,7 @@
       "meter": {
         "active": true,
         "budget_usd": 12.0,
-        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token — never a billed amount",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
         "ledger_spend_usd": 2.192452,
         "model": "kimi-for-coding",
         "phases": {
@@ -1010,7 +1010,7 @@
       "meter": {
         "active": true,
         "budget_usd": 6.0,
-        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token — never a billed amount",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
         "ledger_spend_usd": 0.096383,
         "model": "kimi-for-coding",
         "phases": {
@@ -1139,6 +1139,227 @@
       "n_verify_skipped": 10,
       "total_repair_calls": 33,
       "verify_latency_share_of_answer": 0.5442
+    },
+    "stress_after_r8": {
+      "n_questions": 30,
+      "composition": {
+        "single_hop/answer": 8,
+        "multi_hop/answer": 10,
+        "ambiguous/abstain": 4,
+        "ambiguous/answer": 2,
+        "unanswerable/abstain": 6
+      },
+      "retrieval": null,
+      "rag": {
+        "n_questions": 20,
+        "faithfulness": 0.535,
+        "answer_relevance": 0.6,
+        "context_recall": 0.9
+      },
+      "faithfulness": {
+        "mean": 0.5349999999999999,
+        "ci95": [
+          0.38,
+          0.685
+        ]
+      },
+      "taxonomy": {
+        "counts": {
+          "retrieval-miss": 2,
+          "empty-answer": 4,
+          "unsupported-claim": 7,
+          "correct": 17
+        },
+        "correct_share": 0.5666666666666667,
+        "correct_share_ci95": [
+          0.4,
+          0.7333
+        ]
+      },
+      "by_slice": {
+        "single_hop/answer": {
+          "n": 8,
+          "verdicts": {
+            "retrieval-miss": 1,
+            "empty-answer": 4,
+            "unsupported-claim": 1,
+            "correct": 2
+          },
+          "correct_share": 0.25
+        },
+        "multi_hop/answer": {
+          "n": 10,
+          "verdicts": {
+            "unsupported-claim": 3,
+            "correct": 7
+          },
+          "correct_share": 0.7
+        },
+        "ambiguous/abstain": {
+          "n": 4,
+          "verdicts": {
+            "correct": 2,
+            "unsupported-claim": 2
+          },
+          "correct_share": 0.5
+        },
+        "ambiguous/answer": {
+          "n": 2,
+          "verdicts": {
+            "correct": 1,
+            "retrieval-miss": 1
+          },
+          "correct_share": 0.5
+        },
+        "unanswerable/abstain": {
+          "n": 6,
+          "verdicts": {
+            "correct": 5,
+            "unsupported-claim": 1
+          },
+          "correct_share": 0.8333
+        }
+      },
+      "claim_accounting": {
+        "n_answers_verified": 30,
+        "n_drafted": 62,
+        "n_mechanical_fail": 25,
+        "n_judged": 37,
+        "n_judge_supported": 37,
+        "n_surviving": 52,
+        "n_dropped": 8,
+        "n_repair_calls": 22,
+        "n_verify_abstentions": 4,
+        "n_verifier_failures": 2,
+        "n_accepted_original": 37,
+        "n_accepted_repaired": 15,
+        "n_dropped_original": 1,
+        "n_dropped_repaired": 7,
+        "claim_retention_rate": 0.8387,
+        "claim_drop_rate": 0.129,
+        "mechanical_false_rejections": 0
+      },
+      "budget_terminated": 0,
+      "abstention": {
+        "n_unanswerable": 10,
+        "n_answerable": 20,
+        "refusal_accuracy": 0.7,
+        "refusal_accuracy_ci95": [
+          0.4,
+          0.9
+        ],
+        "cite_when_expected": 0.95,
+        "cite_when_expected_ci95": [
+          0.85,
+          1.0
+        ],
+        "false_abstention_rate": 0.2,
+        "false_abstention_rate_ci95": [
+          0.05,
+          0.4
+        ]
+      },
+      "verify": {
+        "enabled": true,
+        "min_support": 0.6,
+        "max_repair_calls": 2,
+        "n_answers_verified": 30,
+        "n_verify_abstentions": 4,
+        "n_verify_skipped": 7,
+        "n_verifier_failures": 2,
+        "total_repair_calls": 22,
+        "mean_support_fraction": 0.8817,
+        "mean_verify_latency_s": 10.963,
+        "verify_latency_share_of_answer": 0.25,
+        "diagnose_mech": false,
+        "n_drafted": 62,
+        "n_mechanical_fail": 25,
+        "n_judged": 37,
+        "n_judge_supported": 37,
+        "n_surviving": 52,
+        "n_dropped": 8,
+        "n_accepted_original": 37,
+        "n_accepted_repaired": 15,
+        "n_dropped_original": 1,
+        "n_dropped_repaired": 7,
+        "claim_retention_rate": 0.8387,
+        "claim_repair_rate": 0.3548,
+        "claim_drop_rate": 0.129,
+        "mechanical_false_rejections": 0
+      },
+      "ops": {
+        "backend": "env:kimi-for-coding",
+        "p50_latency_s": 25.218011792050675,
+        "p95_latency_s": 203.21094116591848
+      },
+      "meter": {
+        "active": true,
+        "model": "kimi-for-coding",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
+        "phases": {
+          "agent": {
+            "calls": 30,
+            "input_tokens": 3759180,
+            "output_tokens": 35119,
+            "cached_input_tokens": 3528192,
+            "spend_usd": 1.429923
+          },
+          "judge": {
+            "calls": 60,
+            "input_tokens": 37519,
+            "output_tokens": 7351,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.066923
+          },
+          "verify": {
+            "calls": 58,
+            "input_tokens": 60130,
+            "output_tokens": 17737,
+            "cached_input_tokens": 20992,
+            "spend_usd": 0.116384
+          },
+          "ragas": {
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.0
+          }
+        },
+        "total": {
+          "calls": 148,
+          "input_tokens": 3856829,
+          "output_tokens": 60207,
+          "cached_input_tokens": 3549184,
+          "spend_usd": 1.6132300000000002
+        },
+        "ledger_spend_usd": 1.61323,
+        "budget_usd": 12.0
+      },
+      "run": {
+        "tag": "_after_r8",
+        "questions_file": "data/golden_stress.json",
+        "questions_sha256": "30afe90f04ad06818e4142236fa49573ffb7224918fae248f75dab5afde869f5",
+        "commit": "e46d210eeba3bbd58967e95014745c089070618b",
+        "gate": {
+          "min_coverage": 0.0,
+          "min_max_similarity": 0.0
+        },
+        "verify": {
+          "enabled": true,
+          "min_support": 0.6,
+          "max_repair_calls": 2,
+          "diagnose_mech": false
+        },
+        "caps": {
+          "max_requests": 400,
+          "total_tokens_limit": 80000000
+        },
+        "timestamp_utc": "2026-11-14T16:31:22.893170+00:00",
+        "spend_usd": 1.6132300000000002
+      },
+      "traces_path": "reports/question_traces_stress_after_r8.json",
+      "note": "independent stress set, admitted WITHOUT the production-retriever answerability gate; retrieval failures here are honest signal, reported separately from detail.heldout and detail.heldout_citations"
     }
   },
   "rag_agent": {

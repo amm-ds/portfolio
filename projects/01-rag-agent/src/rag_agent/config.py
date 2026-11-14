@@ -131,6 +131,11 @@ class VerifyConfig(PortfolioBaseModel):
     # judge so the checker's false-rejection rate can be measured. Never on
     # in sealed evaluation passes.
     diagnose_mech: bool = False
+    # R8 substantiation check (claim content-word coverage in cited spans).
+    # OFF by default: measured on frozen set A it regressed correctness
+    # (0.733 -> 0.567, false abstention 0.05 -> 0.20) by dropping legitimate
+    # paraphrased claims. Kept as a diagnostic lever, not a default.
+    substantiation_check: bool = False
 
 
 class RAGConfig(PortfolioBaseModel):
