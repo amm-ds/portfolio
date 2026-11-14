@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Export apps/agent-chat as a versioned, timestamped zip for external collaboration.
+"""Export a versioned, timestamped zip for external collaboration.
+
+Two scopes:
+- ``--scope app`` (default): ``apps/agent-chat`` — the focused handoff.
+- ``--scope repo``: the whole portfolio codebase — every project, demo app,
+  shared library and script — so the collaborator sees the entire working
+  repository (RAG agent, forecasting, agent-chat, document-intelligence,
+  showcase API/web, and the shared core), not just one app.
 
 Local-only by design: ``artifacts/`` is gitignored at the repo root, so the
 zips never enter git. Each export carries a STATUS manifest (git SHA, dirty
@@ -8,7 +15,8 @@ diffs itself against the previous one so development between handoffs is
 visible at a glance (files added/removed/changed + the commit range).
 
 Usage:
-    uv run python scripts/export_agent_chat_zip.py          # export + diff vs previous
+    uv run python scripts/export_agent_chat_zip.py --scope repo
+    uv run python scripts/export_agent_chat_zip.py          # app export + diff
     uv run python scripts/export_agent_chat_zip.py --no-diff
     uv run python scripts/export_agent_chat_zip.py --list   # show exports + statuses
 """
@@ -46,11 +54,20 @@ EXCLUDE_DIRS = {
     "coverage",
     ".nyc_output",
     "htmlcov",
+    # repo-scope local/built state (never the shared codebase)
+    ".dvc",
+    "artifacts",
+    "site",
+    ".hypothesis",
+    ".import_linter_cache",
 }
 EXCLUDE_FILES = {".DS_Store", "agent_chat.db", ".env"}
 EXCLUDE_SUFFIXES = {".pyc"}
 # reproducible data (corpus + vector index): rebuilt by the app's own pipeline
 EXCLUDE_PREFIXES = ("data/raw/", "data/index/")
+# repo scope additionally skips the repo-root data/ registry (DVC-tracked
+# pointers only); per-project sealed sets + contracts are kept.
+REPO_EXCLUDE_PREFIXES = ("data/",)
 
 
 class ExportError(RuntimeError):
@@ -82,27 +99,26 @@ def git(*args: str) -> str:
     return proc.stdout.strip()
 
 
-def provenance() -> dict[str, set[str]]:
-    """Classify every app-relative path as tracked / ignored / untracked.
+def provenance(scope: str) -> dict[str, set[str]]:
+    """Classify every path in the scope as tracked / ignored / untracked.
 
     The payload can carry files git does not track (focused reports the
     collaborator wants) — the manifest records their origin per file so a
     ``dirty: false`` export can no longer smuggle in bytes that are not
     provably from the named commit (external evaluation P1-4)."""
+    base = "apps/agent-chat" if scope == "app" else "."
     tracked = {
-        Path(p).relative_to("apps/agent-chat").as_posix()
-        for p in git("ls-files", "--", "apps/agent-chat").splitlines()
+        Path(p).relative_to(base).as_posix()
+        for p in git("ls-files", "--", base).splitlines()
         if p.strip()
     }
     ignored: set[str] = set()
     untracked: set[str] = set()
-    for line in git(
-        "status", "--porcelain", "--ignored=matching", "--", "apps/agent-chat"
-    ).splitlines():
+    for line in git("status", "--porcelain", "--ignored=matching", "--", base).splitlines():
         if line.startswith("!! "):
-            ignored.add(Path(line[3:].strip()).relative_to("apps/agent-chat").as_posix())
+            ignored.add(Path(line[3:].strip()).relative_to(base).as_posix())
         elif line.startswith("?? "):
-            untracked.add(Path(line[3:].strip()).relative_to("apps/agent-chat").as_posix())
+            untracked.add(Path(line[3:].strip()).relative_to(base).as_posix())
     return {"tracked": tracked, "ignored": ignored, "untracked": untracked}
 
 
@@ -130,18 +146,22 @@ def _classify(rel: str, origins: dict[str, set[str]]) -> str:
     return "untracked"
 
 
-def collect_files(origins: dict[str, set[str]]) -> dict[str, FileEntry]:
+def collect_files(origins: dict[str, set[str]], root: Path) -> dict[str, FileEntry]:
     files: dict[str, FileEntry] = {}
-    for path in sorted(APP.rglob("*")):
+    for path in sorted(root.rglob("*")):
         if not path.is_file():
             continue
-        rel = path.relative_to(APP).as_posix()
-        parts = set(path.relative_to(APP).parts[:-1])
+        rel = path.relative_to(root).as_posix()
+        parts = set(path.relative_to(root).parts[:-1])
         if parts & EXCLUDE_DIRS:
             continue
         if path.name in EXCLUDE_FILES or path.suffix in EXCLUDE_SUFFIXES:
             continue
-        if any(rel.startswith(p) for p in EXCLUDE_PREFIXES):
+        if any(rel.startswith(p) or f"/{p}" in rel for p in EXCLUDE_PREFIXES):
+            continue
+        # repo scope: skip only the repo-root data/ registry (project data/
+        # dirs keep their sealed sets and contracts)
+        if root == REPO and rel.startswith(REPO_EXCLUDE_PREFIXES):
             continue
         files[rel] = {
             "bytes": path.stat().st_size,
@@ -151,10 +171,10 @@ def collect_files(origins: dict[str, set[str]]) -> dict[str, FileEntry]:
     return files
 
 
-def previous_export() -> "tuple[Path, dict[str, Any]] | None":
-    if not OUT_DIR.exists():
+def previous_export(out_dir: Path) -> "tuple[Path, dict[str, Any]] | None":
+    if not out_dir.exists():
         return None
-    metas = sorted(OUT_DIR.glob("*.status.json"))
+    metas = sorted(out_dir.glob("*.status.json"))
     if not metas:
         return None
     latest = metas[-1]
@@ -202,17 +222,27 @@ def diff_against(prev: dict[str, Any], files: dict[str, FileEntry]) -> list[str]
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--scope",
+        choices=("app", "repo"),
+        default="app",
+        help="app = apps/agent-chat (focused handoff); repo = the whole portfolio codebase",
+    )
+    parser.add_argument(
         "--no-diff", action="store_true", help="skip the diff against the previous export"
     )
     parser.add_argument("--list", action="store_true", help="list existing exports and exit")
     args = parser.parse_args()
 
+    scope = args.scope
+    root = APP if scope == "app" else REPO
+    out_dir = OUT_DIR if scope == "app" else REPO / "artifacts" / "portfolio-zips"
+
     if args.list:
-        prev = previous_export()
+        prev = previous_export(out_dir)
         if not prev:
             print("no exports yet")
             return 0
-        for meta_path in sorted(OUT_DIR.glob("*.status.json")):
+        for meta_path in sorted(out_dir.glob("*.status.json")):
             d = json.loads(meta_path.read_text())
             print(
                 f"v{d['version']} {d['created_at']} {d['git_sha'][:7]}"
@@ -221,8 +251,8 @@ def main() -> int:
         return 0
 
     try:
-        origins = provenance()
-        files = collect_files(origins)
+        origins = provenance(scope)
+        files = collect_files(origins, root)
         sha = git("rev-parse", "HEAD")
         porcelain = git("status", "--porcelain")
     except ExportError as e:
@@ -233,34 +263,37 @@ def main() -> int:
         origin: sum(1 for f in files.values() if f["origin"] == origin)
         for origin in ("tracked", "ignored", "untracked")
     }
-    prev = previous_export()
+    prev = previous_export(out_dir)
     prev_meta: dict[str, Any] | None = prev[1] if prev else None
     version = (int(prev_meta["version"]) + 1) if prev_meta else 1
     stamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-    zip_name = f"agent-chat-v{version}-{stamp}-{sha[:7]}{'-dirty' if dirty_files else ''}.zip"
+    zip_name = f"{scope}-v{version}-{stamp}-{sha[:7]}{'-dirty' if dirty_files else ''}.zip"
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    zip_path = OUT_DIR / zip_name
+    out_dir.mkdir(parents=True, exist_ok=True)
+    zip_path = out_dir / zip_name
     total_bytes = sum(int(f["bytes"]) for f in files.values())
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for rel in files:
-            zf.write(APP / rel, arcname=f"agent-chat/{rel}")
+            zf.write(root / rel, arcname=f"{scope}/{rel}")
         meta = {
             "version": version,
+            "scope": scope,
             "zip": zip_name,
             "created_at": datetime.now().isoformat(timespec="seconds"),
             "git_sha": sha,
             "dirty": bool(dirty_files),
             "dirty_files": dirty_files,
             "payload_origins": origin_counts,
-            "excludes": sorted(EXCLUDE_DIRS | EXCLUDE_FILES) + list(EXCLUDE_PREFIXES),
+            "excludes": sorted(EXCLUDE_DIRS | EXCLUDE_FILES)
+            + list(EXCLUDE_PREFIXES)
+            + list(REPO_EXCLUDE_PREFIXES),
             "file_count": len(files),
             "total_bytes": total_bytes,
             "files": files,
         }
         zf.writestr("STATUS.json", json.dumps(meta, indent=2))
 
-    (OUT_DIR / f"{zip_path.stem}.status.json").write_text(json.dumps(meta, indent=2) + "\n")
+    (out_dir / f"{zip_path.stem}.status.json").write_text(json.dumps(meta, indent=2) + "\n")
     print(f"export -> {zip_path.relative_to(REPO)}")
     summary = (
         f"  v{version} | {sha[:7]}{'-dirty' if dirty_files else ''} | "
