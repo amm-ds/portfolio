@@ -131,3 +131,14 @@ Alternative if even that is unwanted: no analytics (status quo).
   previous images stay for rollback. Disk is back to 79%. Add a periodic
   `docker builder prune -f` to the host maintenance runbook; consider a
   disk alert at 85%.
+
+## Deploy log — 2026-11-14 (R8 judge-alignment release)
+
+- SHA `6ec2ca5` (CI green, run 43629157460) deployed via the established
+  pattern. `/health` verified; `detail.stress_d` now served.
+- Recurring disk-pressure: a second build failed at image export with
+  "no space left on device" (97% disk). Remediated by pruning the oldest
+  tagged image (`b56fa31`, 7.13GB); disk is at 78%. This is the second
+  occurrence in two releases — schedule `docker builder prune -f` weekly
+  and prune images older than the current + previous deploys, plus an 85%
+  disk alert.
