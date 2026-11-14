@@ -80,25 +80,21 @@ def _cohens_kappa(a: list[bool], b: list[bool]) -> float:
 
 def run_claim_judge(model: str, cases: list[dict[str, Any]]) -> list[bool | None]:
     """One pinned pass over the claim cases with the local model."""
-    import httpx
-    from pydantic_ai import Agent
-    from pydantic_ai.models.openai import OpenAIChatModel
-    from pydantic_ai.providers.ollama import OllamaProvider
+    import os
 
-    provider = OllamaProvider(
-        base_url="http://127.0.0.1:11434/v1",
-        api_key="ollama",
-        http_client=httpx.AsyncClient(timeout=180.0),
-    )
+    os.environ["OLLAMA_MODEL"] = model
+    from portfolio_core.llm import build_model
+    from rag_agent.provider import model_settings_for_provider
+
     agent = Agent(
-        OpenAIChatModel(model_name=model, provider=provider),
+        build_model(),
         output_type=ClaimVerdict,
         system_prompt=(
             "You check whether claims are entailed by retrieved evidence. You are "
             "strict: unsupported means the evidence does not state it. You never "
             "use outside knowledge."
         ),
-        model_settings=ModelSettings(temperature=0.0, extra_body={"think": False}),
+        model_settings=model_settings_for_provider(),
         retries={"output": 2},
     )
     out: list[bool | None] = []
