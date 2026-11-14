@@ -213,8 +213,8 @@ def main() -> None:
     if not ollama_available():
         raise SystemExit("ollama not reachable — start the local server first")
     gates = evaluate(args.model, args.repeat, hosted=args.hosted)
-    out_dir = ROOT / "reports" / (
-        "judge_calibration_hosted" if args.hosted else "judge_calibration"
+    out_dir = (
+        ROOT / "reports" / ("judge_calibration_hosted" if args.hosted else "judge_calibration")
     )
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / "results.json"

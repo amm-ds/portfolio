@@ -612,8 +612,8 @@ def _verify_structured(
     mech_failed: list[int] = []
     for drafted in result.claims:
         reasons = check_claim_spans(
-        drafted, retriever.get_chunk, substantiation=config.verify.substantiation_check
-    )
+            drafted, retriever.get_chunk, substantiation=config.verify.substantiation_check
+        )
         if reasons:
             mech_failed.append(len(checks))
             checks.append(
