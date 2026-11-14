@@ -159,6 +159,20 @@ stop), which is what let all six unanswerable rows refuse correctly.
 Independent set B (`data/golden_stress_b.json`, absolute targets
 pre-registered in the story) is scored once under `detail.stress_b`.
 
+R7 then measured the next levers without adopting them: the retrieval
+tournament's best arm gained +1.5 points recall@10 — below the +5-point
+promotion gate, so the incumbent retrieval stays; the local-judge
+calibration (274 constructed labels) shows false-rejection 83.5% and
+κ 0.155, so the small local judge is diagnostic-only; and the sealed C
+evaluation (fresh 30-question set, local generation + hosted adjudication,
+$0.096 CE) **missed its pre-registered targets outright** — overall 0.333
+vs 0.70, false abstention 1.000. The small local generator produces no
+usable grounded answer; the hosted generation + incumbent retrieval
+champion is unchanged, and the miss is published with its traces rather
+than tuned away. Reports live under `reports/retrieval_tournament/`,
+`reports/judge_calibration/`, `reports/local_eval_preflight.json`, and
+`detail.stress_c`.
+
 ### Cost and budget operation
 
 Costs use the public reference rate card ($1/Mtok input, $4/Mtok output, cached

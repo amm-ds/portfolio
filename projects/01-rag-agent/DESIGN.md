@@ -264,6 +264,23 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 
 ## 6. Changelog
 
+- 1.1.0 (2026-11-14) — R7 integrity-and-retrieval wave, measured and published
+  including its misses. Verifier integrity: fail-closed abstention on verifier
+  failure (no more fail-open support_fraction=1.0), structured repairs that
+  re-pass span checks before judging, per-claim terminal-state ledger
+  (drafted = surviving + dropped), separated claim-support vs answer-correctness
+  metrics. Zero-cost replay harness (recorded responses + request rails).
+  Sealed set C (30 rows, gold-checked verbatim spans, Jaccard < 0.34 vs all
+  180 prior). Retrieval tournament (all-local): structure-aware chunking,
+  Qwen3-Embedding, BM25/RRF, Qwen3-Reranker — +1.5pt recall@10 for the best
+  arm, below the pre-registered +5pt promotion gate; incumbent R0 stands.
+  Judge calibration: qwen2.5:3b false-rejection 83.5% / kappa 0.155 → local
+  judge diagnostic-only; hosted adjudication is the promotion instrument.
+  Final sealed C run (local generation + hosted adjudication, $0.096 CE):
+  MISSED — overall 0.333 vs 0.70, all 20 answerable rows abstained, false
+  abstention 1.000; the small local generator cannot produce usable grounded
+  answers. Published per protocol without retuning; further quality claims
+  require a fresh sealed set D. Production stack unchanged.
 - 1.0.0 (2026-11-12) — R6 grounding hardening, measured pre-registered:
   schema-v2 answers (claims with verbatim spans), deterministic span checks
   (NFKC substring, number/date/temporal tokens, negation polarity, entity
