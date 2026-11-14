@@ -272,6 +272,25 @@ sections:
     5.9 s (6.6% of answer time); a full sealed pass runs ≈50 min wall —
     $9.74 cloud-equivalent on the frozen set, $2.19 on B.
 
+    The R7 follow-up measured the next levers rather than adopting them.
+    A retrieval-only tournament (structure-aware title-prefixed chunking,
+    Qwen3-Embedding, BM25/RRF fusion, Qwen3-Reranker — all local, $0) moved
+    recall@10 from 0.831 to 0.846 (+1.5 points) for the best arm, short of
+    the pre-registered +5-point promotion bar: the incumbent retrieval
+    stands. A local-judge calibration against 274 labels-by-construction
+    cases answered whether a small non-thinking model could replace the
+    hosted judge: false-acceptance 1.03% but false-rejection 83.5%,
+    Cohen's κ 0.155, answer agreement 52.5%, repeat flips 9.3% — the local
+    judge is diagnostic-only, not a promotion instrument. The final sealed
+    C evaluation (fresh 30-question set with gold spans, scored once,
+    local generation + hosted adjudication, $0.096 cloud-equivalent)
+    missed the pre-registered targets outright: overall 0.333 against
+    0.70, every answerable row abstained, false abstention 1.000 — the
+    small local generator produces no usable grounded answer. Per the
+    protocol the miss is published with its traces, not tuned away: R7
+    leaves the hosted generation + incumbent retrieval champion unchanged,
+    and any further quality claim would need a fresh sealed set D.
+
     **Hybrid retrieval evaluated out of the box — the champion holds.**
     Sparse+dense fusion is the current production default, so the comparison
     runs retrieval-only (rerank off, no LLM calls): dense, BM25 (k1=1.2,
