@@ -94,7 +94,7 @@ def run_claim_judge(model: str, cases: list[dict[str, Any]]) -> list[bool | None
     # instead of tool calls: the Ollama /v1 endpoint's tool protocol returns
     # empty responses for this model (qwen2.5:3b) — documented fallback in
     # the R7 plan.
-    local_settings = Settings(llm_base_url=None, llm_api_key=None)
+    local_settings = Settings(llm_base_url=None, llm_api_key=None)  # type: ignore[call-arg]  # pydantic-settings populates by field name
     agent = Agent(
         build_model(settings=local_settings),
         output_type=NativeOutput(ClaimVerdict),
@@ -122,9 +122,7 @@ def run_claim_judge(model: str, cases: list[dict[str, Any]]) -> list[bool | None
 
 def evaluate(model: str, repeat: int) -> dict[str, Any]:
     claims = [
-        json.loads(line)
-        for line in (CAL / "claims.jsonl").read_text().splitlines()
-        if line.strip()
+        json.loads(line) for line in (CAL / "claims.jsonl").read_text().splitlines() if line.strip()
     ]
     answers = [
         json.loads(line)
@@ -152,19 +150,20 @@ def evaluate(model: str, repeat: int) -> dict[str, Any]:
     # Answer-level: judge each answer draft for faithfulness vs its label.
     ans_judged: list[bool | None] = []
     for case in answers:
-        judged_supported = run_claim_judge(model, [
-            {
-                "question": case["question"],
-                "claim": case["answer"],
-                "evidence": case["evidence"],
-            }
-        ])[0]
+        judged_supported = run_claim_judge(
+            model,
+            [
+                {
+                    "question": case["question"],
+                    "claim": case["answer"],
+                    "evidence": case["evidence"],
+                }
+            ],
+        )[0]
         ans_judged.append(judged_supported)
     ans_labels = [c["label"] == "correct" for c in answers]
     ans_paired = [(a, b) for a, b in zip(ans_judged, ans_labels, strict=True) if a is not None]
-    ans_agreement = (
-        sum(1 for a, b in ans_paired if a == b) / len(ans_paired) if ans_paired else 0.0
-    )
+    ans_agreement = sum(1 for a, b in ans_paired if a == b) / len(ans_paired) if ans_paired else 0.0
 
     gates = {
         "claim_false_acceptance_rate": round(fa_rate, 4),
