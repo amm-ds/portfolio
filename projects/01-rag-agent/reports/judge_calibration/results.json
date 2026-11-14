@@ -1,0 +1,14 @@
+{
+  "claim_false_acceptance_rate": 0.0103,
+  "claim_false_acceptance_ucb95": 0.0368,
+  "claim_false_rejection_rate": 0.8351,
+  "cohens_kappa": 0.1546,
+  "answer_agreement": 0.525,
+  "repeat_flip_rate": 0.0928,
+  "n_judge_errors": 0,
+  "n_claims": 194,
+  "n_answers": 80,
+  "repeat_runs": 2,
+  "model": "qwen2.5:3b",
+  "ACCEPTS": false
+}
