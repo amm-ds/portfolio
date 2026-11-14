@@ -119,3 +119,15 @@ Alternative if even that is unwanted: no analytics (status quo).
   push after it landed; fixed in `288897b` with a lineage check + full-history
   checkout. First deploy attempt also aborted on a mistyped pinned SHA — the
   guard did its job; second attempt clean.
+
+## Deploy log — 2026-11-14 (R7 integrity-and-retrieval release)
+
+- SHA `80de095` (CI green, run 43596413706) deployed via the established
+  `/tmp/deploy-<sha>.sh` pattern. `/health` verified: ready, sha matches;
+  `detail.stress_c` now served by the metrics endpoint.
+- Disk incident: the 4GB box hit 97% disk and two builds failed at image
+  export ("no space left on device"). Freed 3.8GB of Docker build cache and
+  pruned the oldest tagged image (`36fba71`, 7.13GB) — the current and
+  previous images stay for rollback. Disk is back to 79%. Add a periodic
+  `docker builder prune -f` to the host maintenance runbook; consider a
+  disk alert at 85%.
