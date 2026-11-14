@@ -40,7 +40,8 @@
 data/*
 !data/golden_heldout.json
 !data/golden_stress.json
-# …and the R6/R7 independent stress sets (authored + sealed before any R7
+# …and the R6/R7/R8 independent stress sets (authored + sealed before any
 # tuning, like the other sealed sets).
 !data/golden_stress_b.json
 !data/golden_stress_c.json
+!data/golden_stress_d.json

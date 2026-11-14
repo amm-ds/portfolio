@@ -1,0 +1,432 @@
+[
+  {
+    "question": "Disregarding the original first-quarter 2009 target, when was Dagenham's third turbine actually installed?",
+    "relevant_titles": ["Dagenham wind turbines"],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "The third Dagenham turbine was eventually installed in 2011, rather than meeting its planned first-quarter 2009 operating date.",
+    "gold_spans": [
+      {
+        "title": "Dagenham wind turbines",
+        "exact_text": "The planned operating date for the third wind turbine was by the first quarter of 2009, and it was eventually installed in 2011."
+      }
+    ],
+    "failure_mode": "temporal_trap"
+  },
+  {
+    "question": "At Hojum, how does the rating of the turbine started in 1992 differ from each of the two units commissioned in 1938?",
+    "relevant_titles": ["Hojum Hydroelectric Power Station"],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "The 1992 turbine is rated at 70 MW, which is 20 MW more than each of the two 50 MW turbines from 1938.",
+    "gold_spans": [
+      {
+        "title": "Hojum Hydroelectric Power Station",
+        "exact_text": "While the first two turbines were taken into service in 1938, a third one was built and started in 1992. The first two are rated at 50 MW, while the third is rated at 70 MW."
+      }
+    ],
+    "failure_mode": "number_trap"
+  },
+  {
+    "question": "For Olidan, distinguish the number of turbines still usable from the number commonly generating simultaneously.",
+    "relevant_titles": ["Olidan Hydroelectric Power Station"],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "Ten Olidan turbines are still functioning, but it is currently rare for more than three to generate at one time.",
+    "gold_spans": [
+      {
+        "title": "Olidan Hydroelectric Power Station",
+        "exact_text": "10 of these are still functioning, while the other three were cannibalized for parts. However, it is currently rare for more than three to be generating at the one time."
+      }
+    ],
+    "failure_mode": "number_trap"
+  },
+  {
+    "question": "Can Chlorophyllum molybdites poisoning be called nonlethal based on recorded outcomes, and how soon do symptoms generally begin?",
+    "relevant_titles": ["Chlorophyllum molybdites"],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "No poisonings have yet resulted in death, although symptoms can be severe. Vomiting, diarrhea and colic generally occur 1–3 hours after consumption.",
+    "gold_spans": [
+      {
+        "title": "Chlorophyllum molybdites",
+        "exact_text": "The symptoms are predominantly gastrointestinal in nature, with vomiting, diarrhea and colic, often severe, occurring 1–3 hours after consumption. Although these poisonings can be severe, particularly in children, none have yet resulted in death."
+      }
+    ],
+    "failure_mode": "negation"
+  },
+  {
+    "question": "In the board game Photosynthesis, what is a medium tree's unadjusted light yield, and what light payment is needed to harvest a large tree?",
+    "relevant_titles": ["Photosynthesis (board game)"],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "A medium tree collects 2 units of light before shadow adjustments, while cutting down a large tree for a victory-point token costs 4 light.",
+    "gold_spans": [
+      {
+        "title": "Photosynthesis (board game)",
+        "exact_text": "Trees in that row collect light (1 unit for small trees, 2 units for medium trees, and 3 units for large trees); this is adjusted by subtracting units as a result of trees occurring earlier in the row casting shadows."
+      },
+      {
+        "title": "Photosynthesis (board game)",
+        "exact_text": "A player may also cut down a large tree on the central board for a cost of 4 light to obtain a victory point token with a value dependent on its placement on the board."
+      }
+    ],
+    "failure_mode": "entity_swap"
+  },
+  {
+    "question": "For the TS-1, identify both the engine in the Naval Aircraft Factory design and the manufacturer that received the 34-plane order.",
+    "relevant_titles": ["Naval Aircraft Factory TS"],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "The Naval Aircraft Factory design used a Lawrance J-1 air-cooled radial engine, and Curtiss received the order for 34 planes.",
+    "gold_spans": [
+      {
+        "title": "Naval Aircraft Factory TS",
+        "exact_text": "The Naval Aircraft Factory came up with a simple design driven by a  Lawrance J-1 air-cooled radial engine."
+      },
+      {
+        "title": "Naval Aircraft Factory TS",
+        "exact_text": "Testing went well, and in late 1922 the Navy ordered 34 planes from Curtiss, with the first arriving on board the aircraft carrier  in December."
+      }
+    ],
+    "failure_mode": "entity_swap"
+  },
+  {
+    "question": "Under the Canadian Aviation Regulations numbering scheme, is CAR 740 a binding regulation or advisory material, and must operators comply with it?",
+    "relevant_titles": ["Canadian Aviation Regulations"],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "CAR 740 is advisory material, not a binding regulation. Compliance with advisory material is not mandatory, unlike compliance with regulations and standards.",
+    "gold_spans": [
+      {
+        "title": "Canadian Aviation Regulations",
+        "exact_text": "Compliance with the regulations and standards is mandatory, while complying with the advisory material is not mandatory."
+      },
+      {
+        "title": "Canadian Aviation Regulations",
+        "exact_text": "CAR 740 would be advisory material)."
+      }
+    ],
+    "failure_mode": "negation"
+  },
+  {
+    "question": "In the Twin Cities outbreak of 6 May 1965, how many tornadoes received F4 ratings, and what emergency-warning practice made its Minnesota debut?",
+    "relevant_titles": ["Climate of Minneapolis–Saint Paul"],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "Four of the tornadoes were rated F4. The outbreak was the first time civil defense sirens were used in Minnesota to warn of impending severe weather.",
+    "gold_spans": [
+      {
+        "title": "Climate of Minneapolis–Saint Paul",
+        "exact_text": "Four of the tornadoes were rated F4, two of which hit Fridley, Minnesota about an hour apart."
+      },
+      {
+        "title": "Climate of Minneapolis–Saint Paul",
+        "exact_text": "This outbreak was notable because this was the first time in Minnesota history that civil defense sirens were used to warn people of impending severe weather."
+      }
+    ],
+    "failure_mode": "temporal_trap"
+  },
+  {
+    "question": "Using commissioning rather than construction dates, how many years separate the present Barron Gorge station from Riga's hydroelectric plant entering operation?",
+    "relevant_titles": ["Barron Gorge Hydroelectric Power Station", "Riga Hydroelectric Power Plant"],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "The present Barron Gorge station was commissioned in 1963, and Riga's plant entered operation in 1974, so the dates are 11 years apart.",
+    "gold_spans": [
+      {
+        "title": "Barron Gorge Hydroelectric Power Station",
+        "exact_text": "The original site was largely dismantled and decommissioned in 1959 and the present Barron Falls power station was commissioned in 1963 further down stream."
+      },
+      {
+        "title": "Riga Hydroelectric Power Plant",
+        "exact_text": "The Riga Hydroelectric Power Plant was put into operation in 1974."
+      }
+    ],
+    "failure_mode": "derived_value"
+  },
+  {
+    "question": "Contrast THEMIS and Serpa by construction-start year and by the 1983 THEMIS output versus Serpa's nameplate capacity.",
+    "relevant_titles": ["Themis (solar power plant)", "Serpa solar power plant"],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "THEMIS construction started in 1979, 27 years before Serpa construction began in May 2006. THEMIS had a 2 MW output in 1983, whereas Serpa's stated capacity is 11 megawatts.",
+    "gold_spans": [
+      {
+        "title": "Themis (solar power plant)",
+        "exact_text": "The plant had a power output of 2 MW in 1983."
+      },
+      {
+        "title": "Themis (solar power plant)",
+        "exact_text": "Construction started in 1979 at a cost of 300 million French francs (about 45 million euros), and was operated and managed by Électricité de France (EDF)."
+      },
+      {
+        "title": "Serpa solar power plant",
+        "exact_text": "Construction of the 11 megawatt Serpa solar power plant (also known as Hércules solar power plant) began in May 2006 and was completed as planned in January 2007, at the cost of 58 million euro."
+      }
+    ],
+    "failure_mode": "two_leg_synthesis"
+  },
+  {
+    "question": "One research meeting began at Stanford in 1980, while another fills the years when ICCV is absent. Name both meetings.",
+    "relevant_titles": ["AAAI Conference on Artificial Intelligence", "European Conference on Computer Vision"],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "The first is the AAAI Conference on Artificial Intelligence, first held at Stanford in 1980. The second is the European Conference on Computer Vision (ECCV), held in years when ICCV is not held.",
+    "gold_spans": [
+      {
+        "title": "AAAI Conference on Artificial Intelligence",
+        "exact_text": "The first AAAI was held in 1980 at Stanford University, Stanford California."
+      },
+      {
+        "title": "European Conference on Computer Vision",
+        "exact_text": "The European Conference on Computer Vision (ECCV) is a biennial research conference with the proceedings published by Springer Science+Business Media. Similar to ICCV in scope and quality, it is held those years which ICCV is not."
+      }
+    ],
+    "failure_mode": "entity_swap"
+  },
+  {
+    "question": "After the Aquatic Species Program lost funding, where was its culture collection transferred, and what four-way comparison could AlgaePARC subsequently perform?",
+    "relevant_titles": ["SERI microalgae culture collection", "AlgaePARC"],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "The collection moved to the University of Hawaii after the program ended in 1996. AlgaePARC could compare the productivity of four different production systems throughout the year under identical conditions.",
+    "gold_spans": [
+      {
+        "title": "SERI microalgae culture collection",
+        "exact_text": "The Aquatic Species Program ended in 1996 after its funding was cut, at which point its microalgae collection was moved to the University of Hawaii."
+      },
+      {
+        "title": "AlgaePARC",
+        "exact_text": "This facility is unique, because it is the first facility in which the productivity of four different production systems can be compared during the year under identical conditions."
+      }
+    ],
+    "failure_mode": "two_leg_synthesis"
+  },
+  {
+    "question": "Which neural-network artifact supplies bindings for more than twenty programming languages, and which one assigns a class by minimizing extension distance?",
+    "relevant_titles": ["Fast Artificial Neural Network", "Extension neural network"],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "The Fast Artificial Neural Network library has bindings for over 20 programming languages. The extension neural network finds the estimated class by searching for the minimum extension distance among the classes.",
+    "gold_spans": [
+      {
+        "title": "Fast Artificial Neural Network",
+        "exact_text": "It has bindings for over 20 programming languages, including commonly used languages such as PHP, C# and Python."
+      },
+      {
+        "title": "Extension neural network",
+        "exact_text": "Estimated class is found through searching for the minimum extension distance among the calculated extension distance for all classes as summarized in equation 7, where  is the estimated class."
+      }
+    ],
+    "failure_mode": "entity_swap"
+  },
+  {
+    "question": "Bismarck and Grand Forks each recorded their all-time highest temperature on which shared calendar date?",
+    "relevant_titles": ["Climate of Bismarck, North Dakota", "Climate of Grand Forks, North Dakota"],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "Both cities recorded their highest temperature on July 6, 1936.",
+    "gold_spans": [
+      {
+        "title": "Climate of Bismarck, North Dakota",
+        "exact_text": "The highest temperature ever recorded in Bismarck was , on July 6, 1936."
+      },
+      {
+        "title": "Climate of Grand Forks, North Dakota",
+        "exact_text": "The highest temperature ever recorded in Grand Forks was  on July 6, 1936."
+      }
+    ],
+    "failure_mode": "two_leg_synthesis"
+  },
+  {
+    "question": "Distinguish chlorophyll synthase from chlorophyllase by whether each completes synthesis or begins breakdown, and name chlorophyllase's immediate chlorophyll-derived product.",
+    "relevant_titles": ["Chlorophyll synthase", "Chlorophyllase"],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "Chlorophyll synthase performs the final step of chlorophyll biosynthesis, whereas chlorophyllase initiates chlorophyll catabolism. Chlorophyllase forms chlorophyllide in that first breakdown step.",
+    "gold_spans": [
+      {
+        "title": "Chlorophyll synthase",
+        "exact_text": "This reaction is the final step of the complete biosynthetic pathway to chlorophylls from glutamic acid."
+      },
+      {
+        "title": "Chlorophyllase",
+        "exact_text": "In this first step, chlorophyllase initiates the catabolism of chlorophyll to form chlorophyllide."
+      }
+    ],
+    "failure_mode": "entity_swap"
+  },
+  {
+    "question": "Contrast the Silent Aircraft Initiative's noise-shielding layout with the fuel-saving and range improvement Aviation Partners measured in winglet tests.",
+    "relevant_titles": ["Silent Aircraft Initiative", "Aviation Partners"],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "The Silent Aircraft Initiative favored engines on the wing's upper surface to shield ground observers from engine noise. Aviation Partners' test flights confirmed a 4–5% fuel saving and range increase.",
+    "gold_spans": [
+      {
+        "title": "Silent Aircraft Initiative",
+        "exact_text": "The favoured hull configuration was a blended wing design, with the engines located on the upper surface of the wing, to shield ground observers from the engine noise."
+      },
+      {
+        "title": "Aviation Partners",
+        "exact_text": "Test flights confirmed a fuel saving and range increase of 4–5%."
+      }
+    ],
+    "failure_mode": "two_leg_synthesis"
+  },
+  {
+    "question": "What ultimately happened to Condit's dam in October 2011, and what capacity turbine had Hojum added nineteen years earlier?",
+    "relevant_titles": ["Condit Hydroelectric Project", "Hojum Hydroelectric Power Station"],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "Condit Dam was intentionally breached on October 26, 2011. In 1992, Hojum started a third turbine rated at 70 MW.",
+    "gold_spans": [
+      {
+        "title": "Condit Hydroelectric Project",
+        "exact_text": "PacifiCorp decommissioned the project due to rising environmental costs, and the dam was intentionally breached on October 26, 2011."
+      },
+      {
+        "title": "Hojum Hydroelectric Power Station",
+        "exact_text": "While the first two turbines were taken into service in 1938, a third one was built and started in 1992. The first two are rated at 50 MW, while the third is rated at 70 MW."
+      }
+    ],
+    "failure_mode": "temporal_trap"
+  },
+  {
+    "question": "Which Snowy Mountains station was completed earlier, Murray 2 or Tumut 3, and which was Australia's first major pumped-storage station?",
+    "relevant_titles": ["Murray Hydroelectric Power Station", "Tumut Hydroelectric Power Station"],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "Murray 2 was completed earlier, in 1969 rather than 1973. Tumut 3 was Australia's first major pumped-storage hydroelectric power station.",
+    "gold_spans": [
+      {
+        "title": "Murray Hydroelectric Power Station",
+        "exact_text": "The power station was completed in 1969, and has  rated head."
+      },
+      {
+        "title": "Tumut Hydroelectric Power Station",
+        "exact_text": "Tumut 3 Power Station is the first major pumped storage hydroelectric power station in Australia."
+      },
+      {
+        "title": "Tumut Hydroelectric Power Station",
+        "exact_text": "It was completed in 1973, upgraded in 2012 and has  rated head."
+      }
+    ],
+    "failure_mode": "entity_swap"
+  },
+  {
+    "question": "Which event is described by its organizing association as the world's largest civil aviation trade show?",
+    "relevant_titles": ["National Business Aviation Association"],
+    "category": "ambiguous",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "The NBAA Business Aviation Convention & Exhibition is described by the association as the world's largest civil aviation trade show.",
+    "gold_spans": [
+      {
+        "title": "National Business Aviation Association",
+        "exact_text": "The association \"provides more than 100 products and services to the business aviation community, including the NBAA Business Aviation Convention & Exhibition, the world's largest civil aviation trade show.\""
+      }
+    ],
+    "failure_mode": "superlative_temptation"
+  },
+  {
+    "question": "Which installation is identified as India's oldest hydroelectric power plant, and when was it commissioned?",
+    "relevant_titles": ["Sidrapong Hydroelectric Power Station"],
+    "category": "ambiguous",
+    "expected_behavior": "answer",
+    "gold_checked": true,
+    "gold_answer": "Sidrapong Hydroelectric Power Station is identified as India's oldest hydroelectric power plant. It was commissioned on 10 November 1897.",
+    "gold_spans": [
+      {
+        "title": "Sidrapong Hydroelectric Power Station",
+        "exact_text": "Sidrapong Hydroelectric Power Station ( Sidrapong Hydel Power Station), located at the foothills of Arya Tea Estate  from Darjeeling town, is the oldest hydel power station or hydroelectric power plant in India. commissioned on 10 November 1897, its original capacity was 2 × 65 kW, which was expanded in phases for increased demands to a total 1000 kW in 1916."
+      }
+    ],
+    "failure_mode": "superlative_temptation"
+  },
+  {
+    "question": "Of the RV-8 and RV-9, which kit is safest for a pilot undertaking a first homebuilt aircraft?",
+    "relevant_titles": ["Van's Aircraft RV-8", "Van's Aircraft RV-9"],
+    "category": "ambiguous",
+    "expected_behavior": "abstain"
+  },
+  {
+    "question": "Which city offers the more pleasant winter, Bismarck or Grand Forks?",
+    "relevant_titles": ["Climate of Bismarck, North Dakota", "Climate of Grand Forks, North Dakota"],
+    "category": "ambiguous",
+    "expected_behavior": "abstain"
+  },
+  {
+    "question": "Judging lifetime value rather than construction cost alone, is THEMIS or Serpa the better solar investment?",
+    "relevant_titles": ["Themis (solar power plant)", "Serpa solar power plant"],
+    "category": "ambiguous",
+    "expected_behavior": "abstain"
+  },
+  {
+    "question": "For every conceivable classification task, should practitioners choose FANN or an extension neural network?",
+    "relevant_titles": ["Fast Artificial Neural Network", "Extension neural network"],
+    "category": "ambiguous",
+    "expected_behavior": "abstain"
+  },
+  {
+    "question": "How did Fleming's discovery of penicillin alter the treatment of bacterial infections?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": ["penicillin"]
+  },
+  {
+    "question": "How many symphonies did Beethoven complete during his lifetime?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": ["Beethoven"]
+  },
+  {
+    "question": "During which century was the Inca estate at Machu Picchu constructed?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": ["Machu Picchu"]
+  },
+  {
+    "question": "Which cryptographic machine was central to codebreaking operations at Bletchley Park?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": ["Bletchley Park"]
+  },
+  {
+    "question": "In origami, what sequence of folds produces the traditional crane?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": ["origami"]
+  },
+  {
+    "question": "What total length is claimed for all sections of the Great Wall of China?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": ["Great Wall of China"]
+  }
+]
