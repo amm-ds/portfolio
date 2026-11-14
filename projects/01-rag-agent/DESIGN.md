@@ -264,6 +264,16 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 
 ## 6. Changelog
 
+- 1.2.0 (2026-11-14) — R8 judge-alignment wave, measured and not promoted.
+  Full-entailment judge prompt + substantiation filter: frozen set 0.733 →
+  0.667, false abstention 0.05 → 0.25; sealed D 1/6 targets passed (overall
+  0.567, single-hop 0.625, refusal 0.60, false abstention 0.20). The stricter
+  judge trades unsupported claims for over-abstention without net gain;
+  substantiation is opt-in only. Hosted-vs-local judge calibration on 274
+  constructed labels fails both directions (hosted FA 45.4%, local FR 83.5%);
+  the answer-level rubric verdict stays the correctness instrument. R6's
+  configuration remains the production champion — R8 ships the measurement
+  record, not a new pipeline.
 - 1.1.0 (2026-11-14) — R7 integrity-and-retrieval wave, measured and published
   including its misses. Verifier integrity: fail-closed abstention on verifier
   failure (no more fail-open support_fraction=1.0), structured repairs that

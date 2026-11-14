@@ -173,6 +173,15 @@ than tuned away. Reports live under `reports/retrieval_tournament/`,
 `reports/judge_calibration/`, `reports/local_eval_preflight.json`, and
 `detail.stress_c`.
 
+R8 then measured judge alignment rather than adopting it: the
+full-entailment judge prompt dropped the frozen set to 0.667 with false
+abstention 0.25, and the sealed D evaluation passed only 1/6 targets
+(overall 0.567, single-hop 0.625). Hosted-vs-local judge calibration fails
+both directions (hosted FA 45.4%, local FR 83.5%), so the rubric verdict
+stays the correctness instrument. R6's configuration remains the
+production champion; R8's contribution is the measurement record, not a
+new pipeline.
+
 ### Cost and budget operation
 
 Costs use the public reference rate card ($1/Mtok input, $4/Mtok output, cached

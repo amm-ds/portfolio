@@ -291,6 +291,22 @@ sections:
     leaves the hosted generation + incumbent retrieval champion unchanged,
     and any further quality claim would need a fresh sealed set D.
 
+    R8 then tested whether judge alignment could close the remaining
+    grounding errors. The full-entailment judge prompt (every part of every
+    claim checked) plus a substantiation filter for irrelevant spans were
+    measured, not adopted: the frozen set dropped from 0.733 to 0.667 and
+    false abstention rose from 0.05 to 0.25 — the stricter judge trades
+    unsupported claims for over-abstention without net gain. The
+    substantiation filter regressed further and is opt-in only. A
+    hosted-vs-local judge calibration on 274 constructed labels failed both
+    directions (hosted false-acceptance 45.4%, local false-rejection 83.5%),
+    so the answer-level rubric verdict stays the correctness instrument.
+    The sealed D evaluation scored the attempt independently: 1/6 targets
+    passed (overall 0.567, answer-expected 0.550, single-hop 0.625), refusal
+    0.60, false abstention 0.20 — the alignment is not promoted. R6's
+    configuration remains the production champion; R8's contribution is
+    the measurement record, not a new pipeline.
+
     **Hybrid retrieval evaluated out of the box — the champion holds.**
     Sparse+dense fusion is the current production default, so the comparison
     runs retrieval-only (rerank off, no LLM calls): dense, BM25 (k1=1.2,
