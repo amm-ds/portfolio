@@ -1,7 +1,12 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../App";
+
+function LocationProbe() {
+  const location = useLocation();
+  return <output data-testid="location">{`${location.pathname}${location.search}${location.hash}`}</output>;
+}
 
 afterEach(() => {
   cleanup();
@@ -42,6 +47,30 @@ describe("App routing", () => {
         "https://alejandromerida.dev/apps/document-intelligence",
       );
     }
+  });
+
+  it("redirects /projects/ to the canonical URL without dropping the query", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    render(
+      <MemoryRouter initialEntries={["/projects/?from=test"]}>
+        <App />
+        <LocationProbe />
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("location")).toHaveTextContent("/projects?from=test"),
+    );
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Proof of work — experiments and demos",
+    );
   });
 
   it("renders the Projects index at both /projects and /experiments", async () => {

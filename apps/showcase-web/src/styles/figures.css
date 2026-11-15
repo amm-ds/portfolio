@@ -62,19 +62,17 @@
   align-items: center;
   justify-content: center;
   background: var(--bg);
+  border: 1px solid var(--border);
   font-family: var(--mono);
   font-size: 0.8rem;
   color: var(--muted);
-}
-
-.frame-skeleton span {
   animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 
 /* PlotlyFigure's pre-render placeholder: the reserved box can sit empty for
    seconds while the JSON fetches and the plotly chunk lazy-loads, so the
    skeleton must read as an intentional pending state — a dashed inner
-   border, the mono "> name" corner label, and a pulsing status line. */
+   border, the mono "> name" corner label, and a stable-contrast status line. */
 .plotly-wrap .frame-skeleton {
   margin: 0.5rem;
   flex-direction: column;
@@ -92,10 +90,9 @@
 }
 
 @keyframes skeleton-pulse {
-  /* floor 0.8: below ~0.8 the pulsing muted text on --bg drops under the
-     4.5:1 AA threshold (axe caught it at 4.0:1) */
+  /* Meaningful text stays fully opaque; only the decorative border pulses. */
   50% {
-    opacity: 0.8;
+    border-color: var(--secondary);
   }
 }
 
@@ -183,7 +180,7 @@ a.figure-caption:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .frame-skeleton span {
+  .frame-skeleton {
     animation: none;
   }
   .figure-frame iframe {

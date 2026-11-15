@@ -143,7 +143,19 @@ export function App() {
         <Suspense fallback={<RouteSkeleton />}>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/projects" element={<ProjectsIndex />} />
+            <Route
+              path="/projects"
+              element={
+                location.pathname === "/projects/" ? (
+                  <Navigate
+                    to={{ pathname: "/projects", search: location.search, hash: location.hash }}
+                    replace
+                  />
+                ) : (
+                  <ProjectsIndex />
+                )
+              }
+            />
             <Route path="/experiments" element={<ProjectsIndex />} />
             <Route path="/projects/:id" element={<ProjectDetail />} />
             <Route path="/projects/:id/report" element={<ReportView />} />
