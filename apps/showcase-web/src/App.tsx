@@ -25,6 +25,9 @@ const AgentChatArticle = lazy(() =>
 const DocumentIntelligenceArticle = lazy(() =>
   import("./pages/DocumentIntelligenceArticle").then((m) => ({ default: m.DocumentIntelligenceArticle })),
 );
+const EvalWorkbenchArticle = lazy(() =>
+  import("./pages/EvalWorkbenchArticle").then((m) => ({ default: m.EvalWorkbenchArticle })),
+);
 const Services = lazy(() =>
   import("./pages/Services").then((m) => ({ default: m.Services })),
 );
@@ -161,6 +164,7 @@ export function App() {
             <Route path="/projects/:id/report" element={<ReportView />} />
             <Route path="/apps/agent-chat" element={<AgentChatArticle />} />
             <Route path="/apps/document-intelligence" element={<DocumentIntelligenceArticle />} />
+            <Route path="/apps/eval-workbench" element={<EvalWorkbenchArticle />} />
             <Route path="/apps/document-review" element={<Navigate to="/apps/document-intelligence" replace />} />
             <Route
               path="/demos/churn-sandbox"

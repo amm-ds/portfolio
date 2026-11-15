@@ -1,0 +1,171 @@
+project_id: eval-workbench
+headline: >-
+  A read-only evaluation workbench connects versioned datasets, case-level run
+  records, and same-dataset model comparisons without inventing a composite score.
+data_note: >-
+  The provider-free preview uses two small synthetic fixture datasets; its numbers
+  demonstrate the interface and are not model-quality evidence.
+limits: >-
+  The frontend is verified with mocked HTTP contracts; live provider quality and
+  backend integration require the API and representative evaluation data.
+short_version: >-
+  A React/TypeScript workbench for inspecting versioned evaluation datasets,
+  individual runs, and same-dataset quality, latency, and cost trade-offs. Synthetic
+  fixtures demonstrate the UI; no live model-quality claim is made.
+sections:
+  - id: background
+    title: Background
+    text_md: |
+      **Evaluation results are hard to use when the dataset, run record, and
+      comparison live in different files.** Eval Workbench puts those three views
+      in one read-only interface. A reviewer can select a pinned dataset version,
+      inspect expected and actual outputs for one run, and compare completed runs
+      on quality, latency, and cost.
+
+      The browser does not execute a model, rewrite an expected output, or calculate
+      a new aggregate score. It renders the recorded metrics returned by the API.
+      Incorrect predictions and execution failures stay separate, and an incomplete
+      run is never silently ranked beside a completed one.
+
+      The local preview uses synthetic support-routing and refusal-probe fixtures.
+      Those records make the workflow reproducible without credentials; they do not
+      establish any model's quality.
+
+      **Business summary:** One review surface connects the dataset version, the
+      case-level evidence, and the trade-offs between recorded runs.
+    figures: []
+    metrics_keys: []
+  - id: architecture
+    title: Architecture
+    text_md: |
+      **The API owns evaluation records; TypeScript owns validation and review.**
+      Three small endpoints supply the registry, run history, and selected run's
+      cases. Runtime parsers reject missing fields, unsupported states, non-finite
+      numbers, and quality scores outside 0–1 before React renders them.
+
+      ```mermaid
+      flowchart LR
+        API["FastAPI evaluation records"] --> CONTRACT["Runtime response validation"]
+        CONTRACT --> REGISTRY["Dataset registry"]
+        CONTRACT --> RUNS["Run history"]
+        RUNS --> DETAIL["Case-level run view"]
+        RUNS --> COMPARE["Same-dataset comparison"]
+      ```
+
+      Follow the diagram from left to right: the API is the source of truth, the
+      contract layer is the trust boundary, and each view reads the same validated
+      records. Selecting another dataset replaces both its run list and comparison,
+      so charts cannot mix dataset versions. The run detail keeps individual inputs,
+      expected outputs, model outputs, errors, and latency visible instead of leaving
+      only an aggregate.
+
+      The frontend has no charting dependency. CSS bars provide a quick visual scan;
+      an adjacent table repeats every exact value for keyboard users and precise
+      review. Dark and light themes, a skip link, visible focus, and responsive
+      layouts are part of the interface rather than a separate demo skin.
+
+      **Business summary:** A typed read path keeps the API authoritative and makes
+      every comparison traceable to the selected dataset and run records.
+    figures: []
+    metrics_keys: []
+  - id: evaluation
+    title: Evaluation
+    text_md: |
+      **The frontend is tested at the HTTP and user-interaction boundaries.** Mocked
+      responses cover initial loading, dataset switching, case filtering, network
+      failure, and theme controls. Contract tests pin valid payloads and reject an
+      out-of-range score, a malformed case verdict, and an unsupported run state.
+      Client tests also cover path escaping and API error messages.
+
+      Comparison rules are part of the product contract:
+
+      - only completed runs from the selected dataset version enter a chart;
+      - accuracy and F1 use a fixed 0–1 axis, with higher values better;
+      - p95 latency and recorded run cost use separate axes, with lower values better;
+      - each bar represents one run, not an average that would hide repeat variability;
+      - exact values remain available in a table below the charts.
+
+      No weighted "overall score" combines these dimensions. Such a number would hide
+      the acceptance trade-off the reviewer needs to make. The fixture records verify
+      rendering only; a real model evaluation must publish its dataset, grader,
+      provider settings, repetitions, and raw run evidence separately.
+
+      **Business summary:** Tests verify what a reviewer sees and what malformed data
+      cannot reach the screen; fixture values are never presented as a benchmark.
+    figures: []
+    metrics_keys: []
+  - id: results
+    title: Results
+    text_md: |
+      **Delivered: dataset registry, run history, case-level inspection, and four
+      comparison charts in a standalone Vite application.** The thirteen frontend
+      checks pass, alongside strict TypeScript compilation, ESLint, and the Vite
+      production build.
+
+      The provider-free preview contains three synthetic support-routing runs. Its
+      deliberately different records show why one ranking is insufficient:
+      `fixture-strict` has the highest fixture accuracy (1.00), `fixture-fast` has
+      the lowest fixture p95 latency (410 ms), and their costs differ. These names
+      and numbers are labeled fixtures throughout the UI. They demonstrate the
+      comparison mechanics, not real provider performance.
+
+      A reviewer can switch to the synthetic refusal-probe dataset and see its run
+      and cases replace the previous selection. The Needs review filter isolates
+      incorrect or failed cases; returning to All restores the full run record.
+
+      **Business summary:** The result is a working review interface with verified
+      interactions and honest fixture evidence, not a claim of model superiority.
+    figures: []
+    metrics_keys: []
+  - id: conclusions
+    title: Conclusions
+    text_md: |
+      ## Results summary
+
+      Eval Workbench ships a standalone React/TypeScript review surface for
+      versioned datasets, evaluation runs, case evidence, and same-dataset model
+      comparisons. Runtime contracts guard the API boundary, and accessible bars
+      plus exact tables make quality, latency, and cost trade-offs visible without
+      collapsing them into one score.
+
+      ## What the build taught
+
+      - A comparison must begin with dataset identity; mixing versions makes the
+        chart look precise while changing the question.
+      - Case-level misses and execution failures need separate labels because they
+        require different engineering responses.
+      - A visual chart is not enough for audit work: exact values must remain in
+        the same view.
+      - A fixture mode is useful for development only when its evidence status is
+        explicit in the header-level workflow and in the article.
+
+      ## Limits and adoption
+
+      The current frontend is read-only and its tests use mocked HTTP responses.
+      Live provider quality, statistical uncertainty, backend integration, and
+      production authentication are not established by these frontend checks.
+      An adopter still needs representative versioned datasets, deterministic or
+      separately validated graders, explicit acceptance thresholds, and access
+      control appropriate to the evaluation data.
+
+      **Business summary:** Use the workbench to inspect and compare recorded
+      evidence; do not mistake its synthetic preview for a live evaluation.
+    figures: []
+    metrics_keys: []
+key_concepts:
+  - "**Dataset version** — the pinned inputs and expected outputs that make two runs comparable."
+  - "**Run record** — one model's cases, status, measurements, and execution failures for a dataset."
+  - "**Case-level review** — inspecting inputs, expected outputs, and actual outputs behind an aggregate."
+  - "**Same-dataset comparison** — charts include only completed runs that answered the same pinned cases."
+  - "**Fixture evidence** — synthetic records that verify the interface without claiming live model quality."
+roadmap:
+  - status: delivered
+    text: "Built the versioned dataset registry and run-history navigation."
+  - status: delivered
+    text: "Built case-level run inspection with incorrect/failed case filtering."
+  - status: delivered
+    text: "Built accessible quality, p95-latency, and cost comparisons with exact tables."
+  - status: delivered
+    text: "Added runtime API contracts, frontend behavior tests, and a labeled fixture mode."
+  - status: remaining
+    text: "Validate against representative production datasets and explicit acceptance thresholds."

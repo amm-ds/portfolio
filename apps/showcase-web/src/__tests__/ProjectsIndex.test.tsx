@@ -723,7 +723,7 @@ describe("ProjectsIndex", () => {
     expect(experiment.resultSlot).not.toBeNull();
   });
 
-  it("renders both app template cards with screenshots and external links", async () => {
+  it("renders all app template cards with screenshots and external links", async () => {
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
@@ -736,7 +736,7 @@ describe("ProjectsIndex", () => {
     const block = document.getElementById("apps")!;
     expect(block.textContent).toMatch(/complete applications, built like client work/i);
     const cards = block.querySelectorAll(".app-card");
-    expect(cards).toHaveLength(2);
+    expect(cards).toHaveLength(3);
     const card = cards[0];
     expect(card.querySelector("img")!.getAttribute("src")).toBe("/apps/agent-chat-approval-v3.png");
     // compact app cards: capped screenshot height (house rule)
@@ -759,6 +759,9 @@ describe("ProjectsIndex", () => {
     expect(card.querySelector(".study-result-chip")!.textContent).toBe("108/108 Kimi eval ×3");
     expect(cards[1].querySelector("img")!.getAttribute("src")).toBe("/apps/document-intelligence-summary.png");
     expect(cards[1].querySelector(".study-result-chip")!.textContent).toBe("page-level · 4 AI modes");
+    expect(cards[2].querySelector("img")!.getAttribute("src")).toBe("/apps/eval-workbench.png");
+    expect(cards[2].querySelector(".study-result-chip")!.textContent).toBe("dataset · run · comparison");
+    expect(cards[2].querySelector("a")!.getAttribute("href")).toBe("/apps/eval-workbench");
   });
 
   it("links the glossary from the experiments section description", async () => {

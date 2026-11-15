@@ -53,6 +53,22 @@ export const APPS: AppEntry[] = [
       { label: "[specs]", href: "https://github.com/amm-ds/portfolio/tree/main/apps/document-intelligence/specs" },
     ],
   },
+  {
+    id: "eval-workbench",
+    title: "Eval Workbench — Model Evaluation Review",
+    href: "/apps/eval-workbench",
+    summary:
+      "A read-only evaluation workbench that connects versioned datasets, case-level run evidence, and same-dataset comparisons — quality, latency, and cost stay visible instead of collapsing into one score.",
+    does: "React + TypeScript registry, run history, case inspection, runtime API validation, and accessible comparison bars backed by exact value tables",
+    achieves: "inspect why a run missed, compare only like-for-like records, and keep incorrect predictions separate from execution failures",
+    stack: ["React + TS", "FastAPI", "Vitest", "Vite"],
+    result: "dataset · run · comparison",
+    screenshot: "/apps/eval-workbench.png",
+    links: [
+      { label: "[code]", href: "https://github.com/amm-ds/portfolio/tree/main/apps/eval-workbench" },
+      { label: "[story]", href: "https://github.com/amm-ds/portfolio/tree/main/apps/eval-workbench/story.yaml" },
+    ],
+  },
 ];
 
 export const APPS_INTRO =
