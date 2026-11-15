@@ -4,146 +4,173 @@ short_version: |
 sections:
   - id: background
     text_md: |
-      **One delivery day, 100 customers: each customer has a time slot, each
-      truck a capacity limit.** The planner's job is a legal day — every
-      stop served once, every window met — made as short as possible.
-      Solomon's problems are the field's standard test days — the honest
-      yardstick. Across the 56 instances, a tuned adaptive large-neighborhood
-      search lands within 4.23% of the best published distance, in about a
-      second per problem, using 3.73 more trucks than best-known on average.
+      **Plan one delivery day for 100 customers.** A time window is the allowed
+      arrival time. Truck capacity limits the load. A valid plan serves every
+      stop once, meets every window, and keeps distance short.
+
+      Adaptive large-neighborhood search, or ALNS, improves routes by removing
+      and reinserting stops. On 56 standard Solomon test days, tuned ALNS
+      averages a 4.23% distance gap from the best published plans. It takes
+      about one second per problem and uses 3.73 more trucks on average. The
+      gap is the percentage above reference distance. Best-known plans are
+      published references, not proven optima.
+
+      Both diagrams route inputs and solver outputs through one machine
+      validator. Follow the paths: only valid plans reach the results.
 
       ```diagram auto-06-routing-optimization-1
       ```
 
-      The diagrams fix one contract: inputs and route lists feed machine
-      validation; every architecture rung, from seeded construction to bounded
-      exact search, returns to that same validator.
-
       ```diagram 06-solver-ladder
       ```
 
-      **Business summary:** Across 56 real benchmark days, the search lands
-      within about 4% of the best published plans in a second per day, at
-      3.73 extra trucks on average.
+      **Business summary:** Across 56 benchmark days, ALNS stays within about
+      4% of the best published distance in a second per day, with 3.73 extra
+      trucks on average.
     figures: []
   - id: objectives
     text_md: |
-      **The question: how close do simple, seeded search methods get to the
-      best published plans — and how long does each rung of the ladder
-      take?** The acceptance contract is fixed before any solver runs, so
-      the goalposts cannot move after the results arrive:
+      **Measure how close simple, repeatable search gets to the best published
+      plans, and how long each method takes.** The contract diagram fixes the
+      acceptance rules before any solver runs. Follow it from the input rules
+      through validation to the two scores:
 
-      - Every plan serves each customer exactly once, inside truck capacity
-        and every time window.
-      - Every plan is checked by code before any number is reported.
-      - Distance and truck count stay together: the field ranks a smaller
-        fleet ahead of a shorter distance.
-      - The search is fully repeatable: fixed seed, no hidden state.
-      - The 56-problem heuristic ladder, tuning included, finishes in
-        about 130 seconds; the hinted CP-SAT rung adds about eleven
-        minutes (see reports/metrics.json runtimes).
-      - Bad tuning results stay in the report.
-
-      The contract diagram shows how the clauses chain: the rules feed one
-      code check — the RoutePlan validator plus a route simulation — and
-      the two scored criteria then land on the benchmark convention.
+      - Serve each customer exactly once, within truck capacity and every time
+        window.
+      - Check every plan with code before reporting a number.
+      - Report distance and truck count together. Fleet-first ranking puts a
+        smaller fleet ahead of a shorter distance.
+      - Repeat every run from a fixed seed, which is a fixed starting point for
+        random choices, with no hidden state.
+      - Finish the 56-problem heuristic ladder, including tuning, in about 130
+        seconds. A heuristic is a guided search for good plans without a proof
+        of optimality. The hinted CP-SAT rung adds about eleven minutes. CP-SAT
+        is an exact constraint solver, and a hint gives it an existing plan as
+        a starting point. See `reports/metrics.json` for runtimes.
+      - Keep poor tuning results in the report.
 
       ```diagram auto-06-routing-optimization-2
       ```
 
-      The convention needed stating because the tempting alternative,
-      distance-only reporting, hides the truck count: a fleet can almost
-      always shorten its distance by adding vehicles, so the two numbers
-      are never reported apart.
+      In the diagram, the RoutePlan validator and route simulation form one
+      code check. Its output feeds both scored criteria and the benchmark
+      convention. That pairing matters because adding vehicles can shorten
+      distance. Distance-only reporting would hide that cost.
 
-      What do the 56 test days and their reference plans look like? The
-      data section pins them.
-
-      **Business summary:** The bar: legal plans only, checked by code;
-      distance and truck count side by side; the heuristic ladder with
-      tuning inside about two minutes.
+      **Business summary:** Accept only valid, code-checked plans. Report
+      distance beside truck count, and keep the tuned heuristic ladder within
+      about two minutes.
     figures: []
   - id: data
     text_md: |
-      **56 standard test days, six families, pinned and free with
-      citation.** The complete Solomon 100-customer set holds 56 instances
-      — clustered, random, or mixed geography crossed with tight or wide
-      time windows. Each instance pins coordinates, demand, time windows
-      and service time, nothing left to interpretation. The
-      [CVRPLIB snapshot](https://amm-ds.github.io/portfolio/data-registry/cvrplib-solomon/)
-      comes sha256-pinned from the SINTEF TOP mirror — a primary mirror
-      plus a hash beat a bundled copy, because the citation must resolve
-      for a stranger in five years.
+      **Use 56 standard test days in six families, with public sources and a
+      fixed snapshot.** The lineage diagram shows the full path from source
+      files to scored inputs. The Solomon set crosses clustered, random, or
+      mixed geography with tight or wide time windows. Each instance fixes
+      coordinates, demand, time windows, and service time.
 
-      The six families:
+      The [CVRPLIB snapshot](https://amm-ds.github.io/portfolio/data-registry/cvrplib-solomon/)
+      comes from the SINTEF TOP mirror. CVRPLIB is a public library of vehicle
+      routing problems. A pinned SHA-256 checksum, a digital fingerprint for
+      the exact files, keeps the snapshot identifiable. The public mirror and
+      checksum keep the citation resolvable and the input verifiable.
+
+      Follow the six family branches in the diagram:
 
       - C1 (9) and C2 (8): clustered customers, tight or wide windows.
       - R1 (12) and R2 (11): scattered customers, tight or wide windows.
       - RC1 (8) and RC2 (8): mixed clustered-random geography.
 
-      The family counts are not decorative: family shapes the gap, so the
-      per-family view returns in the results. The lineage diagram traces
-      how sources become the reference table.
+      These branches matter because family shapes the gap. The results keep
+      the per-family view beside the overall mean.
 
       ```diagram auto-06-routing-optimization-3
       ```
 
-      On the snapshot side, the data-quality gates reject nulls and
-      out-of-range values before the set fans out into the six families;
-      on the reference side, the curated best-known registry and a
-      project-local SINTEF TOP supplement merge into one comparison table
-      of distance and truck count. The supplement matters because without
-      it 42 instances would have no reference and would silently drop out
-      of the ladder. Best-known is a moving literature reference, not an
-      optimality certificate.
+      On the diagram's snapshot side, quality gates are automatic checks that
+      reject nulls, meaning missing values, and out-of-range values before the
+      six-family split. On the reference side, the curated best-known registry
+      and project-local SINTEF TOP supplement merge into one distance and truck
+      table. Follow that merge to see why the supplement matters: without it,
+      42 instances would lack a reference and drop out of the ladder.
+      Best-known is a changing literature reference, not an optimality
+      certificate, which is a proof that no better valid plan exists.
 
-      What do the 56 days actually look like?
-
-      **Business summary:** 56 standard test days from a pinned public
-      benchmark, six families, plus published reference plans and quality
-      gates on both.
+      **Business summary:** The evidence uses 56 pinned public test days in six
+      families, with quality checks and published distance and fleet references.
     figures: []
   - id: eda
     text_md: |
-      **The 56 days are not alike.** The instance-map figure shows C101:
-      customers sit close on the map — one tight cluster around the starred
-      depot — but narrow time windows are scattered across that cluster,
-      and the color scale says so at a glance. The figure exists to stop a
-      natural misreading: reaching for the map before the clock. Two
-      customers who are neighbors geographically can be hours apart in
-      feasible arrival time, so the clock, not the map, sets the stop
-      order. C2 flips the picture: wide horizons favor few, full trucks.
-      R1 and RC1 mix map spread with tighter windows.
+      **The 56 test days have different shapes.** In the instance-map figure,
+      start with the starred depot, the starting and ending point for routes.
+      C101 customers form one tight cluster around it. Now read the colors:
+      narrow time windows are scattered through that cluster. Nearby customers
+      can therefore be hours apart in feasible arrival time, meaning arrival
+      that meets all constraints. The map alone cannot set stop order; the
+      clock matters too.
 
-      Three reading rules follow:
+      Use C101 as the visual baseline for the family contrasts. C2 has wide
+      windows that favor few, full trucks. R1 and RC1 combine more map spread
+      with tighter windows. The C101 map shows why one geographic pattern
+      should not stand in for all 56 days.
 
-      - Every plan is checked — served once, in capacity, in every time window — before any metric or figure is written; a pretty route that breaks a window is not a result.
-      - Each solver is read as an optimality gap: the percent its distance sits above the best-known plan for that same problem, with the truck-count gap printed next to it — a gap printed alone invites distance-only conclusions.
-      - Family results sit next to the 56-instance mean because one average would hide the shape: C2 instances and R1 instances fail differently.
+      The figure also sets three rules for reading the results:
 
-      The solver ladder follows, rung by rung.
+      - Check that every plan serves each customer once, within capacity and
+        every time window, before writing a metric or drawing a route. A route
+        that breaks a window is not a valid result.
+      - Read the optimality gap, the percentage by which a plan's distance
+        exceeds the best-known distance for the same problem, beside the truck
+        count gap. Distance alone would hide the fleet trade-off.
+      - Compare family results with the 56-instance mean. The C101 pattern and
+        the C2 and R1 contrasts show why one average can hide different failure
+        modes.
 
-      **Business summary:** The 56 days are not alike — tight or wide
-      windows, bunched or spread maps — so each solver is read per family,
-      not as one average.
+      **Business summary:** Window width and customer spread change the routing
+      problem. Read results by family, not through one average alone.
     figures: [eda_instance_map]
   - id: training
     text_md: |
-      **The ladder, rung by rung.** Mean gap to best-known falls 316.95%
-      (random legal plans) → 71.64% (greedy nearest neighbor) → 18.31%
-      (capacity-aware savings merges) → 13.63% (tuned 2-opt) → **4.23%**
-      for the adaptive large-neighborhood search, at roughly one second per
-      instance. Every rung's plan is feasible and checked — the rungs
-      differ in distance, not legality.
+      **Read the solver ladder from the random floor down to ALNS.** In the
+      solver-profile figure, lower distance is better. Mean gap falls from
+      316.95% for random valid plans to 71.64% for greedy nearest neighbor,
+      which repeatedly chooses the closest next customer. Capacity-aware
+      savings merges, which combine routes when they save distance and remain
+      valid, reach 18.31%. Tuned 2-opt, a move that replaces two route edges
+      to shorten a tour, reaches 13.63%. ALNS reaches **4.23%** in roughly one
+      second per instance. Every rung is feasible and machine-checked; the
+      route-map figure shows the resulting C101 plan rather than an invalid
+      shortcut.
 
-      - **Where the wins are.** The search tops the ladder on distance for 52 of 56 instances; its fleet-first twin wins the other 4. Under the benchmark's fleet-ranks-first convention it wins 38 of 56 (twin 5, naive solvers 13 by using more trucks at far worse distance). No solver beats the best-known fleet size: +3.73 vehicles on average.
-      - **Trucks and distance trade at a tenth of a point.** Re-weighting the search to favor fleet size costs +0.07 points of mean gap and buys −0.07 mean vehicles — measured, so a fleet-first client can take that deal.
-      - **Sometimes the reference loses.** The search undercuts 8 published references (best: RC202 at −3.85%). The honest residuals are C2 6.50%, C203 19.48% and C103 11.67%.
-      - **The exact solver plays a different role.** Given the search's plan as a head start, a state-of-the-art exact solver ties on all 56 at about ten times the runtime — and from scratch, at the same ten-second budget, it finds no feasible plan on any of them. Only small cases carry proofs: a 25-customer C101 is certified optimal in 2.9 s, a 5-customer case in 0.1 s.
-      - **Tuning's honest negatives.** Randomized restarts never pay (the search keeps k=1); tuning 2-opt moves the mean gap only 13.75% → 13.63%; move budgets saturate at about twenty accepted moves.
+      - **Distance wins:** compare the per-instance lines in the solver-profile
+        figure. ALNS leads on 52 of 56; its fleet-first variant leads the other
+        4. With fleet size ranked first, ALNS wins 38 of 56, the variant 5, and
+        naive solvers 13 by using more trucks at far worse distance. No solver
+        beats the best-known fleet size: the average delta is +3.73 vehicles.
+      - **Fleet trade-off:** compare ALNS and `alns_fleet` in the gap figure.
+        Favoring fleet size costs +0.07 points of mean gap and saves 0.07 mean
+        vehicles. This measured trade-off gives a fleet-first client a clear
+        choice.
+      - **References beaten:** look below zero in the gap figure. ALNS undercuts
+        8 published references, with RC202 best at −3.85%. The remaining gaps
+        include C2 at 6.50%, C203 at 19.48%, and C103 at 11.67%.
+      - **Exact-solver role:** the matching full-scale ALNS and hinted CP-SAT
+        results in the solver-profile figure show their tie on all 56, at about
+        ten times the runtime for CP-SAT. Without a hint and with the same
+        ten-second budget, CP-SAT finds no feasible plan on any instance. Only
+        small cases carry proofs: a 25-customer C101 case is certified optimal
+        in 2.9 s, and a 5-customer case in 0.1 s.
+      - **Tuning limits:** the tuned 2-opt result in the gap figure reflects a
+        gain of only 13.75% → 13.63%. Randomized restarts never pay, so ALNS
+        keeps `k=1`, one start. Move budgets saturate at about twenty accepted
+        moves. Hyperparameter optimization, or HPO, is the systematic search
+        for these settings; its negative results remain visible.
 
-      **Search core — repair every destroyed plan, then anneal the acceptance.**
-      Feasibility is preserved before distance is even compared.
+      **Search core: destroy, repair, then decide whether to accept.** The code
+      removes stops and uses regret-2 repair, which reinserts each stop by
+      considering its best and second-best positions. It compares distance only
+      after repair preserves feasibility. Annealing acceptance can keep a worse
+      plan early in the search, helping it escape a poor local solution.
 
       ```python
       def _sa_accept(delta: float, temp: float, rng: random.Random) -> bool:
@@ -164,135 +191,134 @@ sections:
                   best_dist, best_obj = new_dist, new_obj
       ```
 
-      Excerpt from [solver.py](https://github.com/amm-ds/portfolio/blob/main/projects/06-routing-optimization/src/routing_optimization/solver.py).
-      The figures read at three zooms: the solver-profile figure shows
-      distance per instance — the spread is the ladder; the gap figure
-      re-plots it as percent above best-known, where ALNS hugs zero; the
-      route-map figure draws the C101 plan itself.
+      This [solver.py excerpt](https://github.com/amm-ds/portfolio/blob/main/projects/06-routing-optimization/src/routing_optimization/solver.py)
+      explains the shape of the three figures: solver profile compares total
+      distance, the gap plot normalizes each result against its reference, and
+      the C101 route map shows one feasible ALNS plan.
 
-      What ships to a dispatch team? The evaluation section answers.
-
-      **Business summary:** From a random legal day to 4.23% of best-known
-      in about a second per problem; the fleet-first variant trades a tenth
-      of a point for 0.07 fewer trucks.
+      **Business summary:** ALNS improves the mean gap from a 316.95% random
+      floor to 4.23% in about a second per problem. Its fleet-first variant
+      trades 0.07 points of gap for 0.07 fewer trucks.
     figures: [solver_profile, gap_pct, route_map_C101]
     metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, alns_fleet, ortools_cp]
   - id: evaluation
     text_md: |
-      **For a dispatch team, this answers the first question of any routing
-      job: how close a transparent, seeded heuristic gets, and at what
-      cost.** The deliverable at 100-customer scale is the search's plan:
-      feasible by construction, about a second per problem, both criteria
-      on the label. The distance gap and the fleet gap travel together.
+      **Evaluate the plan a dispatch team would actually receive.** Follow the
+      search branch in the evaluation-contract diagram. At 100-customer scale,
+      the deliverable is the ALNS plan: feasible, produced in about one second
+      per problem, and labeled with both distance gap and fleet gap.
 
-      The evaluation-contract diagram maps how runs become numbers: all
-      eight solvers run all 56 instances at seed 42; the validator drops
-      any infeasible plan before scoring; two criteria feed the search
-      plan, and a separate branch has the exact solver certifying small
-      cases.
+      The diagram shows all eight solvers running all 56 instances at seed 42.
+      A validator is software that checks the routing rules. It rejects any
+      infeasible plan before scoring, so invalid routes cannot enter the
+      results.
 
       ```diagram auto-06-routing-optimization-4
       ```
 
-      The contract buys three guarantees:
+      Three diagram paths carry the evaluation guarantees:
 
-      - Seeded means a dispatcher can replay a run and get the same plan — auditability is a feature here, not overhead.
-      - Runtime is printed next to every number: a gap without its runtime is half a claim.
-      - The exact solver earns its place as the certifier of small subproblems rather than a competitor at scale; the hinted exact-solver probe ties on gap at about ten times the runtime, and the 25-customer proof is its credential.
+      - The fixed seed lets a dispatcher replay a run and receive the same plan.
+        This makes the result auditable, meaning another person can reproduce
+        and inspect it.
+      - The scoring output places runtime beside quality. A gap without its
+        runtime would omit the cost of obtaining it.
+      - The separate exact-solver branch certifies small cases rather than
+        competing at full scale. The hinted probe ties ALNS on gap at about ten
+        times the runtime; the 25-customer proof supports its certification
+        role.
 
-      What follows is the measured record — means, spread, and the limits
-      that travel with them.
-
-      **Business summary:** For dispatch: take the search plan — feasible,
-      seeded, a second per problem, both criteria on the label; take the
-      exact solver to certify small cases.
+      **Business summary:** Use the seeded ALNS plan for a valid, one-second
+      result with distance and fleet labels. Use the exact solver to certify
+      small cases.
     figures: []
   - id: results
     text_md: |
-      **What the measured numbers support — and what they do not.** The
-      three figures in this section each answer a different doubt: the
-      family-gap figure — does the mean hide spread?; the runtime-gap
-      figure — what do the gaps cost in time?; the anytime frontier
-      figure — who improves faster from the same start? Read them in that
-      order before trusting any average; each doubt maps to a bullet below.
+      **Read the measured results with their spread, runtime, and limits.** The
+      three figures separate those views. The family-gap figure shows variation
+      across problem types. The runtime-gap figure shows the cost of each mean
+      gap. The anytime frontier tracks improvement over elapsed time from the
+      same starting plan.
 
-      - These are means over 56 instances, not a claim that every problem
-        carries a 4.23% gap or +3.73 trucks; the per-instance spread
-        reaches 19.48% (C203). The family-gap figure shows the spread by
-        family.
-      - Best-known references are not proven optima — only the certified
-        small cases support an optimality statement.
-      - Euclidean textbook routes omit street networks, traffic and dynamic
-        re-optimization; a plan 4.23% above reference on the map is not
-        4.23% above on the road.
-      - Runtimes come from one shared, load-sensitive machine: context, not
-        stable benchmarks. The runtime-gap figure pairs the two anyway.
-      - The anytime frontier gives both solvers the same Clarke-Wright
-        construction and a 30-second wall-clock cap, one worker each:
-        the hand-written search improves the start from a 6.6% median gap
-        to best-known level by 10 seconds, while single-worker CP-SAT
-        holds near its 17.6% starting gap for the whole window. The
-        headline hinted arm — CP-SAT seeded with the tuned two-opt plan —
-        is a different, complementary comparison.
+      - In the family-gap figure, 4.23% and +3.73 trucks are means over 56
+        instances, not results for every problem. The spread reaches 19.48% on
+        C203. Compare the family bars before using the overall mean.
+      - The zero reference in these gap plots is best-known, not a proven
+        optimum. Only the certified small cases support an optimality claim.
+      - All three figures use Euclidean distance, meaning straight-line distance
+        between coordinates. These textbook routes omit street networks,
+        traffic, and dynamic re-optimization, which means revising routes as
+        conditions change. A 4.23% gap on the map is not a measured 4.23% road
+        gap.
+      - In the runtime-gap figure, compare each solver's position on both axes.
+        Runtimes come from one shared, load-sensitive machine, whose speed
+        changes with other work. They are context, not stable benchmarks.
+      - In the anytime frontier, both solvers receive the same Clarke-Wright
+        construction, a capacity-aware savings start, and a 30-second wall-clock
+        cap with one worker each. The median is the middle result across the
+        instances. ALNS improves from a 6.6% median gap to best-known level by
+        10 seconds. Single-worker CP-SAT stays near its 17.6% starting gap for
+        the full window. This cold-start comparison differs from the headline
+        hinted arm, where CP-SAT starts from the tuned 2-opt plan.
 
-      The conclusions hold the full record — exact per-instance tables, the
-      ladder definition, the protocol, and the reproduction commands.
-
-      **Business summary:** Read the mean with its spread: 4.23% average,
-      worst residual 19.48%, eight references beaten — and from the same
-      cold start the custom search reaches reference quality ten times
-      faster than the exact solver's single worker.
+      **Business summary:** The family view gives a 4.23% average gap, a worst
+      residual of 19.48%, and eight beaten references. From the same cold start,
+      the frontier shows ALNS reaching reference quality ten times faster than
+      the exact solver's single worker.
     figures: [family_gap, pareto_gap_runtime, frontier_gap_time]
   - id: conclusions
     text_md: |
       ## Results summary
 
-      The HPO-tuned adaptive large-neighborhood search returns feasible,
-      machine-checked plans on all 56 Solomon 100-customer instances at a
-      4.23% mean distance gap to best-known (95% CI 3.1–5.3 points) and a
-      +3.73 mean vehicle delta, winning distance on 52 of 56 instances at
-      ~1.1 s per problem. Seeded and deterministic at seed 42, the seven
-      heuristic rungs with tuning run in about 130 seconds; the full
-      eight-solver ladder with hinted CP-SAT takes about 13 minutes.
-      [full evaluation report](https://amm-ds.github.io/portfolio/projects/06-routing-optimization/)
+      Follow the ALNS path in the conclusion diagram. On all 56 Solomon
+      100-customer instances, HPO-tuned ALNS returns feasible, machine-checked
+      plans with a 4.23% mean distance gap and +3.73 vehicle delta. It wins
+      distance on 52 of 56 at ~1.1 s per problem. The 95% confidence interval
+      (CI) is 3.1–5.3 points; here it summarizes instance spread, not sampling
+      uncertainty. Seed 42 makes runs deterministic, meaning exactly repeatable.
+      Seven tuned heuristic rungs take about 130 seconds; all eight solvers with
+      hinted CP-SAT take about 13 minutes.
+      [Full evaluation report](https://amm-ds.github.io/portfolio/projects/06-routing-optimization/)
 
-      ## What the experiment taught
+      ## What the results show
 
-      - Seeded construction plus search is enough at 100 customers: the ladder
-        falls 316.95% → 4.23% mean gap, every rung feasible and machine-checked.
-      - Fleet size and distance trade at a tenth of a point: the fleet-first
-        variant buys −0.07 vehicles for +0.07 points of gap — measured, so a
-        client can choose.
-      - The exact solver certifies but does not compete: hinted CP-SAT ties at
-        about ten times the runtime; unhinted finds no feasible plan at the equal
-        budget.
-      - Tuning's honest negatives stayed in the report: restarts never pay, and
-        2-opt HPO moves the mean gap only 13.75% → 13.63%.
-      - Published references are beatable: the search undercuts 8 best-known plans
-        (best RC202 −3.85%) — a moving literature target, not a certificate.
+      - The diagram's search path cuts mean gap from 316.95% to 4.23%; every rung
+        is feasible and checked.
+      - Its fleet-first branch saves 0.07 vehicles for +0.07 points of gap, a
+        measured choice.
+      - Its exact-solver branch certifies small cases. Hinted CP-SAT ties at about
+        ten times runtime; unhinted finds no feasible plan at equal budget.
+      - Its tuning path keeps negatives: restarts never pay; 2-opt HPO moves mean
+        gap only 13.75% → 13.63%.
+      - Its reference comparison shows 8 best-known plans undercut, best RC202 at
+        −3.85%. Best-known is a moving target, not proof.
 
       ```diagram auto-06-routing-optimization-5
       ```
 
       ## Exact numbers
 
-      Headline: mean gap 4.23%, 95% CI 3.1–5.3 points — deterministic given the
-      seed, so the interval reads as spread, not sampling uncertainty.
-      Terms: **time window**, the allowed arrival clock-time at a customer;
-      **best-known solutions**, the shortest published plans — reference points,
-      not proven optima.
+      These tables quantify the diagram's paths. A **time window** is the allowed
+      arrival clock time. **Best-known solutions** are the shortest published
+      plans, not proven optima.
 
       **Ladder definition** (seeded, deterministic):
 
-      - `randomized` / `nearest_neighbor`: feasible floor; greedy insertion.
-      - `clarke_wright`: savings merges gated on capacity and windows.
-      - `two_opt` (+ `two_opt_tuned` HPO arm): feasible intra-route 2-opt and inter-route 2-opt* moves.
-      - `alns`: random/worst/Shaw destroy, regret-2 repair, segment-adapted weights, annealing acceptance.
-      - `alns_fleet`: same search, incumbents on distance + 10,000 × vehicles (fleet-first).
-      - `ortools_cp` / `ortools_cp_unhinted`: CP-SAT at a 10 s/instance budget, hinted / no hint, no fallback.
+      - `randomized` / `nearest_neighbor`: feasible floor; greedy insertion adds
+        stops by an immediate local rule.
+      - `clarke_wright`: savings merges within capacity and windows.
+      - `two_opt` and `two_opt_tuned` (HPO): feasible 2-opt within routes; 2-opt*
+        exchanges endings across routes.
+      - `alns`: random, worst, or Shaw destroy selects stops by chance, cost, or
+        similarity; regret-2 repair reinserts them. Segment-adapted weights favor
+        recently helpful operators; annealing controls acceptance.
+      - `alns_fleet`: ranks incumbents, the best valid plans found so far, by
+        distance + 10,000 × vehicles, putting fleet size first.
+      - `ortools_cp` / `ortools_cp_unhinted`: CP-SAT at 10 s/instance, hinted or
+        unhinted, with no fallback solver.
 
-      **Headline table** (means over 56 instances; Δ gap vs `nearest_neighbor`;
-      run ids in `reports/metrics.json`):
+      **Headline table** (means over 56 instances; Δ means difference, `nn` means
+      nearest neighbor; run ids in `reports/metrics.json`):
 
       | solver | mean gap | mean veh Δ | Δ gap vs nn | mean runtime |
       |---|---|---|---|---|
@@ -309,40 +335,42 @@ sections:
 
       | finding | record |
       |---|---|
-      | distance | ALNS wins 52/56 intra-ladder on distance; `alns_fleet` wins the other 4 — the fleet-first path lands in different, occasionally better-distance optima |
-      | vehicles first | under the benchmark convention (fleet size, then distance) ALNS wins 38/56, `alns_fleet` 5/56, naive solvers 13 by using fewer vehicles at far worse distance; no solver beats best-known fleet size (+3.73 mean, +3.66 fleet-first) |
+      | distance | ALNS wins 52/56 within the ladder; `alns_fleet` wins the other 4. Fleet-first reaches different, occasionally shorter-distance local optima (best within a search neighborhood). |
+      | vehicles first | fleet-first ranking: ALNS wins 38/56, `alns_fleet` 5/56, naive solvers 13 using fewer vehicles at far worse distance; no solver beats best-known fleet size (+3.73 mean, +3.66 fleet-first) |
       | negative gaps | ALNS undercuts 8 published references (best RC202 −3.85%); residual gaps include C2 6.50%, C203 19.48% and C103 11.67% |
-      | exact solver | hinted CP-SAT: status UNKNOWN on all 56 at 100 customers, incumbents unchanged at ~10× the runtime; unhinted at the equal 10 s budget: no feasible plan, no incumbent on any instance; certified optimal only in small cases: the 25-customer C101 prefix at 191.8 in 2.9 s (2-opt hint 286.3 → 191.8, −33%) and a 5-customer case in 0.1 s |
+      | exact solver | hinted CP-SAT: UNKNOWN (no optimality proof) on all 56 at 100 customers, incumbents unchanged at ~10× runtime; unhinted at equal 10 s budget: no feasible plan or incumbent; certified optimal only in small cases: 25-customer C101 prefix at 191.8 in 2.9 s (2-opt hint 286.3 → 191.8, −33%) and a 5-customer case in 0.1 s |
 
       ## Protocol
 
-      - **Benchmark:** the 56 Solomon 100-customer instances (C1, C2, R1,
-        R2, RC1, RC2), seed 42; all eight solvers, all instances.
-      - **Metrics:** gap: percent above the best-known reference distance;
-        vehicle delta: fleet-count difference vs the reference fleet;
-        runtimes: wall-clock on a shared machine.
-      - **Exact-solver arms:** hinted CP-SAT starts from the ALNS plan under
-        10 s/instance; unhinted gets the same budget, no hint, no fallback.
-      - **Tuning records:** 24 seeded 2-opt trials on all 56 instances; 12
-        ALNS trials on a 6-instance subset; winners in `params.yaml`
-        (`solver_best`, `alns_best`).
+      These details qualify every path in the conclusion diagram.
+
+      - **Benchmark:** 56 Solomon 100-customer instances (C1, C2, R1, R2, RC1,
+        RC2), seed 42; all eight solvers, all instances.
+      - **Metrics:** gap is percent above best-known distance; vehicle delta is
+        the fleet-count difference; runtime is elapsed time on a shared machine.
+      - **Exact-solver arms:** hinted CP-SAT starts from ALNS at 10 s/instance;
+        unhinted gets the same budget, no hint, no fallback.
+      - **Tuning records:** 24 seeded 2-opt trials on all 56 instances; 12 ALNS
+        trials on a 6-instance subset; winners in `params.yaml` (`solver_best`,
+        `alns_best`).
 
       ## Limits
 
-      - Means over 56 instances hide per-instance spread (worst C203:
-        19.48%) and vehicle trade-offs.
-      - Best-known references are not proven optima; only the two certified
-        small cases support an optimality statement.
+      - Means over 56 instances hide per-instance spread (worst C203: 19.48%) and
+        vehicle trade-offs.
+      - Best-known references are not proven optima; only two certified small
+        cases support an optimality statement.
       - Euclidean textbook routes omit street networks, traffic and dynamic
         re-optimization.
-      - Runtimes come from one shared, load-sensitive machine — context,
-        not stable benchmarks.
-      - Evidence is 100-customer scale; larger Gehring–Homberger instances
-        and solver-as-a-service remain deferred.
+      - Runtimes from one shared, load-sensitive machine are context, not stable
+        benchmarks.
+      - Evidence covers 100 customers. Larger Gehring–Homberger instances and
+        solver-as-a-service, a hosted route-solving interface, remain deferred
+        and unproven here.
 
-      **Business summary:** The ladder stands: 4.23% mean gap, +3.73
-      trucks, a second a day, eight references beaten — with an honest
-      label on what best-known means.
+      **Business summary:** ALNS delivers a 4.23% mean gap and +3.73 trucks in
+      about a second per day, beating eight references. Best-known is not proof
+      of optimality.
     figures: []
     metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, alns_fleet, ortools_cp]
 roadmap:
@@ -357,24 +385,24 @@ roadmap:
   - status: delivered
     text: "Documented honest negatives: restarts never pay; 2-opt HPO gains 0.12 points."
 key_concepts:
-  - "**Optimality gap** — how far a plan's distance sits above the best-known published plan."
-  - "**Best-known solutions** — the shortest plans the literature has published: reference points, not proven optima."
-  - "**ALNS** — adaptive large-neighborhood search: destroy part of a plan, repair it, adapt operator weights over segments."
-  - "**Fleet-first ranking** — the field ranks a smaller fleet ahead of a shorter distance; distance and truck count stay together."
+  - "**Optimality gap:** the percentage by which a plan's distance exceeds the best-known published distance."
+  - "**Best-known solutions:** the shortest published plans. They are references, not proven optima."
+  - "**ALNS:** adaptive large-neighborhood search removes and reinserts stops, then adapts operator weights over search segments."
+  - "**Fleet-first ranking:** a smaller fleet ranks ahead of a shorter distance. Always read distance and truck count together."
 figure_captions:
   eda_instance_map: >-
-    C101 customer locations colored by time-window width, with the depot starred.
+    C101 customer locations use color to show time-window width; the star marks the depot.
     Narrow windows are scattered through the geographic cluster, so the clock constrains visit order.
   pareto_gap_runtime: >-
-    Mean runtime against mean gap to published best-known distance over 56 instances;
-    annotations show mean vehicle deltas. The hinted CP-SAT probe ties ALNS at about
-    10× the runtime; the fleet-first ALNS arm (alns_fleet) lands beside ALNS.
+    Mean runtime plotted against mean gap to published best-known distance over 56 instances.
+    Annotations show mean vehicle deltas. Hinted CP-SAT ties ALNS at about 10× the runtime;
+    the fleet-first ALNS arm (alns_fleet) lands beside ALNS.
   solver_profile: >-
     Total distance per instance for all eight ladder solvers. Savings construction removes most
-    of the randomized floor; ALNS has a single-digit mean gap to best-known on every family.
+    of the randomized floor. ALNS has a single-digit mean gap to best-known on every family.
   frontier_gap_time: >-
-    Median gap to best-known vs wall-clock for ALNS and single-worker CP-SAT
-    from the same Clarke-Wright construction, all 56 instances, 30 s cap.
+    Median gap to best-known over elapsed wall-clock time for ALNS and single-worker CP-SAT.
+    Both start from the same Clarke-Wright construction across all 56 instances, with a 30 s cap.
   gap_pct: >-
     Per-instance distance gap to published best-known for every solver. ALNS averages
     4.23% over 56 instances versus 13.63% for tuned 2-opt and undercuts 8 references.

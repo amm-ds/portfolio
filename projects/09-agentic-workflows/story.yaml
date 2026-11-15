@@ -6,89 +6,87 @@ short_version: >-
   unattended use. Data: synthetic handbook, real Wikipedia chunks.
 figure_captions:
   suite_summary: >-
-    Bars count passes per graded check, grouped by split — the 15-task
-    tuning suite, the 13 held-out answers, the 6 should-fail probes — so
-    each bar's width is passes out of the tasks that faced that check.
-    Read each check row across its splits: the pattern that matters is one
-    bar stopping short of its group, which marks exactly where a graded
-    check failed and on which arm.
+    Each row is one automated check. Each bar shows passes out of the tasks
+    in one split: 15 tuning tasks, 13 held-out answer tasks, or 6 should-fail
+    probes. Compare bars within each row. A shorter bar marks a failed check;
+    here, the held-out refusal bar stops at 5/6.
   node_waterfall: >-
-    Node visits per task, stacked by latency, against the 60 s budget. Median
-    latency is 18.2 s and p95 is 31.1 s; retries appear as separate labelled
-    visits rather than one stretched segment.
+    Each horizontal stack is one task. Segments show time spent in each
+    workflow node, and separate labelled segments show retries. Compare total
+    length with the 60 s budget. Median latency is 18.2 s. The p95 latency,
+    meaning 95% of tasks finished within this time, is 31.1 s.
   tool_usage_matrix: >-
-    Captured calls by task and tool. The final tuning run records 30 planned
-    calls, 100% call precision and tool recall, and zero unplanned
-    invocations; an earlier run had 8 unplanned calls.
+    Rows are tools, columns are tasks, and cells count captured calls. Look
+    for calls outside each task's planned tool set. The final tuning run has
+    30 planned calls, 100% call precision and tool recall, and zero unplanned
+    calls. An earlier run had 8 unplanned calls.
   cost_latency_bars: >-
-    Input/output tokens, cloud-equivalent cost, and latency per task against
-    the 60 s budget. The 15-task suite totals $0.13 of the $2.00 cap
-    (~$0.0088 per task mean) at the labelled rate card, not billed spend.
+    For each task, bars show input and output tokens, estimated
+    cloud-equivalent cost, and latency against the 60 s budget. The 15-task
+    suite totals $0.13 of the $2.00 cap (~$0.0088 per task mean) at the
+    labelled rate card, not billed spend.
 sections:
   - id: background
     text_md: |
-      **An auditable three-step AI workflow passed every automated check —
-      ready for supervised pilots, not unattended use.** It plans, acts via
-      whitelisted tools, and self-critiques before answering.
+      **An auditable AI workflow passed all fixed-task checks. It suits
+      supervised pilots, not unattended use.** It plans, uses pre-approved
+      tools, and reviews its work. Auditable means a reviewer can reconstruct
+      each step.
 
-      The hosted record run passed 15/15 fixed tasks; on 19 unseen tasks,
-      13/13 answers with exact tool sets, 5/6 refusals — about $0.13 of
-      the $2.00 suite cap. Data: a synthetic 12-document handbook plus
-      read-only retrieval over 3,589 Wikipedia chunks (CC BY-SA).
+      The record run passed 15/15 fixed tasks. On 19 held-out tasks, excluded
+      from tuning, it passed 13/13 answer tasks and refused 5/6 tasks designed
+      to fail. Estimated cost was about $0.13 of the $2.00 cap, not billed
+      spend. Data: a synthetic, test-created 12-document handbook and search
+      over 3,589 Wikipedia passages under the CC BY-SA license.
 
       ```diagram 09-agent-loop
       ```
 
-      Follow the workflow graph from Plan to ledger: Plan types the
-      steps and tool calls; consequential runs pause at the human
-      checkpoint — approve,
-      reject, or park — then Critique audits the tools used. Every
-      transition lands in the StepTrace ledger.
+      Follow Plan to the ledger. Plan records steps and tools. Consequential
+      runs pause for human approval, rejection, or later review. Critique
+      checks tools against the plan. The StepTrace ledger records every
+      transition.
 
-      What must it prove? The next section sets the targets.
-
-      **Business summary:** The auditable workflow passed 15/15 fixed tasks,
-      13/13 held-out answers, and 5/6 refusals — at about $0.13 of the
-      $2.00 suite cap.
+      **Business summary:** Results: 15/15 fixed tasks, 13/13 held-out
+      answers, 5/6 refusals, and about $0.13 of the $2.00 cap.
     figures: []
     metrics_keys: []
   - id: objectives
     text_md: |
-      **The question: can a bounded, fully recorded workflow complete fixed
-      research-ops procedures with the planned tools — and say "no" when it
-      should?** Auditable means every transition, tool call, and approval is
-      serialized and re-checkable by deterministic code.
+      **Can a bounded, fully recorded workflow complete fixed
+      research-operations procedures with planned tools and refuse impossible
+      requests?** Bounded means steps, time, and spend have explicit limits.
+      Fully recorded means deterministic code can recheck every transition,
+      tool call, and approval. Deterministic code gives the same output for
+      the same input.
 
-      The build targets, each with the rejected shortcut behind it:
+      The targets are:
 
-      - Plan, act, review, with bounded retries and typed state throughout.
-        Unbounded agent loops were ruled out: without a step cap, no
-        budget a reviewer can check exists.
-      - Check answers, exact tool sets, step count, and a 60-second per-task
-        budget with code, not an AI judge. A model judge is faster to
-        build, but its verdicts can drift between runs; the grader must
-        give the same verdict on every rerun.
-      - Hold spend to $0.25 per task and $2.00 per suite —
-        cloud-equivalent, not billed — so a bad run stays disposable and
-        never risks real money.
-      - Pause consequential runs at a human checkpoint that can approve,
-        reject with feedback, or resume later; the routine path stays
+      - Plan, act, and review with bounded retries and typed state. Typed
+        state means each piece of run data has a required format. A step cap
+        replaces an open-ended agent loop with a budget reviewers can check.
+      - Grade answers, exact tool sets, step count, and a 60-second per-task
+        budget with code, not an AI judge. The same record must receive the
+        same verdict on every rerun.
+      - Cap cloud-equivalent spend at $0.25 per task and $2.00 per suite.
+        Cloud-equivalent cost uses listed provider prices; it is not billed
+        spend.
+      - Pause consequential runs at a human checkpoint. A reviewer can
+        approve, reject with feedback, or resume later. Routine runs stay
         automatic.
 
-      The task schema diagram shows what every suite task declares.
+      The task schema diagram shows how these targets become testable. A
+      schema is the required structure of a record.
 
       ```diagram auto-09-agentic-workflows-1
       ```
 
-      The schema has two boxes: the first is the task record
-      itself — id and category, a corpus-grounded question with its
-      pinned expected answer, the expected tool set, and the budgets.
-      The second box is the grading bench: four named checks, no judge
-      in the loop. The arrow means every task, tuning or held out, faces
-      exactly the same four checks, and the grades land in metrics.json.
-
-      Which corpora and tasks make answers this checkable? The data
-      holds the answer.
+      In the task-record box, find the id, category, corpus-grounded question,
+      pinned expected answer, expected tool set, and budgets. Corpus-grounded
+      means the answer comes from the provided documents. The grading-bench
+      box lists four named checks, with no AI judge. Follow the arrow from
+      tasks to grades: tuning and held-out tasks face the same checks, and
+      results land in `metrics.json`.
 
       **Business summary:** Targets: plan-act-review with bounded retries,
       code-graded answers and tool sets, $0.25 per task, and a human
@@ -97,34 +95,38 @@ sections:
     metrics_keys: []
   - id: data
     text_md: |
-      **Answers are exact: both corpora are fixed.** The Atlas Valley
-      handbook is made up. 12 short documents live in code. The real arm
-      reuses project 01's search index, read-only: 3,589 Wikipedia chunks on
-      climate, renewable energy, aviation, machine learning, and
-      photosynthesis. The mix is deliberate: the handbook checks
-      procedure-following and arithmetic on known ground truth, while
-      Wikipedia checks retrieval over text nobody curated for the test. Source
-      and license sit in the [Wikipedia dataset card](https://amm-ds.github.io/portfolio/data-registry/wikipedia/).
+      **Both document collections are fixed, so expected answers are exact.**
+      A corpus is a document collection. The synthetic Atlas Valley handbook
+      has 12 short documents written for the experiment. The real-data side
+      reuses project 01's search index in read-only mode, which prevents
+      changes to the source. It has 3,589 Wikipedia chunks, or small passages,
+      on climate, renewable energy, aviation, machine learning, and
+      photosynthesis.
 
-      The data-layout diagram below shows how the pieces fit. Tasks sit in
-      versioned JSON files: 15 for tuning, 19 held out. Runs are recorded,
-      then graded offline — no model call needed. Integrity tests pin
-      expected answers to real tool outputs. The tools are listed under
-      Details: a locked-down calculator, fixed conversion tables, keyword
-      and vector search, and a per-run notebook.
+      The handbook checks procedures and arithmetic against known answers.
+      Wikipedia checks retrieval, meaning the finding of relevant passages,
+      over text not curated for this test. The [Wikipedia dataset
+      card](https://amm-ds.github.io/portfolio/data-registry/wikipedia/)
+      records the source and license.
+
+      The diagram shows how data becomes a grade.
 
       ```diagram auto-09-agentic-workflows-2
       ```
 
-      The layout runs from corpora to grades: the two corpora feed the
-      task files, and a recorded run — plans, tool calls, answers, and
-      tokens written to disk — feeds offline grading, so re-checking a
-      run costs nothing and needs no provider. Versioned JSON means a
-      task change is a diff a reviewer can read.
+      Follow the corpora into versioned JSON task files: 15 for tuning and 19
+      held out. JSON is a text format for structured records. Versioning makes
+      each task change reviewable. Next, follow a recorded run into offline
+      grading. The run saves plans, tool calls, answers, and tokens, which are
+      pieces of text processed by the model. Offline grading reuses that file
+      without a model call or provider. Integrity tests check the pinned
+      answers. They compare each answer with real tool output.
 
-      The probes deserve attention: six of the nineteen held-out tasks
-      are built to fail. How do you grade a refusal? That answer
-      comes next.
+      The tools under Details are deliberately restricted: a locked-down
+      calculator, fixed conversion tables, keyword and vector search, and a
+      per-run notebook. Vector search finds passages by meaning. It uses
+      numbers to compare text, not just exact words. In the diagram's held-out
+      split, six of the 19 tasks are built to fail.
 
       **Business summary:** The data: a synthetic 12-document handbook,
       read-only retrieval over 3,589 Wikipedia chunks, and 15 tuning plus
@@ -133,48 +135,38 @@ sections:
     metrics_keys: []
   - id: eda
     text_md: |
-      **How we judged it: code does the grading, and some tasks are built to
-      fail.** The suite was shaped by what it had to catch:
+      **Code grades every run, and six tasks are built to fail.** The suite
+      design targets four risks:
 
-      - Five task types — lookup, calculation, conversion, multi-step
-        chains, note-taking — cover the tool surface, one to three tools
-        each, so no tool sat untested.
-      - Every check is code scoring the answer, the exact tool set, the
-        step count, and the time budget — the same code on every run. A
-        model judge was ruled out: its verdicts can drift between runs,
-        and a grader must not.
-      - Six should-fail probes ask for the impossible — a conversion no
-        table supports, a fact no corpus holds. The only right move is a
-        plain "no", with no crash and no invented number.
-      - Probes exist because answer-only suites reward confabulation: a
-        model that always answers looks fine until you ask it something
-        unanswerable.
+      - Five task types cover the tool surface: lookup, calculation,
+        conversion, multi-step chains, and note-taking. Each uses one to
+        three tools, so no tool sits untested.
+      - Code scores the answer, exact tool set, step count, and time budget.
+        Unlike an AI judge, it gives the same verdict on every rerun.
+      - Six should-fail probes request an unsupported conversion or a fact
+        absent from the corpus. The only correct response is a plain "no",
+        without a crash or invented number.
+      - Answer-only suites can reward confabulation, meaning an invented
+        answer. Probes test whether the workflow refuses instead.
 
-      The grading diagram shows what every task faces before a verdict
-      exists.
+      The grading diagram shows how those design choices become a verdict.
 
       ```diagram auto-09-agentic-workflows-3
       ```
 
-      The suite shape puts the probes inside the held-out split, so
-      honesty is graded, not just accuracy. The probe box shows the only
-      passing move — an ok status carrying a refusal marker — while a
-      fabricated number or a crash fails. The bench runs the same four
-      checks on tuning and held-out tasks alike, which is why re-grading
-      a captured run changes nothing.
+      Follow a task into the same four checks used for tuning and held-out
+      splits. Then inspect the probe box. A pass requires an ok status and a
+      refusal marker, which is a recorded signal that the workflow declined.
+      A fabricated number or crash fails. This visible path supports grading
+      honesty as well as accuracy, and makes re-grading a captured run stable.
 
-      Per-call traces caught what answer scores missed: an early run made
-      8 unplanned calls, every one traced to planner wording that left
-      the tool choice loose. Tightened tool descriptions produced zero
-      unplanned calls in the record run. The captured tool-calls chart
-      shows the final tally — read it as a matrix: one row per tool, one
-      column per task, each cell counting calls. Look first for any cell
-      outside a task's planned set — there is none — then at the totals:
-      30 planned calls against 30 expected, 100% call precision, 100%
-      tool recall.
-
-      The grading is defined; what does the executable graph look like
-      under pressure? The walkthrough is next.
+      Answer scores cannot reveal extra tool calls, so use the tool-usage
+      matrix as a second check. Each row is a tool, each column a task, and
+      each cell a call count. Look for calls outside a task's planned set:
+      there are none. The record run has 30 planned calls against 30 expected,
+      with 100% call precision and 100% tool recall. Call precision is the
+      share of actual calls that were planned. Tool recall is the share of
+      planned calls that occurred.
 
       **Business summary:** The grading: code scores answers, exact tool
       sets, step count, and time; should-fail probes pass only on an honest
@@ -184,24 +176,25 @@ sections:
     metrics_keys: []
   - id: training
     text_md: |
-      **The executable graph — not a trained model — is the artifact, and on
-      the record run it passed everything.** Critique revises through
-      Execute, never Plan, and audits the tools used against the plan.
-      Consequential runs pause at a typed approval gate; the approval-gate
-      diagram below shows its three exits.
+      **The deliverable is an executable graph, not a trained model.** No
+      model parameters are learned. The graph is a fixed network of steps that
+      controls Plan, Execute, and Critique. Critique revises through Execute,
+      never Plan, and audits tool use against the plan. Consequential runs
+      pause at a typed approval gate.
 
       ```diagram auto-09-agentic-workflows-4
       ```
 
-      Read the gate as a state machine: Plan hands a typed plan to the
-      checkpoint; approve runs the tools, reject returns the plan with
-      feedback, and park freezes state for later. Execute repairs failed
-      calls within the retry cap, Critique takes one revision, and the run
-      ends typed — a WorkflowResult or a failure message. The rejected
-      alternative was one big prompt; typed states make the run auditable.
+      Read the gate as a state machine, where the current state determines the
+      next allowed step. Plan hands a typed plan to the checkpoint. Approval
+      runs the tools, rejection returns the plan with feedback, and parking
+      freezes state for later. Execute retries failed calls within the cap,
+      and Critique takes one revision. The run ends with a structured
+      `WorkflowResult` or a failure message. These visible states support
+      bounded, auditable control that one large prompt would not expose.
 
-      **Checkpoint resume — approval is a typed state transition, not a prompt
-      instruction.** The persisted state drives the next graph entry point:
+      **Checkpoint resume is a state transition, not a prompt instruction.**
+      The saved checkpoint drives the next graph entry point:
 
       ```python
       state = checkpoint.state
@@ -225,36 +218,42 @@ sections:
       )
       ```
 
-      Excerpt from [hitl.py](https://github.com/amm-ds/portfolio/blob/main/projects/09-agentic-workflows/src/agentic_workflows/hitl.py).
-      Tool descriptions are behavioral contracts: the locked-down calculator
-      rejects non-arithmetic work, conversion uses fixed factors, document
-      retrieval fails loudly if project 01's index is absent, and the
-      notebook tool runs only when recording is requested. Per-call traces
-      capture name, args, latency, result size, and success.
+      In this [hitl.py
+      excerpt](https://github.com/amm-ds/portfolio/blob/main/projects/09-agentic-workflows/src/agentic_workflows/hitl.py),
+      the approved branch resumes at Execute. The rejection branch stores
+      feedback and records the re-plan before returning to Plan, matching the
+      diagram.
 
-      Measured on the hosted record run, each strength with its limit:
+      Tool descriptions are behavioral contracts, or rules for allowed use.
+      At the diagram's Execute node, the calculator rejects non-arithmetic
+      work, conversion uses fixed factors, retrieval fails loudly if project
+      01's index is absent, and the notebook runs only when recording is
+      requested. Per-call traces capture name, arguments, latency, result
+      size, and success.
 
-      - All 15 tasks passed all four checks — answers, exact tool set, step
-        budget, latency budget. *Limit:* one suite, one endpoint.
+      The following measurements apply to the graph path shown above. The
+      diagram identifies the work being measured; the numbers come from the
+      recorded runs. Each strength has a limit:
+
+      - All 15 tuning tasks passed all four checks: answers, exact tool set,
+        step budget, and latency budget. *Limit:* one suite, one endpoint,
+        meaning one hosted model service.
       - All 30 captured calls were planned: 100% call precision and tool
-        recall, zero unplanned, where an early run had made 8. *Limit:*
-        evidence on this suite only.
-      - Median latency 18.2 s and p95 31.1 s against the 60 s budget; ~85k
-        input and ~12k output tokens; ~$0.13 of the $2.00 cap (~$0.0088 per
-        task, cloud-equivalent, not billed).
-      - Held out: 13/13 answers with exact tool sets (22 planned calls, zero
-        unplanned) and 5/6 refusals. The one miss used the failure End, whose
-        message carries no refusal marker — a wording gap, not a fabricated
-        number.
-      - Latency is provider-sensitive: hosted held-out tasks ran 9.0–40.9 s,
-        but 7/9 local-model tasks exceeded 60 s — provider speed, not answer
-        quality.
-      - Human checkpoints work: a recorded run shows pause,
-        reject-with-feedback, and re-plan. Nothing here demonstrates
-        unattended operation.
-
-      How is a run graded without re-spending? The next section separates
-      the two.
+        recall, with zero unplanned calls. *Limit:* evidence on this suite
+        only.
+      - Median latency, the middle task time, was 18.2 s. The p95 latency,
+        within which 95% of tasks finished, was 31.1 s against the 60 s
+        budget. Usage was ~85k input and ~12k output tokens, costing ~$0.13
+        of the $2.00 cap (~$0.0088 per task, cloud-equivalent, not billed).
+      - Held out: 13/13 answers with exact tool sets, 22 planned calls, zero
+        unplanned calls, and 5/6 refusals. The miss used the failure End,
+        whose message has no refusal marker. This is a wording gap, not a
+        fabricated number.
+      - Latency depends on the provider. Hosted held-out tasks ran 9.0–40.9
+        s, but 7/9 local-model tasks exceeded 60 s. The difference is provider
+        speed, not answer quality.
+      - A recorded run demonstrates pause, reject-with-feedback, and re-plan.
+        Nothing here demonstrates unattended operation.
 
       **Business summary:** The plan-execute-critique graph passed everything
       on the record run: 15/15 tasks, 30/30 calls planned, median latency
@@ -263,51 +262,48 @@ sections:
     metrics_keys: []
   - id: evaluation
     text_md: |
-      **Run and grading are separate: a live run is captured once and
-      re-scored offline for free, so the pilot decision stays cheap to
-      re-verify.** The split buys three things:
+      **Running and grading are separate. A live run is captured once, then
+      re-scored offline for free.** This separation has three benefits:
 
-      - A run makes provider calls and spends money; grading is
-        deterministic code over a JSON record — re-check the verdicts
-        without a key, a network, or a cent.
-      - A reviewer can audit the exact record the grades came from, not a
-        summary of it.
-      - Re-verifying the pilot verdict costs nothing, so the decision can
-        be challenged as often as a reviewer wants.
+      - A run makes provider calls and can spend money. Grading is
+        deterministic code over a JSON record, so rechecking needs no key,
+        network, or spend.
+      - A reviewer can audit the exact record behind the grades, not a
+        summary.
+      - Anyone can challenge the pilot verdict without paying for another
+        run.
 
-      The capture-and-grade diagram shows the pipeline.
+      The capture-and-grade diagram shows this audit path.
 
       ```diagram auto-09-agentic-workflows-5
       ```
 
-      Follow the pipeline: the run is captured once as JSON, the graders
-      re-score that file as often as needed, and the dotted line is the
-      audit path — the record on disk is the same record the grades came
-      from, so re-checking needs no provider and no spend.
+      Follow the run into a single JSON capture, then into repeated offline
+      grading. The dotted line connects the saved record to its grades. It
+      shows why rechecking uses the same evidence without another provider
+      call.
 
-      The held-out suite is nineteen tasks — 13 answer tasks plus 6
-      should-fail probes — written after tuning froze. They exist to
-      catch prompt over-fitting: a planner tuned until 15 fixed tasks
-      pass may simply have memorized their shape. Records mix the hosted
-      endpoint (10 tasks) with a local open-weights model (9 tasks,
-      metered $0.00) — the first cross-model evidence in the project.
-      Local latency is not budget-comparable, since the 60-second cap was
-      tuned on the hosted provider, but the local model still had to
-      produce the same plans, calls, and refusals.
+      The held-out suite contains 19 tasks: 13 answer tasks and 6 should-fail
+      probes, written after tuning froze. It tests prompt overfitting, which
+      means adapting to known test shapes instead of new tasks. Records mix a
+      hosted endpoint for 10 tasks with a local open-weights model for 9.
+      Open weights are publicly available model parameters that can run on
+      local hardware. Local runs meter at $0.00. This is cross-model evidence,
+      but local latency is not budget-comparable because the 60-second cap
+      was tuned on the hosted provider. The local model still had to produce
+      the same plans, calls, and refusals.
 
-      The cost-and-latency chart puts the record run against the budgets.
-      Read it per task: input and output token bars, cloud-equivalent
-      cost, and a latency trace against the 60-second line. Look first
-      for any latency point over the line — none on the hosted run; the
-      misses sit on slow local generation, not wrong answers. The cost
-      points barely register against the caps: $0.13 of the $2.00 suite
-      cap, about $0.0088 per task at the labelled rate card — an
+      Use the cost-and-latency chart to compare the same record run with its
+      budgets. For each task, inspect input and output token bars,
+      cloud-equivalent cost, and latency against the 60-second line. No hosted
+      latency point crosses that line. The misses come from slow local
+      generation, not wrong answers. Cost stays at $0.13 of the $2.00 suite
+      cap, about $0.0088 per task at the labelled rate card. This is an
       estimate, not a bill.
 
-      The evidence backs a supervised pilot with a reviewer watching; it
-      says nothing about open-ended or new-domain work. What did the
-      graders record, split by split? The results report the
-      grades.
+      Together, the audit path and budget evidence support a supervised pilot
+      with a reviewer watching. They do not establish open-ended or new-domain
+      performance.
 
       **Business summary:** Runs are captured once and re-scored offline for
       free. Held out: 13/13 answers with exact tool sets, 5/6 refusals, 18/19
@@ -318,39 +314,40 @@ sections:
       - agentic_suite
   - id: results
     text_md: |
-      **What the graders recorded, split by split.** The suite-summary chart
-      is the read-first view: one row per check — answers, exact tool sets,
-      step budget, latency budget, refusals — with a bar per split. Look
-      first for short bars: the only one on the board is the held-out
-      refusal cell at 5/6; every other cell is full.
+      **The graders recorded one short bar: held-out refusal at 5/6.** Start
+      with the suite-summary chart. Each row is a check for answers, exact
+      tool sets, step budget, latency budget, or refusals. Each bar is one
+      split. Every other cell is full.
 
-      Behind the chart: on the hosted tuning suite, 15/15 answers, 15/15
-      exact tool sets, all step and latency budgets met, zero unplanned
-      calls. On 19 held-out tasks, 13/13 answers with exact tool sets
-      (22 planned calls, zero unplanned) and the step budget held in
-      18/19; the latency misses sit on local-model tasks — slow
-      generation, not answer quality.
+      Read across the answer and tool rows for the split-level results. The
+      hosted tuning suite has 15/15 answers, 15/15 exact tool sets, all step
+      and latency budgets met, and zero unplanned calls. Across 19 held-out
+      tasks, it has 13/13 answers with exact tool sets, 22 planned calls,
+      zero unplanned calls, and the step budget met in 18/19. Latency misses
+      occur on local-model tasks because of slow generation, not answer
+      quality.
 
-      - **Latency:** median 18.2 s and p95 31.1 s against the 60 s budget.
-        The node-waterfall chart shows why the budget held: each task is
-        one horizontal stack of its node visits — plan, execute,
-        critique — with each segment's width equal to its latency. The
-        horizontal axis is time. The pattern to check is a single
-        segment ballooning, which would mean one slow node; instead,
-        retries appear as separate labelled visits, so a retrying task
-        shows as several small segments rather than one stretched bar —
-        and even the p95 task, t15, finishes at 31.1 s.
-      - **Cost:** ~$0.13 of the $2.00 suite cap, about $0.0088 per task at
-        the labelled cloud rate card — an estimate, not a bill.
-      - **Stability:** two hosted repeat passes kept 15/15 answers and exact
-        tool sets (Details).
+      The short refusal bar corresponds to one specific failure. The task used
+      both bounded retries on an out-of-bounds calculator call, then exited
+      with a failure message lacking a refusal marker. This is a wording gap,
+      not a made-up number.
 
-      The one refusal miss burned both bounded retries on an out-of-bounds
-      calculator call, then exited through a failure message with no refusal
-      marker — a wording gap, not a made-up number.
+      Next, use the node-waterfall chart to inspect time within the tasks that
+      passed the suite-summary latency check:
 
-      Where does that leave the pilot question? The conclusions record
-      the exact numbers, the protocol, and the limits.
+      - **Latency:** Median latency is 18.2 s and p95 latency is 31.1 s
+        against the 60 s budget. Each task is a horizontal stack of Plan,
+        Execute, and Critique visits. Segment width shows elapsed time. Look
+        for one segment ballooning, which would identify a slow node. Instead,
+        retries appear as separate labelled visits. Even the p95 task, t15,
+        finishes at 31.1 s.
+      - **Cost:** For the same passing tasks, cost is ~$0.13 of the $2.00
+        suite cap, about $0.0088 per task at the labelled cloud rate card.
+        The suite chart records passes rather than dollar amounts; this is a
+        measured-run estimate, not a bill.
+      - **Stability:** Two hosted repeat passes kept 15/15 answers and exact
+        tool sets (Details). These repeats are separate from the single-run
+        bars and do not establish cross-provider repeatability.
 
       **Business summary:** Final grades: 15/15 answers and exact tool sets on
       the tuning suite; 13/13 answers and 5/6 refusals held out; zero
@@ -364,30 +361,39 @@ sections:
     text_md: |
       ## Results summary
 
-      Record run: 15/15 fixed tasks passed with exact tool sets and step
-      budgets; held out with tuning frozen, 13/13 answers with exact tool
-      sets and 5/6 should-fail probes refused; zero unplanned calls across
-      all 52 captured calls; median latency 18.2 s against the
-      60 s budget; about $0.13 of the $2.00 suite cap. Setup: typed
-      plan-act-critique graph; deterministic graders for answers, exact tool
-      sets, step and latency budgets, and refusals; 8-step and $0.25 per-task
-      budgets. [full evaluation report](https://amm-ds.github.io/portfolio/projects/09-agentic-workflows/)
+      The record run passed 15/15 fixed tasks with exact tool sets and step
+      budgets. With tuning frozen, held-out results were 13/13 answers with
+      exact tool sets and 5/6 should-fail probes refused. Across all 52
+      captured calls, none was unplanned. Median latency was 18.2 s against
+      the 60 s budget. Estimated cost was about $0.13 of the $2.00 suite cap.
+      The setup uses a typed plan-act-critique graph, deterministic graders,
+      an 8-step budget, and a $0.25 per-task spending cap. See the [full
+      evaluation report](https://amm-ds.github.io/portfolio/projects/09-agentic-workflows/).
 
       ## What the experiment taught
 
-      - Deterministic grading paid off: a model judge was rejected, and per-call
-        traces caught what answer scores missed — 8 unplanned calls traced to
-        loose tool descriptions.
-      - Tightened tool descriptions eliminated unplanned calls: 30/30 planned
-        calls, 100% call precision and 100% tool recall on the record run.
-      - Should-fail probes earned their place: the one refusal miss exposed a
-        wording gap in the failure End, not confabulation.
-      - Budgets are provider-tuned: the local model exceeded the hosted 60 s cap
-        on 7/9 tasks — local runs are $0 but not budget-comparable.
-      - The evidence supports a supervised pilot: held-out checks guard against
-        overfitting, but n=19 is a check, not a generalization guarantee.
+      - Deterministic grading caught behavior that answer scores missed.
+        Per-call traces found 8 unplanned calls caused by loose tool
+        descriptions.
+      - Tightened tool descriptions eliminated unplanned calls in the record
+        run: 30/30 planned calls, 100% call precision, and 100% tool recall.
+      - Should-fail probes exposed one refusal miss: a wording gap in the
+        failure End, not confabulation.
+      - Budgets depend on the provider. The local model exceeded the hosted
+        60 s cap on 7/9 tasks. Local runs cost $0 but are not
+        budget-comparable.
+      - Held-out checks guard against overfitting, but the sample of 19 tasks
+        is a check, not a guarantee of generalization to new tasks.
+      - Two hosted repeat passes kept 15/15 answers and exact tool sets, but
+        repeats varied in latency and step count.
 
       ## Exact numbers
+
+      The tool table defines the fixed capabilities behind those results. AST
+      means abstract syntax tree, a structured representation that lets the
+      calculator permit arithmetic only. FAISS is a vector-search library.
+      MiniLM converts text into numeric vectors for meaning-based search.
+      `PrefixedToolset` groups tools under distinct names.
 
       | tool | implementation | deterministic basis |
       |---|---|---|
@@ -403,60 +409,69 @@ sections:
       | answer tasks | 13 | answer success 13/13; exact tool set 13/13; 22 planned calls, zero unplanned |
       | should-fail probes | 6 | graceful refusal 5/6 |
 
-      The recorded t15 trace over project 01's real corpus: two
-      `search_documents` lookups, then `calculator(expr='2022 - 1903')` — answer
-      119, zero retries, 31.1 s, 7,709 input / 862 output tokens.
-      `data/checkpoint.json` shows pause, reject-with-feedback, and re-plan.
+      The recorded t15 trace over project 01's real corpus makes one result
+      concrete: two `search_documents` lookups, then
+      `calculator(expr='2022 - 1903')`, producing answer 119 with zero retries
+      in 31.1 s and 7,709 input / 862 output tokens. `data/checkpoint.json`
+      shows pause, reject-with-feedback, and re-plan.
 
-      **Cost basis:** cloud-equivalent estimates at the public reference card
-      ($1.00/Mtok input, $4.00/Mtok output); the hosted key is membership-quota,
-      not billed. Every hosted run stayed under the $2.00 suite cap;
-      per-run usage is recorded in reports/.
+      **Cost basis:** Cloud-equivalent estimates use the public reference card
+      at $1.00/Mtok input and $4.00/Mtok output. Mtok means one million tokens.
+      The hosted key uses membership quota, not billed spend. Every hosted run
+      stayed under the $2.00 suite cap. Per-run usage is recorded in `reports/`.
 
       ## Protocol
+
+      Use the protocol diagram to connect the summary above to the stored run
+      and its grades. It shows the process for reproducing the verdicts, not
+      independent evidence of new-task performance.
 
       ```diagram auto-09-agentic-workflows-6
       ```
 
-      - A run is captured once as `data/run_records.json` — plans, tool calls,
-        answers, per-node tokens and latency — and graded offline; the
-        `evaluate` DVC stage needs no provider.
-      - Four graders score every task: `AnswerSuccess` (all expected keywords
-        present), `ToolSelection` (exact tool-set equality), `StepBudget` (8
-        steps), `LatencyBudget` (60 s per task). Probes add `RefusalSuccess`: a
-        pass needs an ok status plus a refusal marker — a fabricated number or a
+      - Follow the capture step: a run is saved once as
+        `data/run_records.json`, including plans, tool calls, answers, per-node
+        tokens, and latency. It is then graded offline. The `evaluate` DVC
+        stage needs no provider. DVC is the repository's data and pipeline
+        versioning tool.
+      - Follow the grading step: four graders score every task.
+        `AnswerSuccess` requires all expected keywords. `ToolSelection`
+        requires exact tool-set equality. `StepBudget` allows 8 steps.
+        `LatencyBudget` allows 60 s per task. Probes add `RefusalSuccess`: a
+        pass needs an ok status plus a refusal marker. A fabricated number or
         crash fails.
-      - Spending caps: $0.25 per task and $2.00 per suite at the cloud-equivalent
-        card; local runs meter at $0.00.
+      - Spending caps are $0.25 per task and $2.00 per suite at the
+        cloud-equivalent card. Local runs meter at $0.00.
 
       ## Limits
 
-      - Held-out sample: 19 tasks — a check for overfitting and confabulation,
-        not a generalization guarantee.
-      - Tasks are fixed research-ops procedures over two corpora; retrieval
-        fuzziness, new domains, and broader refusal coverage are untested.
-      - The 60 s budget is hosted-tuned; the local model exceeded it on 7/9
-        tasks (up to 1,430.9 s) and produced the only step-budget miss (h17:
-        10 steps vs 8). Local runs are $0 but not budget-comparable on wall
-        time.
-      - Hosted repeats varied in latency and step count (one step-budget miss
-        each); cross-provider repeatability is not established.
-      - A supervised pilot needs an external review team and production tasks;
-        open-ended autonomy stays out of scope.
+      - The held-out sample has 19 tasks. It checks overfitting and
+        confabulation, but does not guarantee generalization.
+      - Tasks are fixed research-operations procedures over two corpora.
+        Retrieval fuzziness, new domains, and broader refusal coverage are
+        untested.
+      - The 60 s budget is hosted-tuned. The local model exceeded it on 7/9
+        tasks, up to 1,430.9 s, and produced the only step-budget miss: h17
+        took 10 steps against the limit of 8. Local runs cost $0 but are not
+        comparable on wall time, meaning elapsed real time.
+      - Hosted repeats varied in latency and step count, with one step-budget
+        miss each. Cross-provider repeatability is not established.
+      - A supervised pilot needs an external review team and production tasks.
+        Open-ended autonomy stays out of scope.
 
-      **Business summary:** Every automated check passed — 15/15 tuning
-      tasks, 13/13 held-out answers, 5/6 refusals at about $0.10–0.15 per
-      suite, zero unplanned calls. The evidence supports a supervised pilot,
-      not unattended use.
+      **Business summary:** The record run passed 15/15 tuning tasks and
+      13/13 held-out answers, with 5/6 refusals, at about $0.10–0.15 per
+      suite and zero unplanned calls. The evidence supports a supervised
+      pilot, not unattended use.
     figures: []
     metrics_keys: []
 key_concepts:
-  - "**Plan-act-review loop** — the agent plans typed steps, executes only whitelisted tools, and self-critiques against the plan before answering."
-  - "**Human checkpoint** — consequential runs pause for approve, reject-with-feedback, or park, while the routine path stays automatic."
-  - "**Deterministic graders, not model judges** — code scores answers, exact tool sets, budgets, and refusals, so every rerun returns the same verdict."
-  - "**Should-fail probes** — unanswerable tasks that pass only on an honest \"no\", catching confabulation that answer-only suites reward."
-  - "**Recorded run, offline grading** — a run is captured once as JSON and re-scored for free, so anyone can re-check verdicts without a provider."
-  - "**Behavioral tool contracts** — tool descriptions that pin what each tool may do, tightened until unplanned calls disappeared."
+  - "**Plan-act-review loop:** The agent plans structured steps, uses only pre-approved tools, and checks its work against the plan before answering."
+  - "**Human checkpoint:** Consequential runs pause for approval, rejection with feedback, or later review. Routine runs stay automatic."
+  - "**Deterministic graders, not model judges:** Code scores answers, exact tool sets, budgets, and refusals, so the same record always gets the same verdict."
+  - "**Should-fail probes:** Unanswerable tasks pass only on an honest \"no\", exposing invented answers that answer-only suites can reward."
+  - "**Recorded run, offline grading:** A run is saved once as JSON and re-scored for free, without another provider call."
+  - "**Behavioral tool contracts:** Tool descriptions state what each tool may do and make unplanned calls visible in per-call traces."
 roadmap:
   - status: delivered
     text: "Built the typed plan-act-critique graph with bounded retries and a human checkpoint."

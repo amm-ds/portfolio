@@ -6,21 +6,27 @@ short_version: >-
   harness for re-measuring any stack on target hardware.
 figure_captions:
   quality_quant: >-
-    Schema-valid and keyword quality rates at concurrency 1 for 4-bit,
-    QAT-int4, and the quantized Q8_0 baseline. Every arm scores 1.00 on both
-    checks in this run; this bounded task does not establish broader model
-    quality.
+    Schema-valid answers follow the requested structure; keyword-quality
+    answers include the required terms. Quantization compresses model weights
+    into smaller number formats. At concurrency 1, the 4-bit, QAT-int4, and
+    quantized Q8_0 arms all score 1.00 on both checks. QAT-int4 uses 4-bit
+    integers with quantization-aware training, while Q8_0 uses 8-bit weights.
+    This bounded task does not establish broader model quality.
   latency_concurrency: >-
-    p95 latency at concurrency 1/2/4/8, with error bars spanning committed
-    p50–p99 values. Qwen3.6 rises from 0.81 s at c=1 to 7.80 s at c=8; the
-    near-linear pattern describes this machine and run only.
+    Latency is the time a request takes. The points show p95, the time within
+    which 95% of responses finish, at concurrency 1/2/4/8. Error bars span the
+    committed p50–p99 values, from the median to the 99th percentile. Qwen3.6
+    rises from 0.81 s at c=1 to 7.80 s at c=8. This near-linear pattern
+    describes this machine and run only.
   toks_per_s: >-
-    Aggregate output tok/s by model and concurrency, with ±1σ per-request
-    error bars over each 40-request cell. Throughput is flat-to-declining as
-    concurrency rises, and the 3B-active MoE serves about 7× the tok/s of
-    dense qwen3:32b on this machine.
+    Tokens are pieces of text, and aggregate output tok/s counts the tokens
+    produced per second across a cell. Error bars show ±1σ, one standard
+    deviation of per-request values, over each 40-request cell. Throughput is
+    flat-to-declining as concurrency rises. The 3B-active mixture-of-experts
+    model serves about 7× the tok/s of dense qwen3:32b on this machine.
   engine_panel: >-
-    Gemma4:31b at c=1: MLX 4-bit reaches 18.8 tok/s and 2.47 s p95 versus
+    MLX and llama.cpp are runners, the software that serves a model. For
+    Gemma4:31b at c=1, MLX 4-bit reaches 18.8 tok/s and 2.47 s p95 versus
     llama.cpp Q8_0 at 6.4 tok/s and 7.12 s. Quantization and packaging differ
     together, so this compares combinations, not engines in isolation.
 roadmap:
@@ -35,171 +41,163 @@ roadmap:
   - status: delivered
     text: "Shipped offline re-aggregation: percentiles re-derived from the committed raw record."
 key_concepts:
-  - "**p50/p95/p99 latency ladder** — median and tail percentiles recorded at each concurrency rung, because a mean hides the delay users actually feel."
-  - "**Packaging confound** — engine and quantization ship as one artifact, so the 2.9× gap is a combination comparison, not an engine test."
-  - "**Bounded-task quality guardrail** — perfect schema and keyword scores show the timing comparisons are fair, not that quantization never hurts quality."
-  - "**Quiet-machine prerequisite** — a repeat under co-tenant load degraded llama.cpp cells 10–30×, so timings are trustworthy only on idle hardware."
-  - "**Electricity-only cost** — the $0.12-per-1M figure comes from measured tok/s and declared power assumptions; it excludes wall power and hardware."
+  - "**Latency percentiles:** p50 is the median response time, p95 is the time within which 95% finish, and p99 is the 99th-percentile time. Together they reveal delays that a mean can hide."
+  - "**Packaging confound:** the runner and quantization change together, so the 2.9× gap compares combinations rather than engines alone."
+  - "**Bounded-task quality guardrail:** perfect schema and keyword scores make the timing comparisons fair, but do not prove that quantization never hurts quality."
+  - "**Quiet-machine prerequisite:** a repeat under co-tenant load degraded llama.cpp cells 10–30×, so these timings require idle hardware."
+  - "**Electricity-only cost:** the $0.12-per-1M estimate uses measured tok/s and declared power assumptions. It excludes metered wall power and hardware."
 sections:
   - id: background
     text_md: |
-      **One laptop, one run.** Five ways to serve local language models were
-      timed on one quiet 128 GB MacBook (Ollama 0.40.4): 760 requests, 19
-      cells, zero failures. The winner — a 4-bit "mixture-of-experts" model —
-      answers in 0.81 s at single-user load, makes 7× the tokens per second
-      of the dense 32B option, and costs about $0.12 per 1M output tokens in
-      electricity. The catch: one machine, one run — these numbers are not
-      portable.
+      **One laptop, one run.** A large language model (LLM) generates text;
+      serving software answers requests. Five setups ran on a quiet 128 GB
+      MacBook with Ollama 0.40.4.
 
-      The harness is the real asset; the benchmark pipeline diagram shows
-      how prompts turn into records — task suite,
-      load driver, local endpoint, per-request record, committed reports.
-      Every request leaves a record row, so numbers can be re-derived.
-      Which setups enter, under what rules? Objectives sets the field.
+      The benchmark pipeline diagram links prompts, load driver, endpoint,
+      request records, and reports. It shows 760 requests, 19 cells, and zero
+      failures. A cell is one setup at one concurrency, or simultaneous request
+      count.
+
+      Records favor a 4-bit mixture-of-experts (MoE). Quantization
+      compresses model weights; 4-bit is one format. MoE uses some weights per
+      token, a text fragment. It answers in 0.81 s for one user and makes 7×
+      the tokens per second of the dense 32B model, which uses all 32 billion
+      parameters. Estimated electricity cost is $0.12 per 1M output tokens
+      under declared power assumptions. Values are not portable. The harness
+      supports re-measurement.
 
       ```diagram 08-serving-benchmark
       ```
 
-      **Business summary:** Five serving setups, 760 requests, zero failures
-      — and a 4-bit model answering in 0.81 s per request.
+      **Business summary:** The 4-bit MoE leads this 760-request,
+      zero-failure run with 0.81 s answers.
     figures: []
     metrics_keys: []
   - id: objectives
     text_md: |
-      **The question: which local serving setup — model, engine, quant —
-      should serve this workload class?** The answer must come from
-      recorded runs, not vendor numbers: vendor quotes describe other
-      hardware and other tasks, so they cannot settle a question about
-      this laptop.
+      **Goal: choose the model, runner, and quantization for this workload on
+      this laptop.** Vendor numbers describe other hardware and tasks, so the
+      choice needs recorded local runs.
 
-      The study had to capture the full trade-off space:
+      Use the measurement contract diagram as the study checklist. Its first
+      node defines a cell as one model, quantization, and concurrency rung,
+      with 40 requests. Its record and comparison nodes require four views:
 
-      - Latency: p50, p95, and p99, plus time-to-first-token — means
-        alone would hide the tail a user actually feels. Throughput:
-        per request and in total. Quality: schema-valid answers and
-        keyword hits. Failures: counted, never ignored.
-      - Concurrency levels 1 through 8, since a setup fast for one user
-        can collapse for eight.
-      - Engines compared with the packaging they ship in. Quants compared
-        on one runner, against a quantized baseline.
-      - Cost: power only, at stated assumptions, plus a labelled cloud
-        rate card kept as a hypothetical, never a quote.
+      - **Speed:** p50, p95, and p99 latency, plus time to first token (TTFT),
+        the wait before the first text arrives. Throughput is output tokens
+        per second, measured per request and across the whole cell.
+      - **Load:** concurrency levels 1 through 8 test whether a setup that is
+        fast for one user slows for several.
+      - **Quality and failures:** schema-valid answers follow the requested
+        structure, keyword hits contain required terms, and every failure is
+        counted.
+      - **Cost:** electricity only, under stated assumptions. The cloud rate
+        card is a labelled hypothetical, not a quote.
 
-      The measurement contract diagram below fixes what a cell is and
-      what gets recorded. The first node defines
-      one cell (model, quantization, and concurrency rung, 40 requests
-      each), the second lists the per-cell record (latency percentiles
-      and time-to-first-token, tokens per second, quality and failure
-      rates), the third states the comparison rules that keep the grid
-      honest — a finding counts only if it survives those rules — and
-      the last node is the verdict drawn from recorded trade-offs. So
-      the next question is what exactly gets sent to the endpoint.
+      The comparison node also keeps runner and packaging together, and tests
+      quantization on one runner against a quantized baseline. The final node
+      draws a verdict from these recorded trade-offs rather than hiding them
+      in one score.
 
       ```diagram auto-08-inference-serving-1
       ```
 
-      **Business summary:** Targets: latency, throughput, quality, and
-      failures at concurrency 1 through 8, plus cost from measured tokens
+      **Business summary:** Measure latency, throughput, quality, and failures
+      at concurrency 1 through 8, plus electricity cost from measured tokens
       and stated power draw.
     figures: []
     metrics_keys: []
   - id: data
     text_md: |
-      The task is fully synthetic. 8 general-knowledge prompts are built
-      locally. Each prompt carries a keyword checklist. Each answer must
-      match a fixed schema: one sentence, a confidence score, a citation.
-      Temperature is 0. The token budget is bounded. Reasoning is off.
-      Nothing is downloaded, so no license applies.
+      The request-schema diagram shows the shared task. Synthetic means made
+      locally. The 8 prompts ask general-knowledge questions. Nothing is
+      downloaded, so no license applies. Each prompt lists required keywords.
+      Each answer has one sentence, a confidence score, and a citation. This
+      fixed layout is the schema.
 
-      The request-schema diagram walks one benchmark call, end to end:
-      the prompt record (question, checklist,
-      schema), the request envelope (temperature 0, a bounded token
-      budget, reasoning off, plus the model tag and concurrency rung),
-      and the scoring step, where a single Answer pydantic model parses
-      every response.
+      Follow the request envelope in the diagram. Temperature controls
+      randomness. It is 0, so retries use the same setting. A token budget caps
+      answer length. Reasoning means intermediate thinking. It is off. The
+      envelope also names the model and concurrency rung.
 
       ```diagram auto-08-inference-serving-2
       ```
 
-      The choices are there for a reason:
+      The diagram's last step scores each answer. One Answer model in Pydantic
+      checks the layout. Pydantic is a Python library for data checks. One
+      deterministic parser applies the same rules to all 760 responses.
+      Deterministic means the same input gets the same result. This stops the
+      checker from making false gaps between setups. Free-form text would not
+      allow the same checks.
 
-      - Temperature 0 makes retries comparable — the same prompt under
-        the same settings should read the same way twice.
-      - The bounded budget and the reasoning-off switch pin the envelope
-        so retries stay comparable; a smoke pass justified both (told
-        where the answers get checked).
-      - Free-form answers were rejected: without a fixed schema there is
-        nothing to score at 760 requests. One shared parser means the
-        checker itself cannot create fake gaps between setups.
+      All cells use these rules, so they can be compared. Timings still depend
+      on the machine. The diagram's records map to `data/prompts.json`,
+      `data/bench_run.json`, `reports/metrics.json`, `reports/report.html`, and
+      the figures. Published percentiles are recalculated offline from the raw
+      record. No new run is needed.
 
-      Every cell answers the same prompts under the same rules. So cells
-      compare directly. Timings, though, stay machine-specific. The
-      committed evidence: `data/prompts.json` (prompts),
-      `data/bench_run.json` (raw full grid), `reports/metrics.json`,
-      `reports/report.html`, and the figures. The published percentiles
-      re-aggregate offline from the raw record. No re-run needed. Whether
-      the answers themselves hold up is the prior question — that check
-      comes before any timing.
-
-      **Business summary:** The task: 8 general-knowledge prompts, each with
-      a keyword checklist and a fixed answer schema, so every setup answers
-      the same questions under identical rules.
+      **Business summary:** Eight local prompts, keyword checklists, and one
+      fixed answer schema give every setup the same task and rules.
     figures: []
     metrics_keys: []
   - id: eda
     text_md: |
-      Before trusting any timing, the first pass checked the answers
-      themselves. All 760 responses parse against the Answer schema. All 760
-      carry their prompt's keywords. The schema-valid rate is 1.00 in every
-      cell, and so is the keyword quality rate. The quality-by-quantization
-      chart shows the three quantization arms tied at 1.00 on both checks.
-      Take it as a guardrail, not a verdict: parity on a bounded task says
-      the comparisons that follow are fair, not that quantization never
-      hurts quality.
+      Read the quality-by-quantization chart before any timing chart. For each
+      of the three quantization arms, look for the schema-valid and
+      keyword-quality bars. Both reach 1.00. This visible tie reflects the
+      full-grid checks: all 760 responses follow the Answer schema and contain
+      their prompt's keywords, with both rates at 1.00 in every cell.
 
-      A smoke pass caught one config bug early, and it is worth retelling
-      because it shaped the whole study. One model defaulted to long
-      "thinking" chains and burned its token budget before producing an
-      answer, scoring zero valid answers in its cell. The fix had two
-      parts: reasoning switched off in the request envelope, and the
-      affected runs repeated. That fix is what makes quality scores
-      comparable across arms. Two checking choices did the rest: human
-      grading was rejected — 760 responses is too many to score by hand,
-      and hand scores drift — and a model judge was rejected too, because
-      it would add an unmeasured model to a study about measuring models.
-      One deterministic parser scores every arm, so the checker itself
-      cannot create fake gaps.
+      Treat the chart as a guardrail, not a general quality verdict. It shows
+      that the setups handled this small, bounded task equally well. It does
+      not prove that quantization never hurts quality on other tasks.
 
-      With the answers verified, the contest itself can start.
+      One safeguard sits behind the clean chart. A preliminary smoke pass found
+      that one model used long reasoning chains, exhausted its token budget,
+      and returned zero valid answers in its cell. Turning reasoning off and
+      repeating the affected runs made the displayed scores comparable.
 
-      **Business summary:** Answers checked before timings: all 760 responses
-      match the schema and keyword checklists, scoring 1.00 in every cell;
-      a smoke pass caught one model's silent reasoning mode.
+      The same deterministic parser produces every bar. Human grading could
+      drift across 760 responses. A model judge would add another unmeasured
+      model. Neither method is used, so the checker itself does not create
+      artificial differences.
+
+      **Business summary:** The chart confirms schema and keyword rates of 1.00
+      across all 760 responses after reasoning was disabled for comparability.
     figures:
       - quality_quant
     metrics_keys: []
   - id: training
     text_md: |
-      There is no training step — the "method" is the serving setup, and the
-      findings are measurements. Five setups were compared on one endpoint:
-      the 4-bit 3B-active mixture-of-experts model, a dense 20B in MXFP4, a
+      No model is trained here. The method is the serving setup, and the
+      findings are measurements.
+
+      Follow the serving-grid diagram from left to right. It combines five
+      setups: a 4-bit MoE with 3B active parameters, a dense 20B in MXFP4, a
       dense 31B in 4-bit MLX packaging, a dense 32B at full precision, and a
-      quantized pair (Q8_0 and QAT-int4) on one runner. The serving-grid
-      diagram lays out how they were combined: the five
-      setups enter one runner-selection step (Ollama routes each artifact
-      to llama.cpp or MLX), then one measurement grid (concurrency rungs 1
-      through 8, five suite repeats per cell), then the per-cell outputs.
-      The dotted box is a measured fact, not an omission — no MLX build
-      exists for the MoE, so that cell was recorded rather than forced.
-      The tokens-per-second chart records what the grid measured: aggregate
-      tok/s by model and concurrency. Its lines run flat-to-declining as
-      load rises, with the MoE about 7× above the dense 32B.
+      Q8_0/QAT-int4 pair on one runner. Here, 3B-active means about 3 billion
+      parameters participate per token. MXFP4 is a compact 4-bit
+      floating-point format, while full precision uses a less compressed
+      format.
+
+      The diagram shows Ollama routing each model artifact to llama.cpp or MLX,
+      the two serving runners. Each then enters the measurement grid:
+      concurrency rungs 1 through 8 and five suite repeats per cell. The dotted
+      box records a real limit. No MLX build exists for the MoE, so that cell
+      is absent rather than forced.
 
       ```diagram auto-08-inference-serving-3
       ```
 
-      **Benchmark core — bound concurrency at the client, measure the whole cell.**
-      The semaphore limits work in flight; wall time includes every request.
+      The tokens-per-second figure is the grid's throughput output. Read each
+      line across the concurrency rungs. Aggregate tok/s is flat-to-declining,
+      and the MoE reaches about 7× the dense 32B's rate. The figure does not
+      show stable per-request speed: that still falls as concurrency grows.
+
+      **Benchmark core: limit concurrency at the client and measure the whole
+      cell.** This code implements the diagram's measurement step. An asyncio
+      semaphore is a gate that limits active requests. Wall time spans every
+      request in the cell.
 
       ```python
       semaphore = asyncio.Semaphore(concurrency)
@@ -225,132 +223,110 @@ sections:
       ```
 
       Excerpt from [bench.py](https://github.com/amm-ds/portfolio/blob/main/projects/08-inference-serving/src/inference_serving/bench.py).
-      Each strength below is paired with its limit:
 
-      - **Latency:** the 4-bit MoE answers in 0.81 s (p95) with one request
-        in flight, 7.80 s at 8. The slowdown is near-linear, so one fast
-        cell can't speak for the rest. *Limit:* this machine, this run.
-      - **Throughput:** tok/s holds flat-to-declining as load rises, and the
-        MoE makes 7× the tok/s of the dense 32B. *Limit:* per-request speed
-        still falls as concurrency grows.
-      - **Engine + packaging:** the MLX 4-bit build hits 18.8 tok/s vs 6.4
-        for llama.cpp Q8_0 at concurrency 1 — about 2.9×. *Limit:* quant and
-        packaging differ together, so this is a combo test, not an engine
-        test.
-      - **Bounded quality:** every arm — the quantized Q8_0 baseline
-        included — scored 1.00 on both checks. *Limit:* a tiny task can't
-        prove quants never hurt quality.
-      - **Cost:** the winner lands near $0.12 per 1M output tokens, from
-        measured tok/s and declared 100 W / $0.30-per-kWh assumptions.
-        *Limit:* electricity only — no metered wall power, no hardware
-        amortization. Weighing this evidence and naming the winner comes
-        next.
-
-      **Business summary:** The 4-bit MoE model answers in 0.81 s, makes 7×
-      the dense 32B's tokens per second, and matches every arm at 1.00
-      quality.
+      **Business summary:** The serving grid and throughput figure show the
+      4-bit MoE producing about 7× the dense 32B's tokens per second, while
+      per-request speed still falls under load.
     figures:
       - toks_per_s
     metrics_keys: []
   - id: evaluation
     text_md: |
-      On this machine, the 4-bit MoE model is the serving choice. It gives
-      sub-second answers at single-user load, the best throughput measured,
-      perfect bounded-task quality, and the lowest electricity cost per
-      million tokens. The latency-versus-concurrency chart carries the
-      verdict. Treat its x-axis as load (one, two, four, eight requests in
-      flight), the point at each rung as the p95 latency, and the whisker
-      as the committed p50–p99 span. The MoE's line rises near-linearly
-      from 0.81 s to 7.80 s — each added request costs about the same
-      delay — so the verdict weighs the whole ladder, not one fast cell.
+      On this machine, the 4-bit MoE model is the serving choice. The
+      latency-versus-concurrency chart shows the load-sensitive part of that
+      verdict. Read the x-axis as one, two, four, or eight requests in flight.
+      Each point is p95 latency, and each whisker spans the committed p50–p99
+      range.
 
-      What transfers is the procedure, not the values. Record latency,
-      throughput, quality, and cost on the endpoint that will ship. Then
-      pick the winner from that record. One later repeat under heavy
-      background load hurt only the llama.cpp path — quiet hardware is a
-      prerequisite for trusting repeats (the attempt sits under revision
-      notes in Details). Reading one chart per dimension, rather than a
-      single summary score, was a deliberate choice: a summary score would
-      hide exactly the trade-offs this study exists to surface. The
-      committed numbers are collected in one place next.
+      Follow the MoE line rather than only its fastest point. It starts at
+      0.81 s for one request and rises near-linearly to 7.80 s at eight. Each
+      added request therefore brings a similar delay. The chart supports a
+      sub-second single-user choice, but not a claim of flat latency under
+      load.
 
-      **Business summary:** The winner is the 4-bit MoE model; latency rises
-      from 0.81 s at one request to 7.80 s at eight — only the procedure
-      transfers, not the values.
+      The chart also marks the portability limit. Its values come from one
+      quiet machine and should be re-measured on the endpoint that will ship.
+      A later repeat under heavy co-tenant load hurt only the llama.cpp path,
+      so quiet hardware is a prerequisite for comparable repeats. That attempt
+      remains in the revision notes in Details.
+
+      Use one chart per dimension instead of a single summary score. This
+      preserves the trade-offs that a score would hide. The transferable asset
+      is the procedure: record latency, throughput, quality, and cost, then
+      choose from those measurements.
+
+      **Business summary:** The 4-bit MoE wins on this machine, but its p95
+      latency rises from 0.81 s at one request to 7.80 s at eight. Transfer
+      the procedure, not the values.
     figures:
       - latency_concurrency
     metrics_keys: []
   - id: results
     text_md: |
-      Measured on the committed run, in one place. The engine panel figure
-      compares two engines at concurrency 1 on one model family: read the
-      tokens-per-second bars first, then the latency bars, and keep the
-      packaging confound in view — this is a combo test, not an engine
-      test.
+      The engine panel shows one comparison within the committed run. For
+      Gemma4:31b at concurrency 1, read the throughput bars first and the p95
+      latency bars second. MLX 4-bit reaches 18.8 tok/s and 2.47 s, while
+      llama.cpp Q8_0 reaches 6.4 tok/s and 7.12 s. The panel therefore shows
+      about 2.9× the throughput for the MLX-packaged combination.
 
-      - **Winning cell:** qwen3.6:35b-a3b-q4_K_M at concurrency 1 — p50/p95
-        latency (the median and 95th-percentile response times) of
-        0.63/0.81 s, mean time-to-first-token 0.071 s, 67.7 output tok/s,
-        both quality rates at 1.00, zero failures.
-      - **Engine panel:** the MLX-packaged 4-bit build runs at 18.8 tok/s
-        and 2.47 s p95 against 6.4 tok/s and 7.12 s for llama.cpp Q8_0 —
-        about 2.9×, with the packaging confound labelled.
-      - **Concurrency:** tok/s stays flat-to-declining while per-request
-        speed falls; the dense 32B slides from 5.06 s p95 at one request to
-        31.27 s at eight.
-      - **Quality:** every arm scored 1.00 on both checks — a bounded task,
-        so no broad quant-quality claim follows.
-      - **Cost:** about $0.12 per 1M output tokens for the winner,
-        electricity only; the cloud rate card stays a labelled hypothetical.
+      Keep the comparison at that level. Quantization and packaging change
+      together, so the figure does not isolate an engine effect. It compares
+      two serving combinations, not MLX and llama.cpp under otherwise identical
+      conditions. The conclusions retain the full grid, exact values, and
+      limits.
 
-      A total-cost figure was deliberately not computed: there is no
-      wall-power meter in the room, and hardware amortization would be a
-      guess. The honest cost claim stops at electricity under stated
-      assumptions. The full grid, protocol, and limits are recorded in the
-      conclusions.
-
-      **Business summary:** Committed results: the winner's 0.63/0.81 s
-      median/p95 latency and 67.7 tok/s, a 2.9× MLX-over-llama.cpp
-      packaging gap, and cost near $0.12 per 1M output tokens.
+      **Business summary:** The engine panel shows a 2.9× throughput gap
+      between two packaging combinations, not a proven engine-only advantage.
     figures:
       - engine_panel
     metrics_keys: []
   - id: conclusions
     text_md: |
+      The evidence-lineage diagram below is the reading guide for this section.
+      Follow the raw request records into the published aggregates. Every
+      measured value and reference table below comes from that path, without
+      another run.
+
       ## Results summary
 
-      In one committed run — one machine, one run — on a quiet 128 GB
-      Apple-silicon MacBook (macOS 26.5 arm64, Ollama 0.40.4),
-      `qwen3.6:35b-a3b-q4_K_M` — a 3B-active mixture-of-experts model in
-      Q4_K_M quantisation — answered in 0.81 s p95 (0.63 s median) at
-      concurrency 1, produced 67.73 output tok/s, and cost about $0.12 per
-      1M output tokens (electricity only); both bounded-task quality rates
-      scored 1.00 across 760 requests with zero failures.
+      On one quiet 128 GB Apple-silicon MacBook with macOS 26.5 arm64 and
+      Ollama 0.40.4, `qwen3.6:35b-a3b-q4_K_M` delivered the leading measured
+      result. This 3B-active MoE uses Q4_K_M, a 4-bit quantization format. At
+      concurrency 1, it measured 0.81 s p95 latency, 0.63 s median latency, and
+      67.73 output tok/s. Both bounded-task quality rates were 1.00 across 760
+      requests, with zero failures. Estimated cost was about $0.12 per 1M output
+      tokens for electricity only.
       [full evaluation report](https://amm-ds.github.io/portfolio/projects/08-inference-serving/)
 
-      ## What the experiment taught
+      ## What the evidence shows
 
-      - Packaging beats engine branding: the MLX 4-bit build runs about 2.9× the
-        tok/s of llama.cpp Q8_0 — a combination effect, labelled as one.
-      - The active MoE changed the economics: the 4-bit MoE makes 7× the dense
-        32B's tokens per second at 0.81 s p95.
-      - Bounded-task quality held everywhere (1.00 in all 19 cells) — that makes
-        the timing comparisons fair, not a quality claim.
-      - One quiet machine is a hard prerequisite: a co-tenant repeat degraded
-        llama.cpp cells 10–30× while MLX held — hardware discipline, not a build
-        regression.
-      - What transfers is the harness: record every request, re-aggregate offline,
-        re-measure on the machine that will ship.
+      - **Packaging matters:** the raw-to-aggregate path gives the MLX 4-bit
+        build about 2.9× the tok/s of llama.cpp Q8_0. This is a combination
+        effect, not an isolated engine result.
+      - **The active MoE leads this run:** it produces 7× the dense 32B's tokens
+        per second at 0.81 s p95.
+      - **Bounded-task quality held:** all 19 cells scored 1.00. This makes the
+        timing comparisons fair, but proves nothing broader about quality.
+      - **Quiet hardware is essential:** a separate co-tenant repeat degraded
+        llama.cpp cells 10–30× while MLX held. This was memory-bandwidth
+        contention from other workloads, not a build regression. That repeat is
+        outside the committed evidence path shown here.
+      - **The harness transfers:** record every request, recalculate aggregates
+        offline, and re-measure on the machine that will ship. The absolute
+        values do not transfer.
 
       ## Exact numbers
 
-      Hardware: one quiet Apple-silicon MacBook, 128 GB unified memory, macOS 26.5
-      (arm64); serving stack Ollama 0.40.4; committed run 2026-10-15 (`--full`
-      grid). The evidence-lineage diagram below shows how the raw record flows to
-      the published aggregates without re-running anything.
+      The diagram starts with the committed 2026-10-15 `--full` grid on one quiet
+      Apple-silicon MacBook. Hardware is 128 GB unified memory, shared by the
+      central and graphics processors, with macOS 26.5 on the arm64 processor
+      architecture. Ollama 0.40.4 is the serving stack.
 
             ```diagram auto-08-inference-serving-4
             ```
+
+      The first reference table maps each model name in the evidence path to its
+      architecture, quantization, and runner.
 
       | model | architecture | quant | runner |
       |---|---|---|---|
@@ -360,9 +336,10 @@ sections:
       | qwen3:32b (`--full`) | dense | — | llama.cpp |
       | gemma4 q8_0 / -qat (`--full`) | dense | Q8_0 / QAT-int4 | llama.cpp |
 
-      All 19 cells: schema-valid rate 1.00, keyword quality rate 1.00, zero
-      failures. Per-cell values, rounded to 4 decimals (p50/p95/p99 latency s, mean
-      TTFT s, aggregate tok/s):
+      All 19 cells derived from the raw record have schema-valid rate 1.00,
+      keyword quality rate 1.00, and zero failures. The next table keeps the
+      exact per-cell values, rounded to 4 decimals: p50/p95/p99 latency in
+      seconds, mean TTFT in seconds, and aggregate tok/s.
 
       | cell | c=1 | c=2 | c=4 | c=8 |
       |---|---|---|---|---|
@@ -378,44 +355,50 @@ sections:
       | gemma4:31b-it-qat c=1 p50 / p95 / p99 | 3.4758 / 4.6887 / 4.9065 | — | — | — |
       | gemma4:31b-it-qat c=1 tok/s | 9.83 | — | — | — |
 
-      Engine comparisons are engine-plus-packaging comparisons. No MLX build exists
-      for qwen3.6:35b-a3b — conversion fails on switch-expert weights; that missing
-      cell is recorded rather than silently omitted.
+      The tables also preserve a missing combination. No MLX build exists for
+      qwen3.6:35b-a3b because conversion fails on switch-expert weights, the
+      parameters used by this MoE design. The cell is recorded as missing, not
+      silently omitted. Engine comparisons remain engine-plus-packaging
+      comparisons.
 
       ## Protocol
 
-      - One cell: model × quant × concurrency rung (1/2/4/8), 5 suite repeats = 40
-        requests; async httpx streaming against `/v1/chat/completions` with
-        `json_schema`, semaphore pacing and cooldown between cells.
-      - Recorded per cell: nearest-rank p50/p95/p99 latency and mean TTFT,
-        aggregate tok/s over cell wall time, schema-valid and keyword quality
-        rates, failures.
-      - Cost: measured tok/s × declared 100 W draw × $0.30/kWh; the cloud rate
-        card stays a labelled hypothetical. The bounded default (3 models × 3
-        rungs) targets under 45 minutes; `--full` adds qwen3:32b, concurrency 2,
-        and the quant/engine cells.
+      - **Cell construction:** model × quant × concurrency rung (1/2/4/8), with
+        5 suite repeats = 40 requests. Async HTTPX streaming uses a Python web
+        client to receive tokens as they arrive. Requests go to
+        `/v1/chat/completions` with `json_schema` enforcing the answer structure,
+        semaphore pacing, and a cooldown pause between cells.
+      - **Metric definitions:** nearest-rank p50/p95/p99 latency selects observed
+        response times at each percentile. TTFT is averaged across requests.
+        Aggregate tok/s uses total output over cell wall time. Schema-valid rate,
+        keyword quality rate, and failures are recorded per cell.
+      - **Cost estimate:** measured tok/s × declared 100 W draw × $0.30/kWh, where
+        kWh means kilowatt-hour. The cloud rate card stays a labelled
+        hypothetical. The bounded default (3 models × 3 rungs) targets under 45
+        minutes; `--full` adds qwen3:32b, concurrency 2, and the quant/engine
+        cells.
 
       ## Limits
 
-      - **Portability:** one machine, one Ollama build, one author run; the
-        absolute numbers describe this hardware and are not portable, and a quiet
-        machine is a prerequisite (a 2026-10-30 repeat under co-tenant load
-        degraded llama.cpp cells 10–30× — co-tenant memory-bandwidth contention,
-        not the build).
-      - **Cost completeness:** the $0.12-per-1M figure is electricity only at
-        declared assumptions; measured wall power needs a wall-power meter (not
-        available), and hardware amortization is excluded — not a total cost of
-        ownership.
-      - **Engine causality:** engine differences are confounded with packaging and
-        quantization — no same-quant cross-runner pair exists for these models,
-        and the missing MLX build for the MoE was recorded, not forced.
+      - **Portability:** one machine, one Ollama build, and one author run support
+        only these absolute values. A 2026-10-30 repeat under co-tenant load
+        degraded llama.cpp cells 10–30× because other workloads competed for
+        memory bandwidth. Quiet hardware remains a prerequisite.
+      - **Cost completeness:** the $0.12-per-1M estimate is electricity only at
+        declared assumptions. Wall power was not measured because a meter was
+        unavailable. Hardware amortization, the purchase cost spread over its
+        useful life, is excluded. This is not total cost of ownership.
+      - **Engine causality:** packaging and quantization confound engine
+        differences. No same-quant cross-runner pair exists for these models, and
+        the missing MLX build for the MoE was recorded rather than forced.
       - **Quality generality:** perfect bounded-task scores do not show that
         quantization never affects model quality.
-      - **Repeat grid:** re-measurement on quiet, dedicated hardware is deferred
-        until access exists; quantization-matched engine isolation waits on
-        suitable builds.
+      - **Unproven repeats:** re-measurement on quiet, dedicated hardware waits
+        for access. Quantization-matched engine isolation waits for suitable
+        builds.
 
-      **Business summary:** Final grid: 19 cells, 760 requests, zero failures —
-      the 4-bit MoE model leads every measured dimension on this machine.
+      **Business summary:** The committed evidence path covers 19 cells and 760
+      requests with zero failures. The 4-bit MoE leads every measured dimension
+      on this machine.
     figures: []
     metrics_keys: []
