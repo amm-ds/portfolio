@@ -154,3 +154,16 @@ Alternative if even that is unwanted: no analytics (status quo).
   disk-full at image export; pruned `ec42efb` (7.13GB) and retried clean.
   The weekly `docker builder prune -f` + image-retention schedule in the
   maintenance runbook is the durable fix.
+
+## Deploy log — 2026-11-15 (repository-wide refinement wave)
+
+- SHA `7f7f4c9` (CI green) deployed via the established pattern; `/health`
+  verified, home 200. Content: R5 site polish (skeleton contrast + slash
+  redirect), ops hardening (compose-smoke CI job + maintenance runbook +
+  rollback), the third production app (eval-workbench), plain-language
+  stories across all 13 projects, figure tables in every README, and the
+  R8.1 secondary code items (replay accounting, pinned reranker revision,
+  tournament slice-audit evidence).
+- Disk pressure recurred at image unpack; pruned the oldest tagged image
+  (`6ec2ca5`, 7.13GB) and retried clean. The weekly prune + image-retention
+  schedule in the maintenance runbook is the durable fix.
