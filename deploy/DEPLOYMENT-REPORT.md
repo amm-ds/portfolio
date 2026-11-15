@@ -142,3 +142,15 @@ Alternative if even that is unwanted: no analytics (status quo).
   occurrence in two releases — schedule `docker builder prune -f` weekly
   and prune images older than the current + previous deploys, plus an 85%
   disk alert.
+
+## Deploy log — 2026-11-15 (R8.1 integrity release)
+
+- SHA `8cc2464` (CI green, run 43713429335) deployed via the established
+  pattern. `/health` verified; `detail.stress_d` now served.
+- Two incidents worth keeping: (a) the static-registry staleness gate was
+  caused by uncommitted title-case manifest edits — the registry had been
+  regenerated from local titles while the committed manifests were sentence
+  case. Fixed by committing the title-case manifests (8cc2464). (b) Another
+  disk-full at image export; pruned `ec42efb` (7.13GB) and retried clean.
+  The weekly `docker builder prune -f` + image-retention schedule in the
+  maintenance runbook is the durable fix.
