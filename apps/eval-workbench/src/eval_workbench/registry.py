@@ -84,8 +84,7 @@ def fixture_datasets() -> list[DatasetRecord]:
             version="v1.0.0",
             n_cases=8,
             description=(
-                "Unanswerable or out-of-scope questions where the correct behavior "
-                "is abstention."
+                "Unanswerable or out-of-scope questions where the correct behavior is abstention."
             ),
             created_at="2026-11-16T08:30:00Z",
         ),
