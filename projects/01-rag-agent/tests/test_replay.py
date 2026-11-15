@@ -1,9 +1,19 @@
 """Zero-cost replay harness tests: record → replay offline, with hard rails."""
 
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import pytest
-from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, TextPart, UserPromptPart
+from pydantic_ai.messages import (
+    ModelMessage,
+    ModelRequest,
+    ModelResponse,
+    TextPart,
+    ToolCallPart,
+    ToolReturnPart,
+    UserPromptPart,
+)
 from rag_agent.replay import RecordedModel, RequestGuard, messages_key
 
 
@@ -11,8 +21,8 @@ def _user(text: str) -> list[ModelMessage]:
     return [ModelRequest(parts=[UserPromptPart(content=text)])]
 
 
-def _scripted(text: str):
-    def respond(messages: list, info) -> ModelResponse:
+def _scripted(text: str) -> Callable[[list[ModelMessage], Any], ModelResponse]:
+    def respond(messages: list[ModelMessage], info: Any) -> ModelResponse:
         return ModelResponse(parts=[TextPart(content=text)])
 
     return respond
@@ -55,6 +65,30 @@ def test_guard_caps_tool_calls() -> None:
     guard.count_tool_call()
     with pytest.raises(RuntimeError, match="R7 rail"):
         guard.count_tool_call()
+
+
+def test_recorded_model_counts_only_tool_call_parts(tmp_path: Path) -> None:
+    guard = RequestGuard()
+    messages: list[ModelMessage] = [
+        ModelResponse(
+            parts=[
+                ToolCallPart(tool_name="search", args={"query": "first"}, tool_call_id="call-1"),
+                TextPart(content="Searching both sources."),
+                ToolCallPart(tool_name="search", args={"query": "second"}, tool_call_id="call-2"),
+            ]
+        ),
+        ModelRequest(
+            parts=[
+                ToolReturnPart(tool_name="search", content="first result", tool_call_id="call-1"),
+                UserPromptPart(content="Continue."),
+            ]
+        ),
+    ]
+
+    RecordedModel(_scripted("done"), tmp_path, record=True, guard=guard)(messages, info=None)
+
+    assert guard.model_requests == 1
+    assert guard.tool_calls == 2
 
 
 def test_recorded_model_charges_guard_per_invocation(tmp_path: Path) -> None:

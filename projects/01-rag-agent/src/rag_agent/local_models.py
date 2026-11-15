@@ -16,6 +16,7 @@ from typing import Any
 import numpy as np
 
 DEFAULT_BASE_URL = "http://127.0.0.1:11434"
+QWEN3_RERANKER_REVISION = "e61197ed45024b0ed8a2d74b80b4d909f1255473"
 
 
 class OllamaError(RuntimeError):
@@ -110,7 +111,7 @@ class HfQwenReranker:
     def __init__(self, model: str = "Qwen/Qwen3-Reranker-0.6B") -> None:
         from sentence_transformers import CrossEncoder
 
-        self._ce = CrossEncoder(model, trust_remote_code=True)
+        self._ce = CrossEncoder(model, revision=QWEN3_RERANKER_REVISION, trust_remote_code=True)
 
     def __call__(self, query: str, texts: Sequence[str]) -> np.ndarray:
         if not texts:

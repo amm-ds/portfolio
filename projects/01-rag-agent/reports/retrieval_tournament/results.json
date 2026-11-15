@@ -30,6 +30,47 @@
       "clears_promotion_gate": false
     }
   },
+  "slice_audit": {
+    "metric": "recall@10",
+    "baseline_arm": "R0",
+    "max_allowed_regression": 0.02,
+    "method": "Per-question candidate recall@10 grouped by category; 10 unanswerable rows are excluded because they have no relevant articles.",
+    "by_slice": {
+      "single_hop": {
+        "n": 44,
+        "recall_by_arm": {
+          "R0": 0.9772727272727273,
+          "R1": 1.0,
+          "R2": 1.0,
+          "R5a": 1.0,
+          "R5b": 1.0
+        },
+        "delta_vs_R0": {
+          "R1": 0.0227,
+          "R2": 0.0227,
+          "R5a": 0.0227,
+          "R5b": 0.0227
+        }
+      },
+      "multi_hop": {
+        "n": 11,
+        "recall_by_arm": {
+          "R0": 1.0,
+          "R1": 1.0,
+          "R2": 1.0,
+          "R5a": 1.0,
+          "R5b": 1.0
+        },
+        "delta_vs_R0": {
+          "R1": 0.0,
+          "R2": 0.0,
+          "R5a": 0.0,
+          "R5b": 0.0
+        }
+      }
+    },
+    "clears_slice_gate": true
+  },
   "arms": [
     {
       "arm": "R0",
