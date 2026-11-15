@@ -47,8 +47,14 @@ def _numbers(text: str) -> list[str]:
     return list(dict.fromkeys(_NUM_RE.findall(text)))
 
 
-def _corrupt(claim: str, rng: random.Random) -> tuple[str, str]:
-    """Deterministically corrupt a claim; returns (corrupted, corruption kind)."""
+def _corrupt(claim: str, rng: random.Random) -> tuple[str, str, bool]:
+    """Deterministically corrupt a claim.
+
+    Returns (corrupted, corruption kind, needs_manual_review). An
+    uppercase-only entity change is NOT necessarily unsupported (the fact
+    may still hold), so those cases are flagged for adjudication rather
+    than being scored as certain negatives.
+    """
     kind = rng.choice(CORRUPTIONS)
     if kind == "number_swap":
         nums = _numbers(claim)
@@ -59,22 +65,23 @@ def _corrupt(claim: str, rng: random.Random) -> tuple[str, str]:
             swapped = n.replace("1", "7") if "1" in n else n + "1"
             if swapped == n:
                 swapped = n + "0"
-            return claim.replace(n, swapped, 1), kind
+            return claim.replace(n, swapped, 1), kind, False
     if kind == "negation_flip":
         for a, b in ((" is ", " is not "), (" are ", " are not "), (" was ", " was not ")):
             if a in claim:
-                return claim.replace(a, b, 1), kind
+                return claim.replace(a, b, 1), kind, False
         if "does not" in claim:
-            return claim.replace("does not", "does", 1), kind
-        return "Contrary to the evidence, " + claim, kind
+            return claim.replace("does not", "does", 1), kind, False
+        return "Contrary to the evidence, " + claim, kind, False
     if kind == "entity_swap":
         words = claim.split()
         for i, w in enumerate(words):
             if w[:1].isupper() and i > 0 and len(w) > 4:
-                words[i] = w.upper()  # obvious entity distortion
-                return " ".join(words), kind
-        return claim + " (unrelated to the cited evidence)", kind
-    return claim + " — a duration and percentage the evidence never states", kind
+                words[i] = w.upper()
+                # Uppercase-only: may still be entailed → adjudicate, don't assume.
+                return " ".join(words), kind, True
+        return claim + " (unrelated to the cited evidence)", kind, False
+    return claim + " — a duration and percentage the evidence never states", kind, False
 
 
 def build_claims(
@@ -101,7 +108,7 @@ def build_claims(
                 "kind": "entailed",
             }
         )
-        corrupted, kind = _corrupt(claim, rng)
+        corrupted, kind, needs_review = _corrupt(claim, rng)
         cases.append(
             {
                 "id": f"cal_claim_{len(cases):03d}",
@@ -110,6 +117,7 @@ def build_claims(
                 "evidence": article.text[:1200],
                 "label": "unsupported",
                 "kind": kind,
+                "label_note": "manual_review" if needs_review else "",
             }
         )
     return cases[:200]
@@ -121,8 +129,43 @@ def build_answers(
     rng = random.Random(seed + 1)  # noqa: S311 - seeded eval corruption
     by_id = {a.article_id: a for a in articles}
     cases: list[dict[str, Any]] = []
+    # R8.1: genuine abstention outcomes come FIRST (answer cases capped the
+    # set before these ever appeared).
+    refusal = (
+        "The retrieved passages do not contain enough reliable evidence to "
+        "answer this question confidently."
+    )
     for q in questions:
-        if len(cases) >= 80 or not q.relevant_article_ids:
+        if len(cases) >= 100 or not q.relevant_article_ids:
+            continue
+        if q.expected_behavior != "abstain":
+            continue
+        article = by_id[q.relevant_article_ids[0]]
+        sents = _sentences(article.text)
+        if not sents:
+            continue
+        cases.append(
+            {
+                "id": f"cal_ans_{len(cases):03d}",
+                "question": q.question,
+                "answer": refusal,
+                "evidence": article.text[:1200],
+                "expected_behavior": "abstain",
+                "label": "correct",
+            }
+        )
+        cases.append(
+            {
+                "id": f"cal_ans_{len(cases):03d}",
+                "question": q.question,
+                "answer": sents[0],
+                "evidence": article.text[:1200],
+                "expected_behavior": "abstain",
+                "label": "incorrect",
+            }
+        )
+    for q in questions:
+        if len(cases) >= 100 or not q.relevant_article_ids:
             continue
         article = by_id[q.relevant_article_ids[0]]
         sents = _sentences(article.text)
@@ -150,7 +193,8 @@ def build_answers(
                 "label": "incorrect",
             }
         )
-    return cases[:80]
+
+    return cases[:100]
 
 
 def main() -> None:

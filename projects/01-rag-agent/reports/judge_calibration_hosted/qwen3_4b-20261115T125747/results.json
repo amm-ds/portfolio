@@ -1,0 +1,17 @@
+{
+  "claim_false_acceptance_rate": 0.3563,
+  "claim_false_acceptance_ucb95": 0.4611,
+  "claim_false_rejection_rate": 0.0,
+  "cohens_kappa": 0.6557,
+  "answer_agreement": 0.78,
+  "repeat_flip_rate": 0.0598,
+  "n_judge_errors": 0,
+  "n_claims": 184,
+  "n_answers": 100,
+  "n_manual_review_excluded": 10,
+  "repeat_runs": 2,
+  "model": "qwen3:4b",
+  "ACCEPTS": false,
+  "model_class": "OpenAIChatModel",
+  "commit": "3c526ff115a8482c817426d3eea1aad117e182b7"
+}

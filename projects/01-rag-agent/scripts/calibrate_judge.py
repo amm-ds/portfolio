@@ -18,7 +18,9 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import subprocess
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -134,14 +136,17 @@ def evaluate(model: str, repeat: int, hosted: bool = False) -> dict[str, Any]:
     claims = [
         json.loads(line) for line in (CAL / "claims.jsonl").read_text().splitlines() if line.strip()
     ]
+    # R8.1: uppercase-only entity corruptions are not certain negatives —
+    # exclude them from the rates (they await manual adjudication).
+    scored = [c for c in claims if c.get("label_note") != "manual_review"]
     answers = [
         json.loads(line)
         for line in (CAL / "answers.jsonl").read_text().splitlines()
         if line.strip()
     ]
-    passes = [run_claim_judge(model, claims, hosted=hosted) for _ in range(repeat)]
+    passes = [run_claim_judge(model, scored, hosted=hosted) for _ in range(repeat)]
 
-    labels = [c["label"] == "supported" for c in claims]
+    labels = [c["label"] == "supported" for c in scored]
     judged0 = passes[0]
     paired = [(j, lab) for j, lab in zip(judged0, labels, strict=True) if j is not None]
     n_errors = len(judged0) - len(paired)
@@ -153,7 +158,7 @@ def evaluate(model: str, repeat: int, hosted: bool = False) -> dict[str, Any]:
     fr_rate = sum(fr) / max(n_sup, 1)
     flip_pairs = [(a, b) for a, b in zip(*passes, strict=False) if a is not None and b is not None]
     flips = (
-        sum(1 for a, b in flip_pairs if a != b) / len(claims) if repeat > 1 and flip_pairs else 0.0
+        sum(1 for a, b in flip_pairs if a != b) / len(scored) if repeat > 1 and flip_pairs else 0.0
     )
     kappa = _cohens_kappa([bool(j) for j in judged0 if j is not None], [lab for j, lab in paired])
 
@@ -169,6 +174,7 @@ def evaluate(model: str, repeat: int, hosted: bool = False) -> dict[str, Any]:
                     "evidence": case["evidence"],
                 }
             ],
+            hosted=hosted,
         )[0]
         ans_judged.append(judged_supported)
     ans_labels = [c["label"] == "correct" for c in answers]
@@ -177,25 +183,57 @@ def evaluate(model: str, repeat: int, hosted: bool = False) -> dict[str, Any]:
 
     gates = {
         "claim_false_acceptance_rate": round(fa_rate, 4),
-        "claim_false_acceptance_ucb95": round(_wilson_ucb(fa_rate, len(claims)), 4),
+        "claim_false_acceptance_ucb95": round(_wilson_ucb(fa_rate, n_unsup), 4),
         "claim_false_rejection_rate": round(fr_rate, 4),
         "cohens_kappa": round(kappa, 4),
         "answer_agreement": round(ans_agreement, 4),
         "repeat_flip_rate": round(flips, 4),
         "n_judge_errors": n_errors,
-        "n_claims": len(claims),
+        "n_claims": len(scored),
         "n_answers": len(answers),
+        "n_manual_review_excluded": len(claims) - len(scored),
         "repeat_runs": repeat,
         "model": model,
         "ACCEPTS": bool(
             fa_rate <= 0.05
-            and _wilson_ucb(fa_rate, len(claims)) <= 0.10
+            and _wilson_ucb(fa_rate, n_unsup) <= 0.10
             and fr_rate <= 0.10
             and kappa >= 0.80
             and ans_agreement >= 0.85
             and flips <= 0.02
         ),
     }
+    # R8.1: actual provider/model identity from the built model, not the CLI arg.
+    try:
+        from portfolio_core.llm import build_model
+
+        built = build_model()
+        gates["model_class"] = type(built).__name__
+    except Exception:  # broad: identity is best-effort provenance
+        gates["model_class"] = "unknown"
+    try:
+        gates["commit"] = subprocess.run(
+            ["git", "rev-parse", "HEAD"],  # noqa: S607 - fixed well-known VCS binary
+            check=False, capture_output=True, text=True, timeout=10
+        ).stdout.strip()
+    except Exception:  # broad: outside a checkout the commit is unknown
+        gates["commit"] = "unknown"
+
+    # R8.1: raw predictions for every scored case, for auditability.
+    gates["predictions"] = [
+        {
+            "id": c["id"],
+            "claim": c["claim"],
+            "label": c["label"],
+            "judged": judged,
+            "run": run_idx,
+            "model": model,
+            "hosted": hosted,
+        }
+        for run_idx, judged_pass in enumerate(passes)
+        for c, judged in zip(scored, judged_pass, strict=False)
+    ]
+
     return gates
 
 
@@ -213,12 +251,21 @@ def main() -> None:
     if not ollama_available():
         raise SystemExit("ollama not reachable — start the local server first")
     gates = evaluate(args.model, args.repeat, hosted=args.hosted)
+    predictions = gates.pop("predictions", [])
+    # R8.1: artifacts are immutable by run ID (model + timestamp) — never
+    # overwrite a previous calibration's results.
+    run_id = f"{args.model.replace(':', '_')}-{datetime.now().strftime('%Y%m%dT%H%M%S')}"
     out_dir = (
         ROOT / "reports" / ("judge_calibration_hosted" if args.hosted else "judge_calibration")
-    )
+    ) / run_id
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / "results.json"
     out.write_text(json.dumps(gates, indent=2) + "\n", encoding="utf-8")
+    if predictions:
+        (out_dir / "predictions.jsonl").write_text(
+            "".join(json.dumps(p, ensure_ascii=False) + "\n" for p in predictions),
+            encoding="utf-8",
+        )
     print(json.dumps(gates, indent=2))
     print(f"written: {out}")
 
