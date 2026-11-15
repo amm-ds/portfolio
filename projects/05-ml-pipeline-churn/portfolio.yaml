@@ -1,5 +1,5 @@
 id: 05-ml-pipeline-churn
-title: Ml Pipeline Churn
+title: ML Pipeline Churn
 domain: Classical ML
 techniques:
 - sklearn Pipelines
