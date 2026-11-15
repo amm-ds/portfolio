@@ -569,11 +569,15 @@ def _verify(
     evidence_ids = evidence_labeled(result, retriever)
 
     report.n_drafted = len(claims)
+    # R8.1: preserve drafted claims BEFORE the judge call — a judge/provider
+    # failure must not erase them. Verdicts replace the placeholders after a
+    # successful batch; a failure keeps these records for forensics.
+    checks = [ClaimCheck(claim=c, supported=False, reason="awaiting judge") for c in claims]
+    report.claims = checks
     report.n_judge_calls += 1
     verdicts = judge.verify_claims(question, claims, evidence)
     report.n_judge_supported += sum(1 for v in verdicts if v.supported)
     checks = [ClaimCheck(claim=v.claim, supported=v.supported, reason=v.reason) for v in verdicts]
-    # R8.1: drafted claims are visible before any repair/judge failure.
     report.claims = checks
 
     # Repair pass: one regeneration call per unsupported claim, budget-capped.

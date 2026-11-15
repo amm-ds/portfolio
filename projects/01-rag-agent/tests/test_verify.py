@@ -655,3 +655,24 @@ def test_verifier_failure_preserves_claims_as_errors(
     assert report.n_drafted == (
         report.n_surviving + report.n_dropped_total + report.n_verification_error
     )
+
+
+def test_legacy_path_preserves_drafted_claims_on_judge_failure(
+    config: RAGConfig, retriever: Retriever
+) -> None:
+    """R8.1: a legacy-path judge failure must not lose the drafted claims.
+
+    The split claims are recorded BEFORE the judge call; on a provider
+    failure they are marked verification_error and reconcile.
+    """
+    result = make_result("One supported claim. A second claim that might fail.")
+    report = verify_result(
+        "q?", result, retriever, config, _ExplodingJudge()  # type: ignore[arg-type]
+    )
+    assert report.verifier_failed
+    assert len(report.claims) == 2
+    assert all(c.terminal_state == TERMINAL_VERIFICATION_ERROR for c in report.claims)
+    assert report.n_drafted == 2
+    assert report.n_drafted == (
+        report.n_surviving + report.n_dropped_total + report.n_verification_error
+    )
