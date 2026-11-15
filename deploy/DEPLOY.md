@@ -244,17 +244,18 @@ Updates and rollbacks recreate the single API container and can cause a brief
 interruption; this is not a zero-downtime deployment. Caddy certificate volumes
 are persistent and independent of image rollbacks.
 
-Before moving forward, record the current known-good tag and SHA. To roll back,
-select the previous image explicitly and wait for readiness before declaring
-success:
+Before moving forward, record the current known-good tag and SHA. With `IMAGE`
+and the required Compose variables still loaded, roll back and wait for API
+readiness with one command:
 
 ```bash
-export TAG=<previous-tag>
-export BUILD_SHA=<previous-full-commit-sha>
-docker compose -f deploy/docker-compose.prod.yml up -d --no-deps api
-docker compose -f deploy/docker-compose.prod.yml ps
-# Re-run the smoke test above. Keep the newer image until rollback is verified.
+TAG=<previous-tag> BUILD_SHA=<previous-full-commit-sha> \
+  docker compose -f deploy/docker-compose.prod.yml up -d --no-deps --wait --wait-timeout 120 api
 ```
+
+Then run `docker compose -f deploy/docker-compose.prod.yml ps` and re-run the
+smoke test above before declaring success. Keep the newer image until rollback
+is verified.
 
 If the previous image is no longer present, rebuild that exact commit with the
 same build arguments. Serving bundles are committed, but a source rebuild is

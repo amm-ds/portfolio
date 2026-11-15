@@ -51,6 +51,9 @@ docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.prod.4
 docker stats --no-stream   # co-tenant headroom check
 ```
 
+Set up the 85% disk alert and weekly build-cache prune from
+[`MAINTENANCE.md`](MAINTENANCE.md); neither is installed by the release flow.
+
 Gotchas learned on this box:
 - **Check disk before every build.** The image is ~7.3 GB and a build transiently
   needs a third image's worth of space (current + previous + the new one) plus

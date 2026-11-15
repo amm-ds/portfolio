@@ -425,6 +425,38 @@ jobs:
             || ''
           }}
 
+  compose-smoke:
+    needs: changes
+    if: needs.changes.outputs.deployment == 'true'
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: amm-ds-portfolio
+      TAG: compose-ci
+      BUILD_SHA: ${{ github.sha }}
+      DOMAIN: localhost
+      ACME_EMAIL: ci@example.com
+      IP_HASH_SALT: ci-smoke-salt-not-for-production
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+      - name: Build production image
+        run: >-
+          docker build
+          --build-arg VITE_SITE_URL="https://${DOMAIN}"
+          --build-arg VITE_BUILD_SHA="${BUILD_SHA}"
+          -t "${IMAGE}:${TAG}" .
+      - name: Boot production Compose stack
+        run: docker compose -f deploy/docker-compose.prod.yml up -d --wait --wait-timeout 120
+      - name: Check public health and readiness through Caddy
+        run: |
+          curl -kfsS --retry 30 --retry-delay 1 --retry-connrefused --retry-all-errors \
+            https://localhost/ready | python3 -c \
+            'import json,sys; assert json.load(sys.stdin)["ready"]'
+          curl -kfsS https://localhost/health | python3 -c \
+            'import json,os,sys; r=json.load(sys.stdin); assert r["ready"] and r["sha"] == os.environ["BUILD_SHA"]'
+      - name: Stop production Compose stack
+        if: always()
+        run: docker compose -f deploy/docker-compose.prod.yml down --remove-orphans
+
   docker:
     needs: [changes, gate, tests]
     if: >-
