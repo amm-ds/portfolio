@@ -164,12 +164,26 @@ def build() -> str:
 
 def stale_error() -> str | None:
     """Error message when the committed snapshot differs from a fresh render."""
+    import difflib
+
     try:
         committed = OUT.read_text(encoding="utf-8")
     except OSError as e:
         return f"cannot read {OUT}: {e}"
-    if committed != build():
-        return f"{OUT} is stale; run scripts/gen_static_registry.py"
+    fresh = build()
+    if committed != fresh:
+        diff = "\n".join(
+            list(
+                difflib.unified_diff(
+                    committed.splitlines(),
+                    fresh.splitlines(),
+                    fromfile="committed",
+                    tofile="fresh",
+                    lineterm="",
+                )
+            )[:30]
+        )
+        return f"{OUT} is stale; run scripts/gen_static_registry.py\n{diff}"
     return None
 
 
