@@ -118,10 +118,15 @@ def spa(full_path: str, request: Request) -> Response:
                     else "no-cache"
                 )
                 return FileResponse(candidate, headers={"Cache-Control": cache})
-        if any(_pattern_match(p, path) for p in _SPA_PATTERNS):
+        # Caddy redirects non-root trailing slashes; direct API deployments
+        # still get identical matching and raw heads through this fallback.
+        canonical_path = path.rstrip("/") or "/"
+        if any(_pattern_match(p, canonical_path) for p in _SPA_PATTERNS):
             if request.method == "HEAD":
                 return Response(status_code=200, headers={"Cache-Control": "no-cache"})
-            return HTMLResponse(_route_index_html(path), headers={"Cache-Control": "no-cache"})
-    elif any(_pattern_match(p, path) for p in _SPA_PATTERNS):
+            return HTMLResponse(
+                _route_index_html(canonical_path), headers={"Cache-Control": "no-cache"}
+            )
+    elif any(_pattern_match(p, path.rstrip("/") or "/") for p in _SPA_PATTERNS):
         raise HTTPException(status_code=404, detail="web build not found")
     raise HTTPException(status_code=404, detail=f"unknown path: {path}")

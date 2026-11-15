@@ -11,6 +11,7 @@ build instructions when absent); 06 solves VRPTW instances purely from the
 request body with the tuned config from its params.yaml.
 """
 
+import asyncio
 import hashlib
 import json
 import os
@@ -19,6 +20,7 @@ import threading
 import time
 import uuid
 from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager, suppress
 from functools import lru_cache
 from html import escape
 from pathlib import Path
@@ -38,6 +40,7 @@ from routing_optimization.schemas import Problem, RoutePlan, TwoOptTuning
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from showcase_api import __version__, serving
+from showcase_api.contact import prune_contact_store
 from showcase_api.contact import router as contact_router
 from showcase_api.live import _LIVE_GUARD, _run_bounded_with_timeout
 from showcase_api.live import LiveGuard as LiveGuard  # Test-facing re-export.
@@ -68,12 +71,31 @@ setup_logging("INFO")
 # production compose sets it empty.
 _API_DOCS_ENABLED = os.environ.get("ENABLE_API_DOCS") == "1"
 
+
+async def _contact_retention_loop() -> None:
+    while True:
+        await asyncio.to_thread(prune_contact_store)
+        await asyncio.sleep(86400)
+
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    retention_task = asyncio.create_task(_contact_retention_loop())
+    try:
+        yield
+    finally:
+        retention_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await retention_task
+
+
 app = FastAPI(
     title="amm-ds portfolio showcase",
     version=__version__,
     openapi_url="/openapi.json" if _API_DOCS_ENABLED else None,
     docs_url=None,  # the custom same-origin Swagger UI below replaces the default
     redoc_url="/redoc" if _API_DOCS_ENABLED else None,
+    lifespan=_lifespan,
 )
 
 
@@ -231,6 +253,11 @@ def readiness() -> JSONResponse:
 # it only after this one deliberate step. CONTACT_PHONE is set per deployment.
 app.include_router(contact_router)
 app.include_router(vitals_router)
+
+# Eval-workbench: the same read-only contract the standalone app exposes.
+from eval_workbench.routes import router as workbench_router
+
+app.include_router(workbench_router)
 
 
 def _serving_ready(serving_dir: Path, extra_json: tuple[str, ...] = ()) -> bool:

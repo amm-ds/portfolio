@@ -67,7 +67,7 @@
         "type": "object"
       },
       "ContactUnlockRequest": {
-        "description": "What the visitor shares to reveal the phone line: an email address or a\nphone number. Validated for shape; recorded in the contact store.",
+        "description": "What the visitor shares to reveal the phone line: an email address or a\nphone number. Only valid, successful unlocks are recorded.",
         "properties": {
           "value": {
             "maxLength": 120,

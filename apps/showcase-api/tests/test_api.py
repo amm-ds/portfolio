@@ -1,4 +1,5 @@
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -74,35 +75,124 @@ def test_contact_unlock_returns_the_configured_phone(monkeypatch) -> None:  # ty
     assert phone.json() == {"phone": "+34 670 881 697"}
 
 
-def test_contact_unlock_records_every_submission(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_contact_unlock_unwritable_store_is_best_effort(monkeypatch, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    store = tmp_path / "missing" / "contact.jsonl"
+    monkeypatch.setenv("CONTACT_STORE_PATH", str(store))
+    monkeypatch.setenv("CONTACT_PHONE", "+34 670 881 697")
+
+    response = client.post("/contact/unlock", json={"value": "ada@example.com"})
+
+    assert response.status_code == 200
+    assert response.json() == {"phone": "+34 670 881 697"}
+
+
+def test_contact_unlock_records_only_valid_submissions(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
     store = tmp_path / "contact.jsonl"
     monkeypatch.setenv("CONTACT_PHONE", "+34 600 000 000")
     monkeypatch.setenv("CONTACT_STORE_PATH", str(store))
     # env is read per request, so the module-level client is fine
     client.post("/contact/unlock", json={"value": "prospect@example.com"})
     client.post("/contact/unlock", json={"value": "not-an-email"})
+    client.post("/contact/unlock", json={"value": "+1 (555) 123-4567"})
     lines = [json.loads(line) for line in store.read_text().splitlines()]
-    assert [(line["valid"], line["kind"]) for line in lines] == [
-        (True, "email"),
-        (False, "other"),
-    ]
-    assert lines[0]["value"] == "prospect@example.com"
-    assert "ts" in lines[0]
+    assert [line["kind"] for line in lines] == ["email", "phone"]
+    assert [line["value"] for line in lines] == ["prospect@example.com", "+1 (555) 123-4567"]
+    assert all(set(line) == {"ts", "kind", "value"} for line in lines)
 
 
-def test_contact_unlock_rejects_invalid_values(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+def test_contact_unlock_rejects_invalid_values(monkeypatch, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    store = tmp_path / "contact.jsonl"
+    monkeypatch.setenv("CONTACT_STORE_PATH", str(store))
     monkeypatch.setenv("CONTACT_PHONE", "+34 670 881 697")
     for bad in ["not-an-email", "12345", "", "a@b", "call me maybe"]:
         assert client.post("/contact/unlock", json={"value": bad}).status_code == 422
     # over the schema's length cap as well
     assert client.post("/contact/unlock", json={"value": "x" * 200}).status_code == 422
+    assert not store.exists()
 
 
-def test_contact_unlock_fails_closed_when_unconfigured(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+def test_contact_unlock_fails_closed_when_unconfigured(monkeypatch, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    store = tmp_path / "contact.jsonl"
+    monkeypatch.setenv("CONTACT_STORE_PATH", str(store))
     monkeypatch.delenv("CONTACT_PHONE", raising=False)
     r = client.post("/contact/unlock", json={"value": "ada@example.com"})
     assert r.status_code == 503
     assert "phone" not in r.json()
+    assert not store.exists()
+
+
+def test_contact_store_prunes_expired_and_malformed_records(monkeypatch, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    from showcase_api.contact import prune_contact_store
+
+    store = tmp_path / "contact.jsonl"
+    monkeypatch.setenv("CONTACT_STORE_PATH", str(store))
+    now = datetime.now(UTC)
+    records = [
+        {
+            "ts": (now - timedelta(days=31)).isoformat(),
+            "kind": "email",
+            "value": "old@example.com",
+        },
+        {
+            "ts": now.isoformat(),
+            "valid": False,
+            "kind": "other",
+            "value": "legacy-invalid",
+        },
+        {
+            "ts": now.isoformat(),
+            "valid": True,
+            "kind": "email",
+            "value": "legacy-unverifiable@example.com",
+        },
+        {"ts": now.isoformat(), "kind": "email", "value": "current@example.com"},
+    ]
+    store.write_text("\n".join(json.dumps(record) for record in records) + "\nnot-json\n")
+    stale_temp = tmp_path / ".contact.jsonl.tmp-stale"
+    stale_temp.write_text("stale contact copy\n")
+
+    prune_contact_store(now)
+
+    kept = [json.loads(line) for line in store.read_text().splitlines()]
+    assert [record["value"] for record in kept] == ["current@example.com"]
+    assert not stale_temp.exists()
+
+
+def test_contact_prune_replace_failure_preserves_original(monkeypatch, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    from showcase_api.contact import prune_contact_store
+
+    store = tmp_path / "contact.jsonl"
+    monkeypatch.setenv("CONTACT_STORE_PATH", str(store))
+    now = datetime.now(UTC)
+    store.write_text("not-json\n")
+    original = store.read_bytes()
+
+    def fail_replace(_src: str, _dst: Path) -> None:
+        raise OSError("simulated replace failure")
+
+    monkeypatch.setattr("showcase_api.contact.os.replace", fail_replace)
+    prune_contact_store(now)
+
+    assert store.read_bytes() == original
+    assert {path.name for path in tmp_path.iterdir()} == {store.name, ".contact.jsonl.lock"}
+
+
+def test_contact_deletion_removes_only_the_exact_value(monkeypatch, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    from showcase_api.contact import delete_contact_submissions
+
+    store = tmp_path / "contact.jsonl"
+    monkeypatch.setenv("CONTACT_STORE_PATH", str(store))
+    now = datetime.now(UTC).isoformat()
+    records = [
+        {"ts": now, "kind": "email", "value": "delete@example.com"},
+        {"ts": now, "kind": "email", "value": "keep@example.com"},
+    ]
+    store.write_text("\n".join(json.dumps(record) for record in records) + "\nnull\n[]\n123\n")
+
+    assert delete_contact_submissions(" delete@example.com ") == 1
+
+    kept = [json.loads(line) for line in store.read_text().splitlines()]
+    assert [record["value"] for record in kept] == ["keep@example.com"]
 
 
 def test_vitals_appends_and_validates(monkeypatch, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
@@ -1385,7 +1475,17 @@ def headed_web_dist(tmp_path: Path, monkeypatch):  # type: ignore[no-untyped-def
     monkeypatch.setattr(spa, "WEB_DIST", dist)
     monkeypatch.setattr(spa, "_HEAD_CACHE", {})  # shells rendered against other dists
     monkeypatch.setattr(
-        spa, "_SPA_PATTERNS", ["/", "/projects", "/projects/*", "/projects/*/report", "/services"]
+        spa,
+        "_SPA_PATTERNS",
+        [
+            "/",
+            "/projects",
+            "/projects/*",
+            "/projects/*/report",
+            "/services",
+            "/about",
+            "/apps/agent-chat",
+        ],
     )
     monkeypatch.setattr(spa_heads, "PROJECTS_ROOT", projects_root)
     monkeypatch.setattr(spa_heads, "_PROJECT_HEADS", None)
@@ -1432,6 +1532,18 @@ def test_spa_static_route_head(headed_web_dist) -> None:  # type: ignore[no-unty
     assert '<link rel="canonical" href="https://example.test/services" />' in r.text
     assert "Freelance ML/AI engineering offerings" in r.text
     assert "<h1>Services</h1>" in r.text
+
+
+@pytest.mark.parametrize("path", ["/projects", "/about", "/apps/agent-chat", "/projects/01-demo"])
+def test_spa_trailing_slash_matches_canonical_raw_head(headed_web_dist, path: str) -> None:  # type: ignore[no-untyped-def]
+    headers = {"Accept": "text/html"}
+    canonical = client.get(path, headers=headers)
+    slashed = client.get(path + "/", headers=headers)
+
+    assert canonical.status_code == slashed.status_code == 200
+    assert slashed.text == canonical.text
+    assert f'<link rel="canonical" href="https://example.test{path}" />' in slashed.text
+    assert f'<meta property="og:url" content="https://example.test{path}" />' in slashed.text
 
 
 def test_spa_unknown_project_keeps_default_shell(headed_web_dist) -> None:  # type: ignore[no-untyped-def]

@@ -15,9 +15,7 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/eval_workbench"]
 
-# Independent uv workspace root (like agent-chat / document-intelligence):
-# never walk up and join the repo-level workspace.
-[tool.uv.workspace]
-
+# Workspace member (like showcase-api): the root suite + the production API
+# import this package.
 [tool.pytest.ini_options]
 testpaths = ["tests"]

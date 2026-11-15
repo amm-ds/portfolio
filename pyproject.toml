@@ -8,7 +8,7 @@ license = { text = "MIT" }
 dependencies = []
 
 [tool.uv.workspace]
-members = ["libs/*", "projects/*", "apps/showcase-api"]
+members = ["libs/*", "projects/*", "apps/showcase-api", "apps/eval-workbench"]
 
 [tool.uv.sources]
 # The dev group references 02's [nn] extra (torch for temporal_net); uv needs
