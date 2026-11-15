@@ -393,3 +393,17 @@ uv run pytest projects/04-nlp-classification -q
   experiments stay cheap and reviewable before anyone rents a GPU.
 - **Production-shaped reporting:** platform-standard metrics JSON, themed
   plotly figures, and an HTML report a stakeholder can open anywhere.
+
+## Figures
+
+| figure | file |
+|---|---|
+| confusion matrix selected | [reports/figures/confusion_matrix_selected.html](reports/figures/confusion_matrix_selected.html) |
+| eda class balance | [reports/figures/eda_class_balance.html](reports/figures/eda_class_balance.html) |
+| epochs probe | [reports/figures/epochs_probe.html](reports/figures/epochs_probe.html) |
+| hpo history | [reports/figures/hpo_history.html](reports/figures/hpo_history.html) |
+| hpo importance | [reports/figures/hpo_importance.html](reports/figures/hpo_importance.html) |
+| per class f1 comparison | [reports/figures/per_class_f1_comparison.html](reports/figures/per_class_f1_comparison.html) |
+| scale ladder | [reports/figures/scale_ladder.html](reports/figures/scale_ladder.html) |
+| training curve | [reports/figures/training_curve.html](reports/figures/training_curve.html) |
+

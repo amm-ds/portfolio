@@ -207,3 +207,14 @@ uv run pytest -q            # or with the CI flags: -n 2 --timeout=900
 
 Deferred (engagement-dependent): bigger-than-RAM out-of-core track with a
 cold page cache; additional engines (e.g. DataFusion); object-storage IO.
+
+## Figures
+
+| figure | file |
+|---|---|
+| memory lollipop | [reports/figures/memory_lollipop.html](reports/figures/memory_lollipop.html) |
+| normalized heatmap | [reports/figures/normalized_heatmap.html](reports/figures/normalized_heatmap.html) |
+| scalability lines | [reports/figures/scalability_lines.html](reports/figures/scalability_lines.html) |
+| speedup overview | [reports/figures/speedup_overview.html](reports/figures/speedup_overview.html) |
+| task times dotplot | [reports/figures/task_times_dotplot.html](reports/figures/task_times_dotplot.html) |
+

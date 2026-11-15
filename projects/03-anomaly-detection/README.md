@@ -130,3 +130,17 @@ operating regime.
 | symptom | cause | fix |
 |---|---|---|
 | `cli nab`, `nab-sweep`, `nab-tune`, or `nab-refine` fails fetching | the NAB real track downloads its checksum-pinned subset on first run (`data/nab/` is a stage out, not committed data) | run once with network: `uv run python -m anomaly_detection.cli nab`; alternatively restore via `uv run dvc repro projects/03-anomaly-detection`; offline work stays on the synthetic track and tests |
+
+## Figures
+
+| figure | file |
+|---|---|
+| eda signals overview | [reports/figures/eda_signals_overview.html](reports/figures/eda_signals_overview.html) |
+| hpo importance | [reports/figures/hpo_importance.html](reports/figures/hpo_importance.html) |
+| nab tune surface | [reports/figures/nab_tune_surface.html](reports/figures/nab_tune_surface.html) |
+| pr curves | [reports/figures/pr_curves.html](reports/figures/pr_curves.html) |
+| roc curves | [reports/figures/roc_curves.html](reports/figures/roc_curves.html) |
+| score distribution | [reports/figures/score_distribution.html](reports/figures/score_distribution.html) |
+| telemetry flags | [reports/figures/telemetry_flags.html](reports/figures/telemetry_flags.html) |
+| threshold sweep | [reports/figures/threshold_sweep.html](reports/figures/threshold_sweep.html) |
+

@@ -191,3 +191,18 @@ uv run pytest projects/05-ml-pipeline-churn -q
   threshold selection and raw-versus-served fairness are labeled explicitly.
 - **Full reproducibility**: seeded real-data and synthetic-CI tracks, DVC
   stages, a dataset contract (SHA-256), and offline tests.
+
+## Figures
+
+| figure | file |
+|---|---|
+| bootstrap ci | [reports/figures/bootstrap_ci.html](reports/figures/bootstrap_ci.html) |
+| business cost curve | [reports/figures/business_cost_curve.html](reports/figures/business_cost_curve.html) |
+| calibration curve | [reports/figures/calibration_curve.html](reports/figures/calibration_curve.html) |
+| cost surface | [reports/figures/cost_surface.html](reports/figures/cost_surface.html) |
+| decision curve | [reports/figures/decision_curve.html](reports/figures/decision_curve.html) |
+| eda churn profile | [reports/figures/eda_churn_profile.html](reports/figures/eda_churn_profile.html) |
+| fairness slices | [reports/figures/fairness_slices.html](reports/figures/fairness_slices.html) |
+| permutation importance | [reports/figures/permutation_importance.html](reports/figures/permutation_importance.html) |
+| precision recall curve | [reports/figures/precision_recall_curve.html](reports/figures/precision_recall_curve.html) |
+

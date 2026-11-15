@@ -87,3 +87,13 @@ uv run pytest projects/08-inference-serving/tests
 API cost is $0 (local). The report adds an amortized-electricity estimate
 (measured tok/s, declared 100 W / $0.30-per-kWh assumptions) and a labelled
 hypothetical cloud rate card per 1M output tokens.
+
+## Figures
+
+| figure | file |
+|---|---|
+| engine panel | [reports/figures/engine_panel.html](reports/figures/engine_panel.html) |
+| latency concurrency | [reports/figures/latency_concurrency.html](reports/figures/latency_concurrency.html) |
+| quality quant | [reports/figures/quality_quant.html](reports/figures/quality_quant.html) |
+| toks per s | [reports/figures/toks_per_s.html](reports/figures/toks_per_s.html) |
+

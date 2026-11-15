@@ -159,3 +159,20 @@ uv run pytest projects/12-tabular-ml-lifecycle -q
 - **Deferred:** calendar-event features (holidays are binary flags only) and
   probabilistic forecasts; refitting the champion on train+validation before
   serving; transfer checks on another city's system.
+
+## Figures
+
+| figure | file |
+|---|---|
+| ablation dotplot | [reports/figures/ablation_dotplot.html](reports/figures/ablation_dotplot.html) |
+| bootstrap ci | [reports/figures/bootstrap_ci.html](reports/figures/bootstrap_ci.html) |
+| correlation heatmap | [reports/figures/correlation_heatmap.html](reports/figures/correlation_heatmap.html) |
+| learning curves | [reports/figures/learning_curves.html](reports/figures/learning_curves.html) |
+| mi lollipop | [reports/figures/mi_lollipop.html](reports/figures/mi_lollipop.html) |
+| mlp loss curves | [reports/figures/mlp_loss_curves.html](reports/figures/mlp_loss_curves.html) |
+| model comparison | [reports/figures/model_comparison.html](reports/figures/model_comparison.html) |
+| rentals by hour season | [reports/figures/rentals_by_hour_season.html](reports/figures/rentals_by_hour_season.html) |
+| residual heatmap | [reports/figures/residual_heatmap.html](reports/figures/residual_heatmap.html) |
+| residual vs fitted | [reports/figures/residual_vs_fitted.html](reports/figures/residual_vs_fitted.html) |
+| temp vs rentals | [reports/figures/temp_vs_rentals.html](reports/figures/temp_vs_rentals.html) |
+

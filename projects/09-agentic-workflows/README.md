@@ -187,3 +187,13 @@ uv run pytest projects/09-agentic-workflows/tests
 | symptom | cause | fix |
 |---|---|---|
 | `run-all` fails at the first LLM call | no provider configured — `LLM_BASE_URL`/`LLM_API_KEY`/`LLM_MODEL` unset and no local model (ADR-0004, no runtime mock) | hosted: set the three variables in the repo-root `.env`; local: `ollama pull qwen3.6:35b-a3b-q4_K_M`. Tasks t15/h02 additionally need 01's retrieval index — materialize it with `uv run dvc repro projects/01-rag-agent` |
+
+## Figures
+
+| figure | file |
+|---|---|
+| cost latency bars | [reports/figures/cost_latency_bars.html](reports/figures/cost_latency_bars.html) |
+| node waterfall | [reports/figures/node_waterfall.html](reports/figures/node_waterfall.html) |
+| suite summary | [reports/figures/suite_summary.html](reports/figures/suite_summary.html) |
+| tool usage matrix | [reports/figures/tool_usage_matrix.html](reports/figures/tool_usage_matrix.html) |
+

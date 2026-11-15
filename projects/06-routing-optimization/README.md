@@ -303,3 +303,20 @@ uv run pytest projects/06-routing-optimization -q
 
 Larger Gehring–Homberger 200–1000 customer instances and a solver-as-a-service
 endpoint remain engagement-dependent extensions.
+
+## Figures
+
+| figure | file |
+|---|---|
+| alns convergence C101 | [reports/figures/alns_convergence_C101.html](reports/figures/alns_convergence_C101.html) |
+| alns convergence RC105 | [reports/figures/alns_convergence_RC105.html](reports/figures/alns_convergence_RC105.html) |
+| convergence C101 | [reports/figures/convergence_C101.html](reports/figures/convergence_C101.html) |
+| convergence RC105 | [reports/figures/convergence_RC105.html](reports/figures/convergence_RC105.html) |
+| eda instance map | [reports/figures/eda_instance_map.html](reports/figures/eda_instance_map.html) |
+| family gap | [reports/figures/family_gap.html](reports/figures/family_gap.html) |
+| gap pct | [reports/figures/gap_pct.html](reports/figures/gap_pct.html) |
+| pareto gap runtime | [reports/figures/pareto_gap_runtime.html](reports/figures/pareto_gap_runtime.html) |
+| route map C101 | [reports/figures/route_map_C101.html](reports/figures/route_map_C101.html) |
+| runtime | [reports/figures/runtime.html](reports/figures/runtime.html) |
+| solver profile | [reports/figures/solver_profile.html](reports/figures/solver_profile.html) |
+

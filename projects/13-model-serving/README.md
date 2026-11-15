@@ -110,3 +110,13 @@ API cost is $0 (local). The report adds an amortized-electricity estimate —
 measured throughput at the concurrency knee, declared 65 W system draw and
 $0.30 per kWh, assumptions stated next to the number, same framing as
 experiment 08.
+
+## Figures
+
+| figure | file |
+|---|---|
+| backend comparison slope | [reports/figures/backend_comparison_slope.html](reports/figures/backend_comparison_slope.html) |
+| batch throughput curve | [reports/figures/batch_throughput_curve.html](reports/figures/batch_throughput_curve.html) |
+| footprint cost bars | [reports/figures/footprint_cost_bars.html](reports/figures/footprint_cost_bars.html) |
+| latency concurrency lines | [reports/figures/latency_concurrency_lines.html](reports/figures/latency_concurrency_lines.html) |
+

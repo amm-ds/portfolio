@@ -158,3 +158,24 @@ study contracts.
 | symptom | cause | fix |
 |---|---|---|
 | a stage above `download` fails on a missing raw parquet | stages do not fetch; `data/raw/` must be materialized first | run `uv run python -m mobility.cli download` or `uv run python -m mobility.cli all`; on a tight-RAM machine close memory hogs, since the bounded 12-month yellow slice is the supported configuration |
+
+## Figures
+
+| figure | file |
+|---|---|
+| actual vs pred top5 | [reports/figures/actual_vs_pred_top5.html](reports/figures/actual_vs_pred_top5.html) |
+| borough mae | [reports/figures/borough_mae.html](reports/figures/borough_mae.html) |
+| conformal coverage | [reports/figures/conformal_coverage.html](reports/figures/conformal_coverage.html) |
+| eda trips profile | [reports/figures/eda_trips_profile.html](reports/figures/eda_trips_profile.html) |
+| gbm feature importance | [reports/figures/gbm_feature_importance.html](reports/figures/gbm_feature_importance.html) |
+| gbm vs nn | [reports/figures/gbm_vs_nn.html](reports/figures/gbm_vs_nn.html) |
+| green transfer | [reports/figures/green_transfer.html](reports/figures/green_transfer.html) |
+| hour borough heatmap | [reports/figures/hour_borough_heatmap.html](reports/figures/hour_borough_heatmap.html) |
+| p90 band | [reports/figures/p90_band.html](reports/figures/p90_band.html) |
+| p90 calibration | [reports/figures/p90_calibration.html](reports/figures/p90_calibration.html) |
+| weather elasticity | [reports/figures/weather_elasticity.html](reports/figures/weather_elasticity.html) |
+| zone demand map | [reports/figures/zone_demand_map.html](reports/figures/zone_demand_map.html) |
+| zone fan | [reports/figures/zone_fan.html](reports/figures/zone_fan.html) |
+| zone hour heatmap | [reports/figures/zone_hour_heatmap.html](reports/figures/zone_hour_heatmap.html) |
+| zone residual map | [reports/figures/zone_residual_map.html](reports/figures/zone_residual_map.html) |
+
