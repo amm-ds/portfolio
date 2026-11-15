@@ -1,5 +1,5 @@
 id: 01-rag-agent
-title: Rag Agent
+title: RAG Agent
 domain: Agentic AI / LLM
 techniques:
 - pydantic-ai

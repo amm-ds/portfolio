@@ -214,7 +214,10 @@ def evaluate(model: str, repeat: int, hosted: bool = False) -> dict[str, Any]:
     try:
         gates["commit"] = subprocess.run(
             ["git", "rev-parse", "HEAD"],  # noqa: S607 - fixed well-known VCS binary
-            check=False, capture_output=True, text=True, timeout=10
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
         ).stdout.strip()
     except Exception:  # broad: outside a checkout the commit is unknown
         gates["commit"] = "unknown"
