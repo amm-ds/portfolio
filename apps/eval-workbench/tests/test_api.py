@@ -1,8 +1,7 @@
 """API contract tests: datasets, runs, run detail, health/ready."""
 
-from fastapi.testclient import TestClient
-
 from eval_workbench.main import app
+from fastapi.testclient import TestClient
 
 
 def test_datasets() -> None:
