@@ -264,6 +264,15 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 
 ## 6. Changelog
 
+- 1.2.1 (2026-11-15) — R8.1 integrity fixes: empty judge batch no longer
+  crashes (UnboundLocalError), claims survive infrastructure failures as
+  `verification_error` (drafted = surviving + dropped + verification_error
+  enforced per answer), the repo export excludes dotenv variants, keys,
+  certificates and databases, the R8 trace artifact is committed, and the
+  local-generator ceiling claim is withdrawn (C was a verifier crash, not a
+  model ceiling). Calibration rebuilt: hosted FA 35.6% UCB 46.1%, kappa
+  0.656, agreement 78%, flips 6.0% — the hosted judge still fails the
+  promotion gates; the rubric verdict remains the correctness instrument.
 - 1.2.0 (2026-11-14) — R8 judge-alignment wave, measured and not promoted.
   Full-entailment judge prompt + substantiation filter: frozen set 0.733 →
   0.667, false abstention 0.05 → 0.25; sealed D 1/6 targets passed (overall

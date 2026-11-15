@@ -182,7 +182,11 @@ abstention 0.25, and the sealed D evaluation passed only 1/6 targets
 both directions (hosted FA 45.4%, local FR 83.5%), so the rubric verdict
 stays the correctness instrument. R6's configuration remains the
 production champion; R8's contribution is the measurement record, not a
-new pipeline.
+new pipeline. R8.1 then fixed the measurement layer: the empty-batch
+verifier crash, claim forensics (`verification_error` states with per-answer
+reconciliation), export secret exclusions, and a rebuilt calibration whose
+hosted judge still fails the gates (FA 35.6% UCB 46.1%, kappa 0.656) — the
+rubric verdict remains the correctness instrument.
 
 ### Cost and budget operation
 

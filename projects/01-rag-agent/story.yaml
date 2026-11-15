@@ -311,6 +311,22 @@ sections:
     configuration remains the production champion; R8's contribution is
     the measurement record, not a new pipeline.
 
+    The R8.1 integrity review then fixed the measurement layer itself.
+    A verifier crash on an empty judge batch (UnboundLocalError) had
+    caused sealed C's refuse-all pattern — C is a failure diagnostic,
+    not a measurement of the local generator's ceiling. Claims now
+    survive infrastructure failures as `verification_error` records
+    (drafted = surviving + dropped + verification_error, enforced per
+    answer), the repo export excludes dotenv variants, keys, certificates
+    and databases before packaging, and the hosted-vs-local calibration
+    was rebuilt with correct denominators, genuine abstention cases,
+    manual-review exclusions, raw predictions and immutable run-id
+    artifacts. The rebuilt hosted judge still fails every promotion gate
+    (false-acceptance 35.6% UCB 46.1%, kappa 0.656, agreement 78%, flips
+    6.0%): the answer-level rubric verdict remains the correctness
+    instrument. Next independent quality claim requires a fresh sealed
+    set E once the integrity gates hold.
+
     **Hybrid retrieval evaluated out of the box — the champion holds.**
     Sparse+dense fusion is the current production default, so the comparison
     runs retrieval-only (rerank off, no LLM calls): dense, BM25 (k1=1.2,
