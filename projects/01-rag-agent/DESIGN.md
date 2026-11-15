@@ -288,8 +288,10 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
   judge diagnostic-only; hosted adjudication is the promotion instrument.
   Final sealed C run (local generation + hosted adjudication, $0.096 CE):
   MISSED — overall 0.333 vs 0.70, all 20 answerable rows abstained, false
-  abstention 1.000; the small local generator cannot produce usable grounded
-  answers. Published per protocol without retuning; further quality claims
+  abstention 1.000. R8.1 integrity review identified the cause: a verifier
+  crash on an empty judge batch (UnboundLocalError), so C is a failure
+  diagnostic, not a measurement of the local generator's ceiling.
+  Published per protocol without retuning; further quality claims
   require a fresh sealed set D. Production stack unchanged.
 - 1.0.0 (2026-11-12) — R6 grounding hardening, measured pre-registered:
   schema-v2 answers (claims with verbatim spans), deterministic span checks

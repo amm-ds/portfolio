@@ -166,8 +166,10 @@ calibration (274 constructed labels) shows false-rejection 83.5% and
 κ 0.155, so the small local judge is diagnostic-only; and the sealed C
 evaluation (fresh 30-question set, local generation + hosted adjudication,
 $0.096 CE) **missed its pre-registered targets outright** — overall 0.333
-vs 0.70, false abstention 1.000. The small local generator produces no
-usable grounded answer; the hosted generation + incumbent retrieval
+vs 0.70, false abstention 1.000. R8.1 later identified the cause as a
+verifier crash on an empty judge batch (UnboundLocalError), so C is a
+failure diagnostic, not a measurement of the local generator's ceiling.
+The hosted generation + incumbent retrieval
 champion is unchanged, and the miss is published with its traces rather
 than tuned away. Reports live under `reports/retrieval_tournament/`,
 `reports/judge_calibration/`, `reports/local_eval_preflight.json`, and

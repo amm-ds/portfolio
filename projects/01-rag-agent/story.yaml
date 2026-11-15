@@ -289,7 +289,11 @@ sections:
     small local generator produces no usable grounded answer. Per the
     protocol the miss is published with its traces, not tuned away: R7
     leaves the hosted generation + incumbent retrieval champion unchanged,
-    and any further quality claim would need a fresh sealed set D.
+    and any further quality claim would need a fresh sealed set D. A later
+    integrity review (R8.1) identified that C's refuse-all pattern came
+    from a verifier crash on an empty judge batch (UnboundLocalError) —
+    not from the generator's ceiling: C is a failure diagnostic, not a
+    measurement of the local model's capability.
 
     R8 then tested whether judge alignment could close the remaining
     grounding errors. The full-entailment judge prompt (every part of every
