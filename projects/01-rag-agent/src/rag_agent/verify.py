@@ -77,6 +77,9 @@ TERMINAL_ACCEPTED_ORIGINAL = "accepted_original"
 TERMINAL_ACCEPTED_REPAIRED = "accepted_repaired"
 TERMINAL_DROPPED_ORIGINAL = "dropped_original"
 TERMINAL_DROPPED_REPAIRED = "dropped_repaired"
+# R8.1: infrastructure failure (judge/verifier error) is NOT a substantive
+# rejection — claims stay visible for forensics instead of being erased.
+TERMINAL_VERIFICATION_ERROR = "verification_error"
 
 
 @dataclass
@@ -115,6 +118,7 @@ class VerifyReport:
     n_judge_supported: int = 0  # claims the judge confirmed supported (diagnose denominator)
     n_surviving: int = 0
     n_dropped_total: int = 0
+    n_verification_error: int = 0  # R8.1: claims marked on infrastructure failure
     mechanical_false_rejections: int = 0  # diagnose mode: judge-supported but mech-failed
 
     def finalize_claim_states(self) -> None:
@@ -126,6 +130,10 @@ class VerifyReport:
         """
         accepted_original = accepted_repaired = dropped_original = dropped_repaired = 0
         for check in self.claims:
+            # R8.1: an infrastructure-failure marker is final — never
+            # recomputed from supported/dropped flags.
+            if check.terminal_state == TERMINAL_VERIFICATION_ERROR:
+                continue
             if check.supported and not check.dropped:
                 if check.repaired:
                     check.terminal_state = TERMINAL_ACCEPTED_REPAIRED
@@ -141,6 +149,17 @@ class VerifyReport:
                 dropped_original += 1
         self.n_surviving = accepted_original + accepted_repaired
         self.n_dropped_total = dropped_original + dropped_repaired
+        self.n_verification_error = sum(
+            1 for c in self.claims if c.terminal_state == TERMINAL_VERIFICATION_ERROR
+        )
+        # R8.1 reconciliation: every drafted claim is accounted for exactly once.
+        if self.claims and (
+            len(self.claims) != self.n_surviving + self.n_dropped_total + self.n_verification_error
+        ):
+            raise RuntimeError(
+                f"claim ledger unreconciled: {len(self.claims)} != "
+                f"{self.n_surviving} + {self.n_dropped_total} + {self.n_verification_error}"
+            )
 
 
 def split_claims(summary: str) -> list[str]:
@@ -457,13 +476,19 @@ def verify_result(
         raise
     except Exception as exc:  # pragma: no cover - defensive (loop must not pass unverified answers)
         logger.warning("verification failed (%s); abstaining fail-closed", exc)
-        report.claims.clear()
+        # R8.1: keep the drafted claims for forensics — never erase them.
+        # Infrastructure failure is not a substantive rejection: every claim
+        # is marked verification_error so drafted = surviving + dropped +
+        # verification_error still reconciles.
+        for check in report.claims:
+            check.terminal_state = TERMINAL_VERIFICATION_ERROR
         report.support_fraction = None
         report.abstained = True
         report.verifier_failed = True
         report.final_summary = ABSTENTION_TEXT
         result.summary = ABSTENTION_TEXT
         result.confidence = min(result.confidence, 0.2)
+        report.finalize_claim_states()
     report.latency_s = time.perf_counter() - start
     return report
 
@@ -548,13 +573,17 @@ def _verify(
     verdicts = judge.verify_claims(question, claims, evidence)
     report.n_judge_supported += sum(1 for v in verdicts if v.supported)
     checks = [ClaimCheck(claim=v.claim, supported=v.supported, reason=v.reason) for v in verdicts]
+    # R8.1: drafted claims are visible before any repair/judge failure.
+    report.claims = checks
 
     # Repair pass: one regeneration call per unsupported claim, budget-capped.
     # R7: each repair re-passes the full verification path before it survives.
+    # A judge without repair capability drops every unsupported claim.
     unsupported_idx = [i for i, c in enumerate(checks) if not c.supported]
     for i in unsupported_idx[: config.verify.max_repair_calls]:
         if not isinstance(judge, LLMEntailmentJudge):
-            break  # the deterministic judge has no repair capability
+            checks[i].dropped = True  # no repair capability → dropped
+            continue
         report.n_repair_calls += 1
         checks[i] = _repair_and_reverify(
             question,
@@ -623,8 +652,12 @@ def _verify_structured(
             checks.append(ClaimCheck(claim=drafted.text, supported=True, reason="mechanical"))
     report.n_drafted = len(checks)
     report.n_mechanical_fail = len(mech_failed)
+    # R8.1: assign drafted claims BEFORE judging so an infrastructure failure
+    # preserves them for forensics instead of leaving an empty report.
+    report.claims = checks
 
     to_judge = [i for i in range(len(checks)) if i not in mech_failed or diagnose]
+    verdicts: list[ClaimVerdict] = []  # R8.1: an empty batch is not an error
     if to_judge:
         report.n_judge_calls += 1
         verdicts = judge.verify_claims(question, [checks[i].claim for i in to_judge], evidence)
@@ -650,11 +683,14 @@ def _verify_structured(
     report.n_judge_supported += sum(1 for v in verdicts if v.supported)
 
     # Repair/drop over judge-rejected claims — R7 full-path re-verification.
+    # A judge without repair capability (the deterministic keyword judge)
+    # drops every unsupported claim: there is no repair path for them.
     unsupported_idx = [i for i, c in enumerate(checks) if not c.supported]
     budget = config.verify.max_repair_calls
     for i in unsupported_idx[:budget]:
         if not isinstance(judge, LLMEntailmentJudge):
-            break  # the deterministic judge has no repair capability
+            checks[i].dropped = True  # no repair capability → dropped, never kept
+            continue
         report.n_repair_calls += 1
         checks[i] = _repair_and_reverify(
             question,

@@ -1108,6 +1108,7 @@ def _verify_stats(config: RAGConfig, rag_run: RAGRun | None) -> dict[str, Any] |
         "n_judge_supported": sum(r.n_judge_supported for r in reports),
         "n_surviving": n_surviving,
         "n_dropped": n_dropped,
+        "n_verification_error": sum(r.n_verification_error for r in reports),
         "n_accepted_original": sum(
             1 for r in reports for c in r.claims if c.terminal_state == "accepted_original"
         ),
@@ -1896,6 +1897,7 @@ def _claim_accounting(rag_run: RAGRun | None) -> dict[str, Any] | None:
         "n_judge_supported": sum(r.n_judge_supported for r in reports),
         "n_surviving": n_surviving,
         "n_dropped": n_dropped,
+        "n_verification_error": sum(r.n_verification_error for r in reports),
         "n_repair_calls": sum(r.n_repair_calls for r in reports),
         "n_verify_abstentions": sum(1 for r in reports if r.abstained),
         "n_verifier_failures": sum(1 for r in reports if r.verifier_failed),

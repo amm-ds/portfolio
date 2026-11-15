@@ -454,6 +454,7 @@ from rag_agent.verify import (  # noqa: E402
     TERMINAL_ACCEPTED_REPAIRED,
     TERMINAL_DROPPED_ORIGINAL,
     TERMINAL_DROPPED_REPAIRED,
+    TERMINAL_VERIFICATION_ERROR,
 )
 
 
@@ -574,3 +575,83 @@ def test_verbatim_but_irrelevant_span_fails_substantiation(
     # repaired claim text shares almost no content words with the span
     assert report.claims[0].terminal_state == TERMINAL_DROPPED_REPAIRED
     assert report.abstained
+
+
+# --- R8.1: empty judge batch + failure forensics + reconciliation ---------
+
+from rag_agent.schemas import DraftedClaim  # noqa: E402
+
+
+def test_all_mechanical_failures_do_not_crash(config: RAGConfig, retriever: Retriever) -> None:
+    """R8.1: an empty judge batch (all claims mech-failed) is not an error.
+
+    Previously `verdicts` was only assigned inside `if to_judge:` and read
+    unconditionally — UnboundLocalError, which the outer handler then used
+    to erase every claim. The sealed-C pattern (20 empty answers) came from
+    this defect, not from generator quality.
+    """
+    from rag_agent.schemas import AnalysisResult, Citation
+    from rag_agent.verify import KeywordEntailmentJudge, verify_result
+
+    result = AnalysisResult(
+        summary="The answer is 1.5 GW.",
+        citations=[
+            Citation(
+                chunk_id="fake#c000",
+                article_id="climate-000",
+                title="Fake",
+                excerpt="Evidence text.",
+                score=1.0,
+            )
+        ],
+        confidence=0.8,
+        claims=[
+            DraftedClaim(
+                text="The answer is 1.5 GW.",
+                citation_chunk_ids=["fake#c000"],
+                spans=[EvidenceSpan(chunk_id="fake#c000", exact_text="not a substring")],
+            )
+        ],
+    )
+    report = verify_result("q?", result, retriever, config, KeywordEntailmentJudge())
+    # No UnboundLocalError; the claim is dropped (keyword judge cannot repair)
+    assert report.claims[0].dropped
+    assert report.claims[0].terminal_state == TERMINAL_DROPPED_ORIGINAL
+    assert report.n_drafted == 1
+    assert report.n_dropped_total == 1
+    assert report.abstained
+
+
+def test_verifier_failure_preserves_claims_as_errors(
+    config: RAGConfig, retriever: Retriever
+) -> None:
+    """R8.1: infrastructure failure marks verification_error; claims are NOT erased."""
+    from rag_agent.schemas import DraftedClaim, EvidenceSpan
+
+    chunk = retriever.chunks[0]
+    result = AnalysisResult(
+        summary="Climate change is a fact.",
+        citations=[],
+        confidence=0.8,
+        claims=[
+            DraftedClaim(
+                text="Climate change is a fact.",
+                citation_chunk_ids=[chunk.chunk_id],
+                spans=[EvidenceSpan(chunk_id=chunk.chunk_id, exact_text=chunk.text[:50])],
+            )
+        ],
+    )
+    report = verify_result("q?", result, retriever, config, _ExplodingJudge())  # type: ignore[arg-type]
+    assert report.verifier_failed
+    assert report.abstained
+    assert report.support_fraction is None
+    assert len(report.claims) == 1  # NOT cleared
+    assert report.claims[0].terminal_state == TERMINAL_VERIFICATION_ERROR
+    # reconciliation: drafted = surviving + dropped + verification_error
+    assert report.n_drafted == 1
+    assert report.n_surviving == 0
+    assert report.n_dropped_total == 0
+    assert report.n_verification_error == 1
+    assert report.n_drafted == (
+        report.n_surviving + report.n_dropped_total + report.n_verification_error
+    )
