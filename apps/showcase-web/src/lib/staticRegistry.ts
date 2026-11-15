@@ -55,7 +55,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
       "structured outputs",
       "RAGAS"
     ],
-    "title": "Rag Agent",
+    "title": "RAG Agent",
     "topic": "Agentic AI & LLM"
   },
   {
@@ -109,7 +109,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
       "TF-IDF",
       "calibration"
     ],
-    "title": "Nlp Classification",
+    "title": "NLP Classification",
     "topic": "NLP & Transformers"
   },
   {
@@ -126,7 +126,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
       "bootstrap CIs",
       "threshold tuning"
     ],
-    "title": "Ml Pipeline Churn",
+    "title": "ML Pipeline Churn",
     "topic": "ML Systems & Decisioning"
   },
   {
