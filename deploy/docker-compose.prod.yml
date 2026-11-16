@@ -37,8 +37,9 @@ services:
       # network can supply forwarding headers. Restrict this to Caddy's IP if
       # the network topology changes; never publish the API with "*" here.
       FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-*}
-      # Append-only log of phone-unlock submissions (valid + invalid), one
-      # JSON line each. Root-only on the host volume; unset disables storage.
+      # Valid, successful phone unlocks only: timestamp, kind and value, one
+      # JSON line each. A 30-day window/newest 1,000 entries is pruned at
+      # startup/daily/write; legacy rows are dropped. Unset disables storage.
       CONTACT_STORE_PATH: ${CONTACT_STORE_PATH:-/data/contact_unlock.jsonl}
       # Privacy-preserving field Web Vitals (LCP/INP/CLS by route, device
       # class and release SHA — no identifiers; see showcase_api/vitals.py).

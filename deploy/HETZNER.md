@@ -75,6 +75,29 @@ Gotchas learned on this box:
   <image> chown 999:999 /data` — redo if the volume is ever recreated (the
   API logs a WARNING and keeps serving if the store is unwritable).
 
+### Contact-store retention and deletion
+
+Valid, successful phone unlocks use a 30-day retention window / newest 1,000
+records, pruned at startup, daily and on write; expiry can take one additional
+pruning interval. Legacy records are dropped on the first prune. To honor a
+deletion request, remove only the verified requester's exact submitted value
+(no public admin endpoint is exposed):
+
+```bash
+read -rsp "Exact contact value to delete: " CONTACT_VALUE; printf '\n'
+printf '%s' "$CONTACT_VALUE" | docker compose -f deploy/docker-compose.prod.yml exec -T \
+  api python -c \
+  'import sys; from showcase_api.contact import delete_contact_submissions; print("deleted", delete_contact_submissions(sys.stdin.read()), "record(s)")'
+unset CONTACT_VALUE
+```
+
+Confirm the requester by email first and require a deletion count of 1; 0 means
+the exact value was not found and >1 requires investigation. The rewrite is
+atomic and inter-process locked, leaves other requesters and Web Vitals
+untouched, and cleans crash-left temporary files on the next mutation. Stdin
+keeps the contact value out of process arguments. Do not copy the store or its
+values into tickets or logs.
+
 Rollback: DEPLOY.md, using the recorded previous tag (keep the last image until the
 new one passes smoke).
 

@@ -73,6 +73,20 @@ describe("ChannelCards", () => {
   it("renders the phone card locked by default — no tel link, a gate form instead", () => {
     renderCards();
     expect(screen.getByText(/share your email or phone to unlock/i)).toBeInTheDocument();
+    expect(screen.getByText(/your email\/phone, its type and the timestamp are stored/i)).toBeInTheDocument();
+    expect(screen.getByText(/invalid values are not stored/i)).toBeInTheDocument();
+    const deletionLink = screen.getByRole("link", { name: /request deletion by email/i });
+    expect(deletionLink).toHaveAttribute(
+      "href",
+      expect.stringContaining(`mailto:${CONTACT_EMAIL}`),
+    );
+    expect(deletionLink.getAttribute("href")).toContain(
+      encodeURIComponent("Phone-unlock record deletion"),
+    );
+    expect(deletionLink.getAttribute("href")).toContain(
+      encodeURIComponent("Please delete my contact details from the phone-unlock store."),
+    );
+    expect(unlockInput()).toHaveAttribute("aria-describedby", "channel-phone-unlock-privacy");
     expect(screen.getByRole("button", { name: /unlock/i })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /\+34/ })).toBeNull();
     const locked = document.querySelector(".channel-card--locked")!;

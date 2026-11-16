@@ -22,6 +22,18 @@ export const channelMailtoHref = `mailto:${CONTACT_EMAIL}?subject=${encodeURICom
   mailSubject,
 )}&body=${encodeURIComponent(mailBody)}`;
 
+const deletionMailSubject = "Phone-unlock record deletion";
+const deletionMailBody = [
+  "Please delete my contact details from the phone-unlock store.",
+  "",
+  "Exact email/phone submitted to the unlock form:",
+  "",
+  "I confirm that this is my contact value and request its deletion.",
+].join("\n");
+const deletionMailtoHref = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+  deletionMailSubject,
+)}&body=${encodeURIComponent(deletionMailBody)}`;
+
 /** Validation for the phone unlock gate — an email address or a phone number.
  * Exported so tests can check the regexes directly. */
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -98,9 +110,9 @@ function PhoneLinkCard({ phone }: { phone: string }) {
 
 /** The phone card renders locked; the number is fetched from the API once the
  * visitor shares an email or phone number. The unlock is view state only —
- * the gate is back on every reload. Submissions (valid or not) are recorded
- * server-side so the owner can see who asked for the line; nothing is stored
- * in the browser. */
+ * the gate is back on every reload. Valid, successful unlocks are recorded
+ * server-side for 30 days so the owner can see who asked for the line; invalid
+ * values are not recorded and nothing is stored in the browser. */
 function PhoneChannelCard() {
   const [phone, setPhone] = useState<string | null>(null);
   const [value, setValue] = useState("");
@@ -137,7 +149,12 @@ function PhoneChannelCard() {
       </span>
       <div className="channel-text">
         <span className="channel-name">Phone</span>
-        <p className="channel-lock-note">Share your email or phone to unlock.</p>
+        <p className="channel-lock-note" id="channel-phone-unlock-privacy">
+          Share your email or phone to unlock. When you unlock, your email/phone, its type and the
+          timestamp are stored for about 30 days so I can review who requested this line; invalid
+          values are not stored. <a href={deletionMailtoHref}>Request deletion by email</a>. This
+          is not a security boundary.
+        </p>
         <form className="channel-unlock" onSubmit={onSubmit} noValidate>
           <div className="channel-unlock-row">
             <input
@@ -154,7 +171,11 @@ function PhoneChannelCard() {
               }}
               aria-label="email or phone"
               aria-invalid={error ? true : undefined}
-              aria-describedby={error ? "channel-phone-unlock-error" : undefined}
+              aria-describedby={
+                error
+                  ? "channel-phone-unlock-privacy channel-phone-unlock-error"
+                  : "channel-phone-unlock-privacy"
+              }
             />
             <button type="submit" disabled={busy}>
               {busy ? "unlocking…" : "unlock"}

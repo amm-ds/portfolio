@@ -261,13 +261,24 @@ If the previous image is no longer present, rebuild that exact commit with the
 same build arguments. Serving bundles are committed, but a source rebuild is
 not claimed to be bit-for-bit identical. Do not prune either image until the
 active version passes smoke tests. There is no application database to roll
-back; Caddy's certificate/configuration volumes are the only persistent host
-state in this topology.
+back. Caddy's certificate/configuration volumes and the contact-store volume
+(valid phone-unlock contacts and privacy-reduced Web Vitals) are the persistent
+host state in this topology; application image rollback does not roll them back.
 
 ## Privacy posture
 
 No analytics or cookies are configured. Request logs contain paths, status,
 latency, request IDs, and salted client-IP hashes—not raw IPs or request
 bodies—and Docker retains those logs under the configured rotation policy.
-Rate-limit buckets live only in process memory. Do not add third-party
+Rate-limit buckets live only in process memory. The global POST limiter applies
+to phone unlocks (30 requests/minute per client IP, burst 10 by default).
+
+A successful phone unlock stores only the submitted valid email/phone, its kind
+and timestamp, with a 30-day retention window and at most the newest 1,000
+records. Invalid values and unlocks attempted while `CONTACT_PHONE` is unset are
+not stored. Pruning runs at API startup, daily and after each write, so expiry
+can take one additional pruning interval. Legacy records, which cannot prove a
+successful unlock, are dropped on the first prune; rewrites are atomic. The UI
+discloses this before submission and provides a deletion-specific email; the
+selective operator deletion procedure is in `HETZNER.md`. Do not add third-party
 analytics without revisiting this posture and the public privacy copy.
