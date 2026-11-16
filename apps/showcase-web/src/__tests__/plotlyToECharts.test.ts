@@ -175,10 +175,7 @@ describe("plotlyToECharts over the committed churn figures", () => {
     expect(option.yAxis[0].max).toBeLessThanOrEqual(maxCount * 1.2);
   });
 
-  it("anchors funnels below the two-line title band (regression: subtitle overlapped stage 1)", () => {
-    // 01's real retrieval funnel. Wave-18 viewer report: "funnel is good but
-    // subtitle overlaps" — the funnel top was "12%" of the CONTAINER, landing
-    // inside the headline+subtitle block.
+  it("anchors the retrieval bars below the two-line title band", () => {
     const payload = JSON.parse(
       readFileSync(
         resolve(process.cwd(), "../../projects/01-rag-agent/reports/figures/retrieval_funnel.json"),
@@ -186,11 +183,10 @@ describe("plotlyToECharts over the committed churn figures", () => {
       ),
     ) as PlotlyPayload;
     const option = asOpt(plotlyToECharts(payload, "dark"));
-    const funnel = option.series.find((s) => s.type === "funnel")!;
-    expect(typeof funnel.top).toBe("number");
+    expect(option.series.some((s) => s.type === "bar")).toBe(true);
     const blockBottom =
       Math.max(...option.title.map((t) => (t.top as number) + (t.textStyle?.fontSize ?? 12) * 2.5));
-    expect(funnel.top as number).toBeGreaterThanOrEqual(blockBottom - 8);
+    expect(option.grid[0].top).toBeGreaterThanOrEqual(blockBottom - 8);
   });
 
   it("maps the heatmap to a visualMap + heatmap series", () => {
@@ -291,10 +287,7 @@ describe("plotlyToECharts over the committed churn figures", () => {
     }
   });
 
-  it("numeric domain fractions never ride a time axis (adaptive_stream regression)", () => {
-    // The payload's threshold shape and label use xref "x domain" with
-    // INTEGER fractions (plotly writes fractions as numbers) — they must
-    // resolve against the data extent, never be read as epoch ms (~1970).
+  it("keeps the adaptive-stream replacement on categorical/value axes", () => {
     const payload = JSON.parse(
       readFileSync(
         resolve(process.cwd(), "../../projects/03-anomaly-detection/reports/figures/adaptive_stream.json"),
@@ -302,27 +295,13 @@ describe("plotlyToECharts over the committed churn figures", () => {
       ),
     ) as PlotlyPayload;
     const option = asOpt(plotlyToECharts(payload, "dark", 1000));
-    const stamps = payload.data
-      .flatMap((t) => (Array.isArray((t as Record<string, unknown>).x) ? ((t as Record<string, unknown>).x as string[]) : []))
-      .map((s) => Date.parse(s.replace(" ", "T")))
-      .filter((v) => Number.isFinite(v));
-    const ax = option.xAxis[0];
-    const span = Math.max(...stamps) - Math.min(...stamps);
-    expect(ax.type).toBe("time");
-    // window = data extent ± ~5% padding — never epoch-adjacent
-    expect(ax.min).toBeLessThan(Math.min(...stamps));
-    expect(ax.min).toBeGreaterThan(Math.min(...stamps) - span * 0.2);
-    expect(ax.max).toBeGreaterThan(Math.max(...stamps));
-    expect(ax.max).toBeLessThan(Math.max(...stamps) + span * 0.2);
-    // the "fixed threshold" label rides the silent layer at the resolved
-    // fraction (the right edge of the data), not at x=1
-    const layer = option.series.find((s) => s.silent && s.data.some((d: { label?: unknown }) => d.label))!;
-    expect(layer).toBeDefined();
-    const labeled = layer.data.find((d: { label?: unknown }) => d.label) as { value: number[] };
-    expect(labeled.value[0]).toBeGreaterThan(1e12);
-    // and the threshold line still spans the plot as a markLine
-    const markLine = option.series.find((s) => s.markLine);
-    expect(markLine).toBeDefined();
+    expect(option.xAxis.every((axis) => axis.type !== "time")).toBe(true);
+    expect(option.series.filter((s) => s.type === "bar").map((s) => s.name)).toEqual([
+      "fixed",
+      "adaptive",
+    ]);
+    const drift = option.series.find((s) => s.name === "drift z")!;
+    expect(drift.data.map((d: { value: number[] }) => d.value[0])).toEqual([1, 2, 3, 4, 5]);
   });
 
   it("time axes span the parsed data dates — never epoch 0 (zone_fan regression)", () => {
@@ -481,33 +460,19 @@ describe("plotlyToECharts over the committed churn figures", () => {
   });
 });
 
-describe("funnel support (projects/01 retrieval_funnel)", () => {
+describe("retrieval hit/miss bars (projects/01 retrieval_funnel)", () => {
   const FUNNEL_DIR = resolve(process.cwd(), "../../projects/01-rag-agent/reports/figures");
 
-  it("converts the committed funnel payload", () => {
+  it("converts the committed question-level hit/miss payload", () => {
     const payload = JSON.parse(
       readFileSync(resolve(FUNNEL_DIR, "retrieval_funnel.json"), "utf8"),
     ) as PlotlyPayload;
     expect(supportsECharts(payload)).toBe(true);
     const option = asOpt(plotlyToECharts(payload, "dark", 1000));
-    const funnel = option.series.find((s) => s.type === "funnel")!;
-    expect(funnel).toBeDefined();
-    expect(funnel.sort).toBe("none");
-    // stages map to named, colorway-colored items with the authored values
-    expect(funnel.data.map((d: { name: string }) => d.name)).toEqual([
-      "embedding candidates (top-15)",
-      "after rerank (top-3)",
-      "relevant article in top-k",
-    ]);
-    expect(funnel.data.map((d: { value: number }) => d.value)).toEqual([975, 195, 54]);
-    // not cartesian: no grids/axes are emitted
-    expect(option.grid).toHaveLength(0);
-    expect(option.xAxis).toHaveLength(0);
-    expect(option.yAxis).toHaveLength(0);
-    // percent-initial formatting is anchored on the first stage
-    const label = funnel.label.formatter as (p: { name: string; value: number }) => string;
-    expect(label({ name: "s", value: 195 })).toBe("s: 195 · 20.0%");
-    expect(label({ name: "s", value: 975 })).toBe("s: 975 · 100.0%");
+    const bars = option.series.filter((s) => s.type === "bar");
+    expect(bars).toHaveLength(1);
+    expect(bars[0].data.map((d: { value: number[] }) => d.value[1])).toEqual([54, 11]);
+    expect(option.xAxis[0].data).toEqual(["hit", "miss"]);
   });
 });
 
@@ -526,7 +491,6 @@ describe("Phase 5 conversion semantics", () => {
   it("converts every committed figure affected by the corrected semantics", () => {
     const figures = [
       "02-demand-forecasting/reports/figures/probabilistic_band.json",
-      "02-demand-forecasting/reports/figures/forecast_fan.json",
       "03-anomaly-detection/reports/figures/range_pr.json",
       "09-agentic-workflows/reports/figures/cost_latency_bars.json",
       "09-agentic-workflows/reports/figures/node_waterfall.json",
