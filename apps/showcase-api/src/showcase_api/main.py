@@ -26,6 +26,7 @@ from html import escape
 from pathlib import Path
 from typing import Any, Literal
 
+from eval_workbench.routes import router as workbench_router
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
@@ -255,8 +256,6 @@ app.include_router(contact_router)
 app.include_router(vitals_router)
 
 # Eval-workbench: the same read-only contract the standalone app exposes.
-from eval_workbench.routes import router as workbench_router
-
 app.include_router(workbench_router)
 
 
