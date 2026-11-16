@@ -105,7 +105,8 @@ origins):
   ensemble lands at **0.6161**, a **−31.0%** cut over the floor's 0.8929,
   scored once on the final 28 days under the official revenue-weighted scheme
   across all 42,840 nodes. This is not a leaderboard or competition-winner
-  comparison: no equivalent external run is evaluated by this project.
+  comparison: no equivalent external run is evaluated by this project. Protocol
+  reference: [Makridakis et al., IJF 2022](https://doi.org/10.1016/j.ijforecast.2021.11.013).
 - **Pooled beats global at full scale — the key lesson.** All three pooled
   arms (0.6217 / 0.6313 / 0.6575) land ahead of the single global model
   (0.6601): with 30,490 series, one fit per store, cell, or department shares
@@ -147,7 +148,8 @@ returns are unmodeled, so no savings or safety-stock claim follows.
 ### Related work — M5 and the forecasting stack
 
 - **M5 competition companion** (Makridakis et al., *International Journal of
-  Forecasting*, 2022) — the competition this panel comes from. This track
+  Forecasting*, 2022, [DOI](https://doi.org/10.1016/j.ijforecast.2021.11.013)) —
+  the competition this panel comes from. This track
   follows the official evaluation: the full 30,490-series bottom panel, the
   12-level hierarchy (42,840 nodes), revenue weights with equal total per
   level, and the final 28-day window scored once.

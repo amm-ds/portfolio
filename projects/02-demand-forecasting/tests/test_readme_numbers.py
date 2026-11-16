@@ -154,8 +154,8 @@ def test_story_per_level_quotes_match_committed_metrics() -> None:
 
 
 def test_honest_comparison_quotes_match_committed_metrics() -> None:
-    """The competition-axis comparison: ensemble/floor absolutes, the headline
-    cut, and the cited winner constant — live in both README and story."""
+    """Ensemble/floor absolutes, the relative cut, and the M5 citation remain
+    aligned across README and story without an incompatible winner comparison."""
     metrics = _metrics()
     test = metrics["test"]
     naive = test[NAIVE]["official_wrmsse"]
@@ -170,7 +170,6 @@ def test_honest_comparison_quotes_match_committed_metrics() -> None:
         m = re.search(r"\*\*" + MINUS + r"([\d.]+)%\*\*", text)
         assert m, f"{where}: bold relative-cut quote missing"
         assert float(m.group(1)) == pytest.approx(-rel, abs=0.05)
-        assert MINUS + "22.4%" in text, f"{where}: competition winner constant missing"
         assert "doi.org/10.1016/j.ijforecast.2021.11.013" in text, f"{where}: citation missing"
 
 

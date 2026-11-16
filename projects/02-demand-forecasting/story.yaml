@@ -61,7 +61,8 @@ sections:
       47,649,940 rows and 59.5% zero-demand days.
     - The source is the Nixtla `datasetsforecast` mirror of the competition
       archive. A pinned SHA-256 checksum, a digital fingerprint of the files,
-      keeps the source fixed. See Makridakis et al., IJF 2022 and the
+      keeps the source fixed. See [Makridakis et al., IJF
+      2022](https://doi.org/10.1016/j.ijforecast.2021.11.013) and the
       [dataset card](https://amm-ds.github.io/portfolio/data-registry/m5-nixtla-mirror/).
     - The hierarchy adds the bottom series up through 12 levels, producing
       42,840 nodes. Evaluation gives each level equal total weight and uses

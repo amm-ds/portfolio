@@ -137,12 +137,12 @@ const FALLBACK_MANIFEST: DemoManifest = {
   modes: ["browser", "live"],
   hero: {
     label: "decision cost per 1,409 holdout customers",
-    value: "$601 vs $1,035 naive",
-    ci: "paired bootstrap CI [−485, −343]",
+    value: "$601 vs $1,035 contact-everyone",
+    ci: "paired bootstrap CI [−508, −353]",
   },
   scenarios: [
-    { name: "base", controls: { fn_ratio: 5, threshold: 0.15 } },
-    { name: "high-cost-miss", controls: { fn_ratio: 9, threshold: 0.12 } },
+    { name: "base", controls: { fn_ratio: 5, threshold: 0.175 } },
+    { name: "high-cost-miss", controls: { fn_ratio: 8, threshold: 0.15 } },
     { name: "default-threshold", controls: { fn_ratio: 5, threshold: 0.5 } },
   ],
   live_endpoints: [
