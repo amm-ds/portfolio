@@ -78,10 +78,14 @@ def test_evaluation_figures_build(small_frame: pd.DataFrame) -> None:
     }
     comparison = figures.model_comparison_figure(runs)
     assert comparison.layout.title.text
+    assert comparison.layout.showlegend is False
     heatmap = figures.residual_heatmap_figure(
         small_frame.iloc[: 24 * 14].copy(), pd.Series(0.0, index=range(24 * 14)).to_numpy()
     )
     assert len(heatmap.data) == 2  # season + weather panels
+    assert heatmap.data[0].zmin == heatmap.data[1].zmin == -1e-9
+    assert heatmap.data[0].zmax == heatmap.data[1].zmax == 1e-9
+    assert heatmap.data[0].zmid == heatmap.data[1].zmid == 0
     rvf = figures.residual_vs_fitted_figure(
         small_frame["cnt"].to_numpy()[:100], small_frame["cnt"].to_numpy()[:100] * 0.95
     )

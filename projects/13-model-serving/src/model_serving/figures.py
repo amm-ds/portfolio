@@ -127,6 +127,8 @@ def batch_throughput_curve(metrics: dict[str, Any]) -> go.Figure:
     )
     fig.update_xaxes(type="log", title_text="batch size (rows/request)", row=1, col=1)
     fig.update_xaxes(type="log", title_text="batch size (rows/request)", row=1, col=2)
+    fig.update_yaxes(title_text="throughput (rows/s)", row=1, col=1)
+    fig.update_yaxes(title_text="p50 latency (s/request)", row=1, col=2)
     onnx_t = metrics["serving"]["onnx"]["batch"][f"b{sizes[-1]}"]["throughput_rps"]
     native_t = metrics["serving"]["native"]["batch"][f"b{sizes[-1]}"]["throughput_rps"]
     add_takeaway(
@@ -220,6 +222,9 @@ def footprint_cost_bars(metrics: dict[str, Any]) -> go.Figure:
         title="Footprint and cost — fresh process, baked image, declared 65 W / $0.30 per kWh",
         margin={"l": 90, "r": 140, "t": 110, "b": 70},
     )
+    fig.update_yaxes(title_text="RSS (MB)", row=1, col=1)
+    fig.update_yaxes(title_text="image size (MB)", row=1, col=2)
+    fig.update_yaxes(title_text="USD per 1k predictions", row=1, col=3)
     if docker.get("measured"):
         add_takeaway(
             fig,

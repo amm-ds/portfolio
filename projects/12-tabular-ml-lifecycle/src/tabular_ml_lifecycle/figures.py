@@ -106,6 +106,8 @@ def correlation_heatmap_figure(df: pd.DataFrame) -> go.Figure:
             text=np.round(corr.values, 2),
             texttemplate="%{text}",
             colorscale="RdBu",
+            zmin=-1,
+            zmax=1,
             zmid=0,
             colorbar={"title": "Pearson r"},
         )
@@ -238,6 +240,7 @@ def model_comparison_figure(runs: dict[str, dict[str, float]]) -> go.Figure:
     fig.update_layout(
         title="Frozen test window — one MAE score per candidate",
         xaxis_title="test MAE (rentals)",
+        showlegend=False,
         margin={"l": 220, "r": 140, "t": 110, "b": 70},
     )
     fig.update_yaxes(
@@ -277,14 +280,19 @@ def residual_heatmap_figure(test_df: pd.DataFrame, residuals: np.ndarray) -> go.
         subplot_titles=["by season", "by weather situation"],
         horizontal_spacing=0.12,
     )
+    finite = np.concatenate([by_season.to_numpy().ravel(), by_weather.to_numpy().ravel()])
+    limit = float(np.nanmax(np.abs(finite))) if np.isfinite(finite).any() else 1.0
+    limit = max(limit, 1e-9)
     fig.add_trace(
         go.Heatmap(
             z=by_season[[1, 2, 3, 4]].values.T,
             x=by_season.index,
             y=seasons,
             colorscale="RdBu",
+            zmin=-limit,
+            zmax=limit,
             zmid=0,
-            colorbar={"title": "mean residual", "x": 1.0},
+            colorbar={"title": "mean residual (rentals)", "x": 1.0},
         ),
         row=1,
         col=1,
@@ -295,6 +303,8 @@ def residual_heatmap_figure(test_df: pd.DataFrame, residuals: np.ndarray) -> go.
             x=by_weather.index,
             y=[f"w{w}" for w in by_weather.columns],
             colorscale="RdBu",
+            zmin=-limit,
+            zmax=limit,
             zmid=0,
             showscale=False,
         ),

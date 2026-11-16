@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import statistics
-
 import plotly.graph_objects as go
 from portfolio_core.plotting import add_takeaway, apply_theme, style_runs
 
 from inference_serving.config import BenchConfig
-from inference_serving.schemas import BenchRun, CellResult, RequestRecord
+from inference_serving.schemas import BenchRun, CellResult
 
 
 def _label(cell: CellResult) -> str:
@@ -18,30 +16,6 @@ def _label(cell: CellResult) -> str:
 def _primary_cells(run: BenchRun, cfg: BenchConfig) -> list[CellResult]:
     extra = {m.name for m in cfg.quality_models + cfg.engine_models}
     return [c for c in run.cells if c.model not in extra]
-
-
-def _per_cell_records(run: BenchRun) -> list[list[RequestRecord]] | None:
-    """Slice ``run.records`` into per-cell lists.
-
-    ``run_bench`` extends records in cell order, so each cell owns the next
-    ``cell.n_requests`` records. Returns None when the run carries no raw
-    records (e.g. rebuilt from metrics.json) or the counts do not line up.
-    """
-    total = sum(c.n_requests for c in run.cells)
-    if not run.records or len(run.records) != total:
-        return None
-    out: list[list[RequestRecord]] = []
-    offset = 0
-    for cell in run.cells:
-        out.append(run.records[offset : offset + cell.n_requests])
-        offset += cell.n_requests
-    return out
-
-
-def _req_tok_s_std(records: list[RequestRecord]) -> float | None:
-    """Std-dev of per-request tok/s (output tokens / request latency)."""
-    values = [r.output_tokens / r.latency_s for r in records if r.output_tokens and r.latency_s]
-    return statistics.stdev(values) if len(values) >= 2 else None
 
 
 def fig_latency_concurrency(run: BenchRun, cfg: BenchConfig) -> go.Figure:
@@ -91,79 +65,88 @@ def fig_latency_concurrency(run: BenchRun, cfg: BenchConfig) -> go.Figure:
 
 
 def fig_toks_per_s(run: BenchRun, cfg: BenchConfig) -> go.Figure:
-    """Aggregate output tok/s bars per model x concurrency.
+    """Mean TTFT and aggregate output throughput per model x concurrency."""
+    from plotly.subplots import make_subplots
 
-    Error bars are +/-1 std-dev of per-request tok/s across the cell's
-    requests, computed from the committed run records; they are omitted when
-    the run carries no raw records (e.g. rebuilt from metrics.json alone).
-    """
-    fig = go.Figure()
     cells = _primary_cells(run, cfg)
     models = sorted({c.model for c in cells})
-    levels = sorted({c.concurrency for c in cells})
-    per_cell = _per_cell_records(run)
-    stds: dict[tuple[str, int], float | None] = {}
-    if per_cell is not None:
-        stds = {
-            (cell.model, cell.concurrency): _req_tok_s_std(recs)
-            for cell, recs in zip(run.cells, per_cell, strict=True)
-        }
-    for level in levels:
-        y = [
-            next(
-                (c.agg_tok_per_s for c in cells if c.model == m and c.concurrency == level),
-                None,
-            )
-            for m in models
-        ]
-        err = [stds.get((m, level)) for m in models] if per_cell is not None else None
-        fig.add_bar(x=models, y=y, name=f"c={level}", error_y={"type": "data", "array": err})
-    fig.update_layout(
-        title="Output tok/s by model and concurrency",
-        xaxis_title="model",
-        yaxis_title="output tokens/s",
-        barmode="group",
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        subplot_titles=("mean time to first token", "aggregate output throughput"),
+        horizontal_spacing=0.12,
     )
-    apply_theme(fig)
+    for model in models:
+        subset = sorted((c for c in cells if c.model == model), key=lambda c: c.concurrency)
+        label = next(_label(c) for c in subset)
+        x = [c.concurrency for c in subset]
+        fig.add_scatter(
+            x=x,
+            y=[c.mean_ttft_s for c in subset],
+            mode="lines+markers",
+            name=label,
+            legendgroup=model,
+            row=1,
+            col=1,
+        )
+        fig.add_scatter(
+            x=x,
+            y=[c.agg_tok_per_s for c in subset],
+            mode="lines+markers",
+            name=label,
+            legendgroup=model,
+            showlegend=False,
+            row=1,
+            col=2,
+        )
+    apply_theme(fig, height=560)
+    fig.update_layout(title="Time to first token and throughput under load")
+    fig.update_xaxes(title_text="concurrency (clients)", dtick=1)
+    fig.update_yaxes(title_text="mean TTFT (s)", row=1, col=1)
+    fig.update_yaxes(title_text="output tokens/s", row=1, col=2)
     add_takeaway(
         fig,
-        "aggregate tok/s over cell wall time per concurrency; "
-        "error bars: +/-1 std-dev of per-request tok/s per 40-request cell; "
-        "single Apple-Silicon run",
+        "primary models; TTFT is the mean wait before the first token; aggregate tok/s is "
+        "total output tokens divided by cell wall time; single Apple-Silicon run",
     )
     return fig
 
 
 def fig_quality_quant(run: BenchRun, cfg: BenchConfig) -> go.Figure:
-    """Schema-valid rate and keyword quality across quantization arms (c=1)."""
+    """Compact pass/fail quality guardrail for quantization arms (c=1)."""
     wanted = [m.name for m in cfg.quality_models + cfg.engine_models]
     cells = [c for c in run.cells if c.model in wanted and c.concurrency == 1]
     cells.sort(key=lambda c: wanted.index(c.model))
     fig = go.Figure(
-        [
-            go.Bar(
-                x=[_label(c) for c in cells],
-                y=[c.schema_valid_rate for c in cells],
-                name="schema-valid rate",
-            ),
-            go.Bar(
-                x=[_label(c) for c in cells],
-                y=[c.quality_rate for c in cells],
-                name="keyword quality rate",
-            ),
-        ]
+        go.Table(
+            header={
+                "values": ["quantization arm", "schema", "keywords", "requests", "failures"],
+                "align": "left",
+            },
+            cells={
+                "values": [
+                    [_label(c) for c in cells],
+                    *[
+                        ["PASS" if rate == 1.0 else "FAIL" for rate in rates]
+                        for rates in (
+                            [c.schema_valid_rate for c in cells],
+                            [c.quality_rate for c in cells],
+                        )
+                    ],
+                    [c.n_requests for c in cells],
+                    [c.n_failures for c in cells],
+                ],
+                "align": "left",
+                "height": 32,
+            },
+        )
     )
-    fig.update_layout(
-        title="Schema & keyword quality by quantization arm",
-        xaxis_title="quantization arm (model / runner)",
-        yaxis_title="rate",
-        yaxis={"range": [0, 1.05]},
-        barmode="group",
-    )
-    apply_theme(fig)
+    apply_theme(fig, height=300)
+    fig.update_layout(title="Bounded-task quality guardrail by quantization arm (c=1)")
     add_takeaway(
         fig,
-        "quantization + engine arms at c=1; keyword quality = expected-answer terms present",
+        "PASS means every response in the 40-request cell met that check; this saturated "
+        "smoke check does not establish broader model quality",
     )
     return fig
 

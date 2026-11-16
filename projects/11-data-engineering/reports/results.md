@@ -43,10 +43,10 @@
 
 | task | engine | 1M | 3M | 10M | log-log slope |
 |---|---|---|---|
-| read_csv | pandas | 0.395 | 2.226 | 4.028 | 1.00 |
-| read_csv | Polars | 0.020 | 0.036 | 0.116 | 0.76 |
-| read_csv | DuckDB | 0.062 | 0.073 | 0.128 | 0.31 |
-| read_csv | sqlite | 1.931 | 5.771 | 19.4 | 1.00 |
+| filter | pandas | 0.018 | 0.053 | 0.176 | 0.99 |
+| filter | Polars | 0.005 | 0.005 | 0.014 | 0.47 |
+| filter | DuckDB | 0.003 | 0.006 | 0.013 | 0.65 |
+| filter | sqlite | 0.643 | 1.936 | 6.472 | 1.00 |
 | groupby | pandas | 0.115 | 0.337 | 1.146 | 1.00 |
 | groupby | Polars | 0.006 | 0.010 | 0.031 | 0.73 |
 | groupby | DuckDB | 0.005 | 0.008 | 0.020 | 0.63 |
@@ -55,14 +55,14 @@
 | join | Polars | 0.008 | 0.011 | 0.035 | 0.67 |
 | join | DuckDB | 0.005 | 0.007 | 0.016 | 0.52 |
 | join | sqlite | 1.169 | 3.611 | 12.1 | 1.01 |
+| read_csv | pandas | 0.395 | 2.226 | 4.028 | 1.00 |
+| read_csv | Polars | 0.020 | 0.036 | 0.116 | 0.76 |
+| read_csv | DuckDB | 0.062 | 0.073 | 0.128 | 0.31 |
+| read_csv | sqlite | 1.931 | 5.771 | 19.4 | 1.00 |
 | window | pandas | 0.116 | 0.341 | 1.162 | 1.00 |
 | window | Polars | 0.005 | 0.006 | 0.013 | 0.44 |
 | window | DuckDB | 0.006 | 0.008 | 0.016 | 0.46 |
 | window | sqlite | 2.169 | 7.090 | 26.2 | 1.08 |
-| filter | pandas | 0.018 | 0.053 | 0.176 | 0.99 |
-| filter | Polars | 0.005 | 0.005 | 0.014 | 0.47 |
-| filter | DuckDB | 0.003 | 0.006 | 0.013 | 0.65 |
-| filter | sqlite | 0.643 | 1.936 | 6.472 | 1.00 |
 
 ## By engine
 

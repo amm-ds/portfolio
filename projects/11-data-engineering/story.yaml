@@ -430,11 +430,12 @@ figure_captions:
     three orders of magnitude past sqlite (75-1985x). sqlite never crosses x1
     against pandas (0.01-0.2x, or 5-110x slower), with one n/a exception.
   scalability_lines: >-
-    Median task time versus seeded row count on log-log axes for the five most
-    discriminating tasks. Slope 1.0 means linear growth. pandas and sqlite hold
-    slope ~1.0 everywhere; Polars and DuckDB are sub-linear (0.31-0.76), so
-    their per-row advantage widens as data grows. At 10M rows, the group-by
-    takes 0.020-0.031 s versus pandas's 1.15 s and sqlite's 26.4 s.
+    The left panel summarizes committed log-log growth exponents for all five
+    tasks; the dashed reference at 1.0 means linear growth. The right panel
+    shows the representative group-by curves on seeded 1M / 3M / 10M row
+    tracks. pandas and sqlite hold slope ~1.0; Polars and DuckDB are sub-linear
+    (0.31-0.76). At 10M rows, group-by takes 0.020-0.031 s versus pandas's
+    1.15 s and sqlite's 26.4 s.
   memory_lollipop: >-
     Peak RSS per task from fresh-process probes. Each stem runs from zero to
     the process high-water mark, so compare heights across tasks. pandas

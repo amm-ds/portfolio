@@ -6,12 +6,11 @@ short_version: >-
   harness for re-measuring any stack on target hardware.
 figure_captions:
   quality_quant: >-
-    Schema-valid answers follow the requested structure; keyword-quality
-    answers include the required terms. Quantization compresses model weights
-    into smaller number formats. At concurrency 1, the 4-bit, QAT-int4, and
-    quantized Q8_0 arms all score 1.00 on both checks. QAT-int4 uses 4-bit
-    integers with quantization-aware training, while Q8_0 uses 8-bit weights.
-    This bounded task does not establish broader model quality.
+    A compact pass/fail table for the bounded quality guardrail at concurrency
+    1. PASS means all 40 responses in that cell follow the Answer schema or
+    contain the required keywords, respectively. The 4-bit, QAT-int4, and Q8_0
+    arms pass both checks with zero failures. This saturated smoke check does
+    not establish broader model quality.
   latency_concurrency: >-
     Latency is the time a request takes. The points show p95, the time within
     which 95% of responses finish, at concurrency 1/2/4/8. Error bars span the
@@ -19,11 +18,11 @@ figure_captions:
     rises from 0.81 s at c=1 to 7.80 s at c=8. This near-linear pattern
     describes this machine and run only.
   toks_per_s: >-
-    Tokens are pieces of text, and aggregate output tok/s counts the tokens
-    produced per second across a cell. Error bars show ±1σ, one standard
-    deviation of per-request values, over each 40-request cell. Throughput is
-    flat-to-declining as concurrency rises. The 3B-active mixture-of-experts
-    model serves about 7× the tok/s of dense qwen3:32b on this machine.
+    Mean time to first token (TTFT) and aggregate output throughput across
+    concurrency 1/2/4/8. TTFT is the wait before the first text arrives;
+    aggregate tok/s is total output tokens divided by cell wall time. The
+    3B-active mixture-of-experts model serves about 7× the tok/s of dense
+    qwen3:32b on this machine, while TTFT rises under load.
   engine_panel: >-
     MLX and llama.cpp are runners, the software that serves a model. For
     Gemma4:31b at c=1, MLX 4-bit reaches 18.8 tok/s and 2.47 s p95 versus
@@ -142,27 +141,27 @@ sections:
     metrics_keys: []
   - id: eda
     text_md: |
-      Read the quality-by-quantization chart before any timing chart. For each
-      of the three quantization arms, look for the schema-valid and
-      keyword-quality bars. Both reach 1.00. This visible tie reflects the
-      full-grid checks: all 760 responses follow the Answer schema and contain
-      their prompt's keywords, with both rates at 1.00 in every cell.
+      Read the quality-by-quantization table before any timing chart. For each
+      of the three quantization arms, PASS means all 40 responses in that cell
+      met the schema or keyword check. This visible tie reflects the full-grid
+      checks: all 760 responses follow the Answer schema and contain their
+      prompt's keywords, with both rates at 1.00 in every cell.
 
-      Treat the chart as a guardrail, not a general quality verdict. It shows
+      Treat the table as a guardrail, not a general quality verdict. It shows
       that the setups handled this small, bounded task equally well. It does
       not prove that quantization never hurts quality on other tasks.
 
-      One safeguard sits behind the clean chart. A preliminary smoke pass found
+      One safeguard sits behind the clean table. A preliminary smoke pass found
       that one model used long reasoning chains, exhausted its token budget,
       and returned zero valid answers in its cell. Turning reasoning off and
       repeating the affected runs made the displayed scores comparable.
 
-      The same deterministic parser produces every bar. Human grading could
+      The same deterministic parser produces every result. Human grading could
       drift across 760 responses. A model judge would add another unmeasured
       model. Neither method is used, so the checker itself does not create
       artificial differences.
 
-      **Business summary:** The chart confirms schema and keyword rates of 1.00
+      **Business summary:** The table confirms schema and keyword rates of 1.00
       across all 760 responses after reasoning was disabled for comparability.
     figures:
       - quality_quant
@@ -189,10 +188,11 @@ sections:
       ```diagram auto-08-inference-serving-3
       ```
 
-      The tokens-per-second figure is the grid's throughput output. Read each
-      line across the concurrency rungs. Aggregate tok/s is flat-to-declining,
-      and the MoE reaches about 7× the dense 32B's rate. The figure does not
-      show stable per-request speed: that still falls as concurrency grows.
+      The TTFT-and-throughput figure shows two load responses. Read each line
+      across the concurrency rungs: mean time to first token rises while
+      aggregate tok/s is flat-to-declining. The MoE reaches about 7× the dense
+      32B's rate. The figure does not show stable per-request speed: that still
+      falls as concurrency grows.
 
       **Benchmark core: limit concurrency at the client and measure the whole
       cell.** This code implements the diagram's measurement step. An asyncio

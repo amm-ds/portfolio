@@ -10,7 +10,7 @@ Chart diversity is deliberate — the first cut was all bar charts:
 - ``task_times_dotplot`` — horizontal dot plot with min/max whiskers;
 - ``speedup_overview`` — dot chart vs the pandas baseline, and vs sqlite for
   the SQL tasks;
-- ``scalability_lines`` — log-log time-vs-size lines per engine, per task;
+- ``scalability_lines`` — growth-slope summary plus one detailed task panel;
 - ``memory_lollipop`` — lollipop chart of fresh-process peak RSS;
 - ``normalized_heatmap`` — per-task time normalized to the task minimum.
 """
@@ -180,73 +180,64 @@ def speedup_overview(metrics: dict[str, Any]) -> go.Figure:
 
 
 def scalability_lines(metrics: dict[str, Any]) -> go.Figure:
-    """Time vs row-count per engine on the seeded 1M/3M/10M tracks (log-log)."""
+    """Compact growth-slope summary plus detailed group-by scaling curves."""
     scale = metrics.get("scalability")
     if not scale:
         raise ValueError("metrics.json carries no scalability block — run evaluate --scalability")
     tasks = [t for t in scale["tasks"] if t in metrics["tasks"]]
     sizes = [int(n) for n in scale["sizes"]]
+    detail_task = "groupby" if "groupby" in scale["tasks"] else tasks[0]
     fig = make_subplots(
-        rows=2,
-        cols=3,
-        subplot_titles=tasks,
-        shared_xaxes=True,
-        vertical_spacing=0.1,
-        horizontal_spacing=0.07,
+        rows=1,
+        cols=2,
+        subplot_titles=("growth exponent by task", f"{detail_task} detail"),
+        horizontal_spacing=0.16,
+        column_widths=[0.46, 0.54],
     )
-    for idx, task in enumerate(tasks):
-        row, col = idx // 3 + 1, idx % 3 + 1
-        engines = [e for e in ENGINE_ORDER if e in scale["tasks"][task]["engines"]]
-        for engine in engines:
-            block = scale["tasks"][task]["engines"][engine]
+    for engine in ENGINE_ORDER:
+        slope_x: list[float] = []
+        slope_y: list[str] = []
+        for task in tasks:
+            block = scale["tasks"][task]["engines"].get(engine)
+            if block is not None:
+                slope_x.append(block["loglog_slope"])
+                slope_y.append(task)
+        if slope_x:
+            fig.add_scatter(
+                x=slope_x,
+                y=slope_y,
+                mode="markers",
+                name=ENGINE_LABELS[engine],
+                legendgroup=engine,
+                marker={"color": ENGINE_COLORS[engine], "size": 10},
+                row=1,
+                col=1,
+            )
+        detail = scale["tasks"][detail_task]["engines"].get(engine)
+        if detail is not None:
             fig.add_scatter(
                 x=sizes,
-                y=[block["by_size"][str(n)]["time_median_s"] for n in sizes],
+                y=[detail["by_size"][str(n)]["time_median_s"] for n in sizes],
                 mode="lines+markers",
                 name=ENGINE_LABELS[engine],
                 legendgroup=engine,
-                showlegend=idx == 0,
+                showlegend=False,
                 line={"color": ENGINE_COLORS[engine], "width": 2},
                 marker={"color": ENGINE_COLORS[engine], "size": 8},
-                row=row,
-                col=col,
+                row=1,
+                col=2,
             )
-    apply_theme(fig, height=760)
+    fig.add_vline(x=1, line={"color": "#64748b", "dash": "dash"}, row=1, col=1)
+    apply_theme(fig, height=540)
     fig.update_layout(
-        title="Scalability — median task time vs seeded row count (log-log)",
-        margin={"l": 90, "r": 140, "t": 110, "b": 70},
+        title="Scalability — growth slopes and representative group-by detail",
+        margin={"l": 110, "r": 140, "t": 110, "b": 70},
     )
-    fig.update_xaxes(type="log")
-    fig.update_yaxes(type="log")
-    for col in (1, 2, 3):
-        fig.update_xaxes(title_text="rows", row=2, col=col)
-    for row in (1, 2):
-        fig.update_yaxes(title_text="wall time (s)", row=row, col=1)
-    # The 2x3 grid has one empty cell — hide its axes and use the space for
-    # the reading guide (paper-anchored, inside that cell's span).
-    fig.update_xaxes(visible=False, row=2, col=3)
-    fig.update_yaxes(visible=False, row=2, col=3)
-    fig.add_annotation(
-        text=(
-            "<b>How to read</b><br>"
-            "Each panel is one task; lines are engines.<br>"
-            "Slope 1.0 (straight on log-log) = linear:<br>"
-            "every 10x in rows costs 10x in time.<br>"
-            "Flatter = better scaling. pandas and sqlite<br>"
-            "hold ~1.0; Polars and DuckDB run sub-linear,<br>"
-            "so their advantage widens with data volume."
-        ),
-        xref="paper",
-        x=0.72,
-        yref="paper",
-        y=0.42,
-        xanchor="left",
-        yanchor="top",
-        align="left",
-        font={"size": 12.5, "color": "#cbd5e1"},
-        showarrow=False,
-    )
-    slopes = scale["tasks"]["groupby"]["engines"] if "groupby" in scale["tasks"] else {}
+    fig.update_xaxes(title_text="log-log slope (1 = linear)", row=1, col=1)
+    fig.update_yaxes(title_text="task", autorange="reversed", row=1, col=1)
+    fig.update_xaxes(type="log", title_text="rows", row=1, col=2)
+    fig.update_yaxes(type="log", title_text="median wall time (s)", row=1, col=2)
+    slopes = scale["tasks"][detail_task]["engines"]
     note = "; ".join(
         f"{ENGINE_LABELS[e]} slope {slopes[e]['loglog_slope']:.2f}"
         for e in ENGINE_ORDER
@@ -254,8 +245,8 @@ def scalability_lines(metrics: dict[str, Any]) -> go.Figure:
     )
     add_takeaway(
         fig,
-        f"group-by growth exponent (log-log slope): {note} — 1.0 is linear; the "
-        "whiskers-free protocol uses 2 repeats per cell.",
+        f"left: committed growth exponents for all five tasks; right: {detail_task} — {note}; "
+        "median of 2 warm repeats per cell",
     )
     return fig
 
