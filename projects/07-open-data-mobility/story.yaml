@@ -9,8 +9,10 @@ figure_captions:
     Full-year mean pickups by hour and borough. Manhattan peaks at 103.7
     pickups/zone-hour at 18:00; the Bronx tops out at 0.73.
   zone_hour_heatmap: >-
-    Top-30-zone demand for the week of 2024-10-07. Midtown's weekday evening peak
-    contrasts with flatter airport demand.
+    Demand for the 30 zones with the highest weekly volume in the week of
+    2024-10-07. Rows are zones, columns run Monday through Sunday, and color
+    shows pickups/hour. Midtown's weekday evening peak contrasts with flatter
+    airport demand.
   zone_demand_map: >-
     Full-year mean pickups for the 263 TLC zones with official boundaries.
     Demand concentrates in Manhattan and at JFK/EWR; the busiest zone averages 213.9 pickups/hour.
@@ -28,9 +30,10 @@ figure_captions:
     City-wide actual, served-GBM mean and p90 upper band over 14 test days.
     The band covers 90.8% of zone-hours against a 90% target.
   conformal_coverage: >-
-    Second-half coverage by calibration-half demand tercile. Overall coverage moves
-    from 90.7% to 91.5%, while mean band height rises from 7.032 to 7.124 pickups.
-    Sparse, mid, and dense are demand groups, not borough assignments.
+    Left: second-half coverage by calibration-half demand tercile. Right: the
+    overall band-height cost. Overall coverage moves from 90.7% to 91.5%, while
+    mean band height rises from 7.032 to 7.124 pickups (+0.091). Sparse, mid,
+    and dense are demand groups, not borough assignments.
   weather_elasticity: >-
     Raw rain-versus-dry pickup ratios on the test window. N/A, Queens, and Staten
     Island sit at 0.89–0.93×, Manhattan at 0.97×, and EWR at 1.08×; descriptive,

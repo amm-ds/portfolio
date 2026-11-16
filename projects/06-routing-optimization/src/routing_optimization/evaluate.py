@@ -723,6 +723,11 @@ def _build_figures(
     figures["family_gap"] = family_gap_figure(_family_rows(evaluations))
     figures["pareto_gap_runtime"] = pareto_figure(_pareto_rows(stats))
     figures.update(_alns_convergence_figures(solutions))
+    frontier_path = cfg.reports_dir / "frontier.json"
+    if frontier_path.exists():
+        from routing_optimization.figures import frontier_figure
+
+        figures["frontier_gap_time"] = frontier_figure(json.loads(frontier_path.read_text()))
     return figures
 
 

@@ -142,11 +142,12 @@ sections:
       route-map figure shows the resulting C101 plan rather than an invalid
       shortcut.
 
-      - **Distance wins:** compare the per-instance lines in the solver-profile
-        figure. ALNS leads on 52 of 56; its fleet-first variant leads the other
-        4. With fleet size ranked first, ALNS wins 38 of 56, the variant 5, and
-        naive solvers 13 by using more trucks at far worse distance. No solver
-        beats the best-known fleet size: the average delta is +3.73 vehicles.
+      - **Distance wins:** compare the solver distributions in the gap figure;
+        the per-instance record shows ALNS leads on 52 of 56 and its fleet-first
+        variant leads the other 4. With fleet size ranked first, ALNS wins 38
+        of 56, the variant 5, and naive solvers 13 by using more trucks at far
+        worse distance. No solver beats the best-known fleet size: the average
+        delta is +3.73 vehicles.
       - **Fleet trade-off:** compare ALNS and `alns_fleet` in the gap figure.
         Favoring fleet size costs +0.07 points of mean gap and saves 0.07 mean
         vehicles. This measured trade-off gives a fleet-first client a clear
@@ -154,12 +155,13 @@ sections:
       - **References beaten:** look below zero in the gap figure. ALNS undercuts
         8 published references, with RC202 best at −3.85%. The remaining gaps
         include C2 at 6.50%, C203 at 19.48%, and C103 at 11.67%.
-      - **Exact-solver role:** the matching full-scale ALNS and hinted CP-SAT
-        results in the solver-profile figure show their tie on all 56, at about
-        ten times the runtime for CP-SAT. Without a hint and with the same
-        ten-second budget, CP-SAT finds no feasible plan on any instance. Only
-        small cases carry proofs: a 25-customer C101 case is certified optimal
-        in 2.9 s, and a 5-customer case in 0.1 s.
+      - **Exact-solver role:** the full-scale per-instance record shows ALNS
+        and hinted CP-SAT tie on all 56, at about ten times the runtime for
+        CP-SAT; the solver-profile distributions summarize their distances.
+        Without a hint and with the same ten-second budget, CP-SAT finds no
+        feasible plan on any instance. Only small cases carry proofs: a
+        25-customer C101 case is certified optimal in 2.9 s, and a 5-customer
+        case in 0.1 s.
       - **Tuning limits:** the tuned 2-opt result in the gap figure reflects a
         gain of only 13.75% → 13.63%. Randomized restarts never pay, so ALNS
         keeps `k=1`, one start. Move budgets saturate at about twenty accepted
@@ -398,14 +400,16 @@ figure_captions:
     Annotations show mean vehicle deltas. Hinted CP-SAT ties ALNS at about 10× the runtime;
     the fleet-first ALNS arm (alns_fleet) lands beside ALNS.
   solver_profile: >-
-    Total distance per instance for all eight ladder solvers. Savings construction removes most
-    of the randomized floor. ALNS has a single-digit mean gap to best-known on every family.
+    Route-distance distributions for all eight ladder solvers over 56 instances.
+    Boxes show medians and interquartile ranges; points show instance outliers.
+    Savings construction removes most of the randomized floor.
   frontier_gap_time: >-
     Median gap to best-known over elapsed wall-clock time for ALNS and single-worker CP-SAT.
     Both start from the same Clarke-Wright construction across all 56 instances, with a 30 s cap.
   gap_pct: >-
-    Per-instance distance gap to published best-known for every solver. ALNS averages
-    4.23% over 56 instances versus 13.63% for tuned 2-opt and undercuts 8 references.
+    Distance-gap distributions to published best-known for every solver over 56 instances.
+    Boxes show medians and interquartile ranges; points show instance outliers. ALNS averages
+    4.23% versus 13.63% for tuned 2-opt and undercuts 8 references.
   family_gap: >-
     Mean distance gap and vehicle-count delta to best-known by Solomon family.
     ALNS averages +1.00 to +6.75 vehicles by family, so distance-only comparisons are incomplete.

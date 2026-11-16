@@ -332,27 +332,32 @@ def fig_zone_hour_heatmap(demand: pl.DataFrame, top_n: int = 30) -> go.Figure:
     top_zones = (
         week.group_by(["zone_id", "zone", "borough"])
         .agg(pl.col("pickup_count").sum().alias("volume"))
-        .sort(["borough", "volume"], descending=[False, True])
+        .sort("volume", descending=True)
         .head(top_n)
     )
-    grid = (
-        week.join(top_zones.select(["zone_id", "zone", "borough"]), on="zone_id")
+    hourly = (
+        week.join(top_zones.select("zone_id"), on="zone_id")
         .with_columns(hour_of_week=(pl.col("ts").dt.weekday() - 1) * 24 + pl.col("ts").dt.hour())
-        .group_by(["zone", "borough", "hour_of_week"])
+        .group_by(["zone_id", "hour_of_week"])
         .agg(pl.col("pickup_count").mean())
-        .pivot(on="hour_of_week", index=["borough", "zone"], values="pickup_count")
-        .join(top_zones.select(["borough", "zone", "volume"]), on=["borough", "zone"])
-        .sort(["borough", "volume"], descending=[False, True])
-        .drop("volume")
     )
-    labels = [
-        f"{b} / {z}"
-        for b, z in zip(grid["borough"].to_list(), grid["zone"].to_list(), strict=False)
-    ]
-    hours = sorted(int(c) for c in grid.columns if c not in ("borough", "zone"))
+    ordered_zones = top_zones.sort(["borough", "volume"], descending=[False, True])
+    labels = [f"{row['borough']} / {row['zone']}" for row in ordered_zones.iter_rows(named=True)]
+    hours = list(range(7 * 24))
+    z = []
+    for row in ordered_zones.iter_rows(named=True):
+        zone_hours = hourly.filter(pl.col("zone_id") == row["zone_id"])
+        values = dict(
+            zip(
+                zone_hours["hour_of_week"].to_list(),
+                zone_hours["pickup_count"].to_list(),
+                strict=True,
+            )
+        )
+        z.append([values.get(hour) for hour in hours])
     fig = go.Figure(
         data=go.Heatmap(
-            z=grid.select([str(h) for h in hours]).to_numpy(),
+            z=z,
             x=[f"D{h // 24 + 1} {h % 24:02d}h" for h in hours],
             y=labels,
             colorscale="Teal",

@@ -7,8 +7,8 @@ zone-hour grain on ``LocationID``.
 
 Two figures:
 - ``zone_demand_map`` — mean pickups per zone-hour (the demand geography);
-- ``zone_residual_map`` — per-zone MAPE of the served GBM (where the model
-  struggles geographically).
+- ``zone_residual_map`` — per-zone MAE of the served GBM (where the model
+  struggles geographically, without unstable low-demand percentage errors).
 """
 
 import tempfile
@@ -99,26 +99,25 @@ def fig_zone_demand_map(demand: pl.DataFrame) -> go.Figure:
 
 
 def fig_zone_residual_map(preds: pl.DataFrame, col: str = "y_gbm_tuned") -> go.Figure:
-    """(b) Per-zone MAPE of the served GBM — where the model struggles."""
+    """Per-zone MAE of the served GBM, including zero-demand zone-hours."""
     pred_col = col if col in preds.columns else "y_gbm"
     per_zone = (
-        preds.filter(pl.col("y_true") > 0)
-        .with_columns(ape=(pl.col(pred_col) - pl.col("y_true")).abs() / pl.col("y_true"))
+        preds.with_columns(absolute_error=(pl.col(pred_col) - pl.col("y_true")).abs())
         .group_by("zone_id")
-        .agg(pl.col("ape").mean().alias("mape"))
+        .agg(pl.col("absolute_error").mean().alias("mae"))
     )
-    mape = {int(r["zone_id"]): float(r["mape"]) * 100 for r in per_zone.iter_rows(named=True)}
-    worst = max(mape, key=lambda k: mape[k])
+    mae = {int(r["zone_id"]): float(r["mae"]) for r in per_zone.iter_rows(named=True)}
+    worst = max(mae, key=lambda k: mae[k])
     gdf = _zones_geo()
     fig = _choropleth(
         gdf,
-        mape,
-        "Per-zone MAPE (%) — served GBM",
+        mae,
+        "Per-zone MAE — served GBM",
         "Reds",
-        "MAPE %",
+        "MAE (pickups/h)",
     )
     return add_takeaway(
         fig,
-        f"relative error ({mape[worst]:.0f}% MAPE) peaks in thinnest-demand "
-        "zones; Manhattan leads on MAE",
+        f"mean absolute error across all test zone-hours; highest in zone {worst} "
+        f"at {mae[worst]:.2f} pickups/hour; zero-demand rows included",
     )

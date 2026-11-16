@@ -1,7 +1,7 @@
 """Split-conformal arm: offsets, stratum assignment, before/after coverage."""
 
 import polars as pl
-from mobility.conformal import conformal_offset, evaluate_conformal
+from mobility.conformal import conformal_offset, evaluate_conformal, fig_conformal_coverage
 
 
 def _frame() -> pl.DataFrame:
@@ -60,3 +60,16 @@ def test_offsets_move_coverage_toward_nominal() -> None:
     # offsets: sparse positive (band widens), over-covered zone negative
     assert block["offsets"]["sparse"] > 0
     assert block["offsets"]["mid"] < 0
+
+
+def test_conformal_figure_shows_coverage_and_width_cost() -> None:
+    block = evaluate_conformal(_frame(), "y_p90_tuned", "y_gbm_tuned")
+    fig = fig_conformal_coverage(block)
+    assert len(fig.data) == 4
+    assert list(fig.data[0].y) == [
+        *block["before"]["coverage_by_stratum"].values(),
+        block["before"]["coverage_overall"],
+    ]
+    assert list(fig.data[2].y) == [block["before"]["mean_height"]]
+    assert list(fig.data[3].y) == [block["after"]["mean_height"]]
+    assert fig.layout.yaxis2.title.text == "pickups above point forecast"

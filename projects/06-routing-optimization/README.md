@@ -230,11 +230,11 @@ Figures (`reports/figures/`, HTML + JSON for the showcase API):
 
 - `eda_instance_map` — C101 customer scatter colored by time-window tightness
   (window width = due − ready); the depot is the star marker.
-- `gap_pct` — grouped bar, gap-% per instance per solver.
+- `gap_pct` — gap-% distribution per solver (median, IQR, and instance outliers).
 - `family_gap` — mean gap per Solomon family per solver; baselines greyed,
   ALNS promoted.
-- `solver_profile` — per-instance grouped distance bars (log scale) with
-  baselines greyed.
+- `solver_profile` — route-distance distribution per solver (log scale) with
+  baselines greyed and ALNS promoted.
 - `convergence_C101` / `convergence_RC105` — 2-opt descent, tuned vs untuned.
 - `alns_convergence_C101` / `alns_convergence_RC105` — two-panel ALNS traces:
   best distance vs iteration at 6 checkpoints (top) and destroy-operator
@@ -252,7 +252,9 @@ Figures (`reports/figures/`, HTML + JSON for the showcase API):
   860.21). Both verified capacity- and time-window-feasible by the project
   validator. Embedded in the docs case study
   (`docs/projects/06-routing-optimization.md`).
-- `runtime` — grouped bar, solver runtime per instance (log scale).
+- `runtime` — solver-runtime distribution per instance (log scale).
+- `frontier_gap_time` — median and mean anytime gap at fixed wall-clock budgets
+  for ALNS and cold-start, single-worker CP-SAT from the committed frontier run.
 
 ## Limits
 
@@ -314,6 +316,7 @@ endpoint remain engagement-dependent extensions.
 | convergence RC105 | [reports/figures/convergence_RC105.html](reports/figures/convergence_RC105.html) |
 | eda instance map | [reports/figures/eda_instance_map.html](reports/figures/eda_instance_map.html) |
 | family gap | [reports/figures/family_gap.html](reports/figures/family_gap.html) |
+| frontier gap time | [reports/figures/frontier_gap_time.html](reports/figures/frontier_gap_time.html) |
 | gap pct | [reports/figures/gap_pct.html](reports/figures/gap_pct.html) |
 | pareto gap runtime | [reports/figures/pareto_gap_runtime.html](reports/figures/pareto_gap_runtime.html) |
 | route map C101 | [reports/figures/route_map_C101.html](reports/figures/route_map_C101.html) |

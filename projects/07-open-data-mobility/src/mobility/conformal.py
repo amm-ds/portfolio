@@ -27,6 +27,7 @@ from typing import Any, cast
 
 import plotly.graph_objects as go
 import polars as pl
+from plotly.subplots import make_subplots
 from portfolio_core.plotting import add_takeaway, apply_theme
 
 STRATA_NAMES = ("sparse", "mid", "dense")
@@ -122,7 +123,7 @@ def evaluate_conformal(
 
 
 def fig_conformal_coverage(block: dict[str, Any]) -> go.Figure:
-    """Grouped bars: empirical p90 coverage per stratum, before vs after."""
+    """Coverage by demand stratum beside the overall band-height cost."""
     labels = [*STRATA_NAMES, "overall"]
     before = [block["before"]["coverage_by_stratum"][s] for s in STRATA_NAMES] + [
         block["before"]["coverage_overall"]
@@ -130,24 +131,55 @@ def fig_conformal_coverage(block: dict[str, Any]) -> go.Figure:
     after = [block["after"]["coverage_by_stratum"][s] for s in STRATA_NAMES] + [
         block["after"]["coverage_overall"]
     ]
-    fig = go.Figure(
-        [
-            go.Bar(name="raw quantile band", x=labels, y=before, marker_color="#64748b"),
-            go.Bar(
-                name="stratum-conformal band",
-                x=labels,
-                y=after,
-                marker_color="#2dd4bf",
-                text=[f"{v:.1%}" if v == v else "n/a" for v in after],
-                textposition="outside",
-            ),
-        ]
+    width_before = block["before"]["mean_height"]
+    width_after = block["after"]["mean_height"]
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        column_widths=[0.7, 0.3],
+        horizontal_spacing=0.14,
+        subplot_titles=("Coverage by demand stratum", "Overall mean band height"),
     )
-    fig.add_hline(y=1.0 - block["alpha"], line_dash="dash", line_color="#fbbf24")
+    fig.add_bar(name="raw quantile band", x=labels, y=before, marker_color="#64748b", row=1, col=1)
+    fig.add_bar(
+        name="stratum-conformal band",
+        x=labels,
+        y=after,
+        marker_color="#2dd4bf",
+        text=[f"{v:.1%}" if v == v else "n/a" for v in after],
+        textposition="outside",
+        row=1,
+        col=1,
+    )
+    fig.add_bar(
+        name="raw quantile band",
+        x=["raw"],
+        y=[width_before],
+        marker_color="#64748b",
+        text=[f"{width_before:.3f}"],
+        textposition="outside",
+        showlegend=False,
+        row=1,
+        col=2,
+    )
+    fig.add_bar(
+        name="stratum-conformal band",
+        x=["conformal"],
+        y=[width_after],
+        marker_color="#2dd4bf",
+        text=[f"{width_after:.3f}"],
+        textposition="outside",
+        showlegend=False,
+        row=1,
+        col=2,
+    )
+    fig.add_hline(y=1.0 - block["alpha"], line_dash="dash", line_color="#fbbf24", row=1, col=1)
     fig.update_layout(
         barmode="group",
-        title="p90 band coverage: raw quantile vs stratum-conformal",
+        title="Conformal coverage and band-width cost",
         yaxis_title="empirical coverage (target 90%)",
+        yaxis={"range": [0, 1.05]},
+        yaxis2_title="pickups above point forecast",
     )
 
     def _pct(v: float) -> str:
@@ -157,8 +189,6 @@ def fig_conformal_coverage(block: dict[str, Any]) -> go.Figure:
         block["after"]["coverage_by_stratum"]["sparse"]
         - block["before"]["coverage_by_stratum"]["sparse"]
     )
-    width_before = block["before"]["mean_height"]
-    width_after = block["after"]["mean_height"]
     add_takeaway(
         fig,
         f"demand-sparse zones {_pct(block['before']['coverage_by_stratum']['sparse'])} -> "
@@ -168,4 +198,4 @@ def fig_conformal_coverage(block: dict[str, Any]) -> go.Figure:
         f"{width_after:.3f} pickups ({width_after - width_before:+.3f}) on the held-out "
         "second half",
     )
-    return apply_theme(fig)
+    return apply_theme(fig, height=560)

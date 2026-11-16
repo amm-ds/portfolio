@@ -101,6 +101,9 @@ def test_figures_build_on_tiny_data(tiny_problem: Problem) -> None:
     )
     for fig in (fig_gap, fig_rt, fig_map, fig_eda, fig_profile, fig_conv):
         assert fig.data, "figure has traces"
+    for fig in (fig_gap, fig_rt, fig_profile):
+        assert all(trace.type == "box" for trace in fig.data)
+        assert fig.layout.showlegend is False
 
 
 def _offline_config(tmp_path: Path) -> VRPConfig:
@@ -160,8 +163,19 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
     run_solve(cfg)
     assert (cfg.reports_dir / "solutions.json").exists()
     assert (cfg.reports_dir / "dq.md").exists()
+    frontier = {
+        "buckets_s": [1.0],
+        "time_cap_s": 1.0,
+        "n_instances": 1,
+        "alns": {"median": [2.0], "mean": [2.0]},
+        "cp_sat": {"median": [3.0], "mean": [3.0]},
+    }
+    (cfg.reports_dir / "frontier.json").write_text(json.dumps(frontier))
     metrics = run_evaluate(cfg)
     data = json.loads(metrics.read_text())
+    assert data["frontier"] == frontier
+    assert (cfg.reports_dir / "figures/frontier_gap_time.json").exists()
+    assert (cfg.reports_dir / "figures/frontier_gap_time.html").exists()
     assert data["instances"]["TINY"]["best_known"] == 500.0
     assert data["instances"]["TINY"]["best_solver"] in {
         "nearest_neighbor",

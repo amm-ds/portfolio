@@ -25,39 +25,45 @@ from routing_optimization.schemas import Problem
 
 
 def gap_figure(rows: pl.DataFrame) -> go.Figure:
-    """Grouped bar: gap to best-known (%) per instance, one group per solver."""
+    """Distribution of distance gap to best-known (%) for each solver."""
     alns = rows.filter(pl.col("solver") == "alns")
     n_under = alns.filter(pl.col("gap_pct") < 0).height
     n_inst = rows["instance"].n_unique()
-    fig = px.bar(
+    fig = px.box(
         rows,
-        x="instance",
+        x="solver",
         y="gap_pct",
         color="solver",
-        barmode="group",
-        title="Distance gap to best-known per instance",
-        labels={"gap_pct": "gap %", "instance": "instance", "solver": "solver"},
+        points="outliers",
+        hover_data=["instance"],
+        title="Distance-gap distribution by solver",
+        labels={"gap_pct": "gap to best-known (%)", "solver": "solver"},
     )
     fig.add_hline(y=0.0, line_color="#94a3b8", line_width=1)
+    fig.update_layout(showlegend=False)
     add_takeaway(
         fig,
-        f"{n_inst} Solomon instances; {n_under} undercut best-known (convention-mixed references)",
+        f"{n_inst} Solomon instances per solver; boxes show median and IQR, points show "
+        f"outliers; {n_under} ALNS results undercut best-known references",
     )
     return apply_theme(fig)
 
 
 def runtime_figure(rows: pl.DataFrame) -> go.Figure:
-    """Grouped bar: solver runtime per instance (seconds, log scale)."""
-    fig = px.bar(
+    """Distribution of solver runtime per instance (seconds, log scale)."""
+    fig = px.box(
         rows,
-        x="instance",
+        x="solver",
         y="runtime_s",
         color="solver",
-        barmode="group",
+        points="outliers",
+        hover_data=["instance"],
         log_y=True,
-        title="Solver runtime per instance (s, log scale)",
-        labels={"runtime_s": "runtime (s)", "instance": "instance", "solver": "solver"},
+        title="Solver-runtime distribution (s, log scale)",
+        labels={"runtime_s": "runtime (s)", "solver": "solver"},
     )
+    fig.update_layout(showlegend=False)
+    add_takeaway(fig, "one distribution per solver; boxes show median and IQR across instances")
     return apply_theme(fig)
 
 
@@ -207,11 +213,11 @@ def convergence_figure(history: dict[str, list[float]], instance: str) -> go.Fig
 
 
 def _style_runs_safe(fig: go.Figure, best: str) -> go.Figure:
-    """Apply the platform run-styling; fall back to marker colors for bar traces.
+    """Apply run styling, with marker colors for traces that reject lines.
 
-    ``style_runs`` sets ``line=`` which scatter traces accept but bar traces
-    reject, so grouped-bar figures get the equivalent marker-color treatment
-    (grey baselines, accent best) via the public ``is_baseline_run`` hint.
+    ``style_runs`` sets ``line=`` which scatter traces accept but bars and boxes
+    reject, so those figures get equivalent marker-color treatment (grey
+    baselines, accent best) via the public ``is_baseline_run`` hint.
     """
     try:
         return style_runs(fig, best=best)
@@ -226,29 +232,28 @@ def _style_runs_safe(fig: go.Figure, best: str) -> go.Figure:
 
 
 def solver_profile_figure(rows: pl.DataFrame) -> go.Figure:
-    """Per-instance solver profile: grouped distance bars on a log scale.
+    """Route-distance distribution per solver on a log scale.
 
-    Baselines are visually demoted (grey) and the tuned run promoted, so the
-    solver ladder reads instantly.
+    Baselines are visually demoted (grey) and ALNS promoted. Boxes summarize
+    the 56 instances without drawing an unreadable bar for every run.
     """
-    fig = px.bar(
+    fig = px.box(
         rows,
-        x="instance",
+        x="solver",
         y="distance",
         color="solver",
-        barmode="group",
+        points="outliers",
+        hover_data=["instance"],
         log_y=True,
-        title="Total route distance per instance by solver",
-        labels={
-            "distance": "total distance (log scale)",
-            "instance": "instance",
-            "solver": "solver",
-        },
+        title="Route-distance distribution by solver",
+        labels={"distance": "total distance (log scale)", "solver": "solver"},
     )
-    _style_runs_safe(fig, best="two_opt_tuned")
+    _style_runs_safe(fig, best="alns")
+    fig.update_layout(showlegend=False)
     add_takeaway(
         fig,
-        "all 56 Solomon instances, one group per instance; grey = baselines, accent = tuned 2-opt",
+        "56 Solomon instances per solver; boxes show median and IQR, points show outliers; "
+        "grey = baselines, accent = ALNS",
     )
     return apply_theme(fig)
 

@@ -39,5 +39,6 @@ def test_demand_and_residual_maps_takeaways(monkeypatch) -> None:
         {"zone_id": [1, 1, 2], "y_true": [10, 10, 5], "y_gbm_tuned": [11.0, 9.0, 4.0]}
     )
     fig = fig_zone_residual_map(preds)
-    # zone 1 MAPE = mean(10%, 10%) = 10% -> 10.0; zone 2 = 20% -> 20.0
-    assert list(fig.data[0].z) == [10.0, 20.0]
+    # MAE includes zero-demand rows without unstable percentage errors.
+    assert list(fig.data[0].z) == [1.0, 1.0]
+    assert fig.data[0].colorbar.title.text == "MAE (pickups/h)"

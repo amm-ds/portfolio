@@ -182,3 +182,33 @@ def test_hour_borough_heatmap_matches_groupby() -> None:
     for borough, row in zip(trace.y, trace.z, strict=True):
         want = expected.filter(pl.col("borough") == borough).sort("hour")["mean_pickups"].to_list()
         assert list(row) == want
+
+
+def test_zone_hour_heatmap_uses_global_top_zones_and_week_orientation() -> None:
+    from mobility.evaluate import fig_zone_hour_heatmap
+
+    rows = []
+    for day in range(7, 14):
+        for hour in range(24):
+            for zone_id, zone, borough, pickups in (
+                (1, "A", "Bronx", 1),
+                (2, "B", "Manhattan", 100 + hour),
+                (3, "C", "Queens", 50),
+            ):
+                rows.append(
+                    {
+                        "zone_id": zone_id,
+                        "zone": zone,
+                        "borough": borough,
+                        "ts": f"2024-10-{day:02d}T{hour:02d}:00:00",
+                        "pickup_count": pickups,
+                    }
+                )
+    demand = pl.DataFrame(rows).with_columns(pl.col("ts").str.to_datetime())
+    trace = fig_zone_hour_heatmap(demand, top_n=2).data[0]
+    assert list(trace.y) == ["Manhattan / B", "Queens / C"]
+    assert trace.x[0] == "D1 00h"
+    assert trace.x[-1] == "D7 23h"
+    assert len(trace.x) == 168
+    assert len(trace.z) == 2
+    assert all(len(row) == 168 for row in trace.z)

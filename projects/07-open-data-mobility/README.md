@@ -158,7 +158,7 @@ normalize hour-of-week mix and are descriptive associations, not causal effects.
 
 The report and metrics are [`reports/report.html`](reports/report.html) and
 [`reports/metrics.json`](reports/metrics.json). `reports/figures/` contains the
-zone-demand and residual maps, hour-borough profiles, forecast fans, p90
+zone-demand and per-zone MAE maps, hour-borough profiles, forecast fans, p90
 calibration, feature importance, transfer, and model-comparison figures. The
 served model contract is in [MODEL_CARD.md](MODEL_CARD.md) and SERVING.md.
 
