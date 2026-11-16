@@ -2,13 +2,13 @@
 
 **Domain:** Agentic AI / LLM · **Data:** Wikipedia (HF, real) · **Status:** Flagship — complete
 
-> A cited QA assistant over 593 pinned Wikipedia articles. Tuning (65 q): 46
-> correct, 17 unsupported-claim outcomes. Sealed held-out (55 q): 44 of 55
-> correct; 9 of 11 failures kept unsupported claims despite rank-1 retrieval;
-> refusal accuracy 0.92. Auditable, not unattended-ready.
+> Grounding-hardened cited QA over 593 Wikipedia articles. Frozen 30-question
+> stress re-run: 0.733 correct (CI [0.567, 0.867]); unsupported outcomes fell
+> 11 → 5. Independent set B: 0.633 correct, but 9/30 unsupported outcomes
+> missed the ≤6/30 gate. Not unattended-ready.
 >
 > Teams routing questions at a knowledge base need answers they can audit —
-> every claim traced to a source, every unsupported claim dropped or refused.
+> every claim traced to a source and residual unsupported outcomes measured.
 > This agent answers only from retrieved evidence with per-claim citations:
 > retrieval recall@5 0.83 vs 0.03 random; selected `kimi-for-coding` reaches
 > RAGAS faithfulness 0.7337 [0.6562, 0.8131], but 17/65 tuning answers still
@@ -96,8 +96,9 @@ membership quota, so these are rate-card equivalents, **never billed amounts**.
 | Answer latency p50 / p95 | 25.888 s / 108.836 s |
 | Answer-generation cost | $0.000906/query before judge/verify costs |
 
-Takeaway: retrieval is solid (recall@5 0.831 vs 0.031 random), so
-**generation grounding is the bottleneck**. The selected provider improves
+Takeaway: retrieval is comparatively strong on this tuning corpus (recall@5
+0.831 vs 0.031 random), while **generation grounding is the dominant measured
+failure mode**. This does not establish generally solved retrieval. The selected provider improves
 rubric faithfulness, answer relevance, and RAGAS faithfulness; the small RAGAS
 answer-relevancy regression remains explicit. Judge and verify costs are
 additional, and no replacement total tuning-suite cost is claimed. Figures and
@@ -134,6 +135,28 @@ claims over 42 verified answers, first-check support 0.903 CI [0.868, 0.938],
 0.74 first-check support vs 0.93 for correct ones — the verifier bounds and
 repairs, it does not ground weak drafts. That pass meters 236 calls /
 $1.583466 cloud-equivalent.
+
+### Current grounding-hardened configuration
+
+The current production configuration adds verbatim evidence spans,
+deterministic number/date/negation checks, bounded repair, and an evidence
+gate. These results use different question sets and must not be combined with
+the 65- or 55-question denominators above:
+
+| evaluation | correct | unsupported-claim outcomes | decision |
+|---|---:|---:|---|
+| frozen 30-question stress re-run | 0.733 [0.567, 0.867] | 5, down from 11 | all no-regression gates passed |
+| independent sealed set B (30 questions) | 0.633 [0.467, 0.80] | 9 | overall target passed; unsupported ≤6 and answer-expected ≥0.70 gates failed |
+
+The later retrieval tournament and judge-alignment work did not replace this
+configuration. RRF fusion did not beat dense retrieval on either tuning or
+sealed raw-layer recall@5, so dense retrieval with reranking remains the
+champion. The rebuilt hosted judge also fails its promotion gates
+(false-acceptance 35.6%, upper confidence bound 46.1%); the answer-level
+rubric remains the correctness instrument. Set C's refuse-all result was a
+verifier-crash diagnostic, and set D passed only 1/6 targets. The full
+revision history and artifacts are linked through DESIGN.md and the project
+README rather than treated as evidence of generalization.
 
 ## Links
 

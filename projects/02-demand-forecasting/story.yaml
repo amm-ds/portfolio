@@ -1,5 +1,5 @@
 project_id: 02-demand-forecasting
-short_version: "Walmart M5 at full scale: 30,490 series scored once on the competition window under the official 42,840-node hierarchical WRMSSE. A stability-screened ensemble of pooled LightGBM fits reaches 0.6161 vs the naive floor's 0.8929 (−31.0%) — in the competition winner's ballpark."
+short_version: "M5 full panel: 30,490 series, scored once on the final 28 days with official 42,840-node WRMSSE. Pooled LightGBM ensemble: 0.6161 vs seasonal-naive 0.8929 (−31.0%). Two selection origins and no bootstrap interval bound the result; quiet days favor the floor."
 sections:
 - id: background
   text_md: |
@@ -127,7 +127,7 @@ sections:
       counts with many zeros.
     - Three pooled fits, which share training data across related series. There
       is one per store (10 groups), one per store×category cell (30), and one
-      per department (7). These groupings follow the winning solution's recipe.
+      per department (7). Each grouping pools related series at a different level.
     - Per-series `AutoETS`, an automated exponential-smoothing method that
       weights older and recent observations differently. The eighth candidate
       is the convex ensemble, a blend whose non-negative weights sum to one.
@@ -180,10 +180,10 @@ sections:
   figures: [m5_full_pooling_panel]
 - id: evaluation
   text_md: |
-    **One official score, with checks for different decisions.** WRMSSE scales
-    each node's error by its train-window volatility, meaning typical variation
-    in historical sales. It then applies revenue weights and averages with equal
-    total weight per level across all 42,840 nodes. Lower is better.
+    **One official score, with checks for different decisions.** WRMSSE compares
+    forecast error with each node's usual variation in training data. Revenue
+    weights give higher-revenue nodes more influence. Each level carries equal
+    total weight across all 42,840 nodes. Lower is better.
 
     Supporting metrics show what the headline hides:
 
@@ -202,9 +202,9 @@ sections:
     error with training-history variation. Revenue weights then produce the
     single WRMSSE score on one final pass.
 
-    This is also the competition's ruler. Its winner improved 22.4% over the
-    best benchmark ([Makridakis et al., IJF 2022](https://doi.org/10.1016/j.ijforecast.2021.11.013)),
-    which provides the relevant external comparison.
+    The supported comparison is internal: every candidate uses this same metric,
+    hierarchy, and scored-once window. No competition-winner or leaderboard
+    equivalence is claimed because this project does not evaluate an external run.
 
     In the per-level figure, compare the blend and floor bars at each level.
     The blend's margin is broadest at aggregate levels: 0.350 on total sales
@@ -265,8 +265,8 @@ sections:
     Across 30,490 series and a 42,840-node hierarchy, the ensemble's official
     WRMSSE is 0.6161 against the seasonal-naive floor's 0.8929 on the scored-once
     competition window. That is a 31.0% reduction on the competition's scheme.
-    The competition winner scored −22.4% against its benchmark on the same signed
-    improvement scale, placing this result in the winning ballpark at full scale. See the
+    This is an internal baseline comparison, not evidence of leaderboard rank or
+    equivalence to the competition winner. See the
     [full evaluation report](https://amm-ds.github.io/portfolio/projects/02-demand-forecasting/)
     or [try the live demo](https://amm-ds.github.io/portfolio/demos/forecast-workbench/).
 
@@ -352,7 +352,7 @@ sections:
 key_concepts:
   - "**Official hierarchical WRMSSE**: The competition metric scales each node's error by train-window volatility, applies revenue weights, and averages with equal total weight per level across all 42,840 nodes."
   - "**Multi-level pooling**: One LightGBM fit per store, store×category cell, or department shares information across similar series. At full scale, these fits beat one global fit."
-  - "**Tweedie loss**: A training objective based on a compound-Poisson-style likelihood for intermittent counts, used as a diverse candidate from the winning solution."
+  - "**Tweedie loss**: A training objective based on a compound-Poisson-style likelihood for intermittent counts, used as a diverse candidate in the internal model comparison."
   - "**Stability-screened selection**: Members are chosen by mean + 1.0×std of per-origin scores across the selection origins, favoring a stable blend over a lucky one."
   - "**Intermittent demand**: Sales occur only occasionally. This describes 91% of the panel's series, while 59.5% of days are zero. Quiet days strongly affect accuracy, and the floor still wins them."
   - "**Scored-once evaluation**: Candidates are chosen on past origins and graded exactly once on the competition window. Random splits could leak future information into training."
@@ -368,9 +368,7 @@ roadmap:
 - status: delivered
   text: "Reported bias, per-level, and zero-day metrics beside the headline."
 - status: delivered
-  text: "Challenged the erratic quadrant with a spike-capture arm behind an adoption gate — rejected at the pooled-WRMSSE check on the capped window (0.621 vs 0.601, twice the noise band), published as a designed negative result."
-- status: deferred
-  text: "Re-run the erratic-quadrant refinement on the full panel in a scheduled overnight slot, grading the gate at the real headline."
+  text: "Challenged the erratic quadrant with a spike-capture arm behind an adoption gate — rejected at the pooled-WRMSSE check on the capped window (0.621 vs 0.601, twice the noise band), published as a designed negative result. The deferred full-panel refinement is tracked in DESIGN.md."
 figure_captions:
   m5_full_sample_series: "Three catalog series at the scored-once test origin on 2016-05-22: top-units, hardest-intermittent, and mid-volume. Each panel shows 56 days of history, 28 days of actual sales, and the ensemble curve with its member envelope. The envelope is the members' spread, not a calibrated interval. Look for the weekly shape, weeks-long zero runs, and quiet days."
   m5_full_candidate_ranking: "All 8 candidates ranked by official hierarchical WRMSSE on the scored-once competition window across 42,840 revenue-weighted nodes. Lower bars are better. The stability-screened convex ensemble leads at 0.6161, the best single pooled fit scores 0.6217, and the seasonal-naive floor scores 0.8929."

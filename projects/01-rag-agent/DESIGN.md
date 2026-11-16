@@ -144,9 +144,11 @@ faithfulness → verdict) and is linked from a table appended to
 
 ### 3.7 Verify-then-answer loop (wave 14)
 
-The wave-13 golden-set pass showed retrieval is solved (context recall 0.979,
-precision 1.000) while generation grounding is the bottleneck (12 correct /
-18 unsupported-claim; RAGAS faithfulness 0.651). The documented next lever —
+The wave-13 golden-set pass showed strong retrieval on this bounded corpus
+(context recall 0.979, precision 1.000) while generation grounding remained
+the bottleneck (12 correct / 18 unsupported-claim; RAGAS faithfulness 0.651).
+This did not establish that retrieval was generally solved. The documented
+next lever —
 implemented here — checks the drafted answer *before* it reaches the user or
 the judges:
 

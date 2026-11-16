@@ -73,8 +73,8 @@ M5 evaluation horizon). Candidates: per-series statistical floor
 exogenous price/SNAP/event codes), three **pooled-global** LightGBM variants —
 one fit per store
 (`lgbm_pool_store`, 10 groups), one per store×category (`lgbm_pool_storecat`,
-30 groups), one per department (`lgbm_pool_dept`, 7 groups), the winning
-solution's pooling recipe at three groupings — per-series **AutoETS**
+30 groups), one per department (`lgbm_pool_dept`, 7 groups), three complementary
+related-series groupings — per-series **AutoETS**
 (statsforecast 2.1.1, season 7), and the **convex_ensemble** of the best
 three pool members by the stability screen (weights grid-fit on a 0.05
 simplex over the selection origins only, never reading test).
@@ -101,14 +101,11 @@ origins):
 | auto_ets | 0.7093 | −20.6% | 0.7710 | −0.0063 | 0.0161 |
 | seasonal_naive (floor) | 0.8929 | — | 0.9159 | −0.0120 | 0.0108 |
 
-- **The honest comparison to the M5 competition** — on the competition's own
-  axis, improvement over benchmark: the winner improved **−22.4%** over the
-  best benchmark ([Makridakis et al., IJF 2022](https://doi.org/10.1016/j.ijforecast.2021.11.013)).
-  This run's convex ensemble lands at an absolute **0.6161**, a **−31.0%** cut
-  over the seasonal-naive floor (0.8929), scored once on the final 28 days
-  under the same official revenue-weighted scheme across all 42,840 nodes: in
-  the winning ballpark on the competition's own metric, at full 30,490-series
-  scale.
+- **The committed comparison is the seasonal-naive floor** — the convex
+  ensemble lands at **0.6161**, a **−31.0%** cut over the floor's 0.8929,
+  scored once on the final 28 days under the official revenue-weighted scheme
+  across all 42,840 nodes. This is not a leaderboard or competition-winner
+  comparison: no equivalent external run is evaluated by this project.
 - **Pooled beats global at full scale — the key lesson.** All three pooled
   arms (0.6217 / 0.6313 / 0.6575) land ahead of the single global model
   (0.6601): with 30,490 series, one fit per store, cell, or department shares
@@ -160,10 +157,8 @@ returns are unmodeled, so no savings or safety-stock claim follows.
   follow their documented patterns (pinned versions in
   evaluation_metadata.json).
 - **A Kaggle-competitions analysis of the M5 accuracy round**
-  ([arXiv:2009.07701](https://arxiv.org/abs/2009.07701)) — external context
-  on how the competition was won (global gradient-boosted models with pooled
-  fits and a Tweedie arm over per-series statistical baselines — the same
-  ordering this full-panel run measures from the inside).
+  ([arXiv:2009.07701](https://arxiv.org/abs/2009.07701)) — background on the
+  candidate families; it is not used as an external performance comparison.
 
 ## Data-generating process (M5 panel)
 
@@ -237,9 +232,8 @@ uv run pytest projects/02-demand-forecasting -q
   and the results say where it still wins (quiet days) as plainly as where it
   loses (the hierarchy).
 - **Model selection as an engineering discipline**: the ensemble is chosen by
-  a stability screen on selection origins only, with the winning ballpark
-  measured on the competition's own axis (−31.0% vs the floor against the
-  winner's −22.4% over benchmark).
+  a stability screen on selection origins only and compared with the committed
+  seasonal-naive floor, without an unsupported leaderboard-equivalence claim.
 - **Reproducibility**: seeded data, checksum-pinned inputs, closed-form or
   seeded fits, dvc stages, offline tests — results regenerate byte-for-byte on
   any machine with the repo.

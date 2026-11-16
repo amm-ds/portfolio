@@ -71,8 +71,11 @@ of the stream precision reads 0.680; at 5%, 0.234 (see `reports/nab_metrics.json
 → no_skill` and the `range_pr` figure).
 
 The current rank-average ensemble uses rolling features and the frozen 2%
-budget with a 24-hour cap. It improves the operating point without selecting
-on the test window.
+budget with a 24-hour cap. Its like-for-like comparison is IsolationForest with
+rolling features on the same budgeted stream: pages fall 66 → 35, range-F1
+rises 0.388 → 0.533, and range recall stays 0.604. The separate 80-page cell
+uses rolling+residual features, and 1,609 is its raw—not budgeted—alert count.
+The frozen (2%, 24 h) operating point is not selected on the test window.
 
 | detector and stream | alerts | range recall | range-F1 |
 |---|---:|---:|---:|
@@ -143,7 +146,11 @@ operating regime.
 | hpo importance | [reports/figures/hpo_importance.html](reports/figures/hpo_importance.html) |
 | nab tune surface | [reports/figures/nab_tune_surface.html](reports/figures/nab_tune_surface.html) |
 | pr curves | [reports/figures/pr_curves.html](reports/figures/pr_curves.html) |
-| score distribution | [reports/figures/score_distribution.html](reports/figures/score_distribution.html) |
+| NAB range-PR and no-skill controls | [reports/figures/range_pr.json](reports/figures/range_pr.json) |
+| fixed versus adaptive stream | [reports/figures/adaptive_stream.html](reports/figures/adaptive_stream.html) |
+| representative NAB timelines | [reports/figures/nab_timelines.json](reports/figures/nab_timelines.json) |
+| NAB score distribution | [reports/figures/nab_score_distribution.json](reports/figures/nab_score_distribution.json) |
+| NAB alert budget | [reports/figures/nab_alert_budget.json](reports/figures/nab_alert_budget.json) |
 | telemetry flags | [reports/figures/telemetry_flags.html](reports/figures/telemetry_flags.html) |
 | threshold sweep | [reports/figures/threshold_sweep.html](reports/figures/threshold_sweep.html) |
 

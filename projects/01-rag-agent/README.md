@@ -9,6 +9,8 @@ The runtime default is local Ollama (`qwen3.6:35b-a3b-q4_K_M`); any
 OpenAI-compatible endpoint uses the same path. There is no runtime mock.
 **`kimi-for-coding` is the selected provider for the reported evaluation**,
 which covers a 65-question tuning set and a sealed 55-question held-out set.
+The current production configuration adds the R6 grounding-hardening layer;
+its later stress and independent-set results are reported separately below.
 
 - Design record and history: [DESIGN.md](DESIGN.md)
 - Evidence: `reports/metrics.json`, `reports/cost_telemetry.json`,
@@ -157,7 +159,13 @@ mandate made honest refusal unrepresentable, burning up to ~33M tokens in
 tool loops on unanswerable rows — fixed (refusal = empty citations/claims +
 stop), which is what let all six unanswerable rows refuse correctly.
 Independent set B (`data/golden_stress_b.json`, absolute targets
-pre-registered in the story) is scored once under `detail.stress_b`.
+pre-registered in the story) is scored once under `detail.stress_b`. It reaches
+0.633 overall correctness (CI [0.467, 0.80]), 0.550 answer-expected
+correctness, 9/30 unsupported-claim outcomes, refusal accuracy 0.80, and zero
+false abstentions. Overall, refusal, and false-abstention gates pass;
+unsupported claims (target ≤6/30) and answer-expected correctness (target
+≥0.70) fail. This is the current champion's independent limit, not a broad
+generalization claim.
 
 R7 then measured the next levers without adopting them: the retrieval
 tournament's best arm gained +1.5 points recall@10 — below the +5-point
@@ -224,7 +232,9 @@ Exact telemetry is in `reports/metrics.json → detail.heldout.meter`.
 | retrieval funnel | [reports/figures/retrieval_funnel.html](reports/figures/retrieval_funnel.html) |
 | retrieval HPO frontier | [reports/figures/retrieval_hpo_frontier.html](reports/figures/retrieval_hpo_frontier.html) |
 | per-query latency | [reports/figures/latency_histogram.html](reports/figures/latency_histogram.html) |
-| selected-provider comparison | [reports/figures/kimi_generation_comparison.json](reports/figures/kimi_generation_comparison.json) |
+| selected-provider comparison | [reports/figures/kimi_generation_comparison.html](reports/figures/kimi_generation_comparison.html) |
+| failure taxonomy | [reports/figures/failure_taxonomy.html](reports/figures/failure_taxonomy.html) |
+| dense / BM25 / RRF comparison | [reports/figures/fusion_arm_comparison.html](reports/figures/fusion_arm_comparison.html) |
 | full report | [reports/report.html](reports/report.html) |
 
 ## Limits

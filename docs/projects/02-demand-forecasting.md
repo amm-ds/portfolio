@@ -4,15 +4,15 @@
 full scale (30,490 daily store-item series) · **Status:** working showcase on
 the standard platform (flagships: [01](01-rag-agent.md), [07](07-open-data-mobility.md))
 
-> Walmart M5 at full scale: 30,490 series scored once on the competition window under the official 42,840-node hierarchical WRMSSE. A stability-screened ensemble of pooled LightGBM fits reaches 0.6161 vs the naive floor's 0.8929 (−31.0%) — in the competition winner's ballpark.
+> M5 full panel: 30,490 series, scored once on the final 28 days with official 42,840-node WRMSSE. Pooled LightGBM ensemble: 0.6161 vs seasonal-naive 0.8929 (−31.0%). Two selection origins and no bootstrap interval bound the result; quiet days favor the floor.
 
 [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
 
 ## What it shows
 
-Production-depth demand forecasting measured the way the M5 competition
-measures it. Global and multi-level pooled LightGBM fits (per store, per
-store×category, per department — the winning solution's pooling ladder), a
+Production-depth demand forecasting measured with the official M5 metric.
+Global and multi-level pooled LightGBM fits (per store, per store×category,
+and per department), a
 Tweedie-loss variant for skewed intermittent demand, per-series AutoETS, and a
 seasonal-naive floor, combined by a stability-screened convex ensemble and
 scored through the full 12-level, 42,840-node hierarchy with revenue weights.
@@ -49,16 +49,12 @@ Lower is better; weights are revenue-based across all 42,840 nodes.
 Ensemble composition (selection screen, test never consulted): lgbm_pool_storecat
 × 0.60 + lgbm_pool_store × 0.10 + lgbm_pool_dept × 0.30.
 
-- **In the competition's own terms** — the M5 leaderboard reports improvement
-  over benchmark (winner −22.4% over the best benchmark, [Makridakis et al.,
-  IJF 2022](https://doi.org/10.1016/j.ijforecast.2021.11.013)). On the same
-  official metric scheme and the same test window, this system improves
-  −31.0% over the seasonal-naive floor, and its absolute WRMSSE (0.6161) sits
-  in the winning ballpark (strong public full-hierarchy solutions land ~0.62).
+- **The internal baseline is the supported comparison** — the ensemble improves
+  −31.0% over the seasonal-naive floor on the same full hierarchy and scored-once
+  window. No competition-winner or leaderboard equivalence is claimed.
 - **Pooling wins at full scale** — all three pooled fits beat the single global
-  model (0.6217–0.6575 vs 0.6601), reproducing the competition's central
-  finding; the 600-series subset measured the opposite, which is why the
-  conclusion is stated at full scale only.
+  model (0.6217–0.6575 vs 0.6601) in this committed run; the 600-series subset
+  measured the opposite, which is why the conclusion is stated at full scale only.
 - **The hierarchy is the hard part** — the ensemble's biggest edge sits at the
   aggregate levels (total 0.350 vs floor 0.560; store level 0.459 vs 0.718);
   at the item×store leaves every learned candidate lands at 1.04–1.15 while the
@@ -66,10 +62,10 @@ Ensemble composition (selection screen, test never consulted): lgbm_pool_storeca
 - **91% of the panel is intermittent** (27,736 of 30,490 series by ADI/CV²) —
   on zero-actual days the naive floor still wins (66.6% vs 57.3% accuracy);
   full scale prices that in instead of solving it.
-- **Stated limits** — the selection screen runs on two origins (a thin read,
-  documented); the AutoETS batch path hit a boundary bug on this panel and ran
-  through its per-series fallback (identical forecasts; fixed in the following
-  wave); neural global models (N-HiTS/TFT/foundation) are not benchmarked here.
+- **Stated limits** — the selection screen runs on two origins and the headline
+  has no bootstrap confidence interval. The demo envelope is member spread, not
+  a calibrated interval; neural global models (N-HiTS/TFT/foundation) are not
+  benchmarked, and stockouts, promotions, and returns remain unmodeled.
 
 ## Artifacts
 

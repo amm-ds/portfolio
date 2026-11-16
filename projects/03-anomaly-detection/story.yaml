@@ -1,27 +1,28 @@
 project_id: 03-anomaly-detection
-short_version: "On NAB at a fixed 2% alert budget, IsolationForest catches 16 of 17 incident windows but fires 1,609 alerts. A one-page-per-day cap cuts that to 80 pages; a rank-average ensemble halves the load again at higher recall — page the alert stream, not the detector score."
+short_version: "NAB, nine evaluable series: IsolationForest touches 16/17 incidents with 1,609 raw alerts; daily budgeting cuts that cell to 80. Like-for-like, the rolling-feature ensemble cuts 66 budgeted pages to 35 at equal recall 0.604. Precision 0.553 rules out unattended paging."
 sections:
 - id: background
   text_md: |
-    **The detector catches 16 of 17 incidents, but raises 1,609 alerts.**
-    The Numenta Anomaly Benchmark (NAB) is a labelled time-series benchmark.
-    It uses twelve cloud, traffic, and known-cause failure series; nine have
-    scored incidents. IsolationForest finds unusual points
-    by isolating them with random splits. At a fixed 2% alert budget, it
-    touches 16 of 17 windows. Pointwise PR-AUC, the area under the
-    precision-recall curve, measures minute ranking: 0.527. Event-aware
-    range-F1 combines event precision and recall: 0.157.
+    **On nine evaluable NAB series, IsolationForest touches 16/17 incidents but
+    emits 1,609 raw alerts.** Three of twelve series have labels only in
+    training and leave incident aggregates. Range recall averages over all
+    twelve, counting those three as zero, so it differs from windows touched.
+    Pointwise PR-AUC ranks minutes (0.527); range-F1 scores incidents (0.157).
+
+    The champion is the rank-average ensemble on rolling features: 35 budgeted
+    pages, range-F1 0.533, and range precision 0.553. Nearly half of pages fall
+    outside incidents.
 
     ```diagram 03-detection-pipeline
     ```
 
-    Follow the diagram from scores to pages. The threshold uses the top 2%
-    of training scores. Deduplication groups each alert burst; the cap allows
-    one page per series per 24 hours. This cuts 1,609 raw alerts to 80 pages.
+    In `03-detection-pipeline`, follow scores into raw, deduplicated, and
+    budgeted streams. The cap allows one page per series per 24 hours. On the
+    IsolationForest rolling+residual cell, it cuts 1,609 raw alerts to 80 pages.
+    It proves no transfer to other datasets or production.
 
-    **Business summary:** The detector finds 16 of 17 NAB incidents but
-    fires 1,609 alerts; one page per series per day cuts that to 80 at
-    small recall cost.
+    **Business summary:** The ensemble halves like-for-like budgeted load from
+    66 to 35 at equal range recall. Precision and transfer remain unresolved.
   figures: []
 - id: objectives
   text_md: |
@@ -229,13 +230,12 @@ sections:
     precise as chance there and touches nearly every window.
 
     The `range_pr` operating points also frame the measured paging trade.
-    One page per incident per day costs 0.13–0.25 of range recall and gives
-    twenty- to thirty-fold fewer pages. Range-F1 rises in every sweep cell.
-    The ensemble then cuts like-for-like load from 66 → 35 pages and raises
-    range-F1 from 0.388 → 0.533, with recall unchanged at 0.604. Its flat
-    validation surface supports keeping the default. Tuning also halves
-    IsolationForest's pages where it transfers. The remaining choice is
-    on-call capacity versus recall cost.
+    Deduplication plus one page per series per day costs 0.13–0.25 of range
+    recall and gives twenty- to thirty-fold fewer pages. Range-F1 rises in
+    every sweep cell. On the same rolling features and budgeted stream, the
+    ensemble cuts load from 66 → 35 pages and raises range-F1 from 0.388 →
+    0.533, with recall unchanged at 0.604. Its flat validation surface supports
+    keeping the default. The remaining choice is on-call capacity versus recall.
 
     In `adaptive_stream`, compare fixed and adaptive alert, true-positive, and
     false-positive counts, then read the per-chunk drift statistic against its
@@ -247,22 +247,19 @@ sections:
     therefore supports rejecting adaptive thresholds for now, not claiming drift
     readiness.
 
-    **The detector alternatives fail a measured adoption gate.** Conformal
-    p-values estimate how unusual a point is relative to reference scores.
-    Calibration by hour-of-week context, IsolationForest+LOF rank fusion,
-    and context-normalized fusion must each improve precision at the budget
-    and range-F1 while holding coverage at 16 of 17. None succeeds on
-    identical windows. Forty-minute contexts make the conformal grid bottom
-    out near p = 0.049; the pooled 2% quantile lands there and fires 2,546
-    alerts at the 2% face budget, with precision and range-F1 both down.
-    Fusion reaches precision 0.650 and range-F1 0.403 while halving raw
-    alerts, but loses two of seventeen windows, including one on a
-    known-cause failure series. These measured trade-offs keep the original
-    detector in place; the exact comparison appears in Conclusions.
+    **Detector alternatives fail a measured adoption gate.** Context calibration,
+    IsolationForest+LOF fusion, and normalized fusion must improve budgeted
+    precision and range-F1 while holding coverage at 16 of 17. None succeeds.
+    Context calibration emits 2,546 alerts at the 2% face budget and lowers both
+    metrics. Fusion reaches precision 0.650 and range-F1 0.403 while halving raw
+    alerts, but covers only 14 of 17 windows. The original detector remains;
+    Conclusions gives the exact comparison.
 
-    **Business summary:** Budget the pages, then combine the detectors:
-    35 pages instead of 1,609, each incident paged about once a day,
-    at 0.13–0.25 recall cost.
+    **Business summary:** On the IsolationForest rolling+residual cell, page
+    budgeting cuts 1,609 raw alerts to 80 pages at a 0.167 range-recall cost.
+    Separately, on like-for-like rolling budgeted streams, the ensemble cuts
+    IsolationForest's 66 pages to 35 at equal recall 0.604. Do not compare the
+    ensemble's 35 directly with the other cell's 1,609 raw alerts.
   figures: [pr_curves, range_pr, adaptive_stream]
 - id: results
   text_md: |
@@ -484,7 +481,7 @@ roadmap:
 - status: delivered
   text: "Delivered the alert-budget stream: deduped episodes, one page per series per 24 h."
 - status: delivered
-  text: "Cut pages 1,609 → 80 at range-F1 0.157 → 0.315 across all sweep cells."
+  text: "Applied alert budgeting in every sweep cell; the IsolationForest rolling+residual cell cuts 1,609 raw alerts to 80 pages at range-F1 0.157 → 0.315."
 - status: delivered
   text: "Validated train-side operating-point tuning: IsolationForest's adoption transfers, OCSVM's does not."
 - status: delivered
@@ -504,6 +501,7 @@ figure_captions:
   telemetry_flags: "Synthetic test-window flags at the fixed 2% alert budget, compared with ground-truth anomalous minutes. The flags track simultaneous CPU+latency spikes; this is not a NAB result."
   hpo_importance: "One-Class Support Vector Machine tuning on synthetic train-only validation: gamma, the boundary-width setting, carries 99% of importance, moving from the failing `scale` default to 0.0131 (best validation PR-AUC 0.126)."
   pr_curves: "Pointwise precision-recall curves on the synthetic test window, with the 1.89% prevalence floor. Tuned OCSVM was frozen by validation PR-AUC 0.151 before this test AP 0.136 was measured; these curves do not select the champion or measure event-window recall."
+  range_pr: "NAB event-aware precision-recall across score-quantile thresholds. Range-PR area is 0.804 versus a 16-seed no-skill band of 0.228 [0.081, 0.401]. At 2% of the stream, precision is 0.527 and recall over evaluable windows is 0.944; these are threshold-sweep values, not the fixed-budget raw headline's range precision or twelve-series range recall."
   threshold_sweep: "Synthetic precision and recall across alert budgets, with the fixed 2% point marked: 115 flags, about 15% precision and recall (14.8%), including 17 hits on anomalous minutes. This is point-level load, not 17 incidents."
   adaptive_stream: "Synthetic test-window outcomes for fixed and adaptive thresholds: 120 alerts, 18 true positives, and 102 false positives fixed; 113, 17, and 96 adaptive. Precision/recall are 0.150/0.159 fixed and 0.150/0.150 adaptive. The right panel shows drift z for all five chunks against the trigger at 1.0; none fires. Separately, the same synthetic-calibrated rule fires on 31 of 120 real NAB chunks, so adaptive thresholds remain rejected for the headline operating point."
   nab_timelines: "Six representative NAB test windows: amber bands are labelled events and pink crosses are IsolationForest alerts. These panels contain 897 alerts; nyc_taxi misses one window while the other five series touch theirs. This matrix is the single timeline presentation; the nyc_taxi miss is not repeated in a separate figure."

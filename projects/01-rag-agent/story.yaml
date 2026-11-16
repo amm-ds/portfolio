@@ -1,27 +1,28 @@
 project_id: 01-rag-agent
-short_version: "A cited QA assistant over 593 pinned Wikipedia articles. Tuning (65 q): 46 correct, 17 unsupported-claim outcomes. Sealed held-out (55 q): 44 of 55 correct; 9 of 11 failures kept unsupported claims despite rank-1 retrieval; refusal accuracy 0.92. Auditable, not unattended-ready."
+short_version: "Grounding-hardened cited QA over 593 Wikipedia articles. Frozen 30-question stress re-run: 0.733 correct (CI [0.567, 0.867]); unsupported outcomes fell 11 → 5. Independent set B: 0.633 correct, but 9/30 unsupported outcomes missed the ≤6/30 gate. Not unattended-ready."
 sections:
 - id: background
   text_md: |
-    **This assistant answers only from a pinned corpus, a fixed set of Wikipedia
-    articles, and shows a source for every claim.**
+    **Grounding-hardened QA answers only from 593 pinned Wikipedia articles and
+    cites each claim.** Its verifier repairs or drops weak claims and refuses
+    without evidence. Independent 30-question set B has 9 unsupported-claim
+    outcomes, above the gate of 6.
 
     ```diagram 01-rag-pipeline
     ```
 
-    The diagram shows retrieval (passage search) on a CPU (computer processor).
-    Search narrows 593 articles to three passages. A model drafts cited answers.
-    A verifier cuts or refuses claims below the 0.6 support floor.
+    In `01-rag-pipeline`, follow CPU retrieval through drafting and verification.
+    The diagram explains the control path, not answer correctness.
 
-    Retrieval reaches recall@5 of 0.831 versus 0.677 for word match. Recall@5
-    means the right article appears in the top five. Yet 17 of 65 hosted answers
-    kept claims without evidence. A sealed set, held back from tuning, has 44
-    of 55 answers correct. However, 9 of 11 failures have the right article at
-    rank 1, the first result. Auditable does not mean unattended-ready.
+    Keep evaluation denominators separate. The 65-question tuning run reached
+    retrieval recall@5 0.831 versus 0.677 word match, with 17 unsupported
+    outcomes. An earlier gated 55-question sealed pass kept 44 correct (0.80,
+    CI [0.69, 0.89]). The current frozen 30-question stress re-run reached 0.733
+    (CI [0.567, 0.867]); set B reached 0.633 (CI [0.467, 0.80]) and missed two
+    quality gates.
 
-    **Business summary:** Get cited answers from 593 pinned Wikipedia articles.
-    The right article surfaces 83% of the time, yet 17 of 65 hosted answers
-    kept unsupported claims.
+    **Business summary:** The assistant is auditable over one Wikipedia slice,
+    but independent evidence still fails key quality gates.
   figures: []
 - id: objectives
   text_md: |
@@ -299,41 +300,39 @@ sections:
   text_md: |
     ## Results summary
 
-    Use the diagram as the reading guide for every table below. It connects
-    retrieval, answer checks, and final outcomes. Strong retrieval does not
-    guarantee a grounded answer.
+    Use `auto-01-rag-agent-4` to connect retrieval, answer checks, and final
+    outcomes. It explains why a retrieved source is not yet a supported answer.
 
     ```diagram auto-01-rag-agent-4
     ```
 
-    On 65 tuning questions, the committed setup uses 200-token chunks, MiniLM
-    embeddings, and cross-encoder rerank. It reaches recall@5 0.831 and MRR@5
-    0.808 against a 0.677 word-match floor. Selected `kimi-for-coding` records
-    46 correct and 17 unsupported-claim outcomes, RAGAS faithfulness 0.7337
-    [0.6562, 0.8131], and refusal accuracy 1.0. The sealed 55-question pass
-    keeps 44 of 55 correct (0.80, CI [0.69, 0.89]) with operational recall@5
-    0.745 and refusal accuracy 0.92 (12/13). The corpus is 593 Wikipedia
-    articles capped at 12,000 characters. See the
+    The current champion is the grounding-hardening configuration with hosted
+    generation and dense MiniLM retrieval plus cross-encoder reranking. On the
+    frozen 30-question stress re-run it reaches 0.733 correct (CI [0.567,
+    0.867]) and reduces unsupported-claim outcomes from 11 to 5. Independent
+    set B reaches 0.633 correct (CI [0.467, 0.80]) but misses the unsupported
+    claim gate at 9/30 and answer-expected correctness at 0.550. Earlier tuning
+    and gated sealed results remain separate evidence, not inputs to these
+    denominators. See the
     [full evaluation report](https://amm-ds.github.io/portfolio/projects/01-rag-agent/).
 
     ## What the experiment taught
 
-    - Retrieval was the solved half. Measurements settled chunk size, embedding
-      model, and reranking without a bigger model.
-    - Generation was the bottleneck. Of 65 selected-provider answers, 17 kept
-      unsupported claims. Verification bounded the harm rather than removing it.
+    - Retrieval was comparatively strong on this corpus, not generally solved.
+      The 65-question sweep selected 200-token chunks, MiniLM, and reranking;
+      held-out and stress results still expose retrieval and grounding errors.
+    - Grounding hardening improved the frozen stress re-run, but independent
+      set B failed two pre-registered quality gates. Verification bounds harm;
+      it does not guarantee correctness.
     - Provider selection was not a clean sweep. Rubric faithfulness and answer
-      relevance improved, while RAGAS answer relevancy regressed 0.8775 → 0.8602.
-    - The sealed set exposed two limits. Tuning recall@5 0.831 did not repeat on
-      the original 15 questions. In the 55-question expansion, 9 of 11 failures
-      retrieved the right article at rank 1 yet kept unsupported claims.
-    - The reusable deliverable is the measurement contract itself: seeded floors,
-      three judges, a sealed set, and cost meters.
+      relevance improved, while RAGAS answer relevancy regressed 0.8775 →
+      0.8602 on the 65-question comparison.
+    - Fusion and judge alternatives were not promoted. RRF did not beat dense
+      recall, and the rebuilt hosted judge failed every alignment gate.
+    - The reusable deliverable is the measurement contract: seeded floors,
+      separate judges, sealed sets, explicit denominators, and cost meters.
 
     ## Exact numbers
-
-    These reference tables preserve full precision for the retrieval and
-    generation steps shown in the diagram.
 
     Retrieval configurations on the 65 tuning questions:
 
@@ -342,13 +341,6 @@ sections:
     | MiniLM, 200-token chunks | **0.831** | 0.846 | **0.808** |
     | lexical word match (baseline) | 0.677 | 0.754 | 0.500 |
     | seeded random (chance floor) | 0.031 | 0.046 | 0.018 |
-
-    Delta over the baselines, the comparison a client should read first:
-
-    | Δ vs baseline | recall@5 | recall@10 | MRR@5 |
-    |---|---:|---:|---:|
-    | over lexical word match | **+0.154** | +0.092 | **+0.308** |
-    | over seeded random | +0.800 | +0.800 | +0.790 |
 
     | Generation metric | Incumbent | Selected `kimi-for-coding` |
     |---|---:|---:|
@@ -361,178 +353,71 @@ sections:
 
     - Selected tuning taxonomy: 46 correct / 17 unsupported / 2 retrieval-miss /
       0 format failures. Refusal accuracy 1.0, false-abstention 0.0545,
-      cite-when-expected 0.9636.
-    - Selected tuning operations: p50 25.888 s, p95 108.836 s; answer generation
-      $0.000906/query before judge/verify costs. No total tuning-suite cost is
-      claimed.
-    - Sealed held-out pass (55 questions: 32 single-hop, 10 multi-hop, 13
-      unanswerable): 44 correct / 9 unsupported-claim / 1 retrieval-miss / 1
-      format-failure (0.80 correct, CI [0.69, 0.89]); operational recall@5
-      0.745 (+0.691 over the 0.055 random floor), recall@10 0.764, MRR@5
-      0.718 (+0.688 over 0.030); on 42 answerable
-      questions, rubric faithfulness 0.6338 [0.5726, 0.7021], answer relevance
-      0.7114, context recall 0.9762; 12/13 required refusals (accuracy 0.92,
-      CI [0.77, 1.0]); 241 calls and $1.950667 cloud-equivalent under the
-      $3.00 cap; p50 24.443 s, p95 126.811 s.
-    - Citation-correctness pass (second sealed sample, claim-level records
-      persisted): 258 claims over 42 verified answers; first-check support
-      0.903 CI [0.868, 0.938]; 16 repaired / 11 dropped; the five
-      unsupported-claim answers drafted at 0.74 first-check support vs 0.93
-      for correct; 236 calls and $1.583466 cloud-equivalent; p50 25.351 s,
-      p95 84.681 s.
-    - Stress pass (independent 30-question set, no answerability gate;
-      `detail.stress`): 16/30 correct (0.53, CI [0.37, 0.70]) against 0.80
-      on the gated held-out set; 11 of the 14 non-correct outcomes are
-      unsupported-claim with retrieval intact; refusal accuracy 0.60 (6/10,
-      CI [0.30, 0.90]) on the abstain rows; rubric faithfulness 0.5175
-      [0.3687, 0.6663]; 123 calls, $1.932540 cloud-equivalent; p50 26.115 s,
-      p95 340.997 s.
+      cite-when-expected 0.9636; p50 25.888 s and p95 108.836 s. Answer
+      generation costs $0.000906/query before judge and verification costs.
+    - Earlier gated sealed pass (55 questions): 44 correct / 9 unsupported /
+      1 retrieval-miss / 1 format-failure (0.80, CI [0.69, 0.89]); operational
+      recall@5 0.745; 12/13 required refusals (0.92, CI [0.77, 1.0]); 241
+      calls and $1.950667 cloud-equivalent; p50 24.443 s, p95 126.811 s.
+    - Citation pass over 42 verified answers: 258 claims, first-check support
+      0.903 CI [0.868, 0.938], 16 repaired and 11 dropped; 236 calls and
+      $1.583466 cloud-equivalent.
+    - Original independent stress pass (30 questions): 16 correct (0.53, CI
+      [0.37, 0.70]), 11 unsupported-claim outcomes with retrieval intact, and
+      refusal accuracy 0.60 (6/10, CI [0.30, 0.90]).
 
-    ## Grounding hardening and independent checks
+    Current grounding-hardened results:
 
-    The answer-checking step in the diagram also frames the following measured
-    interventions. Pre-registered means the targets were fixed before scoring.
+    | evaluation | overall correctness | answer-expected correctness | unsupported claims | refusal / false abstention |
+    |---|---:|---:|---:|---:|
+    | frozen stress re-run | 0.733 [0.567, 0.867] | 0.700 | 5 | 0.800 / 0.050 |
+    | independent set B | 0.633 [0.467, 0.80] | 0.550 | 9/30 | 0.800 / 0.000 |
 
-    The hardening pass drafts claims with verbatim evidence spans. It applies
-    deterministic number, date, and negation guards before an entailment judge,
-    which checks whether evidence supports a claim. It then repairs or drops
-    claims and applies an inference-time evidence gate. Two sets score it:
-    the frozen stress re-run (`detail.stress_after_r6`) and independent set B
-    (`data/golden_stress_b.json`). Both admit questions at article level only.
-    Set B has 30 questions sealed before tuning.
+    Set B's pre-registered gates were overall correctness ≥0.60,
+    answer-expected correctness ≥0.70, unsupported claims ≤6/30, refusal
+    accuracy ≥0.8, and false abstention ≤0.10. It passes overall, refusal, and
+    false-abstention gates but fails the other two. Hosted answer latency on
+    the hardened path is p50 23.0 s and p95 532 s; frozen-set and B costs are
+    $9.74 and $2.19 cloud-equivalent.
 
-    Set B has no pre-change baseline. Its absolute targets were unsupported
-    claims ≤ 6/30, overall correctness ≥ 0.60, answer-expected correctness
-    ≥ 0.70, refusal accuracy ≥ 0.8 on abstain rows, and false abstention
-    ≤ 0.10. With n=30, every point estimate carries a CI. A B result is
-    preliminary evidence, not proof of generalization.
+    ## Measured alternatives
 
-    - Frozen stress re-run: a normalized comparison uses the same classifier
-      on both sides, with baseline row 14 reclassified as budget-terminated.
-      Overall correctness moves 0.500 → 0.733 (CI [0.567, 0.867]),
-      answer-expected 0.450 → 0.700, unsupported claims 11 → 5, refusal
-      accuracy 0.600 → 0.800, and false abstention 0.050 → 0.050. Every
-      no-regression gate passes. All six unanswerable rows are refused
-      correctly. A schema fix enabled this: the earlier citation mandate made
-      honest refusal unrepresentable and caused token-burning tool loops on
-      those rows.
-    - Independent set B: overall correctness is 0.633 (CI [0.467, 0.80]),
-      clearing the 0.60 target. Refusal holds at 0.80 with zero false
-      abstentions. Unsupported claims at 9/30 and answer-expected correctness
-      at 0.550 miss their pre-registered bars. Unseen adversarial questions
-      still produce over-claims. This is measured progress on the frozen set,
-      not broad-corpus readiness.
-    - Operations: end-to-end hosted answer latency is p50 23.0 s and p95 532 s
-      with verification in the critical path. The verify overlay averages 5.9 s
-      (6.6% of answer time). A full sealed pass takes ≈50 min wall time.
-      Cloud-equivalent cost is $9.74 on the frozen set and $2.19 on B.
-
-    ## Retrieval and judge alternatives
-
-    These measured alternatives did not replace the steps in the diagram.
-
-    - A local, $0 retrieval-only tournament tested structure-aware
-      title-prefixed chunking, Qwen3-Embedding, BM25/RRF fusion, and
-      Qwen3-Reranker. The best arm moved recall@10 from 0.831 to 0.846
-      (+1.5 points), short of the pre-registered +5-point promotion bar. The
-      incumbent retrieval stands.
-    - A local-judge calibration used 274 labels-by-construction cases. It found
-      false-acceptance 1.03%, false-rejection 83.5%, Cohen's κ 0.155, answer
-      agreement 52.5%, and repeat flips 9.3%. Cohen's κ measures agreement
-      after accounting for chance. The local judge is diagnostic-only, not a
-      promotion instrument.
-    - Sealed set C had 30 fresh questions with gold spans. It was scored once
-      with local generation and hosted adjudication at $0.096 cloud-equivalent.
-      Overall correctness was 0.333 against the 0.70 target. Every answerable
-      row abstained, and false abstention was 1.000. The traces were published
-      rather than tuned away. Hosted generation and incumbent retrieval stayed
-      unchanged. A further quality claim required fresh sealed set D.
-    - An integrity review later traced C's refuse-all pattern to a verifier
-      crash on an empty judge batch (`UnboundLocalError`). C is therefore a
-      failure diagnostic, not a measurement of the local generator's ceiling.
-
-    ## Judge alignment and measurement integrity
-
-    The diagram's verification step also bounds the judge-alignment attempt.
-    A full-entailment prompt checks every part of every claim. A substantiation
-    filter removes irrelevant spans. Both were measured, not adopted.
-
-    - Frozen-set correctness dropped from 0.733 to 0.667, and false abstention
-      rose from 0.05 to 0.25. The stricter judge trades unsupported claims for
-      over-abstention without net gain. The substantiation filter regressed
-      further and is opt-in only.
-    - Hosted-versus-local calibration on 274 constructed labels failed in both
-      directions: hosted false-acceptance 45.4% and local false-rejection
-      83.5%. The answer-level rubric verdict remains the correctness instrument.
-    - Sealed set D passed 1/6 targets: overall 0.567, answer-expected 0.550,
-      single-hop 0.625, refusal 0.60, and false abstention 0.20. The alignment
-      is not promoted. The grounding-hardening configuration remains the
-      production champion. This attempt adds a measurement record, not a new
-      pipeline.
-
-    The integrity review also fixed the measurement layer. Claims now survive
-    infrastructure failures as `verification_error` records. Each answer
-    enforces drafted = surviving + dropped + verification_error. Repository
-    export excludes dotenv variants, keys, certificates, and databases before
-    packaging. Calibration was rebuilt with correct denominators, genuine
-    abstention cases, manual-review exclusions, raw predictions, and immutable
-    run-id artifacts.
-
-    The rebuilt hosted judge still fails every promotion gate:
-    false-acceptance 35.6%, UCB 46.1%, kappa 0.656, agreement 78%, and flips
-    6.0%. UCB means upper confidence bound, the conservative upper end of an
-    uncertainty range. The answer-level rubric verdict remains the correctness
-    instrument. The next independent quality claim requires fresh sealed set E
-    once the integrity gates hold.
-
-    ## Hybrid retrieval reference
-
-    The retrieval step in the diagram includes sparse+dense fusion as the
-    current production default. This retrieval-only comparison turns reranking
-    off and makes no LLM calls. An LLM is a large language model. It compares
-    dense search, BM25 (k1=1.2, b=0.75), and RRF k=60 over the top-50 lists.
-    BM25 is a word-based ranking method. RRF, reciprocal rank fusion, combines
-    ranked lists.
-
-    - Tuning: RRF ties dense on recall@5 (Δ 0.000) and adds MRR@5 +0.006.
-      nDCG@10 is slightly lower at 0.700 versus 0.714. nDCG@10 measures ranked
-      relevance in the top ten, with more credit for early hits. BM25 alone
-      reaches 0.738 (−0.093 versus dense).
-    - Sealed raw layer: dense recall@5 is 0.976 versus BM25 0.952 and RRF 0.952.
-      This is a consistency read, not a stress test. RRF again does not beat
-      dense. At this scale, fusion buys no measured recall for its extra
-      latency. The dense+rerank champion is unchanged.
+    - The retrieval tournament's best arm gained +1.5 points recall@10, below
+      the +5-point promotion bar. Dense retrieval with reranking remains.
+    - `fusion_arm_comparison` is a retrieval-only candidate comparison with
+      reranking off. RRF ties dense tuning recall@5 and trails sealed raw-layer
+      recall@5 0.952 to 0.976. It is not the production default.
+    - The rebuilt hosted judge fails every promotion gate: false-acceptance
+      35.6%, upper confidence bound 46.1%, kappa 0.656, agreement 78%, and
+      repeat flips 6.0%. The answer-level rubric remains the correctness
+      instrument.
 
     ## Protocol
 
     - Tuning: 65 questions (44 single-hop, 11 multi-hop, 10 unanswerable) drive
-      selection; sealed: 55 (32 single-hop, 10 multi-hop, 13 unanswerable),
-      written after tuning froze, scored once per pass.
+      selection; the earlier sealed set has 55 (32 single-hop, 10 multi-hop,
+      13 unanswerable). Later frozen stress, B, C, and D sets remain distinct.
     - Floors: seeded random and word-match search, scored per configuration.
-    - Judges: rubric judge (failure taxonomy), hosted RAGAS (faithfulness,
-      relevancy), claim verifier (per-claim support vs cited chunk, abstains
-      below 0.6, at most 2 repairs); intervals are the judges' 95% ranges.
-    - Cost: cloud-equivalent rate-card at the kimi-k2.8-preview card
-      ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%). Mtok means
-      million tokens.
+    - Judges: rubric taxonomy, hosted RAGAS, and per-claim verification against
+      cited chunks. The support floor is 0.6 with at most two repairs.
+    - Cost: cloud-equivalent rate-card estimates at $1.00/Mtok input and
+      $4.00/Mtok output, with cached reads at 30%; these are not billed amounts.
 
     ## Limits
 
-    - Judge noise at n=30 matches the local A/B deltas. Local repair quality is
-      weak; verify gains come mainly through abstention.
-    - The HPO grid is small. MiniLM's tie with BGE-small holds at 593 articles.
-    - The sealed pass keeps the honest count: 44/55 correct. Every expansion
-      question passed an answerability gate before scoring, so its retrieval
-      reads are consistency checks, not stress tests.
-    - Grounding and repair improvement is deferred until a fresh external
-      corpus is available. The registry holds only this Wikipedia slice. No
-      broad-corpus claim and no always-on chat are made. Held-out retrieval
-      drops, and live hosted calls need a cost budget.
+    - Independent set B still has 9/30 unsupported-claim outcomes and 0.550
+      answer-expected correctness. Small samples and judge noise limit every
+      comparison; a fresh sealed set is required for the next quality claim.
+    - The retrieval grid is small and covers only 593 capped Wikipedia articles.
+      The answerability-gated sealed expansion is a consistency check, not a
+      stress test; no broad-corpus or unattended-readiness claim follows.
+    - Live hosted calls need an explicit budget, and always-on public chat is
+      not enabled by this evidence.
 
-    **Business summary:** Final state: 44 of 55 sealed questions correct with
-    refusal accuracy 0.92; 17 of 65 tuning answers kept unsupported claims and
-    9 of 11 sealed failures had the right article at rank 1. Retrieval is
-    solved, grounding is not; the measurement contract is the deliverable.
+    **Business summary:** Grounding hardening improves the frozen stress
+    re-run, while independent set B still fails quality gates. Dense+rerank
+    retrieval remains the champion; fusion is not promoted. The system is
+    auditable, not unattended-ready.
   figures: []
 key_concepts:
   - "**Seeded floors:** Random and word-match rankings anchor every headline, so a score cannot merely restate how easy the task is."
@@ -563,3 +448,4 @@ figure_captions:
   model_comparison: "MiniLM and BGE-small tie at recall@5 0.831 on 65 questions. MiniLM has slightly higher MRR@5 (0.808 vs 0.805), so the smaller CPU model is the measured default here."
   retrieval_hpo_frontier: "Recall@k against estimated input tokens per query across chunk sizes and top-k values. The starred 200-token/top-3/rerank-on setup reaches recall@5 0.831 at ≈800 input tokens."
   failure_taxonomy: "Rubric-judge outcomes for 65 selected hosted answers: 46 correct, 17 unsupported-claim, 2 retrieval-miss, and 0 format failures. Grounding, not retrieval volume, is the main remaining failure mode."
+  fusion_arm_comparison: "Dense, BM25, and RRF retrieval on the tuning and sealed raw layers, with reranking off and no LLM calls. RRF ties dense tuning recall@5 and trails sealed recall@5 0.952 to 0.976, so fusion is not promoted over the dense+rerank champion."
