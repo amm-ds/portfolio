@@ -167,3 +167,19 @@ Alternative if even that is unwanted: no analytics (status quo).
 - Disk pressure recurred at image unpack; pruned the oldest tagged image
   (`6ec2ca5`, 7.13GB) and retried clean. The weekly prune + image-retention
   schedule in the maintenance runbook is the durable fix.
+
+## Deploy log — 2026-11-16 (integrity + workbench contract release)
+
+- SHA `f712426` (CI green, run 43789061988) deployed via the established
+  pattern. `/health` reports the exact SHA and ready; live `/datasets` (2),
+  `/runs` (4), and `/runs/run-routing-a` (12 cases) passed exact-shape smoke
+  checks. The workbench article returned 200 with no browser page errors.
+- Release fixes: legacy verifier claims are preserved before judge calls;
+  repository exports exclude dotenv/key/certificate/database variants; the
+  workbench backend and frontend share one contract; the production image
+  includes the eval-workbench workspace source.
+- Incidents caught before release: the `/projects` HTML route and its two test
+  fixtures patched different module globals, fixed by reading
+  `spa.WEB_DIST` at request time (`20407c8`); Docker then exposed the missing
+  `apps/eval-workbench` source, fixed in `f712426`. Pruned unused rollback
+  image `80de095` before the build, leaving 11GB free; no disk failure occurred.
