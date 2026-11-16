@@ -82,89 +82,6 @@
         }
       }
     },
-    "/datasets": {
-      "get": {
-        "summary": "Datasets",
-        "operationId": "datasets_datasets_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/DatasetRecord"
-                  },
-                  "type": "array",
-                  "title": "Response Datasets Datasets Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/runs": {
-      "get": {
-        "summary": "Runs",
-        "operationId": "runs_runs_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/EvalRunSummary"
-                  },
-                  "type": "array",
-                  "title": "Response Runs Runs Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/runs/{run_id}": {
-      "get": {
-        "summary": "Run Detail",
-        "operationId": "run_detail_runs__run_id__get",
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EvalRunSummary"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/projects": {
       "get": {
         "summary": "Projects",
@@ -751,63 +668,6 @@
   },
   "components": {
     "schemas": {
-      "CaseResult": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "input": {
-            "type": "string",
-            "title": "Input"
-          },
-          "expected": {
-            "type": "string",
-            "title": "Expected"
-          },
-          "output": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Output"
-          },
-          "passed": {
-            "type": "boolean",
-            "title": "Passed"
-          },
-          "latency_ms": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Latency Ms"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "input",
-          "expected",
-          "passed",
-          "latency_ms"
-        ],
-        "title": "CaseResult",
-        "description": "One case's outcome inside a run (frontend: `RunCase`)."
-      },
       "ChurnDecision": {
         "properties": {
           "alarm": {
@@ -941,53 +801,6 @@
         "title": "Customer",
         "description": "One VRPTW customer; customer 0 is the depot with zero demand."
       },
-      "DatasetRecord": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "version": {
-            "type": "string",
-            "title": "Version"
-          },
-          "description": {
-            "type": "string",
-            "title": "Description"
-          },
-          "case_count": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Case Count"
-          },
-          "tags": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Tags"
-          },
-          "created_at": {
-            "type": "string",
-            "title": "Created At",
-            "default": ""
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "version",
-          "description",
-          "case_count"
-        ],
-        "title": "DatasetRecord",
-        "description": "One versioned evaluation dataset (frontend: `Dataset`)."
-      },
       "DemandForecastRequest": {
         "properties": {
           "series_id": {
@@ -1030,80 +843,6 @@
           "model"
         ],
         "title": "DemandForecastResponse"
-      },
-      "EvalRunSummary": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "dataset_id": {
-            "type": "string",
-            "title": "Dataset Id"
-          },
-          "model": {
-            "type": "string",
-            "title": "Model"
-          },
-          "status": {
-            "type": "string",
-            "title": "Status"
-          },
-          "case_count": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Case Count"
-          },
-          "failed_cases": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Failed Cases"
-          },
-          "metrics": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RunMetrics"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "created_at": {
-            "type": "string",
-            "title": "Created At",
-            "default": ""
-          },
-          "completed_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Completed At"
-          },
-          "cases": {
-            "items": {
-              "$ref": "#/components/schemas/CaseResult"
-            },
-            "type": "array",
-            "title": "Cases"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "dataset_id",
-          "model",
-          "status",
-          "case_count",
-          "failed_cases"
-        ],
-        "title": "EvalRunSummary",
-        "description": "One model run over a dataset version (frontend: `RunSummary`)."
       },
       "ForecastRequest": {
         "properties": {
@@ -1346,41 +1085,6 @@
         ],
         "title": "RoadmapItem",
         "description": "One roadmap entry. Status drives the case-study roadmap visual:\ndelivered (done, with results elsewhere in the story), remaining\n(genuinely open forward work), or deferred (consciously parked, with\nthe reason in the text)."
-      },
-      "RunMetrics": {
-        "properties": {
-          "accuracy": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Accuracy"
-          },
-          "f1": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "F1"
-          },
-          "p95_latency_ms": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "P95 Latency Ms"
-          },
-          "cost_usd": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Cost Usd"
-          }
-        },
-        "type": "object",
-        "required": [
-          "accuracy",
-          "f1",
-          "p95_latency_ms",
-          "cost_usd"
-        ],
-        "title": "RunMetrics",
-        "description": "Aggregate metrics for a completed run (frontend: `RunMetrics`)."
       },
       "SolveResponse": {
         "properties": {

@@ -10,7 +10,6 @@ dependencies = [
     # in the API environment, not just at train time.
     "02-demand-forecasting",
     "05-ml-pipeline-churn",
-    "eval-workbench",
     "fastapi>=0.115",
     "portfolio-core",
     "pydantic>=2.9",
@@ -24,7 +23,6 @@ showcase-api = "showcase_api.__main__:main"
 [tool.uv.sources]
 06-routing-optimization = { workspace = true }
 02-demand-forecasting = { workspace = true }
-eval-workbench = { workspace = true }
 05-ml-pipeline-churn = { workspace = true }
 portfolio-core = { workspace = true }
 

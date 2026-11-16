@@ -26,7 +26,6 @@ from html import escape
 from pathlib import Path
 from typing import Any, Literal
 
-from eval_workbench.routes import router as workbench_router
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
@@ -257,9 +256,6 @@ def readiness() -> JSONResponse:
 # it only after this one deliberate step. CONTACT_PHONE is set per deployment.
 app.include_router(contact_router)
 app.include_router(vitals_router)
-
-# Eval-workbench: the same read-only contract the standalone app exposes.
-app.include_router(workbench_router)
 
 
 def _serving_ready(serving_dir: Path, extra_json: tuple[str, ...] = ()) -> bool:

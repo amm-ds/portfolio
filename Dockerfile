@@ -54,7 +54,7 @@ ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# Workspace manifests + sources (libs/*, projects/*, showcase-api, eval-workbench).
+# Workspace manifests + sources (libs/*, projects/*, apps/showcase-api).
 # .dockerignore strips what the image neither installs nor serves (tests,
 # notebooks, docs, data, caches), so these layers carry only build sources
 # (src/, pyproject.toml) and the committed serving artifacts (reports*/).
@@ -62,7 +62,6 @@ COPY pyproject.toml uv.lock ./
 COPY libs libs
 COPY projects projects
 COPY apps/showcase-api apps/showcase-api
-COPY apps/eval-workbench apps/eval-workbench
 
 # Install ONLY showcase-api and its dependency subtree (workspace members
 # 02/05/06 + libs/portfolio-{core,eval}); the other project packages (and

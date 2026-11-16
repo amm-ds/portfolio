@@ -31,7 +31,6 @@ members = [
     "12-tabular-ml-lifecycle",
     "13-model-serving",
     "amm-ds-portfolio",
-    "eval-workbench",
     "portfolio-core",
     "portfolio-eval",
     "showcase-api",
@@ -2072,31 +2071,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/ea/8d/a7121ffe5f402dc015277d2d31eb82d2187334503a011c18f2e78ecbb9b2/entrypoints-0.4.tar.gz", hash = "sha256:b706eddaa9218a19ebcd67b56818f05bb27589b1ca9e8d797b74affad4ccacd4", size = 13974 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/35/a8/365059bbcd4572cbc41de17fd5b682be5868b218c3c5479071865cab9078/entrypoints-0.4-py3-none-any.whl", hash = "sha256:f174b5ff827504fd3cd97cc3f8649f3693f51538c7e4bdf3ef002c8429d42f9f", size = 5294 },
-]
-
-[[package]]
-name = "eval-workbench"
-version = "0.1.0"
-source = { editable = "apps/eval-workbench" }
-dependencies = [
-    { name = "fastapi" },
-    { name = "uvicorn" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "httpx" },
-    { name = "pytest" },
-    { name = "pytest-timeout" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "fastapi" },
-    { name = "httpx", marker = "extra == 'dev'" },
-    { name = "pytest", marker = "extra == 'dev'" },
-    { name = "pytest-timeout", marker = "extra == 'dev'" },
-    { name = "uvicorn" },
 ]
 
 [[package]]
@@ -6764,7 +6738,6 @@ dependencies = [
     { name = "02-demand-forecasting" },
     { name = "05-ml-pipeline-churn" },
     { name = "06-routing-optimization" },
-    { name = "eval-workbench" },
     { name = "fastapi" },
     { name = "portfolio-core" },
     { name = "pydantic" },
@@ -6777,7 +6750,6 @@ requires-dist = [
     { name = "02-demand-forecasting", editable = "projects/02-demand-forecasting" },
     { name = "05-ml-pipeline-churn", editable = "projects/05-ml-pipeline-churn" },
     { name = "06-routing-optimization", editable = "projects/06-routing-optimization" },
-    { name = "eval-workbench", editable = "apps/eval-workbench" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "portfolio-core", editable = "libs/portfolio-core" },
     { name = "pydantic", specifier = ">=2.9" },

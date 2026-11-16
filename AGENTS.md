@@ -24,9 +24,6 @@ app (`apps/showcase-web`), shared libraries (`libs/`), and an mkdocs site
   parser-resolved evidence, leased worker, Postgres records, React workbench,
   fixtures, and page-level offline/live eval. Run its backend and `web/` gates
   from this directory.
-- `apps/eval-workbench` — evaluation review app: versioned dataset registry,
-  case-level run inspection, and same-dataset model comparison charts. Run the
-  standalone React/TypeScript gates from `apps/eval-workbench/web`.
 - `scripts/` — repo gates and generators (registry, story short copy, route
   manifest, demo contract, story language lint, README figures).
 - `registry/` + `docs/data-registry/` — dataset manifests and cards.
