@@ -556,7 +556,7 @@ roadmap:
     retrieval."
 figure_captions:
   eda_corpus_composition: "Articles per topic and word-length distribution for all 593 bounded Wikipedia articles. Topic coverage is near-balanced. The long tail ends at the 12,000-character cap."
-  retrieval_funnel: "Across 65 golden questions, 975 embedding candidates narrow to 195 reranked passages. The final top-3 retains a relevant article for 54 questions. Reranking improves rank quality, not recall@5."
+  retrieval_funnel: "Question-level outcomes for the reranked top-3 on 65 golden questions: 54 hits and 11 misses. Upstream candidate volumes are 975 embedding passages (65 × top-15) and 195 retained passages (65 × top-3); those passage counts are deliberately not plotted as question outcomes. Reranking improves rank quality, not recall@5."
   chunk_size_sweep: "Retrieval recall for 200/400/800-token chunks against the lexical word-match floor on 65 questions. All three sizes tie at recall@5 0.831, and 200 tokens minimizes context cost. The seeded-random floor (0.02-0.03) is a tabulated metric, not a plotted line; see Exact numbers."
   latency_histogram: "Per-answer latency for the selected hosted 65-question run. The median, p50, is 25.888 s. The 95th percentile, p95, is 108.836 s."
   kimi_generation_comparison: "Selected kimi-for-coding versus the incumbent on 65 tuning questions. Rubric faithfulness and answer relevance improve. RAGAS faithfulness reaches 0.7337, while RAGAS answer relevancy regresses from 0.8775 to 0.8602."

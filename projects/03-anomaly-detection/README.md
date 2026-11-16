@@ -143,7 +143,6 @@ operating regime.
 | hpo importance | [reports/figures/hpo_importance.html](reports/figures/hpo_importance.html) |
 | nab tune surface | [reports/figures/nab_tune_surface.html](reports/figures/nab_tune_surface.html) |
 | pr curves | [reports/figures/pr_curves.html](reports/figures/pr_curves.html) |
-| roc curves | [reports/figures/roc_curves.html](reports/figures/roc_curves.html) |
 | score distribution | [reports/figures/score_distribution.html](reports/figures/score_distribution.html) |
 | telemetry flags | [reports/figures/telemetry_flags.html](reports/figures/telemetry_flags.html) |
 | threshold sweep | [reports/figures/threshold_sweep.html](reports/figures/threshold_sweep.html) |

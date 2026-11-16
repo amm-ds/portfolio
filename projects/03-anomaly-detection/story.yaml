@@ -210,7 +210,7 @@ sections:
     separate minute ranking, incident ranking, and response to changing
     behavior. None is a page policy by itself.
 
-    In `pr_curves`, compare each synthetic curve with the 1.9% prevalence
+    In `pr_curves`, compare each synthetic curve with the 1.89% prevalence
     floor, which is the random level set by the anomaly share. Average
     precision (AP) summarizes precision across recall levels. Tuned OCSVM,
     already selected on validation, leads test AP at 0.136. This value did not
@@ -237,12 +237,15 @@ sections:
     IsolationForest's pages where it transfers. The remaining choice is
     on-call capacity versus recall cost.
 
-    In `adaptive_stream`, compare adaptive and fixed thresholds. Drift means
-    a change in normal behavior over time. The adaptive rule uses the median
-    and interquartile range (IQR), the spread of the middle half of scores.
-    Synthetic-calibrated triggers fire on 31 of 120 real NAB chunks. The
-    figure therefore supports rejecting adaptive thresholds for now, not
-    claiming drift readiness.
+    In `adaptive_stream`, compare fixed and adaptive alert, true-positive, and
+    false-positive counts, then read the per-chunk drift statistic against its
+    trigger line. Drift means a change in normal behavior over time. The adaptive
+    rule uses the median and interquartile range (IQR), the spread of the middle
+    half of scores. No drift trigger fires on the five synthetic chunks shown;
+    fixed precision/recall are 0.150/0.159 versus 0.150/0.150 adaptive. Separately,
+    synthetic-calibrated triggers fire on 31 of 120 real NAB chunks. The figure
+    therefore supports rejecting adaptive thresholds for now, not claiming drift
+    readiness.
 
     **The detector alternatives fail a measured adoption gate.** Conformal
     p-values estimate how unusual a point is relative to reference scores.
@@ -269,11 +272,10 @@ sections:
     band, then compare crosses inside it with those outside. Inside crosses
     support incident detection; outside crosses show the on-call burden.
 
-    `nab_timeline_nyc_taxi` zooms into the hardest series. Look for the
-    labelled window with no alert as well as the three detected windows.
-    The measured result is 3 of 4 windows touched, range recall 0.750,
-    pointwise PR-AUC 0.462, and 179 alerts. Keeping the miss visible avoids
-    hiding it in an average.
+    The `nyc_taxi` panel keeps the hardest series visible inside that matrix:
+    3 of 4 windows are touched, range recall is 0.750, pointwise PR-AUC is
+    0.462, and 179 alerts are emitted. Its missed window remains visible rather
+    than being duplicated in a second timeline or hidden in an average.
 
     In `nab_alert_budget`, follow range-F1 as the alert budget changes for
     each NAB group. The curve prices incident detection against false-alert
@@ -302,7 +304,7 @@ sections:
     **Business summary:** Panels show false alarms crowding real
     incidents; the budget curve prices recall versus load. Use it to set
     an alert budget, not to auto-page.
-  figures: [nab_timelines, nab_timeline_nyc_taxi, nab_alert_budget]
+  figures: [nab_timelines, nab_alert_budget]
   metrics_keys: [random, isolation_forest, lof, ocsvm, isolation_forest_tuned, lof_tuned, ocsvm_tuned]
 - id: conclusions
   text_md: |
@@ -501,11 +503,10 @@ figure_captions:
   eda_signals_overview: "Two days (2,880 minutes) of the seeded synthetic stream. CPU, memory, and latency follow a repeating daily cycle; injected anomalies appear as simultaneous CPU+latency spikes."
   telemetry_flags: "Synthetic test-window flags at the fixed 2% alert budget, compared with ground-truth anomalous minutes. The flags track simultaneous CPU+latency spikes; this is not a NAB result."
   hpo_importance: "One-Class Support Vector Machine tuning on synthetic train-only validation: gamma, the boundary-width setting, carries 99% of importance, moving from the failing `scale` default to 0.0131 (best validation PR-AUC 0.126)."
-  pr_curves: "Pointwise precision-recall curves on the synthetic test window, with the 1.9% prevalence floor. Tuned OCSVM was frozen by validation PR-AUC 0.151 before this test AP 0.136 was measured; these curves do not select the champion or measure event-window recall."
+  pr_curves: "Pointwise precision-recall curves on the synthetic test window, with the 1.89% prevalence floor. Tuned OCSVM was frozen by validation PR-AUC 0.151 before this test AP 0.136 was measured; these curves do not select the champion or measure event-window recall."
   threshold_sweep: "Synthetic precision and recall across alert budgets, with the fixed 2% point marked: 115 flags, about 15% precision and recall (14.8%), including 17 hits on anomalous minutes. This is point-level load, not 17 incidents."
-  adaptive_stream: "Adaptive versus fixed thresholds in streaming simulation. Synthetic-calibrated median/interquartile-range drift detection fires on 31 of 120 real NAB chunks, so it remains too twitchy for the headline operating point."
-  nab_timelines: "Six representative NAB test windows: amber bands are labelled events and pink crosses are IsolationForest alerts. These panels contain 897 alerts; nyc_taxi misses one window while the other five series touch theirs."
-  nab_timeline_nyc_taxi: "The NAB nyc_taxi test window downsampled to every second minute: 3 of 4 labelled windows touched, range recall 0.750, pointwise PR-AUC 0.462, and 179 alerts emitted. The miss remains visible rather than averaged away."
+  adaptive_stream: "Synthetic test-window outcomes for fixed and adaptive thresholds: 120 alerts, 18 true positives, and 102 false positives fixed; 113, 17, and 96 adaptive. Precision/recall are 0.150/0.159 fixed and 0.150/0.150 adaptive. The right panel shows drift z for all five chunks against the trigger at 1.0; none fires. Separately, the same synthetic-calibrated rule fires on 31 of 120 real NAB chunks, so adaptive thresholds remain rejected for the headline operating point."
+  nab_timelines: "Six representative NAB test windows: amber bands are labelled events and pink crosses are IsolationForest alerts. These panels contain 897 alerts; nyc_taxi misses one window while the other five series touch theirs. This matrix is the single timeline presentation; the nyc_taxi miss is not repeated in a separate figure."
   nab_score_distribution: "IsolationForest scores across evaluable NAB series, split by in-window versus outside-window minutes. Their overlap explains why no tested threshold cleanly separates incidents from normal traffic."
   nab_alert_budget: "Event-aware range-F1 by NAB benchmark group across alert budgets. Only IsolationForest is evaluated here; the curve exposes the trade-off between event detection and false-alert load, not a cross-detector ranking."
   nab_tune_surface: "Train-side operating-point selection surfaces: validation range-F1 of the budgeted alert stream vs per-series cooldown, one line per threshold budget, per detector family (four panels). The ring is the documented (2%, 24 h) default. Only IsolationForest's (0.5%, 24 h) adoption clears the 0.05 margin and transfers to test; the ensemble's flat surface (+0.010 at best) keeps the default, so the winning candidate needs no tuning."

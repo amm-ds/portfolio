@@ -1106,8 +1106,8 @@ pipeline build). The queue commands above are the exact ones to re-run once
   damped additive Holt-Winters, fallback chain to seasonal naive for short or
   failing series, documented + tested) through the identical backtest on both
   tracks. **MASE** added to every run (per-fold in-sample seasonal-naive
-  scale, pooled). Audit figures: `forecast_fan` (p10/p50/p90 + actual, real
-  track), `coherence_heatmap` (per-store incoherence before/after), takeaway
+  scale, pooled). Audit figures: `probabilistic_band` (p10/p50/p90 + actual,
+  real track), `coherence_heatmap` (per-store incoherence before/after), takeaway
   on `fold_stability`. Conformal coverage stated as h=1-only with the
   multi-horizon note persisted in `probabilistic.json`. Real run — UCI ladder:
   hgb_tuned champion (MAE 8.989, MASE 0.980, only run < 1.0), seasonal_naive

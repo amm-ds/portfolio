@@ -627,14 +627,29 @@ def figure_eda_series_overview(panel: pl.DataFrame) -> go.Figure:
 
 
 def figure_eda_units_distribution(panel: pl.DataFrame) -> go.Figure:
-    """Histogram of daily units over the whole panel (all series pooled)."""
-    fig = go.Figure()
-    fig.add_histogram(x=panel["units"].to_numpy(), nbinsx=60, name="units")
+    """Pre-binned daily-units histogram; keep large panels out of figure JSON."""
+    units = panel["units"].to_numpy()
+    counts, edges = np.histogram(units, bins=60)
+    centres = (edges[:-1] + edges[1:]) / 2.0
+    fig = go.Figure(
+        go.Bar(
+            x=centres,
+            y=counts,
+            width=np.diff(edges),
+            customdata=np.column_stack((edges[:-1], edges[1:])),
+            name="units",
+            hovertemplate="units [%{customdata[0]:.1f}, %{customdata[1]:.1f})<br>rows: %{y}<extra></extra>",  # noqa: E501
+        )
+    )
     fig.update_layout(
         title="Daily-units distribution across the hierarchy",
         xaxis_title="units",
+        yaxis_title="rows",
     )
-    add_takeaway(fig, "all store-product series pooled — right-skewed levels differ by design")
+    add_takeaway(
+        fig,
+        f"all store-product series pooled — {len(units):,} rows pre-binned into 60 bins",
+    )
     return apply_theme(fig)
 
 

@@ -225,44 +225,117 @@ def per_class_f1_comparison_figure(
     return apply_theme(fig)
 
 
-def training_curve_figure(history: TrainingHistory) -> go.Figure:
-    """Train/val loss (left) and validation macro-F1 (right) across epochs.
+def training_curve_figure(
+    history: TrainingHistory,
+    probe_history: TrainingHistory | None = None,
+) -> go.Figure:
+    """Headline training history, optionally beside the separate 4-epoch probe.
 
-    Two aligned panels with their own y-axes: loss and F1 have incompatible
-    scales, so they must not share one axis. Charts the full-120k headline
-    run when its history is available (the bounded-run history is the
-    fallback for the no-GPU CI path).
+    Loss and macro-F1 always use independent axes. The probe never extends the
+    headline traces: its learning-rate schedule covers four epochs, so even its
+    first two epochs are a different run. A star marks the headline endpoint in
+    the probe panel without connecting it to the probe history.
     """
-    epochs = [e.epoch for e in history.epochs]
-    best = max((e.val_f1_macro for e in history.epochs), default=0.0)
+    if probe_history is None:
+        epochs = [e.epoch for e in history.epochs]
+        best = max((e.val_f1_macro for e in history.epochs), default=0.0)
+        fig = make_subplots(
+            rows=1,
+            cols=2,
+            subplot_titles=("train / val loss", "val macro-F1"),
+        )
+        fig.add_scatter(
+            x=epochs, y=[e.train_loss for e in history.epochs], name="train loss", row=1, col=1
+        )
+        fig.add_scatter(
+            x=epochs, y=[e.val_loss for e in history.epochs], name="val loss", row=1, col=1
+        )
+        fig.add_scatter(
+            x=epochs,
+            y=[e.val_f1_macro for e in history.epochs],
+            name="val macro-F1",
+            row=1,
+            col=2,
+            showlegend=False,
+        )
+        fig.update_layout(
+            title="Train/val loss and validation macro-F1",
+            xaxis_title="epoch",
+            xaxis2_title="epoch",
+            yaxis_title="loss",
+            yaxis2_title="val macro-F1",
+        )
+        add_takeaway(
+            fig,
+            f"per epoch — loss (left), val macro-F1 (right); full-120k headline run, "
+            f"best val {best:.4f}",
+        )
+        return apply_theme(fig)
+
+    if len(probe_history.epochs) < 4:
+        raise ValueError("probe history has fewer than four epochs")
     fig = make_subplots(
         rows=1,
         cols=2,
-        subplot_titles=("train / val loss", "val macro-F1"),
+        specs=[[{"secondary_y": True}, {"secondary_y": True}]],
+        subplot_titles=("headline run — 2-epoch schedule", "probe — separate 4-epoch schedule"),
+        horizontal_spacing=0.14,
     )
+    for col, run, dash, showlegend in (
+        (1, history, "solid", True),
+        (2, probe_history, "dot", False),
+    ):
+        epochs = [e.epoch for e in run.epochs]
+        fig.add_scatter(
+            x=epochs,
+            y=[e.train_loss for e in run.epochs],
+            name="train loss",
+            line={"color": "#38bdf8", "dash": dash},
+            showlegend=showlegend,
+            row=1,
+            col=col,
+            secondary_y=False,
+        )
+        fig.add_scatter(
+            x=epochs,
+            y=[e.val_loss for e in run.epochs],
+            name="val loss",
+            line={"color": "#f472b6", "dash": dash},
+            showlegend=showlegend,
+            row=1,
+            col=col,
+            secondary_y=False,
+        )
+        fig.add_scatter(
+            x=epochs,
+            y=[e.val_f1_macro for e in run.epochs],
+            name="val macro-F1",
+            mode="lines+markers",
+            line={"color": "#2dd4bf", "dash": dash},
+            showlegend=showlegend,
+            row=1,
+            col=col,
+            secondary_y=True,
+        )
+    headline_end = history.epochs[-1]
     fig.add_scatter(
-        x=epochs, y=[e.train_loss for e in history.epochs], name="train loss", row=1, col=1
-    )
-    fig.add_scatter(x=epochs, y=[e.val_loss for e in history.epochs], name="val loss", row=1, col=1)
-    fig.add_scatter(
-        x=epochs,
-        y=[e.val_f1_macro for e in history.epochs],
-        name="val macro-F1",
+        x=[headline_end.epoch],
+        y=[headline_end.val_f1_macro],
+        name="headline endpoint (separate run)",
+        mode="markers",
+        marker={"symbol": "star", "size": 15, "color": "#fbbf24"},
         row=1,
         col=2,
-        showlegend=False,
+        secondary_y=True,
     )
-    fig.update_layout(
-        title="Train/val loss and validation macro-F1",
-        xaxis_title="epoch",
-        xaxis2_title="epoch",
-        yaxis_title="loss",
-        yaxis2_title="val macro-F1",
-    )
+    fig.update_xaxes(title="epoch", dtick=1)
+    fig.update_yaxes(title="loss")
+    fig.update_yaxes(title="val macro-F1", secondary_y=True)
+    fig.update_layout(title="Training histories — headline run and four-epoch probe")
     add_takeaway(
         fig,
-        f"per epoch — loss (left), val macro-F1 (right); full-120k headline run, "
-        f"best val {best:.4f}",
+        f"solid = headline; dotted = probe; star = headline endpoint at val "
+        f"{headline_end.val_f1_macro:.4f}; probe schedules are not continuations",
     )
     return apply_theme(fig)
 
@@ -547,6 +620,10 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     history = TrainingHistory.from_json(
         full_history_path if full_history_path.exists() else cfg.history_path
     )
+    probe_history_path = cfg.reports_dir / "history_probe4.json"
+    probe_history = (
+        TrainingHistory.from_json(probe_history_path) if probe_history_path.exists() else None
+    )
     figures = {
         "eda_class_balance": eda_class_balance_figure(train_ds, val_ds, test_ds, labels),
         "confusion_matrix_selected": confusion_matrix_figure(
@@ -559,7 +636,7 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
         "per_class_f1_comparison": per_class_f1_comparison_figure(
             y_true, y_pred_selected, y_pred_base.tolist(), labels
         ),
-        "training_curve": training_curve_figure(history),
+        "training_curve": training_curve_figure(history, probe_history),
     }
     if cfg.study_path.exists():
         study = _load_study_from_json(cfg.study_path)

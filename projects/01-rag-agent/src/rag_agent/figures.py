@@ -249,31 +249,34 @@ def retrieval_funnel_figure(
     topk: dict[int, TopkData],
     chosen: RetrievalBest,
 ) -> go.Figure:
-    """Aggregate retrieval funnel: candidates → after rerank → relevant."""
+    """Question-level top-k outcomes; candidate volumes belong in the caption."""
+    del config  # the plotted units are questions, not retrieved passages
     size_data = topk[chosen.chunk_size]
     n = len(questions)
-    n_candidates = min(size_data["n_chunks"], chosen.top_k * config.rerank_multiplier)
-    relevant = sum(1 for r in size_data["ranks"] if r is not None and r <= chosen.top_k)
+    hits = sum(1 for r in size_data["ranks"] if r is not None and r <= chosen.top_k)
+    counts = [hits, n - hits]
     fig = go.Figure(
-        go.Funnel(
-            y=[
-                f"embedding candidates (top-{n_candidates})",
-                f"after rerank (top-{chosen.top_k})",
-                "relevant article in top-k",
-            ],
-            x=[n * n_candidates, n * chosen.top_k, relevant],
-            textinfo="value+percent initial",
+        go.Bar(
+            x=["hit", "miss"],
+            y=counts,
+            text=[f"{count} ({count / n:.1%})" for count in counts],
+            textposition="outside",
+            marker_color=["#2dd4bf", "#f472b6"],
+            hovertemplate="%{x}: %{y} questions<extra></extra>",
         )
     )
-    fig.update_layout(title="Retrieval funnel: candidates→reranked→relevant")
+    fig.update_layout(
+        title=f"Questions with a relevant article in the reranked top-{chosen.top_k}",
+        xaxis_title="top-k outcome",
+        yaxis={"title": "questions", "range": [0, n * 1.15], "dtick": 10},
+    )
     return _finish_themed(
         fig,
         takeaway=(
-            f"aggregate over {n} questions — top-{n_candidates} candidates → "
-            f"top-{chosen.top_k} after rerank → {relevant} relevant"
+            f"{n} tuning questions — {hits} hits and {n - hits} misses; one outcome per question"
         ),
-        showlegend=False,  # single unnamed trace → no "trace 0" chip
-    ).update_layout(margin={"l": 240})  # long funnel stage labels need left room
+        showlegend=False,
+    )
 
 
 def corpus_eda_figure(articles: list[Article]) -> go.Figure:

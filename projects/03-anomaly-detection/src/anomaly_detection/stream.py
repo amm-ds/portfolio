@@ -21,6 +21,7 @@ from typing import Any
 import joblib
 import numpy as np
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from portfolio_core.logging import get_logger
 from portfolio_core.plotting import add_takeaway, apply_theme, save_json
 
@@ -67,7 +68,6 @@ def simulate_stream(
     train, test = split_train_test(df, config.train_frac)
     x_train, x_test = feature_matrix(train, config), feature_matrix(test, config)
     y_test = test["is_anomaly"].to_numpy().astype(int)
-    ts = test["ts"].to_numpy()
 
     ref_scores = anomaly_scores(model, model_name, x_train)
     ref_median, ref_iqr = (
@@ -81,7 +81,6 @@ def simulate_stream(
     fixed_flags = predict_at_contamination(test_scores, config.contamination).astype(bool)
     adaptive_flags = np.zeros(len(y_test), dtype=bool)
     drift_events: list[int] = []
-    adaptive_thresholds = np.full(len(y_test), fixed_threshold)
 
     threshold = fixed_threshold
     chunk_drift_z: list[float] = []
@@ -89,7 +88,6 @@ def simulate_stream(
         sl = slice(i * chunk_rows, min((i + 1) * chunk_rows, len(y_test)))
         chunk = test_scores[sl]
         adaptive_flags[sl] = chunk >= threshold
-        adaptive_thresholds[sl] = threshold
         z = drift_z(chunk, ref_median, ref_iqr)
         chunk_drift_z.append(z)
         if z > drift_z_max:
@@ -122,69 +120,65 @@ def simulate_stream(
     )
     result["figure"] = str(
         save_json(
-            adaptive_stream_figure(
-                ts,
-                test_scores,
-                y_test,
-                adaptive_thresholds,
-                drift_events,
-                fixed_threshold,
-                config,
-                chunk_rows,
-            ),
+            adaptive_stream_figure(result),
             config.figures_dir / "adaptive_stream.json",
         )
     )
     return result
 
 
-def adaptive_stream_figure(
-    ts: np.ndarray,
-    scores: np.ndarray,
-    y_true: np.ndarray,
-    adaptive_thresholds: np.ndarray,
-    drift_events: list[int],
-    fixed_threshold: float,
-    config: AnomalyConfig,
-    chunk_rows: int,
-) -> go.Figure:
-    """Score stream with threshold updates and drift markers."""
-    fig = go.Figure()
-    fig.add_scatter(x=ts, y=scores, mode="lines", name="anomaly score", line={"width": 1})
+def adaptive_stream_figure(result: dict[str, Any]) -> go.Figure:
+    """Fixed/adaptive detection outcomes plus the per-chunk drift statistic."""
+    outcomes = ("alerts", "true positives", "false positives")
+    keys = ("flags", "tp", "fp")
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        subplot_titles=("detection outcomes (test minutes)", "drift statistic per chunk"),
+    )
+    for name, color in (("fixed", "#64748b"), ("adaptive", "#38bdf8")):
+        rates = result[name]
+        fig.add_bar(
+            x=list(outcomes),
+            y=[rates[key] for key in keys],
+            name=name,
+            marker_color=color,
+            text=[rates[key] for key in keys],
+            textposition="outside",
+            row=1,
+            col=1,
+        )
+    drift = result["chunk_drift_z"]
     fig.add_scatter(
-        x=ts,
-        y=adaptive_thresholds,
-        mode="lines",
-        name="adaptive threshold",
-        line={"dash": "dash", "color": "#38bdf8"},
+        x=list(range(1, len(drift) + 1)),
+        y=drift,
+        name="drift z",
+        mode="lines+markers",
+        marker_color="#f472b6",
+        showlegend=False,
+        row=1,
+        col=2,
     )
     fig.add_hline(
-        y=fixed_threshold,
-        line={"dash": "dot", "color": "#64748b"},
-        annotation_text="fixed threshold",
+        y=result["drift_z_max"],
+        line={"dash": "dot", "color": "#fbbf24"},
+        row=1,
+        col=2,
     )
-    for i in drift_events:
-        x = ts[min(i * chunk_rows, len(ts) - 1)]
-        fig.add_vline(x=x, line={"color": "#f472b6", "dash": "dot"})
-    anom = y_true == 1
-    fig.add_scatter(
-        x=ts[anom],
-        y=scores[anom],
-        mode="markers",
-        name="ground truth anomaly",
-        marker={"color": "#fbbf24", "size": 6},
-    )
-    fig.update_layout(
-        title="Adaptive vs fixed threshold on the score stream",
-        xaxis_title="time",
-        yaxis_title="score",
-    )
+    fig.update_xaxes(title="outcome", row=1, col=1)
+    fig.update_xaxes(title="chunk", row=1, col=2, dtick=1)
+    fig.update_yaxes(title="minutes", row=1, col=1)
+    fig.update_yaxes(title="|median shift| / train IQR", row=1, col=2)
+    fig.update_layout(title="Fixed vs adaptive stream outcomes and drift", barmode="group")
+    fixed, adaptive = result["fixed"], result["adaptive"]
     add_takeaway(
         fig,
-        "rolling median/IQR re-anchors per chunk — "
-        f"{len(drift_events)} drift trigger(s); dotted = fixed threshold",
+        f"{len(result['drift_events'])} of {result['n_chunks']} chunks trigger drift; "
+        f"fixed precision/recall {fixed['precision']:.3f}/{fixed['recall']:.3f}; "
+        f"adaptive {adaptive['precision']:.3f}/{adaptive['recall']:.3f}; "
+        "dotted = drift trigger threshold",
     )
-    return apply_theme(fig, height=620)
+    return apply_theme(fig)
 
 
 def load_champion(config: AnomalyConfig) -> tuple[Any, str]:

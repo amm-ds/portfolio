@@ -205,7 +205,6 @@ def test_run_evaluation_writes_artifacts(small_config: AnomalyConfig, tmp_path: 
         assert set(values) == {"roc_auc", "pr_auc"}
     for name in (
         "eda_signals_overview",
-        "roc_curves",
         "pr_curves",
         "telemetry_flags",
         "threshold_sweep",

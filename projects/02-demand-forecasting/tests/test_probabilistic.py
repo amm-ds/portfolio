@@ -42,6 +42,8 @@ def test_run_probabilistic_on_fixture(
     assert conf["avg_width_horizon_set"] >= 0.0
     assert (settings.reports_dir / "figures" / "probabilistic_band.html").exists()
     assert (settings.reports_dir / "figures" / "probabilistic_band.json").exists()
+    assert not (settings.reports_dir / "figures" / "forecast_fan.html").exists()
+    assert not (settings.reports_dir / "figures" / "forecast_fan.json").exists()
 
 
 def test_conformal_band_covers_calibration_target() -> None:

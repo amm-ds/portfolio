@@ -167,11 +167,12 @@ sections:
     uses fixed seeds or direct statistical solutions and a fixed group order,
     so a re-run produces the same bytes.
 
-    In the pooling figure, compare the three forecast curves with actual sales
-    for the top-units series. The curves sit within noise of each other on this
-    erratic series. Pooling's advantage instead appears across the full panel's
-    official WRMSSE over all 42,840 nodes. The complete diagrammed run takes
-    about 12.9 hours on one machine.
+    In `m5_full_pooling_panel`, compare signed bias and zero-day accuracy across
+    all eight candidates on the scored-once full panel. Positive bias means
+    over-forecasting; a zero-day forecast below 0.5 counts as correct. The floor
+    leads quiet-day accuracy at 66.6%, versus 57.3% for the blend, so the pooling
+    win in official WRMSSE does not mean every operational check improves. The
+    complete diagrammed run takes about 12.9 hours on one machine.
 
     **Business summary:** The selection diagram chooses three pooled fits from
     eight candidates by mean + 1.0×std at two past origins. It never uses the
@@ -374,4 +375,4 @@ figure_captions:
   m5_full_sample_series: "Three catalog series at the scored-once test origin on 2016-05-22: top-units, hardest-intermittent, and mid-volume. Each panel shows 56 days of history, 28 days of actual sales, and the ensemble curve with its member envelope. The envelope is the members' spread, not a calibrated interval. Look for the weekly shape, weeks-long zero runs, and quiet days."
   m5_full_candidate_ranking: "All 8 candidates ranked by official hierarchical WRMSSE on the scored-once competition window across 42,840 revenue-weighted nodes. Lower bars are better. The stability-screened convex ensemble leads at 0.6161, the best single pooled fit scores 0.6217, and the seasonal-naive floor scores 0.8929."
   m5_full_per_level_wrmsse: "Official WRMSSE by hierarchy level on the test window for the convex ensemble, seasonal-naive floor, and best single fit (lgbm_pool_store). Each level receives equal total weight. Compare the paired bars: the blend's edge is broadest at aggregate levels. At item level, learned candidates cluster near 1.04–1.15 while the floor sits near 1.39."
-  m5_full_pooling_panel: "The top-units catalog series FOODS_3_090_CA_3 sold 3,454 units in the last 28 days. At the scored-once test origin, the plot shows 56 days of history, 28 days of actual sales, and forecast curves from global LightGBM, pooled per-store LightGBM, and the convex blend. The curves sit within noise of each other on this erratic series. The full-panel WRMSSE scores reveal the pooling edge instead: 0.6601 global, 0.6217 pooled, and 0.6161 blend across all 42,840 nodes."
+  m5_full_pooling_panel: "All eight candidates on the scored-once full M5 panel. Left: signed bias as a percentage of mean actual sales; positive means over-forecasting. Right: accuracy on zero-actual days, overall and for intermittent series, where a forecast below 0.5 is correct. The seasonal-naive floor leads overall quiet-day accuracy at 66.6% versus 57.3% for the blend, so pooled WRMSSE gains do not erase the quiet-day trade-off."

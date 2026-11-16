@@ -426,7 +426,6 @@ def run_evaluation(config: AnomalyConfig) -> tuple[dict[str, dict[str, float]], 
 
     figures: dict[str, go.Figure] = {
         "eda_signals_overview": eda_signals_overview(load_raw(config)),
-        "roc_curves": style_runs(roc_figure(runs, scores_by_model, y_test), best=champion),
         "pr_curves": style_runs(pr_figure(runs, scores_by_model, y_test), best=champion),
         "telemetry_flags": telemetry_figure(config, scores_by_model[champion]),
         "threshold_sweep": threshold_sweep_figure(

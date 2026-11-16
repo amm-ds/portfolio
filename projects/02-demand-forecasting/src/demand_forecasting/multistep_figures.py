@@ -4,10 +4,8 @@ Unit-incompatible metrics never share an axis; every figure carries an
 add_takeaway caption stating how to read it.
 """
 
-import math
 from typing import Any
 
-import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from portfolio_core.plotting import add_takeaway, apply_theme
@@ -21,40 +19,12 @@ from demand_forecasting.probabilistic import CALIBRATION_TOL, TARGET_COVERAGE
 # ---------------------------------------------------------------------------
 
 
-def _peak_day_pairs(
-    cells: dict[str, Any],
-    test: list[int],
-    horizons: list[int],
-    n_series: int,
-    candidate: str,
-    max_points: int = 1500,
-) -> tuple[np.ndarray, np.ndarray]:
-    """(peak-day actual, forecast) pairs for one candidate on its windows'
-    top-decile days — the scatter data behind multistep_peak_day_scatter."""
-    n_o, n_h = len(test), len(horizons)
-    y3 = cells["y"].reshape(n_o, n_h, n_series)
-    pred3 = cells["pred"][candidate].reshape(n_o, n_h, n_series)
-    k = max(1, math.ceil(0.1 * n_h))
-    top_k = np.argsort(y3, axis=1)[:, ::-1][:, :k, :]
-    arange_o = np.arange(n_o)[:, None, None]
-    arange_s = np.arange(n_series)[None, None, :]
-    actual = y3[arange_o, top_k, arange_s].reshape(-1)
-    pred = pred3[arange_o, top_k, arange_s].reshape(-1)
-    if actual.size > max_points:  # deterministic subsample for the JSON size
-        step = int(np.ceil(actual.size / max_points))
-        actual, pred = actual[::step], pred[::step]
-    return actual, pred
-
-
 def _figures(
     block: dict[str, Any],
     horizons: list[int],
     prob_block: dict[str, Any],
-    cells: dict[str, Any],
-    test: list[int],
-    n_series: int,
 ) -> dict[str, go.Figure]:
-    """The four multi-step figures (unit-incompatible metrics on separate axes)."""
+    """Seven multi-step figures; empty diagnostic scatters are not emitted."""
     growth = block["horizon_growth"]["pooled"]
     per_class = block["headline_per_class"]
     hs = [str(h) for h in horizons]
@@ -236,7 +206,6 @@ def _figures(
 
     peak_fig = _figure_peak_capture(block)
     candidate_fig = _figure_candidate_comparison(block)
-    scatter_fig = _figure_peak_day_scatter(cells, test, horizons, n_series)
     win_fig = _figure_win_rates(block)
 
     return {
@@ -246,7 +215,6 @@ def _figures(
         "multistep_band_calibration": band_fig,
         "multistep_peak_capture": peak_fig,
         "multistep_candidate_comparison": candidate_fig,
-        "multistep_peak_day_scatter": scatter_fig,
         "multistep_win_rates": win_fig,
     }
 
@@ -451,61 +419,5 @@ def _figure_candidate_comparison(block: dict[str, Any]) -> go.Figure:
         fig,
         "right panel: candidate MAE minus routed MAE with 95% paired bootstrap CIs — "
         "negative means the candidate beats the committed router on pooled MAE",
-    )
-    return apply_theme(fig)
-
-
-def _figure_peak_day_scatter(
-    cells: dict[str, Any], test: list[int], horizons: list[int], n_series: int
-) -> go.Figure:
-    """Forecast vs actual on each scored window's top-decile day (lumpy class
-    — 98.6% of the panel), one panel per candidate (linear axes: the zero
-    candidate's y=0 row is the point of the figure)."""
-    lumpy_mask = cells["class"] == "lumpy"
-    has_lumpy = bool(lumpy_mask.any())
-    n_cand = len(PEAK_CANDIDATES)
-    n_cols = 3
-    n_rows = math.ceil(n_cand / n_cols)
-    fig = make_subplots(
-        rows=n_rows,
-        cols=n_cols,
-        subplot_titles=tuple(f"{c} (lumpy peak days)" for c in PEAK_CANDIDATES),
-    )
-    if has_lumpy:
-        for pos, cand in enumerate(PEAK_CANDIDATES, start=1):
-            row, col = (pos - 1) // n_cols + 1, (pos - 1) % n_cols + 1
-            actual, pred = _peak_day_pairs(cells, test, horizons, n_series, cand)
-            fig.add_scatter(
-                x=actual,
-                y=pred,
-                name=cand,
-                mode="markers",
-                marker={"size": 4, "opacity": 0.5},
-                showlegend=False,
-                row=row,
-                col=col,
-            )
-            hi = float(max(actual.max(), pred.max())) if actual.size else 1.0
-            xref = "x domain" if pos == 1 else f"x{pos} domain"
-            yref = "y" if pos == 1 else f"y{pos}"
-            fig.add_shape(
-                type="line",
-                xref=xref,
-                x0=0,
-                x1=1,
-                yref=yref,
-                y0=0.0,
-                y1=hi,
-                line={"dash": "dot", "color": "#fbbf24"},
-                row=row,
-                col=col,
-            )
-    fig.update_xaxes(title="peak-day actual (units)")
-    fig.update_yaxes(title="forecast (units)")
-    fig.update_layout(title="Peak-day scatter — each scored window's top-decile demand day (lumpy)")
-    add_takeaway(
-        fig,
-        "points on the dotted parity line nail the peak; a flat candidate (zero) hugs the "
-        "bottom — this is the structural miss the peak-capable candidates were built for",
     )
     return apply_theme(fig)

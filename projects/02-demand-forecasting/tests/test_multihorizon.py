@@ -228,9 +228,9 @@ def test_run_multistep_block_shape(mixed_panel: pl.DataFrame) -> None:
     assert set(result.figures) >= {
         "multistep_peak_capture",
         "multistep_candidate_comparison",
-        "multistep_peak_day_scatter",
         "multistep_win_rates",
     }
+    assert "multistep_peak_day_scatter" not in result.figures
     # wave-21 candidates + blocks present
     for cand in (
         "lgbm_tweedie",

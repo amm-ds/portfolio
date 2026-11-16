@@ -372,9 +372,6 @@ def run_probabilistic(
     fig = figure_probabilistic_band(features, last, result)
     save_html(fig, Path(settings.reports_dir) / "figures" / "probabilistic_band.html")
     save_json(fig, Path(settings.reports_dir) / "figures" / "probabilistic_band.json")
-    # audit-list fan chart: same content served under its canonical name
-    save_html(fig, Path(settings.reports_dir) / "figures" / "forecast_fan.html")
-    save_json(fig, Path(settings.reports_dir) / "figures" / "forecast_fan.json")
     return result
 
 

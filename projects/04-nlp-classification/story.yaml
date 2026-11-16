@@ -137,7 +137,7 @@ sections:
     figures: [eda_class_balance]
   - id: training
     text_md: |
-      **Three figures show how the transformer learned and where tuning
+      **Two figures show how the transformer learned and where tuning
       stopped.** The ladder measurements give their context. On shared test,
       the two floors score 0.1000 and 0.2533 macro-F1. The keyword model reaches
       0.8714, the bounded transformer 0.9021, and the full-data model 0.9460.
@@ -189,17 +189,19 @@ sections:
       ```
 
       Excerpt from [calibration.py](https://github.com/amm-ds/portfolio/blob/main/projects/04-nlp-classification/src/nlp_classification/calibration.py).
-      In `training_curve`, validation plateaus within two epochs while training
-      loss keeps falling. An epoch is one pass through the training data. The
-      widening gap indicates memorization, not progress. In `epochs_probe`, a
-      four-epoch run peaks at validation macro-F1 0.9477 in epoch 3, then
-      slides. Extra epochs overfit, meaning they learn training detail that does
-      not generalize. The probe confirms the default instead of replacing it.
+      In `training_curve`, the left panel is the two-epoch headline run and the
+      right panel is the separate four-epoch probe. Solid and dotted histories
+      never join: the probe's four-epoch learning-rate schedule differs from the
+      headline schedule, and the star marks the headline endpoint only. An epoch
+      is one pass through the training data. The probe peaks at validation
+      macro-F1 0.9477 in epoch 3, then slides while validation loss rises. Extra
+      epochs overfit, meaning they learn training detail that does not generalize.
+      The probe confirms the default instead of replacing it.
 
       **Business summary:** The figures and scale evidence favor more data, not
       more tuning. Each tripling adds about +1.5 macro-F1 points, reaching
       0.9460 test and 0.9529 fresh. One temperature cuts calibration error 37%.
-    figures: [training_curve, epochs_probe, hpo_history]
+    figures: [training_curve, hpo_history]
     metrics_keys: [baseline_tfidf_logreg, encoder_b, distilbert, distilbert_tuned, distilbert_scale_4000, distilbert_scale_12000, distilbert_scale_40000, distilbert_full_120k]
   - id: evaluation
     text_md: |
@@ -485,8 +487,7 @@ key_concepts:
 - "**Calibration (ECE)**: expected calibration error measures the mismatch between confidence and observed accuracy. One temperature fitted on validation cut this error 37% without changing a prediction."
 figure_captions:
   eda_class_balance: Each bounded split has 25% per class, and training texts cluster at 20–50 words. Topic frequencies and the 128-token cap do not explain the bounded differences.
-  training_curve: Full-120k training and validation loss, or prediction error, with validation macro-F1. Validation quality plateaus within two epochs while training loss keeps falling.
-  epochs_probe: The four-epoch full-data probe peaks at validation macro-F1 0.9477 in epoch 3 (+0.0003, then −0.0003). The plateau and rising validation loss indicate overfitting, not a better headline.
+  training_curve: Two distinct full-120k histories in separate panels. Solid lines are the shipped two-epoch headline run; dotted lines are the four-epoch probe, whose learning-rate schedule is not a continuation of the headline run. The star marks the headline's final validation macro-F1 (0.9464) beside, not within, the probe history. The probe peaks at 0.9477 in epoch 3, then declines while validation loss rises.
   hpo_history: Seeded 12-trial Optuna validation macro-F1 and running best. The paired HPO/default validation CI crosses zero and sits inside seed noise.
   llm_cascade_comparison: Full-data transformer versus the selected τ=0.6 selective LLM cascade on validation, bounded test, and disjoint fresh holdout. Fresh macro-F1 rises from 0.9529432 to 0.9539265 with 22 reviews; no paired cascade interval is persisted.
   confusion_matrix_selected: Actual versus predicted topics for the validation-selected bounded model on the 1,000-row test sample. Business → Sci/Tech remains the dominant off-diagonal pair.

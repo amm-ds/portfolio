@@ -111,7 +111,6 @@ def test_evaluate_writes_report_and_figures(
         "reconciliation_coherence",
         "coherence_heatmap",
         "probabilistic_band",
-        "forecast_fan",
         "multistep_error_vs_horizon",
         "multistep_class_scoreboard",
         "multistep_routing",

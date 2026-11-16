@@ -168,8 +168,9 @@ is the shipped headline run (2 epochs, early stopping enabled, val macro-F1
 0.9433 → 0.9464); `reports/history_probe4.json` is this 4-epoch probe of the
 same full-data fine-tune. Read the probe as "extra epochs overfit", not as
 a better headline — its peak 0.9477 vs the shipped 0.9464 is the validation
-split under a different LR schedule, inside run-to-run noise. Figure:
-`reports/figures/epochs_probe.*`.
+split under a different LR schedule, inside run-to-run noise. The combined
+`reports/figures/training_curve.*` keeps the two histories in separate panels
+and marks the headline endpoint with a star.
 
 Scaling evidence uses a controlled data-scale ladder:
 all rungs use the same seeded stratified protocol and identical hypers; the
@@ -309,7 +310,7 @@ Figures (interactive HTML + showcase-API JSON in `reports/figures/`):
 - `eda_class_balance.{html,json}` — class distribution across splits + train text-length histogram
 - `hpo_history.{html,json}` — per-trial validation macro-F1 + best-so-far
 - `hpo_importance.{html,json}` — fANOVA parameter importance over the study
-- `training_curve.{html,json}` — train/val loss + val macro-F1 per epoch
+- `training_curve.{html,json}` — separate headline and four-epoch-probe panels: train/val loss + val macro-F1
 - `scale_ladder.{html,json}` — controlled data-scale ladder: test macro-F1 vs train rows, by device
 - `confusion_matrix_selected.{html,json}` — selected bounded transformer, counts
 - `per_class_f1_comparison.{html,json}` — selected bounded transformer vs TF-IDF baseline, per class
@@ -398,7 +399,6 @@ uv run pytest projects/04-nlp-classification -q
 |---|---|
 | confusion matrix selected | [reports/figures/confusion_matrix_selected.html](reports/figures/confusion_matrix_selected.html) |
 | eda class balance | [reports/figures/eda_class_balance.html](reports/figures/eda_class_balance.html) |
-| epochs probe | [reports/figures/epochs_probe.html](reports/figures/epochs_probe.html) |
 | hpo history | [reports/figures/hpo_history.html](reports/figures/hpo_history.html) |
 | hpo importance | [reports/figures/hpo_importance.html](reports/figures/hpo_importance.html) |
 | per class f1 comparison | [reports/figures/per_class_f1_comparison.html](reports/figures/per_class_f1_comparison.html) |

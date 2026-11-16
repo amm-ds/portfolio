@@ -290,7 +290,7 @@ def run_multistep(
         ens,
         cost_aware,
     )
-    figures = _figures(block, horizons, bands["json"], cells, test, n_series)
+    figures = _figures(block, horizons, bands["json"])
     result = MultiStepResult(
         block=block,
         probabilistic_block=bands["json"],
