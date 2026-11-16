@@ -10,6 +10,7 @@ from mobility.evaluate import (
     build_report,
     overall_metrics,
     p90_coverage,
+    paired_mae_intervals,
     per_borough_mae,
     weather_elasticity,
 )
@@ -114,10 +115,43 @@ def test_baseline_deltas_vs_naive(cfg: MobilityConfig) -> None:
     assert baseline_deltas(overall_metrics(perfect)) == {"baseline": "naive_lag24"}
 
 
+def test_paired_mae_intervals_use_frozen_paired_errors() -> None:
+    """Both resampling protocols retain the exact paired MAE delta and its sign."""
+    demand = make_zone_hour_demand()
+    preds = demand.select(["zone_id", "ts"]).with_columns(
+        y_true=pl.lit(10.0),
+        y_naive=pl.lit(12.0),
+        y_gbm_xgb_tuned=pl.lit(10.5),
+        y_gbm_lgbm_tuned=pl.lit(10.75),
+    )
+    block = paired_mae_intervals(preds, n_resamples=200)
+    assert block["n_resamples"] == 200
+    assert block["seed"] == 42
+    assert block["day_block_length"] == 7
+    assert set(block["comparisons"]) == {
+        "gbm_xgb_tuned_vs_naive_lag24",
+        "gbm_lgbm_tuned_vs_naive_lag24",
+    }
+    xgb = block["comparisons"]["gbm_xgb_tuned_vs_naive_lag24"]
+    lgbm = block["comparisons"]["gbm_lgbm_tuned_vs_naive_lag24"]
+    for comparison, expected in ((xgb, -1.5), (lgbm, -1.25)):
+        for protocol in ("day_block", "zone_cluster"):
+            assert comparison[protocol]["point_mae_delta"] == expected
+            assert comparison[protocol]["ci95"] == [expected, expected]
+    assert xgb["day_block"]["n_days"] == 10
+    assert xgb["day_block"]["block_length_days"] == 7
+    assert xgb["zone_cluster"]["n_zones"] == 2
+    assert block == paired_mae_intervals(preds, n_resamples=200)
+
+
 def test_build_report_writes_artifacts(cfg: MobilityConfig, curated: pl.DataFrame) -> None:
     preds = _predictions(cfg)
     cfg.models_dir.mkdir(parents=True, exist_ok=True)
     preds.write_parquet(cfg.models_dir / "predictions.parquet")
+    cfg.reports_dir.mkdir(parents=True, exist_ok=True)
+    (cfg.reports_dir / "metrics.json").write_text(
+        '{"_meta":{"schema_version":1,"git_sha":"fixture"}}'
+    )
     report_path = build_report(cfg)
     assert report_path.exists()
     assert (cfg.reports_dir / "metrics.json").exists()
@@ -126,6 +160,8 @@ def test_build_report_writes_artifacts(cfg: MobilityConfig, curated: pl.DataFram
     metrics = json.loads((cfg.reports_dir / "metrics.json").read_text())
     assert "gbm_mean" in metrics and "mae" in metrics["gbm_mean"]
     assert metrics["_meta"]["n_test_rows"] == preds.height
+    assert metrics["_meta"]["schema_version"] == 1
+    assert metrics["_meta"]["git_sha"] == "fixture"
 
 
 def test_hour_borough_heatmap_matches_groupby() -> None:

@@ -8,7 +8,7 @@
 3. Hard temporal discipline: no random splits, no leakage.
 4. DQ gates as data, not prints — failing gates halt the pipeline loudly.
 5. Deliverables a client can act on: next-hour demand per zone, calibrated
-   uncertainty bands, weather-elasticity findings.
+   uncertainty bands, and descriptive rain/dry associations.
 
 ## Scale decisions
 
@@ -74,13 +74,15 @@ from tenths of mm, TMAX/TMIN from tenths of °C, SNOW is whole mm
 - **GBM p90** — same family, `loss="quantile", quantile=0.9` for staffing
   buffers; calibration reported for the served `gbm_tuned` band: 90.8%
   coverage overall on the Q4 test window (Manhattan 91.4%, Queens 89.6%,
-  sparse N/A zones 84.7% under-cover, Staten Island 98.5%).
+  N/A no-borough bucket 84.7% under-cover, Staten Island 98.5%). The no-borough
+  bucket is separate from the demand-sparse conformal tercile.
 - **TemporalNet** — 64-32 MLP, hand-written loop (DataLoader, Adam, MSE,
   gradient clipping, early stop on embargoed val MAE, seeded). Target trained
   in **log1p space**: demand is multiplicative, and a Gaussian loss on raw
   counts over-penalises busy zones — with raw counts the NN sat *below* the
   lag-24 baseline (MAE 7.10); after the log transform it beats it (5.51) and
-  takes the best MAPE (54.5%). GBM still wins MAE/RMSE.
+  takes the best MAPE (54.5%). GBM still wins MAE/RMSE. MAPE remains secondary
+  because zero and low-demand zone-hours make percentage errors unstable.
 
 ## Hyperparameter optimisation (wave 3)
 
@@ -107,9 +109,13 @@ tuning.
   `gbm_tuned` / `nn_tuned` as the production config.
 
 The evaluate stage additionally reports **p90 band calibration** (empirical
-coverage per borough + overall vs the 90% target) and **permutation
-importance** of the tuned GBM on a bounded test slice
-(`hpo.perm_importance_rows`, chronological head).
+coverage per borough + overall vs the 90% target), split-conformal coverage and
+mean band height on the held-out second half, and **permutation importance** of
+the tuned GBM on a bounded test slice (`hpo.perm_importance_rows`, chronological
+head). A post-freeze uncertainty protocol predeclares xGB-versus-naive and
+LightGBM-versus-naive paired MAE deltas: 2,000 resamples, seed 42, circular
+seven-day blocks, and whole-zone clusters. These intervals never participate in
+selection or tuning.
 
 ## Pipeline
 

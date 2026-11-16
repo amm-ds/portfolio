@@ -1,8 +1,8 @@
 {
   "_meta": {
-    "created_at": "2026-11-14T19:53:18+01:00",
+    "created_at": "2026-11-14T19:53:43+01:00",
     "data_contract_sha256": null,
-    "git_sha": "36aeb69da80b4f2cd7b3d15cd420c4686bd628d5",
+    "git_sha": "c3b7b212c172398a75348a0d099ebe05234b394e",
     "params_sha256": "d7a37476dfcfaabf5ea655c3ceca200c799709717d33db571800aab8c0ac2fd4",
     "schema_version": 1,
     "seed": 42,
@@ -101,6 +101,61 @@
     "mape_pct": 89.37153613289871,
     "mase": 1.0630163744363401,
     "rmse": 23.367095942143067
+  },
+  "paired_intervals": {
+    "comparisons": {
+      "gbm_lgbm_tuned_vs_naive_lag24": {
+        "baseline": "naive_lag24",
+        "challenger": "gbm_lgbm_tuned",
+        "day_block": {
+          "block_length_days": 7,
+          "ci95": [
+            -2.432885007862969,
+            -1.350078941422881
+          ],
+          "n_days": 92,
+          "n_resamples": 2000,
+          "point_mae_delta": -1.9350310497267782
+        },
+        "zone_cluster": {
+          "ci95": [
+            -2.6056680127877825,
+            -1.340159734089456
+          ],
+          "n_resamples": 2000,
+          "n_zones": 265,
+          "point_mae_delta": -1.9350310497267782
+        }
+      },
+      "gbm_xgb_tuned_vs_naive_lag24": {
+        "baseline": "naive_lag24",
+        "challenger": "gbm_xgb_tuned",
+        "day_block": {
+          "block_length_days": 7,
+          "ci95": [
+            -2.502567446459798,
+            -1.4950694630855432
+          ],
+          "n_days": 92,
+          "n_resamples": 2000,
+          "point_mae_delta": -2.0307943633737087
+        },
+        "zone_cluster": {
+          "ci95": [
+            -2.6908443644020967,
+            -1.4211677632163713
+          ],
+          "n_resamples": 2000,
+          "n_zones": 265,
+          "point_mae_delta": -2.0307943633737087
+        }
+      }
+    },
+    "confidence_level": 0.95,
+    "day_block_length": 7,
+    "method": "paired percentile bootstrap of challenger-minus-naive MAE deltas; circular moving day blocks and whole-zone clusters on frozen test predictions",
+    "n_resamples": 2000,
+    "seed": 42
   },
   "temporal_net": {
     "mae": 5.510157721780189,

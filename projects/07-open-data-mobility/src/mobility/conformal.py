@@ -1,20 +1,21 @@
 """Stratified split-conformal calibration for the one-sided p90 band.
 
 External audit pass 4: the quantile band's measured weakness is conditional
-coverage — 90.8% overall but 84.7% in sparse zones. Split-conformal is the
-standard post-hoc fix: an additive offset per zone-density stratum, fit on a
-calibration window, moves the band up where it under-covers and down where
-it over-covers at the same nominal level.
+coverage — 90.8% overall but 84.7% in zones without a borough assignment.
+Split-conformal is the standard post-hoc fix: an additive offset per
+zone-density stratum, fit on a calibration window, moves the band up where it
+under-covers and down where it over-covers at the same nominal level.
 
 Protocol (stated in the metrics block, no leakage hand-waving):
 - calibration = the FIRST half of the committed test window; evaluation =
   the SECOND half. The second half never enters the offset fitting.
 - strata = terciles of per-zone mean demand on the calibration half
-  (train-side statistics; the test half cannot influence its own grouping).
+  (calibration-half statistics; the evaluation half cannot influence its own
+  grouping).
 - offset per stratum = the one-sided split-conformal order statistic at
   level 1-alpha (Lei et al. 2018): the ceil((n+1)*(1-alpha))-th smallest
-  calibration score y - q90. Offsets may be negative — dense zones are
-  over-covered and the band tightens there.
+  calibration score y - q90. Offsets may be negative where the raw band is
+  over-covered, tightening it there.
 
 The guarantees are marginal per stratum (exact coverage would need the
 exchangeability the strata approximately restore); the block reports the
@@ -156,11 +157,15 @@ def fig_conformal_coverage(block: dict[str, Any]) -> go.Figure:
         block["after"]["coverage_by_stratum"]["sparse"]
         - block["before"]["coverage_by_stratum"]["sparse"]
     )
+    width_before = block["before"]["mean_height"]
+    width_after = block["after"]["mean_height"]
     add_takeaway(
         fig,
-        f"sparse zones {_pct(block['before']['coverage_by_stratum']['sparse'])} -> "
+        f"demand-sparse zones {_pct(block['before']['coverage_by_stratum']['sparse'])} -> "
         f"{_pct(block['after']['coverage_by_stratum']['sparse'])} "
         f"({sparse_gain:+.1%}); overall {_pct(block['before']['coverage_overall'])} -> "
-        f"{_pct(block['after']['coverage_overall'])} on the held-out second half",
+        f"{_pct(block['after']['coverage_overall'])}; mean band height {width_before:.3f} -> "
+        f"{width_after:.3f} pickups ({width_after - width_before:+.3f}) on the held-out "
+        "second half",
     )
     return apply_theme(fig)

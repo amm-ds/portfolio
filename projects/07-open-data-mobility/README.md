@@ -68,19 +68,35 @@ lower is better. The baseline is same-hour-yesterday persistence (`naive_lag24`)
 
 The served model removes **28.3% of MAE** versus persistence. Its 90% upper
 band covers **90.8%** of holdout zone-hours. Coverage is 91.4% in Manhattan,
-89.6% in Queens, 88.6% in Brooklyn, and 91.4% in the Bronx. Sparse N/A zones
-under-cover at 84.7%; Staten Island over-covers at 98.5%.
+89.6% in Queens, 88.6% in Brooklyn, and 91.4% in the Bronx. The N/A (no-borough)
+bucket under-covers at 84.7%; Staten Island over-covers at 98.5%. The no-borough
+bucket is distinct from the demand-sparse conformal tercile.
 
 The XGBoost and LightGBM challengers lose to the incumbent on validation MAE
 (3.182 and 3.173 versus 3.165), so serving stays with `gbm_tuned` even though
 they score lower on the Q4 test window. Selecting on that test result would be
 test-set selection. The challengers run in a torch-free subprocess because
-their OpenMP runtime conflicts with torch on macOS.
+their OpenMP runtime conflicts with torch on macOS. MAPE is secondary because
+zero and low-demand zone-hours make percentage errors unstable.
+
+Predeclared post-freeze intervals use 2,000 paired resamples, seed 42, circular
+seven-day blocks, and whole-zone clusters. Deltas are challenger minus naive MAE
+in pickups/hour; negative values favor the challenger and do not affect serving.
+
+| comparison | point ΔMAE | seven-day block 95% CI | zone-cluster 95% CI |
+|---|---:|---:|---:|
+| XGBoost versus naive | −2.031 | [−2.503, −1.495] | [−2.691, −1.421] |
+| LightGBM versus naive | −1.935 | [−2.433, −1.350] | [−2.606, −1.340] |
+
+Split conformal raises second-half coverage from 90.7% to 91.5%; mean band
+height above the point forecast rises from 7.032 to 7.124 pickups, a +0.091
+width cost. Offsets and both coverage/width measurements remain in
+`reports/metrics.json`.
 
 Permutation importance (committed figure `reports/figures/gbm_feature_importance.json`)
 ranks `lag_1` (3.31 mean MAE increase), `lag_168` (2.58), and `lag_24` (2.48)
 first, with `hour` at 1.12. Weather contributes approximately zero to point MAE;
-its useful evidence is the directional elasticity analysis below.
+its useful evidence is the descriptive rain/dry association below.
 
 ### Green-taxi transfer and serving
 
@@ -135,10 +151,10 @@ same-month naive persistence. Three scored months remain within tolerance.
 
 ## Weather and artifacts
 
-Rainy hours (at least 1 mm) have lower mean pickups in outer areas: Unknown/N/A
-zones about 0.90× dry demand, Queens 0.92×, and Staten Island 0.93×. Manhattan
-is 0.97×, while Bronx is 1.03× and EWR 1.08×. These raw group ratios do not
-normalize hour-of-week mix and are directional, not causal.
+For rainy hours (at least 1 mm), raw mean-pickup ratios versus dry hours are
+about 0.90× for Unknown/N/A, 0.92× for Queens, and 0.93× for Staten Island.
+Manhattan is 0.97×, Bronx 1.03×, and EWR 1.08×. These raw group ratios do not
+normalize hour-of-week mix and are descriptive associations, not causal effects.
 
 The report and metrics are [`reports/report.html`](reports/report.html) and
 [`reports/metrics.json`](reports/metrics.json). `reports/figures/` contains the
@@ -148,8 +164,9 @@ served model contract is in [MODEL_CARD.md](MODEL_CARD.md) and SERVING.md.
 
 ## Limits
 
-Sparse N/A-borough zones under-cover at 84.7% against the 90% target. Weather
-does not improve point MAE, and the elasticity ratios do not support causal
+The N/A (no-borough) bucket under-covers at 84.7% against the 90% target, which
+is separate from demand-sparse conformal strata. Weather contributes
+approximately zero to point MAE, and the rain/dry ratios do not support causal
 claims. Longer-horizon forecasts and causal weather estimates require different
 study contracts.
 

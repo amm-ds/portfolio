@@ -47,18 +47,29 @@ control (beats green persistence on MAE/RMSE/MAPE at two months of history).
 | temporal_net_tuned | 5.178 | 21.580 | 57.5% | 0.845 |
 
 MASE = MAE ÷ in-sample seasonal-naive-24 error (scale ≈ 6.13 pickups/hour).
-Lag 24 is the same hour yesterday, not the same hour last week.
+Lag 24 is the same hour yesterday, not the same hour last week. MAPE is
+secondary because zero and low-demand zone-hours make it unstable.
 
 Served-model slices (gbm_tuned): per-borough test MAE — Manhattan 14.2,
 Unknown 4.5, Queens 2.2, Brooklyn 1.2, N/A 0.9, Bronx 0.5, EWR 0.3,
 Staten Island 0.2 pickups/hour. p90 band coverage 90.8% overall (target 90%).
+Split conformal moves second-half coverage from 90.7% to 91.5%, with mean band
+height rising from 7.032 to 7.124 pickups (+0.091).
+
+Predeclared paired 95% intervals for challenger-minus-naive MAE (2,000 frozen-
+prediction resamples, seed 42) are:
+
+| comparison | point ΔMAE | seven-day block CI | zone-cluster CI |
+|---|---:|---:|---:|
+| XGBoost versus naive | −2.031 | [−2.503, −1.495] | [−2.691, −1.421] |
+| LightGBM versus naive | −1.935 | [−2.433, −1.350] | [−2.606, −1.340] |
 
 ## Limits
 
-- **Thin-data zones:** sparse "N/A"/outer zones under-cover at 84.7% — the
-  p90 band is too tight where data is thin; do not staff against those bands.
-- **Weather is associative, not causal:** elasticity findings (rain −7–10% in
-  outer boroughs) are raw groupbys without hour-of-week normalisation.
+- **No-borough bucket:** N/A zones under-cover at 84.7%; do not staff against
+  those bands. This assignment bucket is not the demand-sparse conformal stratum.
+- **Weather is associative, not causal:** rain/dry ratios are raw groupbys
+  without hour-of-week normalisation.
 - **Per-service retraining required** for green/FHV classes (see caveat).
 - **Manhattan dominates absolute error** (volume ∝ error); relative error is
   comparable across boroughs.

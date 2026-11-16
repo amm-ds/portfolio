@@ -8,6 +8,7 @@ Everything lands in ``reports/``: metrics.json, report.html, figures/*.html
 """
 
 import json
+import math
 from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
@@ -44,6 +45,14 @@ TUNED_PAIRS = [
     ("gbm_lgbm_tuned", "gbm_tuned"),
     ("temporal_net_tuned", "temporal_net"),
 ]
+#: Frozen uncertainty protocol: compare only the two challengers with persistence.
+PAIRED_INTERVAL_COMPARISONS = (
+    ("gbm_xgb_tuned", "naive_lag24"),
+    ("gbm_lgbm_tuned", "naive_lag24"),
+)
+PAIRED_BOOTSTRAP_RESAMPLES = 2_000
+PAIRED_BOOTSTRAP_SEED = 42
+PAIRED_DAY_BLOCK_LENGTH = 7
 WEEK_START = datetime(2024, 10, 7)  # first full Monday of the test window
 
 
@@ -122,6 +131,106 @@ def baseline_deltas(runs: list[RunResult], baseline: str = "naive_lag24") -> dic
             if pair:
                 out.setdefault(tuned, {}).update(pair)
     return out
+
+
+def _paired_interval(
+    delta_sums: np.ndarray,
+    counts: np.ndarray,
+    indices: np.ndarray,
+    confidence_level: float,
+) -> dict[str, Any]:
+    """Percentile interval for paired MAE deltas under the supplied resamples."""
+    sampled_counts = counts[indices].sum(axis=1)
+    deltas = delta_sums[indices].sum(axis=1) / sampled_counts
+    tail = (1.0 - confidence_level) / 2.0
+    interval = np.quantile(deltas, [tail, 1.0 - tail])
+    return {
+        "point_mae_delta": float(delta_sums.sum() / counts.sum()),
+        "ci95": [float(interval[0]), float(interval[1])],
+    }
+
+
+def paired_mae_intervals(
+    preds: pl.DataFrame,
+    *,
+    n_resamples: int = PAIRED_BOOTSTRAP_RESAMPLES,
+    confidence_level: float = 0.95,
+    day_block_length: int = PAIRED_DAY_BLOCK_LENGTH,
+    seed: int = PAIRED_BOOTSTRAP_SEED,
+) -> dict[str, Any]:
+    """Paired challenger-minus-naive MAE intervals from frozen predictions.
+
+    The protocol is fixed independently of the observed intervals: 2,000
+    percentile-bootstrap resamples, circular seven-day moving blocks for
+    serial dependence, and whole-zone clusters for spatial dependence. Both
+    models in a pair are scored on exactly the same resampled rows. Negative
+    deltas favor the challenger; these intervals quantify holdout uncertainty,
+    not validation-based model selection.
+    """
+    pred_cols = dict(MODEL_PREDS)
+    required = {"y_true", "ts", "zone_id"} | {
+        pred_cols[name] for pair in PAIRED_INTERVAL_COMPARISONS for name in pair
+    }
+    missing = sorted(required - set(preds.columns))
+    if missing:
+        raise ValueError(f"missing columns for paired MAE intervals: {missing}")
+    if n_resamples < 1 or day_block_length < 1 or not 0 < confidence_level < 1:
+        raise ValueError("invalid paired-bootstrap protocol settings")
+
+    prepared = preds.with_columns(day=pl.col("ts").dt.date())
+    n_days = prepared["day"].n_unique()
+    n_zones = prepared["zone_id"].n_unique()
+    rng = np.random.default_rng(seed)
+    block_length = min(day_block_length, n_days)
+    starts = rng.integers(0, n_days, size=(n_resamples, math.ceil(n_days / block_length)))
+    day_indices = (starts[..., None] + np.arange(block_length)).reshape(n_resamples, -1)[
+        :, :n_days
+    ] % n_days
+    zone_indices = rng.integers(0, n_zones, size=(n_resamples, n_zones))
+
+    comparisons: dict[str, Any] = {}
+    for challenger, baseline in PAIRED_INTERVAL_COMPARISONS:
+        challenger_col, baseline_col = pred_cols[challenger], pred_cols[baseline]
+        paired = prepared.with_columns(
+            abs_error_delta=(
+                (pl.col(challenger_col) - pl.col("y_true")).abs()
+                - (pl.col(baseline_col) - pl.col("y_true")).abs()
+            )
+        )
+        result: dict[str, Any] = {"challenger": challenger, "baseline": baseline}
+        for protocol, group, indices in (
+            ("day_block", "day", day_indices),
+            ("zone_cluster", "zone_id", zone_indices),
+        ):
+            grouped = (
+                paired.group_by(group)
+                .agg(pl.col("abs_error_delta").sum().alias("delta"), pl.len().alias("n"))
+                .sort(group)
+            )
+            block = _paired_interval(
+                grouped["delta"].to_numpy(),
+                grouped["n"].to_numpy(),
+                indices,
+                confidence_level,
+            )
+            block["n_resamples"] = n_resamples
+            if protocol == "day_block":
+                block["n_days"] = n_days
+                block["block_length_days"] = block_length
+            else:
+                block["n_zones"] = n_zones
+            result[protocol] = block
+        comparisons[f"{challenger}_vs_{baseline}"] = result
+
+    return {
+        "method": "paired percentile bootstrap of challenger-minus-naive MAE deltas; "
+        "circular moving day blocks and whole-zone clusters on frozen test predictions",
+        "confidence_level": confidence_level,
+        "n_resamples": n_resamples,
+        "seed": seed,
+        "day_block_length": day_block_length,
+        "comparisons": comparisons,
+    }
 
 
 def per_borough_mae(preds: pl.DataFrame, col: str = "y_gbm") -> pl.DataFrame:
@@ -757,6 +866,9 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
     from mobility.conformal import evaluate_conformal, fig_conformal_coverage
 
     conformal = evaluate_conformal(preds, p90_col, point_col)
+    pred_cols = dict(MODEL_PREDS)
+    paired_cols = {pred_cols[name] for pair in PAIRED_INTERVAL_COMPARISONS for name in pair}
+    paired = paired_mae_intervals(preds) if paired_cols <= set(preds.columns) else None
     importance_fig = None
     has_gbm_model = (cfg.models_dir / "gbm_tuned.joblib").exists() or (
         cfg.models_dir / "gbm_mean.joblib"
@@ -798,7 +910,13 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
         save_json(fig, figures_dir / f"{name}.json")
 
     metrics: dict[str, Any] = {r.name: {m.name: m.value for m in r.metrics} for r in runs}
-    metrics["_meta"] = {
+    metrics_path = cfg.reports_dir / "metrics.json"
+    prior_meta: dict[str, Any] = {}
+    if metrics_path.exists():
+        prior = json.loads(metrics_path.read_text()).get("_meta")
+        if isinstance(prior, dict):
+            prior_meta = prior
+    metrics["_meta"] = prior_meta | {
         "split": f"temporal holdout from {cfg.train_cutoff.isoformat()}",
         "p90_coverage": coverage,
         "p90_coverage_by_borough": {
@@ -810,13 +928,32 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
     }
     metrics["deltas"] = baseline_deltas(runs)
     metrics["conformal"] = conformal
-    (cfg.reports_dir / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
+    if paired is not None:
+        metrics["paired_intervals"] = paired
+    metrics_path.write_text(json.dumps(metrics, indent=2) + "\n")
 
     report = EvalReport(title="Project 07 — Urban Mobility Demand Intelligence")
     report.add_markdown_table("Overall test metrics (next-hour pickups)", comparison_md)
+    if paired is not None:
+        paired_rows = []
+        for name, comparison in paired["comparisons"].items():
+            for protocol in ("day_block", "zone_cluster"):
+                block = comparison[protocol]
+                paired_rows.append(
+                    {
+                        "comparison": name,
+                        "protocol": protocol,
+                        "mae_delta": block["point_mae_delta"],
+                        "ci95": (f"[{block['ci95'][0]:.3f}, {block['ci95'][1]:.3f}]"),
+                    }
+                )
+        report.add_markdown_table(
+            "Paired MAE deltas (challenger minus naive; negative favors challenger)",
+            _markdown(pl.DataFrame(paired_rows), floatfmt="{:.3f}"),
+        )
     report.add_markdown_table("Per-borough test MAE (gbm_mean)", _markdown(borough_mae))
     report.add_markdown_table(
-        "Weather elasticity: rain vs dry by borough",
+        "Rain vs dry demand association by borough",
         _markdown(weather),
     )
     report.add_markdown_table(
@@ -825,17 +962,16 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
     )
     weather_obs = weather.drop_nulls("rain_vs_dry_ratio")  # boroughs without rain hours
     if weather_obs.height > 0:
-        driest = weather_obs.sort("rain_vs_dry_ratio").row(0, named=True)
-        wettest = weather_obs.sort("rain_vs_dry_ratio", descending=True).row(0, named=True)
+        lowest = weather_obs.sort("rain_vs_dry_ratio").row(0, named=True)
+        highest = weather_obs.sort("rain_vs_dry_ratio", descending=True).row(0, named=True)
         rain_insight = (
-            f"<li><b>Rain suppresses curb demand:</b> the wettest-borough ratio is "
-            f"{wettest['borough']} at {wettest['rain_vs_dry_ratio']:.3f}x dry-hour demand, "
-            f"the most resilient is {driest['borough']} at "
-            f"{driest['rain_vs_dry_ratio']:.3f}x.</li>"
+            f"<li><b>Rain/dry association:</b> ratios range from {lowest['borough']} at "
+            f"{lowest['rain_vs_dry_ratio']:.3f}x to {highest['borough']} at "
+            f"{highest['rain_vs_dry_ratio']:.3f}x dry-hour demand.</li>"
         )
     else:
         rain_insight = (
-            "<li>No rainy hours in the evaluation window — elasticity not applicable.</li>"
+            "<li>No rainy hours in the evaluation window — rain/dry comparison not applicable.</li>"
         )
     report.add_html(
         "Business insights",
@@ -852,7 +988,7 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
         )
         + (
             "<li>Caveat: rain/dry ratios are raw groupbys — hour-of-week mix "
-            "is not normalised; treat them as directional elasticity, not "
+            "is not normalised; treat them as descriptive associations, not "
             "causal estimates.</li>"
         )
         + "</ul>",
