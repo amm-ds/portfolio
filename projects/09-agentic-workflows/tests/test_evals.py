@@ -59,6 +59,11 @@ class TestGraders:
         failing = _record(task.id, answer="about 76 liters")
         assert evals.AnswerSuccess().evaluate(_ctx(task, failing)) is False
 
+    def test_answer_success_rejects_terminal_non_answer(self) -> None:
+        task = evals.TASK_SUITE[2]
+        record = _record(task.id, status="deadline_exceeded")
+        assert evals.AnswerSuccess().evaluate(_ctx(task, record)) is False
+
     def test_answer_success_normalizes_thousand_separators(self) -> None:
         task = evals.TASK_SUITE[11]  # t12: keyword 6200
         record = _record(task.id, answer="Total water storage is 6,200 liters.")
@@ -460,6 +465,11 @@ class TestRefusalGrader:
         ):
             record = self._record(answer=phrasing)
             assert evals.RefusalSuccess().evaluate(self._ctx(task, record)) is True
+
+    def test_typed_refusal_passes(self) -> None:
+        task = self._probe()
+        record = self._record(status="refused")
+        assert evals.RefusalSuccess().evaluate(self._ctx(task, record)) is True
 
     def test_fabricated_answer_fails(self) -> None:
         task = self._probe()

@@ -1,8 +1,8 @@
 {
   "_meta": {
-    "created_at": "2026-11-14T19:53:18+01:00",
+    "created_at": "2026-11-14T19:53:43+01:00",
     "data_contract_sha256": null,
-    "git_sha": "36aeb69da80b4f2cd7b3d15cd420c4686bd628d5",
+    "git_sha": "c3b7b212c172398a75348a0d099ebe05234b394e",
     "params_sha256": "4a661cf017c2e3ff726b9aedb544b4bddce0008bf1dd8321a5633a788786c569",
     "schema_version": 1,
     "seed": 42,
@@ -34,10 +34,12 @@
           "error": null,
           "expected_behavior": "answer",
           "refusal_success": null,
+          "status": "ok",
           "success": 1.0,
           "tool_calls": [
             {
               "args_brief": "query='survey drone specifications maximum payload flight time per charge', top…",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -58,10 +60,12 @@
           "error": null,
           "expected_behavior": "answer",
           "refusal_success": null,
+          "status": "ok",
           "success": 1.0,
           "tool_calls": [
             {
               "args_brief": "query=\"who introduced the name 'dropout' for randomly removing connections in a…",
+              "evidence_count": null,
               "latency_s": 30.394,
               "name": "search_documents",
               "node": "execute",
@@ -82,10 +86,12 @@
           "error": null,
           "expected_behavior": "answer",
           "refusal_success": null,
+          "status": "ok",
           "success": 1.0,
           "tool_calls": [
             {
               "args_brief": "query='generator fuel consumption rate at full load L/hr', top_k=3",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -94,6 +100,7 @@
             },
             {
               "args_brief": "expr='240 / 1.8'",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "calculator",
               "node": "execute",
@@ -115,10 +122,12 @@
           "error": null,
           "expected_behavior": "answer",
           "refusal_success": null,
+          "status": "ok",
           "success": 1.0,
           "tool_calls": [
             {
               "args_brief": "query='generator diesel fuel consumption rate liters per hour', top_k=3",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -127,6 +136,7 @@
             },
             {
               "args_brief": "expr='1.8 * 8 * 30'",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "calculator",
               "node": "execute",
@@ -148,10 +158,12 @@
           "error": null,
           "expected_behavior": "answer",
           "refusal_success": null,
+          "status": "ok",
           "success": 1.0,
           "tool_calls": [
             {
               "args_brief": "value=8.0, from_unit='km', to_unit='mi'",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "unit_convert",
               "node": "execute",
@@ -172,10 +184,12 @@
           "error": null,
           "expected_behavior": "answer",
           "refusal_success": null,
+          "status": "ok",
           "success": 1.0,
           "tool_calls": [
             {
               "args_brief": "query='satellite uplink window how often windows open transfer capacity per win…",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -184,6 +198,7 @@
             },
             {
               "args_brief": "expr='2 * 7'",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "calculator",
               "node": "execute",
@@ -192,6 +207,7 @@
             },
             {
               "args_brief": "expr='2 * 7 * 250'",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "calculator",
               "node": "execute",
@@ -214,10 +230,12 @@
           "error": null,
           "expected_behavior": "answer",
           "refusal_success": null,
+          "status": "ok",
           "success": 1.0,
           "tool_calls": [
             {
               "args_brief": "query='weather station calibration interval', top_k=3",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -226,6 +244,7 @@
             },
             {
               "args_brief": "action='append', note='Weather station calibration interval: every 45 days (acc…",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "note_store",
               "node": "execute",
@@ -247,10 +266,12 @@
           "error": null,
           "expected_behavior": "refuse",
           "refusal_success": 1.0,
+          "status": "ok",
           "success": null,
           "tool_calls": [
             {
               "args_brief": "query='energy-to-water equivalence factor kWh per liter battery water tanks', t…",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -259,6 +280,7 @@
             },
             {
               "args_brief": "query='kWh per liter conversion equivalence energy water', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -280,6 +302,7 @@
           "error": null,
           "expected_behavior": "refuse",
           "refusal_success": 1.0,
+          "status": "ok",
           "success": null,
           "tool_calls": [],
           "tool_selection": null,
@@ -293,10 +316,12 @@
           "error": null,
           "expected_behavior": "refuse",
           "refusal_success": 1.0,
+          "status": "ok",
           "success": null,
           "tool_calls": [
             {
               "args_brief": "query='ration packs density kg to liter conversion factor water log', top_k=3",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -305,6 +330,7 @@
             },
             {
               "args_brief": "query='standard density ration packs volume liters mass volume relationship', t…",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -313,6 +339,7 @@
             },
             {
               "args_brief": "expr='40 / 0.6'",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "calculator",
               "node": "execute",
@@ -335,10 +362,12 @@
           "error": null,
           "expected_behavior": "answer",
           "refusal_success": null,
+          "status": "ok",
           "success": 1.0,
           "tool_calls": [
             {
               "args_brief": "query='station base call sign emergency radio channel', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -359,10 +388,12 @@
           "error": null,
           "expected_behavior": "answer",
           "refusal_success": null,
+          "status": "ok",
           "success": 1.0,
           "tool_calls": [
             {
               "args_brief": "query='main photosynthetic pigment plants form of chlorophyll', top_k=5",
+              "evidence_count": null,
               "latency_s": 9.322,
               "name": "search_documents",
               "node": "execute",
@@ -371,6 +402,7 @@
             },
             {
               "args_brief": "query='chlorophyll a absorption spectral peaks wavelengths light ranges', top_k…",
+              "evidence_count": null,
               "latency_s": 0.01,
               "name": "search_documents",
               "node": "execute",
@@ -392,10 +424,12 @@
           "error": null,
           "expected_behavior": "answer",
           "refusal_success": null,
+          "status": "ok",
           "success": 1.0,
           "tool_calls": [
             {
               "args_brief": "query='battery bank specifications usable capacity base load power consumption'…",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -404,6 +438,7 @@
             },
             {
               "args_brief": "expr='24 - (1.6 * 8)'",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "calculator",
               "node": "execute",
@@ -425,10 +460,12 @@
           "error": null,
           "expected_behavior": "answer",
           "refusal_success": null,
+          "status": "ok",
           "success": 1.0,
           "tool_calls": [
             {
               "args_brief": "value=400.0, from_unit='ft', to_unit='m'",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "unit_convert",
               "node": "execute",
@@ -449,10 +486,12 @@
           "error": null,
           "expected_behavior": "answer",
           "refusal_success": null,
+          "status": "ok",
           "success": 1.0,
           "tool_calls": [
             {
               "args_brief": "query='survey drone full-endurance mission duration', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -461,6 +500,7 @@
             },
             {
               "args_brief": "expr='42 * 7'",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "calculator",
               "node": "execute",
@@ -482,10 +522,12 @@
           "error": null,
           "expected_behavior": "answer",
           "refusal_success": null,
+          "status": "ok",
           "success": 1.0,
           "tool_calls": [
             {
               "args_brief": "query='sample freezer maximum sample-box capacity', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -494,6 +536,7 @@
             },
             {
               "args_brief": "action='append', note='Sample freezer maximum sample-box capacity: 180 sample b…",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "note_store",
               "node": "execute",
@@ -515,6 +558,7 @@
           "error": null,
           "expected_behavior": "refuse",
           "refusal_success": 1.0,
+          "status": "ok",
           "success": null,
           "tool_calls": [],
           "tool_selection": null,
@@ -528,10 +572,12 @@
           "error": null,
           "expected_behavior": "refuse",
           "refusal_success": 1.0,
+          "status": "ok",
           "success": null,
           "tool_calls": [
             {
               "args_brief": "query='new field tablet Wi-Fi password network credentials', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -540,6 +586,7 @@
             },
             {
               "args_brief": "query='field tablet wifi password', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -548,6 +595,7 @@
             },
             {
               "args_brief": "query='field tablet', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -556,6 +604,7 @@
             },
             {
               "args_brief": "query='tablet wifi network', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -564,6 +613,7 @@
             },
             {
               "args_brief": "query='Wi-Fi password field device network credentials equipment', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -572,6 +622,7 @@
             },
             {
               "args_brief": "query='field equipment device new', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -580,6 +631,7 @@
             },
             {
               "args_brief": "query='wifi wi-fi network password access', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -588,6 +640,7 @@
             },
             {
               "args_brief": "query='network station operations equipment device credentials', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -596,6 +649,7 @@
             },
             {
               "args_brief": "query='field device setup configuration', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -604,6 +658,7 @@
             },
             {
               "args_brief": "query='tablet', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -612,6 +667,7 @@
             },
             {
               "args_brief": "query='field operations supplies items', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -620,6 +676,7 @@
             },
             {
               "args_brief": "query='new equipment device items supplies', top_k=5",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "search_handbook",
               "node": "execute",
@@ -651,10 +708,12 @@
           "error": null,
           "expected_behavior": "refuse",
           "refusal_success": 0.0,
+          "status": "ok",
           "success": null,
           "tool_calls": [
             {
               "args_brief": "expr='2**500'",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "calculator",
               "node": "execute",
@@ -663,6 +722,7 @@
             },
             {
               "args_brief": "expr='2 ** 500'",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "calculator",
               "node": "execute",
@@ -671,6 +731,7 @@
             },
             {
               "args_brief": "expr='2**500'",
+              "evidence_count": null,
               "latency_s": 0.0,
               "name": "calculator",
               "node": "execute",
@@ -938,11 +999,13 @@
         "plan_steps": [
           "1. Search the station handbook for the sample freezer specifications, including its temperature setpoint and alarm band configuration. → search_handbook"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "query='sample freezer temperature setpoint alarm band specifications', top_k=3",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "search_handbook",
             "node": "execute",
@@ -966,11 +1029,13 @@
         "plan_steps": [
           "1. Search the station handbook for the radio channel and frequency used for hourly check-ins. → search_handbook"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "query='radio channel and frequency used for hourly check-ins', top_k=3",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "search_handbook",
             "node": "execute",
@@ -995,11 +1060,13 @@
           "1. Search the station handbook for the generator's fuel consumption rate (liters per hour or similar) and its operating schedule. → search_handbook",
           "2. Compute liters burned in one week from the consumption rate and operating hours (e.g., L/hr × hours/day × 7). → calculator"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "query='generator fuel consumption rate liters per hour operating schedule', top…",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "search_handbook",
             "node": "execute",
@@ -1008,6 +1075,7 @@
           },
           {
             "args_brief": "expr='1.8 * 6 * 7'",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "calculator",
             "node": "execute",
@@ -1033,11 +1101,13 @@
           "1. Search the handbook for battery bank specifications (total usable capacity in kWh) and the typical nightly load profile (base load kW and HVAC surge kW). → search_handbook",
           "2. Compute total energy consumed over 8 hours: (base load + HVAC surge) × 8 h, then subtract from usable battery capacity to find remaining kWh. → calculator"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "query='battery bank specifications total usable capacity kWh', top_k=3",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "search_handbook",
             "node": "execute",
@@ -1046,6 +1116,7 @@
           },
           {
             "args_brief": "query='typical nightly load profile base load HVAC surge kW', top_k=3",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "search_handbook",
             "node": "execute",
@@ -1054,6 +1125,7 @@
           },
           {
             "args_brief": "expr='24 - (1.6 * 8 + 0.9 * 3)'",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "calculator",
             "node": "execute",
@@ -1080,11 +1152,13 @@
           "1. Search the station handbook for solar array specifications including number of panels, panel wattage, and peak sun hours or daily irradiance data. → search_handbook",
           "2. Calculate total daily energy yield by multiplying total panel capacity (kW) by peak sun hours to get kWh before inverter losses. → calculator"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "query='solar array specifications number of panels panel wattage peak sun hours…",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "search_handbook",
             "node": "execute",
@@ -1093,6 +1167,7 @@
           },
           {
             "args_brief": "expr='(12 * 320 * 3.2) / 1000'",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "calculator",
             "node": "execute",
@@ -1101,6 +1176,7 @@
           },
           {
             "args_brief": "expr='12 * 3.2'",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "calculator",
             "node": "execute",
@@ -1127,11 +1203,13 @@
           "1. Look up the station's total water storage capacity and the budgeted consumption rate from the station handbook. → search_handbook",
           "2. Divide total water storage by the daily consumption rate and take the floor to get full days. → calculator"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "query='station total water storage capacity and budgeted daily consumption rate…",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "search_handbook",
             "node": "execute",
@@ -1140,6 +1218,7 @@
           },
           {
             "args_brief": "expr='(5000 + 1200) / (85 * 6)'",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "calculator",
             "node": "execute",
@@ -1164,11 +1243,13 @@
         "plan_steps": [
           "1. Convert 48 km to miles using the standard conversion factor (1 km = 0.621371 miles). → unit_convert"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "value=48.0, from_unit='km', to_unit='mi'",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "unit_convert",
             "node": "execute",
@@ -1192,11 +1273,13 @@
         "plan_steps": [
           "1. Convert 25 kilograms to pounds using the standard conversion factor (1 kg ≈ 2.20462 lb). → unit_convert"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "value=25.0, from_unit='kg', to_unit='lb'",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "unit_convert",
             "node": "execute",
@@ -1220,11 +1303,13 @@
         "plan_steps": [
           "1. Convert -20 °C to Fahrenheit using the temperature conversion formula (F = C × 9/5 + 32). → unit_convert"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "value=-20.0, from_unit='c', to_unit='f'",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "unit_convert",
             "node": "execute",
@@ -1249,11 +1334,13 @@
           "1. Search the station handbook for satellite uplink data rate / transfer capacity information (e.g., bandwidth or MB per pass/day figures). → search_handbook",
           "2. If the handbook gives a rate and pass duration/frequency, compute total MB per day with the calculator. → calculator"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "query='satellite uplink data rate transfer capacity bandwidth MB per pass', top…",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "search_handbook",
             "node": "execute",
@@ -1262,6 +1349,7 @@
           },
           {
             "args_brief": "expr='2 * 250'",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "calculator",
             "node": "execute",
@@ -1288,11 +1376,13 @@
           "2. Add the ration pack counts from both caches to get the total number of packs. → calculator",
           "3. Compute the combined weight: multiply total packs by per-pack weight (or add per-cache weights). If the handbook gives weight in grams or other non-kg units, first use unit_convert to kilograms before summing. → calculator"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "query='supply caches ration packs count weight', top_k=5",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "search_handbook",
             "node": "execute",
@@ -1301,6 +1391,7 @@
           },
           {
             "args_brief": "expr='(40 + 25) * 0.6'",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "calculator",
             "node": "execute",
@@ -1327,11 +1418,13 @@
           "2. Compute the total water storage in liters from the handbook data (e.g., volume from dimensions, or sum/convert capacities as needed). → calculator",
           "3. Record the computed liter figure in the ops notebook for the weekly log. → note_store"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "query='water storage tank dimensions capacity', top_k=5",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "search_handbook",
             "node": "execute",
@@ -1340,6 +1433,7 @@
           },
           {
             "args_brief": "expr='5000 + 1200'",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "calculator",
             "node": "execute",
@@ -1348,6 +1442,7 @@
           },
           {
             "args_brief": "action='append', note='Weekly log — total station water storage: 6,200 L (main …",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "note_store",
             "node": "execute",
@@ -1374,11 +1469,13 @@
           "1. Search the station handbook for the fuel reserve policy and the diesel quantity/rate it specifies. → search_handbook",
           "2. If the policy gives a rate or non-liter unit, convert/compute the required liters; otherwise the handbook value is the answer. → calculator"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "query='fuel reserve policy diesel quantity', top_k=3",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "search_handbook",
             "node": "execute",
@@ -1387,6 +1484,7 @@
           },
           {
             "args_brief": "expr='72 * 1.8'",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "calculator",
             "node": "execute",
@@ -1412,11 +1510,13 @@
           "1. Search the station handbook for the satellite uplink window capacity (data rate × window duration) and the compressed daily science data volume. → search_handbook",
           "2. Compute the uplink window capacity (rate × duration) and compare it to the compressed daily science data volume to answer yes/no with the numbers. → calculator"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "query='satellite uplink window capacity data rate duration', top_k=3",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "search_handbook",
             "node": "execute",
@@ -1425,6 +1525,7 @@
           },
           {
             "args_brief": "query='compressed daily science data volume', top_k=3",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "search_handbook",
             "node": "execute",
@@ -1433,6 +1534,7 @@
           },
           {
             "args_brief": "expr='1800 / 4'",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "calculator",
             "node": "execute",
@@ -1460,11 +1562,13 @@
           "2. Search the Wikipedia document corpus for when wind power supplied over 2000 TWh of electricity to find the year. → search_documents",
           "3. Compute the difference between the two years to find how many years separate the events. → calculator"
         ],
+        "status": "ok",
         "step_budget_ok": 1.0,
         "success": 1.0,
         "tool_calls": [
           {
             "args_brief": "query='Wright brothers first controlled sustained flight powered aircraft year'…",
+            "evidence_count": null,
             "latency_s": 11.935,
             "name": "search_documents",
             "node": "execute",
@@ -1473,6 +1577,7 @@
           },
           {
             "args_brief": "query='wind power supplied over 2000 TWh electricity year', top_k=3",
+            "evidence_count": null,
             "latency_s": 11.938,
             "name": "search_documents",
             "node": "execute",
@@ -1481,6 +1586,7 @@
           },
           {
             "args_brief": "expr='2022 - 1903'",
+            "evidence_count": null,
             "latency_s": 0.0,
             "name": "calculator",
             "node": "execute",

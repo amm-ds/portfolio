@@ -16,13 +16,18 @@
 |---|---|
 | `tools.py` | Research-ops toolset (`calculator`, `unit_convert`, `search_handbook`, `search_documents`, `note_store`) over a deterministic synthetic corpus + real retrieval, plus a `PrefixedToolset` composition demo (`math_*` tools, zero collisions) |
 | `documents.py` | Cross-project arm: `search_documents` loads project 01's persisted FAISS index + chunk metadata **read-only** (`rag_agent.index` workspace dependency) — dense retrieval over 3.5k Wikipedia chunks, no re-indexing |
-| `workflow.py` | pydantic-graph `Plan → Execute → Critique → End` workflow with typed state, a bounded repair path on validation failure, a one-shot critique loop-back (now auditing tools used against the plan), per-node step traces, and hosted/local model presets |
+| `workflow.py` | pydantic-graph `Plan → Execute → Critique → End` workflow with typed state, bounded repair/critique loops, typed ok/refused/failed/deadline outcomes, generic no-evidence stopping, per-node traces, and hosted/local model presets |
 | `hitl.py` | Human-in-the-loop checkpoint: plan, pause with a typed `ApprovalRequest`, serialize to `data/checkpoint.json`, resume via CLI (approve / reject-with-feedback) |
-| `evals.py` | 15-task tuning suite + 19-task held-out set (13 answer tasks across five categories + 6 designed-to-fail refusal probes) with exact ground truths, `pydantic-evals` graders (answer success, tool selection, step budget, latency budget, refusal success), spend-ledger budget wiring, per-call tool-trace capture |
+| `evals.py` | 15-task tuning suite + 19-task held-out set (13 answer tasks + 6 refusal probes) with exact ground truths, deterministic graders, hard per-task wall-clock deadlines, spend-ledger caps, and per-call traces |
 | `figures.py` / `report.py` | The four story figure builders and the report/metrics assembly (`reports/metrics.json` + `detail.tooling` + `detail.heldout`, HTML report) — split out of `evals.py` (audit P1), re-exported for import stability |
 | `cli.py` | `prepare [--heldout]` / `run` / `run-all [--heldout]` / `evaluate [--heldout]` / `checkpoint request|approve|reject` |
 
 ## Results
+
+These are **legacy recorded measurements**, regenerated offline without new
+model calls. The new terminal-outcome/no-evidence/deadline contracts have
+deterministic tests, but fresh live confirmation of answer preservation, 6/6
+graceful refusals, and deadline behavior is pending.
 
 All **15 tuning-suite tasks** ran end-to-end on the hosted Kimi coding
 endpoint (`kimi-for-coding`) via plain `run-all` with per-call tool capture
@@ -74,17 +79,18 @@ input tokens, and 32k output tokens.
 |---|---|---|
 | answer tasks | 13 | answer success 13/13, exact tool set 13/13 (22 calls, all planned; precision/recall/exact-set 100%) |
 | should-fail probes | 6 | graceful refusal 5/6 — h17/h18 stated grounded refusals; h19 see below |
+| all tasks | 19 | step budget 18/19; latency budget 12/19 |
 
 Measured negatives, kept honest:
 
-- **h19 (2^500):** the model kept calling the capped calculator (both
-  bounded-retry Execute visits burned on "exponent too large") and the graph
-  exited through its failure End — whose message ("Workflow could not
-  complete: …") carries no refusal marker, so `RefusalSuccess` scores it a
-  miss. A failure-message wording gap, not confabulation: no fabricated
-  number left the workflow.
+- **h19 (2^500), legacy record:** the model kept calling the capped calculator
+  (both bounded-retry Execute visits burned on "exponent too large") and the
+  graph returned a failure message with no refusal marker, so
+  `RefusalSuccess` scores it a miss. No fabricated number left the workflow.
+  Terminal tool failures now return typed `refused` results in deterministic
+  tests; no new live h19 result is claimed.
 - **Latency budget is provider-sensitive:** the 60 s ceiling was tuned on
-  the hosted endpoint (all 12 hosted held-out tasks ran 9.0-40.9 s); 7/9
+  the hosted endpoint (all 10 hosted held-out tasks ran 9.0-40.9 s); 7/9
   local tasks exceeded it (67.1-1,430.9 s on this machine's qwen3.6
   generation speeds). h17's critique revise → re-execute loop on ~2.5 min
   generations also produced the suite's only step-budget miss (10 > 8).
@@ -92,8 +98,8 @@ Measured negatives, kept honest:
 
 The 19-task sample checks for prompt overfitting and confabulation/failure
 behavior; it does not re-estimate the headline rates. Conversion docstrings
-forbid invented factors, and the local records expose the failure-message
-wording gap. Details are in `metrics.json detail.heldout`.
+forbid invented factors, and the local records preserve the legacy terminal
+refusal miss. Details are in `metrics.json detail.heldout`.
 
 ### Repeat stability (2026-10-29)
 
@@ -124,17 +130,21 @@ Costs are **cloud-equivalent estimates** at the public reference card
 ($1.00/Mtok input, $4.00/Mtok output). The hosted key uses membership quota,
 so these are not billed amounts. `run-all` resets the spend ledger, caps the
 suite at `LLM_SUITE_COST_LIMIT_USD` ($2.00), enforces a $0.25 per-task cap,
-and records capped tasks as `budget_exceeded` while the suite continues. Local
+and records capped tasks as `budget_exceeded` while the suite continues. Each
+task's 60 s latency budget is also an enforced cancellation deadline, recorded
+as `deadline_exceeded`, not merely a post-hoc grader. Local
 inference meters $0 under the same rate card. The committed local held-out
 records used blanked hosted credentials, so they could not consume hosted
 quota.
 
 ## Limits
 
-Ready for supervised pilots, not unattended use: the one held-out miss is a
-failure-message wording gap, and the hosted-tuned 60 s latency budget is
-provider-sensitive — 7 of 9 local Ollama tasks exceed it. Suite cost
-measurements are cloud-equivalent metered rates, not invoices.
+Ready for supervised pilots, not unattended use: legacy held-out records pass
+only 5/6 refusals, 18/19 step budgets, and 12/19 latency budgets. The
+hosted-tuned 60 s latency budget is provider-sensitive — 7 of 9 local Ollama
+tasks exceed it. New terminal/deadline behavior is deterministic-tested but
+has no fresh live confirmation. Suite costs are cloud-equivalent estimates,
+not invoices.
 
 ## Reproduce
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import TYPE_CHECKING, Any
 
@@ -141,3 +142,135 @@ def test_execute_usage_limits_cap_requests_and_preserve_token_budgets() -> None:
 
 def test_execute_usage_limits_respect_a_smaller_existing_cap() -> None:
     assert _execute_usage_limits(UsageLimits(request_limit=3)).request_limit == 3
+
+
+class TestTerminalOutcomes:
+    def test_calculator_failure_becomes_typed_refusal(self) -> None:
+        from pydantic_ai.messages import ToolCallPart
+
+        def responder(messages: list[Any], info: Any) -> ModelResponse:
+            role = ""
+            saw_response = False
+            for message in messages:
+                if isinstance(message, ModelResponse):
+                    saw_response = True
+                for part in getattr(message, "parts", []):
+                    content = getattr(part, "content", "")
+                    if isinstance(content, str):
+                        if "PLANNER" in content:
+                            role = "plan"
+                        elif "EXECUTOR" in content:
+                            role = "exec"
+            if role == "plan":
+                payload: dict[str, Any] = {
+                    "steps": [
+                        {
+                            "id": 1,
+                            "description": "Compute the requested value",
+                            "tool": "calculator",
+                        }
+                    ]
+                }
+                return ModelResponse(parts=[TextPart(content=json.dumps(payload))])
+            if not saw_response:
+                return ModelResponse(
+                    parts=[
+                        ToolCallPart(
+                            tool_name="calculator",
+                            args={"expr": "2**500"},
+                            tool_call_id="calculator-1",
+                        )
+                    ]
+                )
+            raise RuntimeError("executor stopped after calculator rejection")
+
+        result = run_workflow("Compute 2^500", model=FunctionModel(responder))
+
+        assert result.status == "refused"
+        assert result.confidence == 0.0
+        assert result.answer.startswith("I cannot complete the request")
+        assert result.tool_calls and all(not call.ok for call in result.tool_calls)
+        assert not any(trace.node == "critique" for trace in result.step_traces)
+
+    def test_empty_search_stops_without_critique(self) -> None:
+        from pydantic_ai.messages import ToolCallPart
+
+        def responder(messages: list[Any], info: Any) -> ModelResponse:
+            role = ""
+            saw_response = False
+            for message in messages:
+                if isinstance(message, ModelResponse):
+                    saw_response = True
+                for part in getattr(message, "parts", []):
+                    content = getattr(part, "content", "")
+                    if isinstance(content, str):
+                        if "PLANNER" in content:
+                            role = "plan"
+                        elif "EXECUTOR" in content:
+                            role = "exec"
+                        elif "CRITIQUE" in content:
+                            role = "critique"
+            if role == "plan":
+                payload: dict[str, Any] = {
+                    "steps": [
+                        {"id": 1, "description": "Search the handbook", "tool": "search_handbook"}
+                    ]
+                }
+            elif role == "exec":
+                if not saw_response:
+                    return ModelResponse(
+                        parts=[
+                            ToolCallPart(
+                                tool_name="search_handbook",
+                                args={"query": "Wi-Fi password"},
+                                tool_call_id="search-1",
+                            )
+                        ]
+                    )
+                payload = {
+                    "findings": [],
+                    "draft": "No evidence was found.",
+                    "self_confidence": 0.2,
+                }
+            else:
+                raise AssertionError("critique must not run after an empty search")
+            return ModelResponse(parts=[TextPart(content=json.dumps(payload))])
+
+        result = run_workflow("Find an absent fact", model=FunctionModel(responder))
+
+        assert result.status == "refused"
+        assert "cannot" in result.answer
+        assert [trace.node for trace in result.step_traces] == ["plan", "execute"]
+        assert [call.evidence_count for call in result.tool_calls] == [0]
+
+    def test_deadline_cancels_model_call_and_returns_terminal_result(self) -> None:
+        cancelled = False
+
+        async def slow_responder(messages: list[Any], info: Any) -> ModelResponse:
+            nonlocal cancelled
+            try:
+                await asyncio.sleep(30)
+            except asyncio.CancelledError:
+                cancelled = True
+                raise
+            raise AssertionError("deadline should cancel the model call")
+
+        result = run_workflow(
+            "Wait for a slow provider",
+            model=FunctionModel(slow_responder),
+            deadline_s=0.01,
+        )
+
+        assert cancelled
+        assert result.status == "deadline_exceeded"
+        assert result.confidence == 0.0
+        assert "deadline exceeded" in (result.error or "")
+
+    def test_successful_answer_is_preserved(
+        self, make_scripted_model: ScriptedModelFactory
+    ) -> None:
+        result = run_workflow("weekly diesel?", model=make_scripted_model())
+
+        assert result.status == "ok"
+        assert "75.6" in result.answer
+        assert result.error is None

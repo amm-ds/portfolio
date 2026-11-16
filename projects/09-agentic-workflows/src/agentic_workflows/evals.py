@@ -19,8 +19,9 @@ Two entry points, matching the DVC stages:
 
 - :func:`run_suite` — actually runs every task through the workflow graph
   (needs a live model: env provider or local Ollama). Resets the spend ledger,
-  caps the suite at ``LLM_SUITE_COST_LIMIT_USD``, and enforces a per-task
-  cloud-equivalent cap through the meter callback.
+  caps the suite at ``LLM_SUITE_COST_LIMIT_USD``, enforces a per-task
+  cloud-equivalent cap through the meter callback, and cancels tasks at their
+  individual wall-clock deadline.
 - :func:`evaluate_records` — grades a previously written
   ``data/run_records.json``; fully offline because grading is deterministic.
 """
@@ -455,6 +456,8 @@ class AnswerSuccess(Evaluator[EvalTask, TaskRunRecord, None]):
     """
 
     def evaluate(self, ctx: EvaluatorContext[EvalTask, TaskRunRecord, None]) -> bool:
+        if ctx.output.status != "ok":
+            return False
         answer = ctx.output.answer.lower().replace(",", "")
         return all(keyword.lower() in answer for keyword in ctx.inputs.expected_keywords)
 
@@ -504,14 +507,14 @@ REFUSAL_MARKERS: tuple[str, ...] = (
 class RefusalSuccess(Evaluator[EvalTask, TaskRunRecord, None]):
     """Designed-to-fail probe declined gracefully: no crash, refusal stated.
 
-    Only attached to ``expected_behavior == "refuse"`` cases. Passes when the
-    record completed without a workflow error (status ``ok``) and the answer
-    states the limitation in plain words — any refusal marker counts, so
-    phrasing cannot flip the grade. A fabricated number, or a crash, fails.
+    Only attached to ``expected_behavior == "refuse"`` cases. Passes for the
+    typed ``refused`` outcome (or legacy ``ok`` records) when the answer states
+    the limitation in plain words — any refusal marker counts, so phrasing
+    cannot flip the grade. A fabricated number, failure, deadline, or crash fails.
     """
 
     def evaluate(self, ctx: EvaluatorContext[EvalTask, TaskRunRecord, None]) -> bool:
-        if ctx.output.status != "ok":
+        if ctx.output.status not in {"ok", "refused"}:
             return False
         answer = ctx.output.answer.lower()
         return any(marker in answer for marker in REFUSAL_MARKERS)
@@ -639,11 +642,12 @@ def run_suite(
                 max_critique_loops=config.max_critique_loops,
                 meter=meter,
                 usage_limits=usage_limits,
+                deadline_s=task.latency_budget_s,
             )
             records.append(
                 TaskRunRecord(
                     task_id=task.id,
-                    status="ok",
+                    status=result.status,
                     answer=result.answer,
                     steps_taken=result.steps_taken,
                     tools_used=result.tools_used,
@@ -657,6 +661,7 @@ def run_suite(
                     duration_s=round(time.perf_counter() - start, 3),
                     input_tokens=result.input_tokens,
                     output_tokens=result.output_tokens,
+                    error=result.error,
                 )
             )
         except TaskBudgetError as exc:

@@ -39,6 +39,7 @@ logger = get_logger(__name__)
 
 
 def _echo_result(result: WorkflowResult) -> None:
+    typer.echo(f"status: {result.status}")
     typer.echo(f"answer (confidence {result.confidence:.2f}): {result.answer}")
     typer.echo(f"steps: {' → '.join(result.steps_taken)}")
     typer.echo(f"tools used: {result.tools_used or 'none'}")
@@ -72,15 +73,18 @@ def run(
     """Run one task through the workflow graph and print the structured result."""
     cfg = load_config(Path(config))
     prompt = task_id
+    deadline_s = cfg.suite_latency_budget_s
     if Path(cfg.tasks_path).exists():
         for task in evals.parse_tasks(cfg.tasks_path.read_text(encoding="utf-8")):
             if task.id == task_id:
                 prompt = task.prompt
+                deadline_s = task.latency_budget_s
                 break
     result = run_workflow(
         prompt,
         max_execute_retries=cfg.max_execute_retries,
         max_critique_loops=cfg.max_critique_loops,
+        deadline_s=deadline_s,
     )
     _echo_result(result)
 

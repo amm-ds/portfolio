@@ -56,6 +56,11 @@ would blur that signal.
   (all expected keywords present), `ToolSelection` (exact tool-set equality),
   `StepBudget`, `LatencyBudget`. No model in the judge → the `evaluate` DVC
   stage is fully offline.
+- **Terminal outcomes/deadlines**: `WorkflowResult.status` distinguishes `ok`,
+  `refused`, `failed`, and `deadline_exceeded`. Empty search results stop before
+  Critique as refusals, terminal tool failures become refusals, and
+  `asyncio.timeout` enforces each task's wall-clock budget rather than only
+  grading latency after completion.
 - **Cost/latency**: token usage is accumulated per node from `result.usage`
   and traced per node (`StepTrace`); per-task latency is wall time. Cost is
   reported at a cloud-equivalent reference rate card (local inference is $0;
@@ -71,8 +76,9 @@ would blur that signal.
   and 3 refusal probes on axes the original three did not cover (currency
   conversion — unknown unit; a fact absent from the deterministic corpus;
   arithmetic outside the AST evaluator's bounded operations). Probes ask for
-  what the tools cannot do; they are graded by `RefusalSuccess` (status `ok` +
-  a refusal marker in the answer — a fabricated number or a crash fails).
+  what the tools cannot do; they are graded by `RefusalSuccess` (typed
+  `refused`, or `ok` for legacy records, plus a refusal marker — a fabricated
+  number, failure, deadline, or crash fails).
   `run-all --heldout` / `evaluate --heldout` run and grade them; the summary
   lands in `metrics.json detail.heldout`. Small by design relative to tuning:
   it checks for prompt overfitting and confabulation, it does not re-measure
@@ -194,3 +200,10 @@ checkpoints; toolsets composed via `FunctionToolset` + `PrefixedToolset`.
   truth to tool output (`tests/test_evals.py::TestHeldoutExpansion`,
   `TestSuiteHonesty`; `tests/test_documents.py::TestRealCorpusIntegration`
   pins the h12 photosynthesis facts against 01's real index).
+- 2026-11-16 — Terminal-contract wave: typed ok/refused/failed/deadline results,
+  generic empty-search stopping, and per-task `asyncio.timeout` enforcement.
+  Scripted-model regressions cover calculator refusal, absent evidence,
+  cancellation, and successful-answer preservation. Existing records were only
+  re-graded offline: legacy held-out evidence remains 13/13 answers, 5/6
+  refusals, 18/19 step budgets, and 12/19 latency budgets. Fresh live
+  confirmation is pending; no held-out tasks or thresholds were tuned.

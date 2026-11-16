@@ -413,14 +413,21 @@ def _traced_tool[F: Callable[..., Any]](fn: F, buffer: list[ToolCallTrace]) -> F
     def _emit(
         args: tuple[Any, ...], kwargs: dict[str, Any], start: float, ok: bool, result: Any
     ) -> None:
+        name = getattr(fn, "__name__", "tool")
+        evidence_count = (
+            len(result)
+            if ok and name in {"search_handbook", "search_documents"} and isinstance(result, list)
+            else None
+        )
         buffer.append(
             ToolCallTrace(
-                name=getattr(fn, "__name__", "tool"),
+                name=name,
                 node="execute",
                 args_brief=_args_brief(args, kwargs),
                 latency_s=round(time.perf_counter() - start, 3),
                 result_chars=len(str(result)) if ok else 0,
                 ok=ok,
+                evidence_count=evidence_count,
             )
         )
 

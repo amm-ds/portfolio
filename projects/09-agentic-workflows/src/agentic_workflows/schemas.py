@@ -54,6 +54,11 @@ class ToolCallTrace(PortfolioBaseModel):
     latency_s: float = Field(default=0.0, ge=0)
     result_chars: int = Field(default=0, ge=0)
     ok: bool = True
+    evidence_count: int | None = Field(
+        default=None,
+        ge=0,
+        description="Number of retrieved passages for search tools; None for other tools.",
+    )
 
 
 class WorkflowState(PortfolioBaseModel):
@@ -100,6 +105,7 @@ class ExecutionOutput(PortfolioBaseModel):
     findings: list[str] = Field(default_factory=list, description="Facts gathered from tool calls.")
     draft: str = Field(min_length=1, description="Draft answer assembled from the findings.")
     self_confidence: float = Field(ge=0.0, le=1.0)
+    outcome: Literal["answer", "refusal"] = "answer"
 
 
 class CritiqueOutput(PortfolioBaseModel):
@@ -111,8 +117,9 @@ class CritiqueOutput(PortfolioBaseModel):
 
 
 class WorkflowResult(PortfolioBaseModel):
-    """Final structured output of the workflow graph."""
+    """Final structured output, including non-answer terminal outcomes."""
 
+    status: Literal["ok", "refused", "failed", "deadline_exceeded"] = "ok"
     answer: str
     steps_taken: list[str]
     tools_used: list[str]
@@ -125,6 +132,7 @@ class WorkflowResult(PortfolioBaseModel):
     critique_loops: int = Field(default=0, ge=0)
     input_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(default=0, ge=0)
+    error: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -196,9 +204,11 @@ class EvalTask(PortfolioBaseModel):
 class TaskRunRecord(PortfolioBaseModel):
     """Recorded result of running one suite task through the workflow.
 
-    ``status`` is ``budget_exceeded`` when the run was cut off by a budget cap:
-    the per-task cloud-equivalent cap (recorded, suite continues) or the suite
-    cap (recorded, remaining tasks aborted). ``steps`` is the per-node step
+    ``status`` preserves typed terminal outcomes (``refused``, ``failed``, and
+    ``deadline_exceeded``) as well as budget and unexpected-error cutoffs.
+    ``budget_exceeded`` means the per-task cloud-equivalent cap (recorded,
+    suite continues) or suite cap (recorded, remaining tasks aborted) stopped
+    the run. ``steps`` is the per-node step
     trace; ``tool_calls`` the per-invocation tool trace (both empty on records
     written before trace capture, and on budget/error cutoffs); ``plan_steps``
     the approved plan's step list; ``critique_verdict`` the final critique
@@ -206,7 +216,9 @@ class TaskRunRecord(PortfolioBaseModel):
     """
 
     task_id: str = Field(min_length=1)
-    status: Literal["ok", "workflow_error", "budget_exceeded"]
+    status: Literal[
+        "ok", "refused", "failed", "deadline_exceeded", "workflow_error", "budget_exceeded"
+    ]
     answer: str
     steps_taken: list[str]
     tools_used: list[str]

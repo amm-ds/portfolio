@@ -1,9 +1,8 @@
 project_id: 09-agentic-workflows
 short_version: >-
-  An auditable plan-act-review AI workflow with fixed tools and budgets passed
-  all automated checks: 15/15 fixed tasks, 13/13 unseen answers, 5/6
-  should-fail probes, ~$0.13 per suite. Ready for supervised pilots, not
-  unattended use. Data: synthetic handbook, real Wikipedia chunks.
+  Auditable plan-act-review workflow with typed terminal outcomes and enforced
+  deadlines. Legacy: 15/15 fixed answers, 13/13 unseen answers, 5/6 refusals,
+  18/19 steps, 12/19 latency; ~$0.13/tuning suite. Live confirmation pending.
 figure_captions:
   suite_summary: >-
     Each row is one automated check. Each bar shows passes out of the tasks
@@ -28,26 +27,25 @@ figure_captions:
 sections:
   - id: background
     text_md: |
-      **An auditable AI workflow passed all fixed-task checks. It suits
-      supervised pilots, not unattended use.** It plans, uses pre-approved
-      tools, and reviews its work. Auditable means a reviewer can reconstruct
-      each step.
+      **Legacy tuning passed 15/15 fixed tasks; held-out did not pass every
+      check.** The workflow suits supervised pilots, not unattended use. It
+      plans, uses approved tools, and reviews its work. Auditable means a
+      reviewer can reconstruct each step.
 
-      The record run passed 15/15 fixed tasks. On 19 held-out tasks, excluded
-      from tuning, it passed 13/13 answer tasks and refused 5/6 tasks designed
-      to fail. Estimated cost was about $0.13 of the $2.00 cap, not billed
-      spend. Data: a synthetic, test-created 12-document handbook and search
-      over 3,589 Wikipedia passages under the CC BY-SA license.
+      Held-out results were 13/13 answers, 5/6 refusals, 18/19 step budgets,
+      and 12/19 latency budgets. Tuning cost about $0.13 of the $2.00 cap,
+      not billed spend. Data: a synthetic 12-document handbook and 3,589
+      Wikipedia passages under CC BY-SA. Typed terminal outcomes, no-evidence
+      stopping, and deadline enforcement have deterministic tests; fresh live
+      confirmation remains pending.
 
       ```diagram 09-agent-loop
       ```
 
-      Follow Plan to the ledger. Plan records steps and tools. Consequential
-      runs pause for human approval, rejection, or later review. Critique
-      checks tools against the plan. The StepTrace ledger records every
-      transition.
+      Plan records steps and tools. Consequential runs pause for human review.
+      Critique audits tool use; StepTrace records every transition.
 
-      **Business summary:** Results: 15/15 fixed tasks, 13/13 held-out
+      **Business summary:** Legacy results: 15/15 fixed tasks, 13/13 held-out
       answers, 5/6 refusals, and about $0.13 of the $2.00 cap.
     figures: []
     metrics_keys: []
@@ -65,9 +63,9 @@ sections:
       - Plan, act, and review with bounded retries and typed state. Typed
         state means each piece of run data has a required format. A step cap
         replaces an open-ended agent loop with a budget reviewers can check.
-      - Grade answers, exact tool sets, step count, and a 60-second per-task
-        budget with code, not an AI judge. The same record must receive the
-        same verdict on every rerun.
+      - Enforce a 60-second per-task wall-clock deadline and grade answers,
+        exact tool sets, step count, and latency with code, not an AI judge.
+        The same record must receive the same verdict on every rerun.
       - Cap cloud-equivalent spend at $0.25 per task and $2.00 per suite.
         Cloud-equivalent cost uses listed provider prices; it is not billed
         spend.
@@ -155,9 +153,10 @@ sections:
       ```
 
       Follow a task into the same four checks used for tuning and held-out
-      splits. Then inspect the probe box. A pass requires an ok status and a
-      refusal marker, which is a recorded signal that the workflow declined.
-      A fabricated number or crash fails. This visible path supports grading
+      splits. Then inspect the probe box. A pass requires a typed refused
+      status (or ok in a legacy record) and a refusal marker, which is a
+      recorded signal that the workflow declined. A fabricated number, failed
+      or deadline status, or crash fails. This visible path supports grading
       honesty as well as accuracy, and makes re-grading a captured run stable.
 
       Answer scores cannot reveal extra tool calls, so use the tool-usage
@@ -189,8 +188,10 @@ sections:
       next allowed step. Plan hands a typed plan to the checkpoint. Approval
       runs the tools, rejection returns the plan with feedback, and parking
       freezes state for later. Execute retries failed calls within the cap,
-      and Critique takes one revision. The run ends with a structured
-      `WorkflowResult` or a failure message. These visible states support
+      and Critique takes one revision. Empty search evidence and terminal tool
+      failures end as typed refusals; the task deadline cancels an over-time
+      run. Every exit is a structured `WorkflowResult` with an ok, refused,
+      failed, or deadline_exceeded status. These visible states support
       bounded, auditable control that one large prompt would not expose.
 
       **Checkpoint resume is a state transition, not a prompt instruction.**
@@ -246,18 +247,20 @@ sections:
         budget. Usage was ~85k input and ~12k output tokens, costing ~$0.13
         of the $2.00 cap (~$0.0088 per task, cloud-equivalent, not billed).
       - Held out: 13/13 answers with exact tool sets, 22 planned calls, zero
-        unplanned calls, and 5/6 refusals. The miss used the failure End,
-        whose message has no refusal marker. This is a wording gap, not a
-        fabricated number.
+        unplanned calls, and 5/6 refusals. The legacy h19 miss exhausted a
+        capped calculator call and returned a failure message without a
+        refusal marker; no number was fabricated. The new typed-refusal path
+        is deterministic-tested, but no fresh live result replaces this 5/6.
       - Latency depends on the provider. Hosted held-out tasks ran 9.0–40.9
         s, but 7/9 local-model tasks exceeded 60 s. The difference is provider
-        speed, not answer quality.
+        speed, not answer quality. Overall held-out latency passed 12/19.
       - A recorded run demonstrates pause, reject-with-feedback, and re-plan.
         Nothing here demonstrates unattended operation.
 
-      **Business summary:** The plan-execute-critique graph passed everything
-      on the record run: 15/15 tasks, 30/30 calls planned, median latency
-      18.2 s, about $0.13 of the $2.00 cap.
+      **Business summary:** The legacy tuning run passed 15/15 tasks with
+      30/30 calls planned, median latency 18.2 s, and about $0.13 of the
+      $2.00 cap. Held-out failures remain visible; live confirmation of the
+      new terminal contracts is pending.
     figures: []
     metrics_keys: []
   - id: evaluation
@@ -314,23 +317,23 @@ sections:
       - agentic_suite
   - id: results
     text_md: |
-      **The graders recorded one short bar: held-out refusal at 5/6.** Start
-      with the suite-summary chart. Each row is a check for answers, exact
-      tool sets, step budget, latency budget, or refusals. Each bar is one
-      split. Every other cell is full.
+      **The legacy graders recorded refusal, step, and latency failures.** Start
+      with the suite-summary chart. Its visible short bar is held-out refusal
+      at 5/6; tuning and held-out answer/tool bars are full. The chart does not
+      plot held-out step or latency results, which passed 18/19 and 12/19.
 
       Read across the answer and tool rows for the split-level results. The
       hosted tuning suite has 15/15 answers, 15/15 exact tool sets, all step
       and latency budgets met, and zero unplanned calls. Across 19 held-out
-      tasks, it has 13/13 answers with exact tool sets, 22 planned calls,
-      zero unplanned calls, and the step budget met in 18/19. Latency misses
-      occur on local-model tasks because of slow generation, not answer
-      quality.
+      tasks, it has 13/13 answers with exact tool sets, 22 planned calls, and
+      zero unplanned calls. Latency misses occur on local-model tasks because
+      of slow generation, not answer quality.
 
-      The short refusal bar corresponds to one specific failure. The task used
-      both bounded retries on an out-of-bounds calculator call, then exited
-      with a failure message lacking a refusal marker. This is a wording gap,
-      not a made-up number.
+      The short refusal bar corresponds to one specific legacy failure. The
+      task used both bounded retries on an out-of-bounds calculator call, then
+      exited with a failure message lacking a refusal marker. No number was
+      made up. The replacement typed-refusal behavior is covered offline, but
+      a fresh live 6/6 confirmation is pending.
 
       Next, use the node-waterfall chart to inspect time within the tasks that
       passed the suite-summary latency check:
@@ -361,13 +364,14 @@ sections:
     text_md: |
       ## Results summary
 
-      The record run passed 15/15 fixed tasks with exact tool sets and step
-      budgets. With tuning frozen, held-out results were 13/13 answers with
-      exact tool sets and 5/6 should-fail probes refused. Across all 52
-      captured calls, none was unplanned. Median latency was 18.2 s against
-      the 60 s budget. Estimated cost was about $0.13 of the $2.00 suite cap.
-      The setup uses a typed plan-act-critique graph, deterministic graders,
-      an 8-step budget, and a $0.25 per-task spending cap. See the [full
+      The legacy record run passed 15/15 fixed tasks with exact tool sets and
+      step budgets. With tuning frozen, held-out results were 13/13 answers
+      with exact tool sets, 5/6 should-fail probes refused, 18/19 step budgets,
+      and 12/19 latency budgets. Across all 52 captured calls, none was
+      unplanned. Median tuning latency was 18.2 s against the 60 s budget.
+      Estimated cost was about $0.13 of the $2.00 suite cap. The setup uses a
+      typed plan-act-critique graph, deterministic graders, an 8-step budget,
+      an enforced 60 s task deadline, and a $0.25 per-task spending cap. See the [full
       evaluation report](https://amm-ds.github.io/portfolio/projects/09-agentic-workflows/).
 
       ## What the experiment taught
@@ -377,8 +381,9 @@ sections:
         descriptions.
       - Tightened tool descriptions eliminated unplanned calls in the record
         run: 30/30 planned calls, 100% call precision, and 100% tool recall.
-      - Should-fail probes exposed one refusal miss: a wording gap in the
-        failure End, not confabulation.
+      - Should-fail probes exposed one legacy refusal miss after a terminal
+        calculator failure, not confabulation. Typed refusal, no-evidence, and
+        deadline exits now have offline regressions; live efficacy is unmeasured.
       - Budgets depend on the provider. The local model exceeded the hosted
         60 s cap on 7/9 tasks. Local runs cost $0 but are not
         budget-comparable.
@@ -434,17 +439,21 @@ sections:
         tokens, and latency. It is then graded offline. The `evaluate` DVC
         stage needs no provider. DVC is the repository's data and pipeline
         versioning tool.
-      - Follow the grading step: four graders score every task.
-        `AnswerSuccess` requires all expected keywords. `ToolSelection`
-        requires exact tool-set equality. `StepBudget` allows 8 steps.
-        `LatencyBudget` allows 60 s per task. Probes add `RefusalSuccess`: a
-        pass needs an ok status plus a refusal marker. A fabricated number or
-        crash fails.
+      - Follow the grading step: answer tasks use four graders and probes use
+        refusal, step, and latency graders. `AnswerSuccess` requires an ok
+        status and all expected keywords. `ToolSelection` requires exact
+        tool-set equality. `StepBudget` allows 8 steps. The runner enforces
+        the 60 s task deadline and `LatencyBudget` grades recorded duration.
+        `RefusalSuccess` requires a refused status (ok for legacy records)
+        plus a refusal marker. A fabricated number, failure, deadline, or crash fails.
       - Spending caps are $0.25 per task and $2.00 per suite at the
         cloud-equivalent card. Local runs meter at $0.00.
 
       ## Limits
 
+      - The terminal-outcome and deadline changes have deterministic offline
+        tests only. No fresh model run yet confirms 6/6 graceful refusals or
+        preserved live answer quality; all published rates remain legacy records.
       - The held-out sample has 19 tasks. It checks overfitting and
         confabulation, but does not guarantee generalization.
       - Tasks are fixed research-operations procedures over two corpora.
@@ -485,3 +494,5 @@ roadmap:
     text: "Expanded the held-out suite to 19 tasks and added the $0 local-model arm."
   - status: delivered
     text: "Verified repeat stability: two hosted passes kept 15/15 answers and exact tool sets."
+  - status: delivered
+    text: "Added typed terminal outcomes, no-evidence stopping, and hard task deadlines with offline regressions; fresh live confirmation pending."

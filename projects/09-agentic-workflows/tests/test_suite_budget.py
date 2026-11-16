@@ -163,3 +163,27 @@ class TestSuiteBudget:
         records = evals.run_suite(config, model=make_scripted_model(), tasks=tasks)
         assert records[0].status == "ok"
         assert records[0].steps  # step traces are wired through the suite too
+
+    def test_task_wall_clock_deadline_is_enforced(self) -> None:
+        import asyncio
+
+        from pydantic_ai.messages import ModelResponse
+        from pydantic_ai.models.function import FunctionModel
+
+        cancelled = False
+
+        async def slow_responder(messages: list[Any], info: Any) -> ModelResponse:
+            nonlocal cancelled
+            try:
+                await asyncio.sleep(30)
+            except asyncio.CancelledError:
+                cancelled = True
+                raise
+            raise AssertionError("deadline should cancel the model call")
+
+        task = evals.TASK_SUITE[0].model_copy(update={"latency_budget_s": 0.01})
+        records = evals.run_suite(EvalConfig(), model=FunctionModel(slow_responder), tasks=[task])
+
+        assert cancelled
+        assert [record.status for record in records] == ["deadline_exceeded"]
+        assert "deadline exceeded" in (records[0].error or "")

@@ -247,6 +247,7 @@ def build_report(
         "per_task": {
             case.name: {
                 "category": case.inputs.category,
+                "status": case.output.status,
                 "success": _score(report, case.name, "AnswerSuccess"),
                 "tool_selection": _score(report, case.name, "ToolSelection"),
                 "step_budget_ok": _score(report, case.name, "StepBudget"),
@@ -371,6 +372,7 @@ def heldout_detail(report: EvaluationReport[EvalTask, TaskRunRecord, None]) -> d
             case.name: {
                 "category": case.inputs.category,
                 "expected_behavior": case.inputs.expected_behavior,
+                "status": case.output.status,
                 "success": _case_score(report, case.name, "AnswerSuccess"),
                 "refusal_success": _case_score(report, case.name, "RefusalSuccess"),
                 "tool_selection": _case_score(report, case.name, "ToolSelection"),

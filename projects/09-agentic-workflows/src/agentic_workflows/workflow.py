@@ -82,7 +82,8 @@ cannot be done and why. A search that returns no relevant evidence is final:
 do not repeat or rephrase it; state that the source does not cover the request.
 Then reply with the structured output:
 findings (facts with their numbers), a draft answer that cites the numbers,
-and your self_confidence.
+your self_confidence, and outcome='refusal' when the request cannot be answered
+with the available tools or evidence; otherwise outcome='answer'.
 """
 
 CRITIQUE_SYSTEM = """You are the CRITIQUE of a research-ops workflow.
@@ -283,9 +284,10 @@ class ExecuteNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
                     f"Attempt failed with: {exc}. Re-check tool usage and retry."
                 )
                 return ExecuteNode()
-            return End(
-                _failure_result(state, f"execute failed after {state.retries} attempts: {exc}")
-            )
+            reason = f"execute failed after {state.retries} attempts: {exc}"
+            if any(not call.ok for call in state.tool_traces):
+                return End(_terminal_result(state, "refused", reason))
+            return End(_terminal_result(state, "failed", reason))
         output = result.output
         state.findings.extend(output.findings)
         state.draft = output.draft
@@ -298,6 +300,10 @@ class ExecuteNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
         # be swallowed by the execute repair path.
         _record_step(state, "execute", result, time.perf_counter() - start, ctx.deps.meter)
         state.steps_taken.append(f"draft (self-confidence {output.self_confidence:.2f})")
+        if output.outcome == "refusal":
+            return End(_terminal_result(state, "refused", output.draft, answer=output.draft))
+        if any(call.evidence_count == 0 for call in state.tool_traces):
+            return End(_terminal_result(state, "refused", "search returned no relevant evidence"))
         return CritiqueNode()
 
 
@@ -383,10 +389,25 @@ def _final_result(state: WorkflowState, critique_issues: list[str]) -> WorkflowR
     )
 
 
-def _failure_result(state: WorkflowState, reason: str) -> WorkflowResult:
-    state.steps_taken.append("workflow failed")
+def _terminal_result(
+    state: WorkflowState,
+    status: Literal["refused", "failed", "deadline_exceeded"],
+    reason: str,
+    *,
+    answer: str | None = None,
+) -> WorkflowResult:
+    """End with a typed, zero-confidence outcome instead of an error string."""
+    state.steps_taken.append(f"workflow {status.replace('_', ' ')}")
+    if answer is None:
+        prefixes = {
+            "refused": "I cannot complete the request",
+            "failed": "Workflow could not complete",
+            "deadline_exceeded": "Workflow stopped",
+        }
+        answer = f"{prefixes[status]}: {reason}"
     return WorkflowResult(
-        answer=f"Workflow could not complete: {reason}",
+        status=status,
+        answer=answer,
         steps_taken=list(state.steps_taken),
         tools_used=list(state.tools_used),
         step_traces=list(state.step_traces),
@@ -398,6 +419,7 @@ def _failure_result(state: WorkflowState, reason: str) -> WorkflowResult:
         critique_loops=state.critique_loops,
         input_tokens=state.input_tokens,
         output_tokens=state.output_tokens,
+        error=reason,
     )
 
 
@@ -433,13 +455,17 @@ async def run_workflow_async(
     state: WorkflowState | None = None,
     meter: MeterFn | None = None,
     usage_limits: Any | None = None,
+    deadline_s: float | None = None,
 ) -> WorkflowResult:
     """Run the workflow graph; inject ``model``/``state`` for tests and resumes.
 
     ``meter`` (optional) receives each node's agent result — the eval suite
     wires it to the spend ledger. ``usage_limits`` (optional) is forwarded to
-    every model call for hosted request/token budgets.
+    every model call for hosted request/token budgets. ``deadline_s`` is a hard
+    per-task wall-clock limit: cancellation becomes a typed terminal result.
     """
+    if deadline_s is not None and deadline_s <= 0:
+        raise ValueError("deadline_s must be positive")
     resolved_model = model if model is not None else build_model(get_settings())
     entry = start or PlanNode
     workflow_state = state or WorkflowState(
@@ -448,16 +474,24 @@ async def run_workflow_async(
         max_critique_loops=max_critique_loops,
     )
     graph = build_workflow_graph(entry)
-    return await graph.run(
-        state=workflow_state,
-        deps=WorkflowDeps(
-            model=resolved_model,
-            notebook=notebook or Notebook(),
-            meter=meter,
-            usage_limits=usage_limits,
-        ),
-        inputs=entry(),
-    )
+    timeout = asyncio.timeout(deadline_s)
+    try:
+        async with timeout:
+            return await graph.run(
+                state=workflow_state,
+                deps=WorkflowDeps(
+                    model=resolved_model,
+                    notebook=notebook or Notebook(),
+                    meter=meter,
+                    usage_limits=usage_limits,
+                ),
+                inputs=entry(),
+            )
+    except TimeoutError:
+        if not timeout.expired():
+            raise  # A provider's own TimeoutError is not a task deadline.
+        reason = f"per-task wall-clock deadline exceeded ({deadline_s:g} s)"
+        return _terminal_result(workflow_state, "deadline_exceeded", reason)
 
 
 def run_workflow(
@@ -471,6 +505,7 @@ def run_workflow(
     state: WorkflowState | None = None,
     meter: MeterFn | None = None,
     usage_limits: Any | None = None,
+    deadline_s: float | None = None,
 ) -> WorkflowResult:
     """Synchronous wrapper for CLI/REPL use (not callable inside a running loop)."""
     return asyncio.run(
@@ -484,5 +519,6 @@ def run_workflow(
             state=state,
             meter=meter,
             usage_limits=usage_limits,
+            deadline_s=deadline_s,
         )
     )
