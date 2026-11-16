@@ -56,13 +56,15 @@ raw frame ──▶ DQ gates ──▶ stratified 80/20 split ──▶ GridSear
 - Calibration: the selected model is compared raw vs **isotonic-calibrated**
   (calibration split carved from training only, disjoint from the fit data and
   the holdout) via ECE and the same business-cost curve.
-- Evaluation (`evaluate.py`): five `RunResult` rows — naive majority, baseline
-  logreg at 0.5 and at its cost-optimum, selected model and its calibrated
-  variant at their cost-optima — plus a seeded paired bootstrap (2,000
-  resamples) of the cost delta vs naive with a 95% CI, and EDA profile,
-  calibration, permutation importance, precision–recall, decision-curve, and
-  business-cost figures (takeaway subtitles via
-  `portfolio_core.plotting.add_takeaway`).
+- Operating policy: stratified training-side OOF predictions select and freeze
+  the logistic, raw-selected, and calibrated thresholds before holdout scoring.
+  `data/operating_policy.json` is the single source for evaluation and serving.
+- Evaluation (`evaluate.py`): five `RunResult` rows — fixed contact-everyone,
+  baseline logreg at 0.5 and its OOF-frozen threshold, and both selected models
+  at their OOF-frozen thresholds. Seeded paired bootstraps (2,000 resamples)
+  compare the exact calibrated policy with contact-everyone and logistic-at-0.5.
+  EDA, calibration, importance, precision–recall, decision, cost, and slice
+  figures use the resulting metrics.
 - Client onboarding (`cli.py`): `prepare --input client.csv` ingests a client
   CRM extract with the same columns (`churned` optional) through the same DQ
   gates and DatasetContract — no downstream pipeline changes.
@@ -79,46 +81,38 @@ same search picked a logistic - the winner tracks the data.
 
 | run | threshold | ROC-AUC | accuracy | P (macro) | R (macro) | F1 (macro) | ECE | business cost |
 |---|---|---|---|---|---|---|---|---|
-| naive base rate (contact-everyone optimum) | 0.000 | 0.5000 | 0.265 | 0.1327 | 0.5000 | 0.2098 | - | 1,035 |
+| contact everyone (fixed) | 0.000 | 0.5000 | 0.265 | 0.1327 | 0.5000 | 0.2098 | - | 1,035 |
 | logreg, default | 0.500 | 0.8292 | 0.731 | 0.6999 | 0.7503 | 0.7022 | - | 691 |
-| logreg, tuned | 0.300 | 0.8292 | 0.620 | 0.6861 | 0.7253 | 0.6151 | - | 611 |
-| selected raw (cost-HPO XGB) | 0.150 | 0.8387 | 0.663 | 0.6890 | 0.7398 | 0.6512 | 0.028 | 619 |
+| logreg, OOF-frozen | 0.450 | 0.8292 | 0.700 | 0.6922 | 0.7461 | 0.6796 | - | 655 |
+| selected raw (cost-HPO XGB) | 0.225 | 0.8387 | 0.722 | 0.7020 | 0.7568 | 0.6981 | 0.028 | 644 |
 | selected + isotonic (served) | 0.175 | 0.8317 | 0.690 | 0.6982 | 0.7539 | 0.6745 | **0.016** | **601** |
 
 Key findings:
 
-- **Against the naive contact-everyone comparator, the deliverable cuts
-  business cost 1,035 -> 601 (-41.9%) at t=0.175.** Paired bootstrap: **-416,
-  95% CI [-485, -343] - significant**. Contact-none is a different policy with
-  0.735 accuracy; the naive constant-probability run instead minimizes cost by
-  contacting everyone (0.265 accuracy).
+- **The frozen calibrated policy cuts business cost 1,035 -> 601 (-41.9%) at
+  t=0.175 versus contact everyone.** The paired delta is **-434, 95% CI
+  [-508, -353]**. Against logistic-at-0.5, the exact same policy's delta is
+  **-90, 95% CI [-159, -26]**. Both intervals use 2,000 paired row resamples.
 - **The winner changes on real data.** XGBoost beats the logistic family on
-  CV business cost (the synthetic track's winner); after isotonic calibration
-  it also holds the holdout cost optimum (601 vs the tuned logistic's 611 -
-  within noise, but the calibrated booster is the deliverable).
-- **Calibration verdict flips:** isotonic improves *both* ECE
-  (0.028 -> 0.016) and the business-cost optimum (619 -> 601). On the noisier
-  real regime, trustworthy probabilities pay; the synthetic conclusion
-  (calibration doesn't move the optimum) does not transfer.
-- **The operating point does not transfer - the procedure does.** Synthetic
-  t*=0.700 vs telco t*=0.175: the threshold must be re-derived per regime on
-  the cost curve; re-tuning alone moved the logistic 691 -> 611.
-- **The cost model itself is a sensitivity, re-run in `reports/sensitivity.json`:**
-  at FN=3/5/8 the served-isotonic optimum is 510/601/699 at t*=0.200/0.175/0.100
-  and every CI excludes zero; the naive comparator is fn-independent (1,035),
-  so absolute savings shrink as FN rises. Calibration's cost edge is not
-  universal either — isotonic helps at FN=5 (619 -> 601) and slightly hurts
-  at FN=8 (691 -> 699).
-- **Raw-model fairness slices (not the served policy):** at raw XGB t=0.150,
-  recall is 0.902 female / 0.906 male and 0.969 senior / 0.880 non-senior.
-  Contract recall is 0.976 month-to-month, 0.472 one-year and 0.000 two-year:
-  the raw model misses **19 of 36** one-year churners and **all 9** two-year
+  CV business cost (the synthetic track's winner). The served isotonic policy
+  costs 601 versus 655 for OOF-tuned logistic and 644 for the raw XGB policy.
+- **Calibration improves this evaluation:** ECE moves 0.028 -> 0.016 and frozen
+  policy cost moves 644 -> 601. These are measured paired outcomes, not a claim
+  that isotonic calibration always helps.
+- **The operating point does not transfer - the procedure does.** Every cutoff
+  is selected on training-side OOF predictions, then frozen before the holdout
+  is scored. Moving logistic from 0.5 to its OOF-frozen 0.450 changes cost
+  691 -> 655.
+- **Cost-model sensitivity is in `reports/sensitivity.json`:** at FN=3/5/8,
+  OOF-frozen isotonic thresholds are 0.250/0.175/0.150 and holdout costs are
+  514/601/718. All three contact-everyone delta intervals exclude zero.
+  Calibration helps at FN=5 (644 -> 601) and FN=8 (725 -> 718).
+- **Raw-model fairness slices (not the served policy):** at raw XGB t=0.225,
+  recall is 0.834 female / 0.829 male and 0.898 senior / 0.808 non-senior.
+  Contract recall is 0.918 month-to-month, 0.250 one-year and 0.000 two-year:
+  the raw model misses **27 of 36** one-year churners and **all 9** two-year
   churners. The served model is isotonic-calibrated at t=0.175, so these raw
   counts do not describe its decisions.
-- **Same-holdout limitation:** thresholds are selected and their costs are
-  reported on this same holdout. The bootstrap holds thresholds fixed and does
-  not measure selection instability; fresh data is needed for an independent
-  policy estimate.
 - Permutation importance on the selected model ranks `tenure_months`,
   `monthly_charges`, and `contract` first - matching the real-telco EDA splits
   (churners: ~74 vs ~61 mean monthly charges, ~18 vs ~38 months tenure;
@@ -128,12 +122,12 @@ Key findings:
 
 ## Limits
 
-Thresholds and their costs are selected and reported on the same holdout, so the
-601-cost operating point is optimistic. The bootstrap holds thresholds fixed
-and does not measure selection instability. The snapshot has no time axis;
-fresh, time-stamped data is required for independent policy, served-policy
-fairness, drift, and seasonality validation. Wider boosting searches require a
-defined compute budget.
+Thresholds are frozen before holdout scoring, but all final metrics still come
+from one random snapshot split. The bootstrap estimates row-sampling variation
+at fixed thresholds; it does not measure model or threshold-selection
+instability. The snapshot has no time axis; fresh, time-stamped data is required
+for temporal validation, served-policy fairness, drift, and seasonality. Wider
+boosting searches require a defined compute budget.
 
 ## Reproduce
 
@@ -148,9 +142,9 @@ uv run python -m churn_pipeline.cli all   # prepare (telco) → train (cost-awar
 # CI path (no network): edit params.yaml to `data_source: synthetic`, then the same command
 # client extract onboarding:
 uv run python -m churn_pipeline.cli prepare --input client.csv
-# or stage-wise via DVC:
-dvc repro projects/05-ml-pipeline-churn
-uv run dvc metrics show projects/05-ml-pipeline-churn   # run ladder from the lockfile
+# or stage-wise via DVC (requires a valid workspace-wide DVC graph):
+uv run dvc repro
+uv run dvc metrics show   # run ladder from the lockfile
 # cost-model sensitivity experiments (see DESIGN.md "Experiment versioning"):
 uv run python -m churn_pipeline.cli sensitivity            # FN=3/5/8 -> reports/sensitivity.json
 # canonical tracking is queued DVC experiments (needs a working libomp for the
@@ -161,7 +155,7 @@ Deterministic: seed 42 controls data generation, the split, CV, the Optuna
 sampler, and permutation importance. With `model_family: auto` (the default in
 [`params.yaml`](params.yaml)) every train re-runs selection and rewrites the
 file with the winning config; once written, reruns reuse it (bit-identical
-artifacts). Tests (39, no network, synthetic fixtures only):
+artifacts). Tests (no network, synthetic fixtures only):
 
 ```bash
 uv run pytest projects/05-ml-pipeline-churn -q
@@ -182,13 +176,13 @@ uv run pytest projects/05-ml-pipeline-churn -q
   data bug to silently bypass the guards built during training.
 - **DQ as a gate, not a hope**: the pipeline halts loudly
   (`DQGateError`) if null rates or ranges drift out of contract.
-- **Models are products, not Kaggle scores**: on the real telco holdout, cost
-  falls 1,035 → 601 (−41.9%) versus contact everyone, with bootstrap 95% CI
-  [−485, −343] for the paired delta. The served operating threshold is 0.175;
+- **Models are products, not Kaggle scores**: on the real telco holdout, the
+  training-frozen policy costs 601 versus 1,035 for contact everyone (−41.9%),
+  with paired bootstrap 95% CI [−508, −353]. The served threshold is 0.175;
   classification metrics, calibration and the cost curve remain visible.
 - **Honest uncertainty and limitations**: permutation importance carries error
-  bars; cost deltas carry fixed-threshold paired bootstrap CIs; same-holdout
-  threshold selection and raw-versus-served fairness are labeled explicitly.
+  bars; paired CIs match the exact served policy; training-side threshold
+  selection and raw-versus-served fairness are labeled explicitly.
 - **Full reproducibility**: seeded real-data and synthetic-CI tracks, DVC
   stages, a dataset contract (SHA-256), and offline tests.
 
@@ -199,7 +193,6 @@ uv run pytest projects/05-ml-pipeline-churn -q
 | bootstrap ci | [reports/figures/bootstrap_ci.html](reports/figures/bootstrap_ci.html) |
 | business cost curve | [reports/figures/business_cost_curve.html](reports/figures/business_cost_curve.html) |
 | calibration curve | [reports/figures/calibration_curve.html](reports/figures/calibration_curve.html) |
-| cost surface | [reports/figures/cost_surface.html](reports/figures/cost_surface.html) |
 | decision curve | [reports/figures/decision_curve.html](reports/figures/decision_curve.html) |
 | eda churn profile | [reports/figures/eda_churn_profile.html](reports/figures/eda_churn_profile.html) |
 | fairness slices | [reports/figures/fairness_slices.html](reports/figures/fairness_slices.html) |

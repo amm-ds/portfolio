@@ -10,7 +10,8 @@
 4. Model selection: small grid over the regularization strength C.
 5. Evaluation beyond accuracy: ROC-AUC, precision/recall/F1 via
    `portfolio_eval`, calibration curve, permutation importance, and a
-   business-cost curve (FP=1, FN=5) that picks the operating threshold.
+   business-cost curve (FP=1, FN=5) that picks the operating threshold from
+   training-side OOF predictions before holdout scoring.
 6. Everything reproducible offline (seeded synthetic data), runtime < 1 min,
    tests without network.
 
@@ -24,7 +25,7 @@
 | Handling imbalance | threshold tuning only; oversampling; `class_weight` | `class_weight="balanced"` + threshold tuning | class weights fix the model's ranking objective during fit; the cost curve then fixes the operating point — the two are complementary, not alternatives |
 | Model | logistic regression; gradient boosting | logistic regression | showcase target is *pipeline engineering*, not SOTA accuracy; LR is fast (<2 s end-to-end), regularized, and its coefficients/calibration are auditable — boosting is in the Roadmap |
 | Split | temporal; stratified random | stratified random 80/20 | synthetic data has no time axis (explicitly out of scope per spec); stratification preserves the 8.8% rate in both splits |
-| Threshold selection | default 0.5; Youden's J; business-cost minimum | business-cost minimum over a 41-point grid | Youden optimizes ROC geometry, not money; the client-facing question is "which threshold minimizes FP·1 + FN·5" |
+| Threshold selection | default 0.5; Youden's J; business-cost minimum | business-cost minimum over a 41-point grid on stratified training OOF predictions | Youden optimizes ROC geometry, not money; OOF selection keeps the sealed holdout out of policy optimization |
 | Permutation importance labels | transformed feature names (`prep.get_feature_names_out`) | raw input column names (`feature_names_in_`) | `sklearn.inspection.permutation_importance` permutes *input* columns; labeling with transformed names mislabels bars (bug caught during the real run) |
 
 ## Pipeline
@@ -47,18 +48,20 @@ flowchart LR
 
 ## Evaluation protocol
 
-- Same fitted model scored twice: at threshold 0.5 and at the cost-optimal
-  threshold, producing two `RunResult` rows. This isolates the value of
-  operating-point tuning from model quality (ROC-AUC is threshold-independent
-  and identical across both runs).
-- Business cost: `FP·1 + FN·5` swept over 41 thresholds; optimum at 0.725,
-  cutting holdout cost from 350 to 282 (−19.4%) and lifting F1 0.580 → 0.683.
-- Calibration: 10-bin reliability diagram; the balanced model is slightly
-  over-forecasting at high probabilities, motivating the Roadmap
-  calibration stage.
-- Permutation importance: holdout F1 decrease, 5 repeats, error bars;
-  `monthly_charges` (0.118) and `contract` (0.076) dominate — matching the
-  generator's ground truth.
+- `train` generates stratified OOF probabilities for logistic, selected raw,
+  and selected isotonic models. The calibrated arm nests two-fold calibration
+  inside each outer training fold. `select_oof_thresholds` minimizes
+  `FP·1 + FN·5` over 41 thresholds and persists `operating_policy.json` plus
+  the underlying `training_predictions.npz` before holdout evaluation.
+- `evaluate` and `build-serving` load those thresholds; neither can re-optimize
+  them from holdout labels. Contact-everyone and logistic-at-0.5 are fixed
+  comparators, not additional optimized runs.
+- Paired holdout bootstraps (2,000 seeded row resamples) compare the exact
+  calibrated policy with contact-everyone and logistic-at-0.5. The point delta
+  equals the difference of the corresponding reported run costs by contract.
+- Calibration uses a 10-bin reliability diagram; permutation importance uses
+  holdout F1 decrease over five repeats. Fairness slices remain explicitly
+  attached to the raw policy rather than the served calibrated policy.
 
 ## Changelog
 
@@ -155,7 +158,17 @@ flowchart LR
   −547/−416/−344 with CIs [−618, −474]/[−485, −343]/[−426, −258]; the raw
   model beats the calibrated one at FN=8 (691 vs 699) — calibration's cost
   edge is cost-model dependent. New test: sensitivity self-check +
-  baseline-untouched guard.
+  baseline-untouched guard. These wave-13/14 operating points and intervals are
+  historical, test-selected evidence; they are superseded by wave 15.
+- 2026-11-16 · Wave 15 — operating-policy protocol correction. Thresholds now
+  come from training-side three-fold OOF predictions and persist in
+  `data/operating_policy.json`; evaluation, sensitivity, and serving consume
+  the frozen policy. The exact calibrated policy is bootstrapped against fixed
+  contact-everyone and logistic-at-0.5. Regenerated telco results: logistic
+  0.450/655, raw XGBoost 0.225/644, calibrated XGBoost 0.175/601; deltas are
+  −434 [−508, −353] versus contact-everyone and −90 [−159, −26] versus
+  logistic-at-0.5. The unchanged 601 outcome is an observed regeneration, not
+  a target. The redundant cost-surface figure was removed.
 
 ## Experiment versioning
 
@@ -193,30 +206,26 @@ uv run python -m churn_pipeline.cli sensitivity            # fn_cost 3, 5, 8
 ```
 
 `churn_pipeline sensitivity` re-scores the persisted artifacts under
-alternative FN costs — same `evaluate_holdout` code path as `evaluate`,
-thresholds re-derived per variant on the same 1,409-row holdout, nothing
-applied back to the baseline (writes only `reports/sensitivity.json`). The
-variant equal to the production `fn_cost` reproduces the committed baseline
-bit-for-bit (`matches_baseline`), which is the self-check that the what-if
-pass is faithful. Queued DVC experiments remain the canonical tracking
+alternative FN costs through the same `evaluate_holdout` path. For each cost
+model it re-freezes thresholds from the persisted training OOF predictions,
+then scores the 1,409-row holdout once. Nothing is applied back to the baseline
+(the command writes only `reports/sensitivity.json`). The production-cost
+variant must reproduce all baseline costs and the calibrated threshold
+(`matches_baseline`). Queued DVC experiments remain the canonical tracking
 mechanism on machines with a working libomp.
 
-Sensitivity results (real telco holdout, 1,409 rows, FP=1; 2026-10-29):
+Sensitivity results (real telco holdout, 1,409 rows, FP=1; regenerated
+2026-11-16):
 
-| variant | fn_cost | naive cost | raw selected cost (t*) | calibrated cost (t*) | Δ vs naive, raw vs naive (95% CI) |
+| variant | fn_cost | contact-everyone cost | raw selected cost (OOF t) | calibrated cost (OOF t) | calibrated − contact-everyone (95% CI) |
 |---|---|---|---|---|---|
-| fn3 | 3 | 1,035 | 488 (0.325) | 510 (0.200) | −547 [−618, −474] |
-| fn5 | 5 | 1,035 | 619 (0.150) | 601 (0.175) | −416 [−485, −343] — reproduces the committed baseline |
-| fn8 | 8 | 1,035 | 691 (0.100) | 699 (0.100) | −344 [−426, −258] |
+| fn3 | 3 | 1,035 | 518 (0.225) | 514 (0.250) | −521 [−581, −456] |
+| fn5 | 5 | 1,035 | 644 (0.225) | 601 (0.175) | −434 [−508, −353] — reproduces the baseline |
+| fn8 | 8 | 1,035 | 725 (0.125) | 718 (0.150) | −317 [−418, −204] |
 
-Reading: the more a missed churner costs relative to a false alarm, the
-lower the cost-optimal threshold (alarm earlier) and the smaller the
-absolute saving — the naive contact-everyone comparator has no missed
-churners to inflate, so its 1,035 cost is fn-independent. The XGBoost
-selection is never in doubt: every variant's CI excludes zero. One honest
-wrinkle: isotonic calibration's cost advantage is itself cost-model
-dependent — it helps at fn=5 (619 → 601) but slightly hurts at fn=8
-(691 → 699); the earlier synthetic conclusion ("calibration does not move
-the optimum") was not universal either. The earlier synthetic-track
-sensitivity (t* 0.775 / 0.700 / 0.625 at fn 3/5/8, logistic winner
-throughout) showed the same directional story on the 8.8%-churn regime.
+Reading: as a missed churner becomes more expensive, the OOF-frozen calibrated
+threshold moves downward (0.250 → 0.175 → 0.150) and the absolute saving over
+fixed contact-everyone shrinks. Contact-everyone has no missed churners, so its
+1,035 cost is FN-independent. Every calibrated-policy interval excludes zero.
+Isotonic's measured cost edge is 4, 43, and 7 units at FN=3/5/8; these are
+small policy comparisons, not evidence of a universal calibration advantage.

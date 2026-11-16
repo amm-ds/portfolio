@@ -410,7 +410,6 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "bootstrap_ci",
       "business_cost_curve",
       "calibration_curve",
-      "cost_surface",
       "eda_churn_profile",
       "fairness_slices",
       "permutation_importance",
@@ -418,7 +417,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
     ],
     "has_roadmap": true,
     "metrics_keys": [
-      "logreg_threshold_0.300",
+      "logreg_threshold_0.450",
       "naive_majority",
       "selected_model",
       "selected_model_calibrated"
@@ -676,9 +675,9 @@ export const STATIC_DEMO_REGISTRY: StaticDemoRegistryEntry[] = [
   {
     "group": "retain customers",
     "hero": {
-      "ci": "paired bootstrap CI [−485, −343]",
+      "ci": "paired bootstrap CI [−508, −353]",
       "label": "decision cost per 1,409 holdout customers",
-      "value": "$601 vs $1,035 naive"
+      "value": "$601 vs $1,035 contact-everyone"
     },
     "hook": "Move the alarm threshold and the missed-churner cost — watch the optimal cutoff and the saved budget change on a real churn model.",
     "href": "/demos/churn-sandbox",

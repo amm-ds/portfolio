@@ -8,7 +8,7 @@ import polars as pl
 import pytest
 from churn_pipeline.cli import evaluate_core, load_telco_frame, prepare_core, train_core
 from churn_pipeline.config import ChurnConfig
-from churn_pipeline.evaluate import cost_surface_figure, slice_report
+from churn_pipeline.evaluate import slice_report
 from sklearn.metrics import recall_score
 
 TELCO_HEADER = (
@@ -87,7 +87,6 @@ def test_telco_end_to_end_offline(small_telco_cfg: ChurnConfig, tmp_path: Path) 
     slices = metrics["_meta"]["slices"]
     assert "overall" in slices and any(k.startswith("gender=") for k in slices)
     assert (cfg.reports_dir / "figures" / "fairness_slices.json").exists()
-    assert (cfg.reports_dir / "figures" / "cost_surface.json").exists()
 
 
 def test_slice_report_matches_sklearn() -> None:
@@ -104,14 +103,3 @@ def test_slice_report_matches_sklearn() -> None:
         assert report[f"gender={value}"]["recall"] == pytest.approx(expect)
     assert report["overall"]["n"] == len(y_true)
     assert report["overall"]["business_cost"] >= 0
-
-
-def test_cost_surface_marks_operating_point() -> None:
-    cfg = ChurnConfig(data_source="telco")
-    y_true = np.array([1, 0, 1, 1, 0, 0, 1, 0])
-    proba = np.array([0.9, 0.2, 0.4, 0.8, 0.1, 0.3, 0.7, 0.15])
-    fig = cost_surface_figure(cfg, y_true, proba)
-    heat = next(d for d in fig.data if d.type == "heatmap")
-    star = next(d for d in fig.data if getattr(d, "mode", None) == "markers")
-    assert len(heat.z) == 19 and len(heat.z[0]) == len(cfg.threshold_grid)
-    assert star.x[0] in cfg.threshold_grid and star.y[0] in heat.y

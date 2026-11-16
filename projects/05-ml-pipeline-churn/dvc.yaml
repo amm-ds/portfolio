@@ -38,6 +38,7 @@ stages:
       - calib_frac
       - fp_cost
       - fn_cost
+      - threshold_grid
     outs:
       - data/model.pkl
       - data/selected_model.pkl
@@ -45,6 +46,8 @@ stages:
       - data/model_selection.json
       - data/model_meta.json
       - data/holdout.parquet
+      - data/training_predictions.npz
+      - data/operating_policy.json
 
   evaluate:
     cmd: uv run --python 3.12.9 python -m churn_pipeline.cli evaluate --params-file params.yaml
@@ -56,6 +59,7 @@ stages:
       - data/selected_model_calibrated.pkl
       - data/model_meta.json
       - data/holdout.parquet
+      - data/operating_policy.json
     params:
       - seed
       - data_source
@@ -77,6 +81,7 @@ stages:
       - data/selected_model_calibrated.pkl
       - data/holdout.parquet
       - data/model_selection.json
+      - data/operating_policy.json
     params:
       - fp_cost
       - fn_cost

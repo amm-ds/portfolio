@@ -1,10 +1,10 @@
-"""Holdout evaluation: metrics via portfolio_eval, calibration (raw vs
-isotonic), precision-recall and decision-curve analysis, and a business-cost
-threshold sweep.
+"""Holdout evaluation with training-frozen operating thresholds.
 
 Run ladder (all on the same 1,409-row holdout, same FP=1/FN=5 cost model):
-``naive_majority`` → ``logreg_threshold_0.5`` → ``logreg_threshold_<opt>``
-(wave-2 pipeline) → ``selected_model`` → ``selected_model_calibrated``.
+``naive_majority`` (contact everyone) → ``logreg_threshold_0.5`` →
+``logreg_threshold_<oof>`` → ``selected_model`` →
+``selected_model_calibrated``. Every non-default threshold is selected from
+training-side out-of-fold predictions before this module scores the holdout.
 """
 
 import itertools
@@ -51,6 +51,21 @@ def cost_curve(
         dtype=float,
     )
     return costs, float(cfg.threshold_grid[int(np.argmin(costs))])
+
+
+def select_oof_thresholds(
+    cfg: ChurnConfig,
+    y_train: NDArray[np.int64],
+    proba_map: dict[str, NDArray[np.float64]],
+) -> tuple[dict[str, float], dict[str, float]]:
+    """Freeze candidate thresholds and costs from training-side OOF scores."""
+    thresholds: dict[str, float] = {}
+    costs: dict[str, float] = {}
+    for name, proba in proba_map.items():
+        curve, threshold = cost_curve(cfg, y_train, proba)
+        thresholds[name] = threshold
+        costs[name] = float(curve.min())
+    return thresholds, costs
 
 
 def expected_calibration_error(
@@ -205,59 +220,6 @@ def fairness_slices_figure(report: dict[str, dict[str, Any]], threshold: float) 
     return apply_theme(fig)
 
 
-def cost_surface_figure(
-    cfg: ChurnConfig, y_true: NDArray[np.int64], proba: NDArray[np.float64]
-) -> go.Figure:
-    """Cost surface over FN cost (y) x decision threshold (x), operating point marked."""
-    fn_grid = [round(1.0 + 0.5 * i, 2) for i in range(19)]  # 1.0 .. 10.0
-    z = np.array(
-        [
-            [business_cost(y_true, proba, t, cfg.fp_cost, float(fn)) for t in cfg.threshold_grid]
-            for fn in fn_grid
-        ]
-    )
-    fig = go.Figure()
-    fig.add_heatmap(
-        x=list(cfg.threshold_grid),
-        y=fn_grid,
-        z=z.tolist(),
-        colorscale="Tealrose",
-        colorbar={"title": "cost"},
-    )
-    row = min(range(len(fn_grid)), key=lambda i: abs(fn_grid[i] - cfg.fn_cost))
-    col = int(np.argmin(z[row]))
-    fig.add_scatter(
-        x=[cfg.threshold_grid[col]],
-        y=[fn_grid[row]],
-        mode="markers",
-        name="chosen operating point",
-        marker={"size": 13, "symbol": "star", "color": "#fbbf24"},
-    )
-    fig.add_annotation(
-        x=cfg.threshold_grid[col],
-        y=fn_grid[row],
-        text=f"selected: t={cfg.threshold_grid[col]:.3f},<br>cost {z[row, col]:,.0f}",
-        showarrow=True,
-        arrowhead=2,
-        ax=55,
-        ay=-35,
-        font={"size": 13, "color": "#fbbf24"},
-    )
-    fig.update_layout(
-        title="Cost surface over decision threshold and FN cost",
-        xaxis_title="Decision threshold",
-        yaxis_title="FN cost (FP cost = 1)",
-    )
-    add_takeaway(
-        fig,
-        "1,409-row holdout — cost over 41 thresholds x FN cost 1-10; star = chosen operating point",
-    )
-    # The colorbar title ("cost") sits above the colorbar at the legend's
-    # default top-right slot — drop the single-entry legend just below it.
-    fig.update_layout(legend={"y": 0.94, "yanchor": "top"})
-    return apply_theme(fig)
-
-
 def paired_bootstrap_cost_delta(
     cfg: ChurnConfig,
     y_true: NDArray[np.int64],
@@ -369,25 +331,24 @@ def bootstrap_ci_figure(delta: dict[str, Any], name_a: str, name_b: str) -> go.F
 def naive_majority_run(
     cfg: ChurnConfig, y_true: NDArray[np.int64], base_rate: float
 ) -> tuple[RunResult, NDArray[np.float64], float]:
-    """Naive baseline: constant probability = training churn base rate.
-
-    On the cost curve this degenerates to two flat regimes (alarm-everyone
-    below the base rate, ignore-everyone above); its reported metrics are at
-    whichever regime is cheaper. Returns (run, costs, optimal threshold).
-    """
+    """Fixed contact-everyone baseline; no holdout threshold optimization."""
     proba = np.full(len(y_true), base_rate, dtype=float)
-    costs, optimal = cost_curve(cfg, y_true, proba)
-    y_pred = (proba >= optimal).astype(int)
+    costs = np.array(
+        [business_cost(y_true, proba, t, cfg.fp_cost, cfg.fn_cost) for t in cfg.threshold_grid],
+        dtype=float,
+    )
+    threshold = 0.0
+    y_pred = np.ones(len(y_true), dtype=int)
     metrics = [
         MetricResult("roc_auc", 0.5),
         *classification_metrics(list(y_true), [int(p) for p in y_pred]),
         MetricResult(
             "business_cost",
-            business_cost(y_true, proba, optimal, cfg.fp_cost, cfg.fn_cost),
+            business_cost(y_true, proba, threshold, cfg.fp_cost, cfg.fn_cost),
             higher_is_better=False,
         ),
     ]
-    return RunResult(name="naive_majority", metrics=metrics), costs, optimal
+    return RunResult(name="naive_majority", metrics=metrics), costs, threshold
 
 
 def _holdout_run(
@@ -412,11 +373,18 @@ def _holdout_run(
 
 
 def _selected_run(
-    cfg: ChurnConfig, name: str, y_true: NDArray[np.int64], proba: NDArray[np.float64]
-) -> tuple[RunResult, NDArray[np.float64], float]:
-    """Selected-model run at its cost-optimal threshold, with ECE attached."""
-    costs, optimal = cost_curve(cfg, y_true, proba)
-    run = _holdout_run(cfg, name, y_true, proba, optimal)
+    cfg: ChurnConfig,
+    name: str,
+    y_true: NDArray[np.int64],
+    proba: NDArray[np.float64],
+    threshold: float,
+) -> tuple[RunResult, NDArray[np.float64]]:
+    """Selected-model run at its training-frozen threshold, with ECE attached."""
+    costs = np.array(
+        [business_cost(y_true, proba, t, cfg.fp_cost, cfg.fn_cost) for t in cfg.threshold_grid],
+        dtype=float,
+    )
+    run = _holdout_run(cfg, name, y_true, proba, threshold)
     run.metrics.append(
         MetricResult(
             "ece",
@@ -424,7 +392,7 @@ def _selected_run(
             higher_is_better=False,
         )
     )
-    return run, costs, optimal
+    return run, costs
 
 
 # ---------------------------------------------------------------------------
@@ -571,29 +539,28 @@ def decision_curve_figure(
 def cost_figure(
     cfg: ChurnConfig,
     cost_map: dict[str, NDArray[np.float64]],
-    opt_map: dict[str, float],
+    threshold_map: dict[str, float],
     takeaway: str,
 ) -> go.Figure:
-    """Business cost vs threshold for each candidate; optima marked."""
+    """Holdout cost curves with training-frozen operating points marked."""
     fig = go.Figure()
     for name, costs in cost_map.items():
         fig.add_scatter(x=list(cfg.threshold_grid), y=costs.tolist(), mode="lines", name=name)
-        opt = opt_map[name]
-        opt_cost = float(costs[int(np.argmin(costs))])
+        threshold = threshold_map[name]
+        threshold_index = int(np.argmin(np.abs(np.asarray(cfg.threshold_grid) - threshold)))
+        threshold_cost = float(costs[threshold_index])
         fig.add_scatter(
-            x=[opt],
-            y=[opt_cost],
+            x=[threshold],
+            y=[threshold_cost],
             mode="markers",
-            name=f"{name} optimum",
+            name=f"{name} frozen threshold",
             marker={"size": 11, "symbol": "star"},
         )
         if name == "selected model isotonic":
-            # The deployed operating point per the story: isotonic-calibrated
-            # cost optimum (t=0.175, cost 601 on telco at FP=1/FN=5).
             fig.add_annotation(
-                x=opt,
-                y=opt_cost,
-                text=f"selected operating point<br>t={opt:.3f}, cost {opt_cost:,.0f}",
+                x=threshold,
+                y=threshold_cost,
+                text=f"served frozen threshold<br>t={threshold:.3f}, cost {threshold_cost:,.0f}",
                 showarrow=True,
                 arrowhead=2,
                 ax=-30,
@@ -621,21 +588,28 @@ def evaluate_holdout(
     X_test: pd.DataFrame,
     y_test: pd.Series,
     train_base_rate: float,
+    thresholds: dict[str, float],
 ) -> tuple[list[RunResult], dict[str, go.Figure], dict[str, Any]]:
-    """Full holdout evaluation: 5 runs + 6 figures + a numbers summary."""
+    """Score the frozen policies once; never select thresholds on the holdout."""
+    required = {"logreg", "selected", "selected_calibrated"}
+    missing = required - thresholds.keys()
+    if missing:
+        raise ValueError(f"missing frozen thresholds: {sorted(missing)}")
+
     y_true = np.asarray(y_test, dtype=int)
     proba = {
         name: np.asarray(m.predict_proba(X_test)[:, 1], dtype=float) for name, m in models.items()
     }
-
     logreg_proba = proba["logreg"]
-    _lg_costs, logreg_opt = cost_curve(cfg, y_true, logreg_proba)
+    logreg_opt = thresholds["logreg"]
+    selected_opt = thresholds["selected"]
+    calib_opt = thresholds["selected_calibrated"]
     naive_run, naive_costs, naive_opt = naive_majority_run(cfg, y_true, train_base_rate)
-    selected_run, selected_costs, selected_opt = _selected_run(
-        cfg, "selected_model", y_true, proba["selected"]
+    selected_run, selected_costs = _selected_run(
+        cfg, "selected_model", y_true, proba["selected"], selected_opt
     )
-    calib_run, calib_costs, calib_opt = _selected_run(
-        cfg, "selected_model_calibrated", y_true, proba["selected_calibrated"]
+    calib_run, calib_costs = _selected_run(
+        cfg, "selected_model_calibrated", y_true, proba["selected_calibrated"], calib_opt
     )
     runs = [
         naive_run,
@@ -653,6 +627,7 @@ def evaluate_holdout(
         m = run.get("ece")
         return m.value if m else float("nan")
 
+    contact_everyone = np.ones(len(y_true), dtype=float)
     summary: dict[str, Any] = {
         "naive_cost": _cost(naive_run),
         "naive_opt": naive_opt,
@@ -670,10 +645,18 @@ def evaluate_holdout(
         "cost_delta_ci": paired_bootstrap_cost_delta(
             cfg,
             y_true,
-            proba["selected"],
-            np.full(len(y_true), train_base_rate),
-            selected_opt,
-            naive_opt,
+            proba["selected_calibrated"],
+            contact_everyone,
+            calib_opt,
+            DEFAULT_THRESHOLD,
+        ),
+        "cost_delta_ci_logreg": paired_bootstrap_cost_delta(
+            cfg,
+            y_true,
+            proba["selected_calibrated"],
+            logreg_proba,
+            calib_opt,
+            DEFAULT_THRESHOLD,
         ),
         "slices": slice_report(
             cfg,
@@ -688,7 +671,8 @@ def evaluate_holdout(
         ),
     }
     takeaway = (
-        "1,409-row holdout (FP=1, FN=5) — cost per candidate vs threshold; star = optimum per run"
+        f"{len(y_true):,}-row holdout (FP={cfg.fp_cost:g}, FN={cfg.fn_cost:g}) — "
+        "stars mark thresholds frozen from training-side OOF predictions"
     )
     figures = {
         "calibration_curve": calibration_figure(
@@ -733,18 +717,21 @@ def evaluate_holdout(
             },
             takeaway,
         ),
-        "bootstrap_ci": bootstrap_ci_figure(summary["cost_delta_ci"], "selected model", "naive"),
+        "bootstrap_ci": bootstrap_ci_figure(
+            summary["cost_delta_ci"], "calibrated model", "contact everyone"
+        ),
         "fairness_slices": fairness_slices_figure(summary["slices"], selected_opt),
-        "cost_surface": cost_surface_figure(cfg, y_true, proba["selected_calibrated"]),
     }
     return runs, figures, summary
 
 
 def artifact_paths(cfg: ChurnConfig) -> dict[str, Path]:
-    """Canonical locations of persisted model artifacts and the holdout frame."""
+    """Canonical locations of persisted training and holdout artifacts."""
     return {
         "logreg": cfg.data_dir / "model.pkl",
         "selected": cfg.data_dir / "selected_model.pkl",
         "selected_calibrated": cfg.data_dir / "selected_model_calibrated.pkl",
         "holdout": cfg.data_dir / "holdout.parquet",
+        "training_predictions": cfg.data_dir / "training_predictions.npz",
+        "operating_policy": cfg.data_dir / "operating_policy.json",
     }

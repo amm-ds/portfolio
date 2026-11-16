@@ -16,17 +16,17 @@ Directory: `projects/05-ml-pipeline-churn/reports/models/serving/`
 - `meta.json` — `{"feature_names": [...], "n_features": int, "built_at": str,
   "model_selection": {family, params, objective, ...} (from
   data/model_selection.json),
-  "threshold_selection": {"threshold": float, "holdout_min_cost": float,
+  "threshold_selection": {"threshold": float, "training_oof_min_cost": float,
   "rule": str},
   "example_row": {name: float|str, ...}}`
 
-Threshold selection (no retraining): the served threshold re-derives the
-`evaluate` stage's business-cost curve — argmin of FP·1 + FN·5 over the
-params.yaml `threshold_grid`, scored by the calibrated model on the persisted
-holdout. With the current artifacts that is **t=0.175** (holdout cost 601),
-matching `reports/metrics.json` (`selected_model_calibrated`). The model
-itself is the already-fitted `data/selected_model_calibrated.pkl` (XGBoost
-arm, cost-aware Optuna selection); nothing is retrained.
+Threshold selection (no retraining): `train` uses stratified training-side OOF
+predictions to minimize FP·1 + FN·5 over params.yaml `threshold_grid`, then
+persists `data/operating_policy.json` before holdout scoring. Both `evaluate`
+and `build-serving` load that frozen policy. The current threshold is **0.175**;
+its holdout cost is 601 and its training OOF cost is 2,425. The model itself is
+the already-fitted `data/selected_model_calibrated.pkl` (XGBoost arm,
+cost-aware Optuna selection).
 
 API: `POST /projects/05-ml-pipeline-churn/score`
 body `{"features": {name: float|str, ...}}`
@@ -43,6 +43,6 @@ curl -s -X POST http://localhost:8000/projects/05-ml-pipeline-churn/score \
 ```
 
 Rebuild: `uv run python -m churn_pipeline.cli build-serving` (seconds — it
-loads `data/selected_model_calibrated.pkl` and recomputes the threshold from
-`data/holdout.parquet`; it never trains). Re-run after any `train` stage,
-then `dvc repro serving`.
+loads the calibrated model and `data/operating_policy.json`; the holdout only
+supplies the example row). Re-run after any `train` stage, then
+`dvc repro serving`.

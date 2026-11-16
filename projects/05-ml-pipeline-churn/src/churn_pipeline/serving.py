@@ -11,10 +11,9 @@
   model-selection summary, the threshold-selection rationale, and a worked
   example row.
 
-No retraining happens here: the threshold is re-derived deterministically
-from the persisted holdout with the same ``cost_curve`` the ``evaluate``
-stage uses (FP·fp_cost + FN·fn_cost over ``cfg.threshold_grid``), and the
-model is the artifact the ``train`` stage already fitted and calibrated.
+No retraining or threshold selection happens here: the calibrated model and
+its training-side OOF-frozen threshold come directly from the ``train``
+stage's persisted artifacts. The holdout is used only to choose an example row.
 
 The API (apps/showcase-api) loads exactly these two files; do not rename or
 reshape without updating SERVING.md and the API in the same change.
@@ -27,12 +26,11 @@ from pathlib import Path
 from typing import Any
 
 import joblib
-import numpy as np
 from portfolio_core.logging import get_logger
 
 from churn_pipeline.config import ChurnConfig, pd
-from churn_pipeline.evaluate import artifact_paths, cost_curve
-from churn_pipeline.model import TARGET_COL, feature_cols, slice_cols
+from churn_pipeline.evaluate import artifact_paths
+from churn_pipeline.model import feature_cols
 
 logger = get_logger(__name__)
 
@@ -58,21 +56,15 @@ def _holdout_frame(cfg: ChurnConfig) -> pd.DataFrame:
 
 
 def select_decision_threshold(cfg: ChurnConfig) -> tuple[float, float]:
-    """Cost-optimal decision threshold of the calibrated model on the holdout.
-
-    Recomputes the exact business-cost curve the ``evaluate`` stage reports
-    (pooled FP·fp_cost + FN·fn_cost across ``cfg.threshold_grid`` on the
-    persisted holdout) and returns (optimal threshold, minimum cost). With the
-    current artifacts this lands at t=0.175 (cost 601 at FP=1, FN=5).
-    """
-    model = _load_calibrated(cfg)
-    holdout = _holdout_frame(cfg)
-    cols = list(dict.fromkeys(feature_cols(cfg) + slice_cols(cfg)))
-    proba = np.asarray(model.predict_proba(holdout[cols])[:, 1], dtype=float)
-    y_true = np.asarray(holdout[TARGET_COL].astype(int))
-    costs, optimal = cost_curve(cfg, y_true, proba)
-    logger.info("serving threshold: %.3f (holdout cost %.0f)", optimal, costs.min())
-    return optimal, float(costs.min())
+    """Load the calibrated policy's OOF-frozen threshold and training cost."""
+    paths = artifact_paths(cfg)
+    policy = json.loads(paths["operating_policy"].read_text())
+    if policy["fp_cost"] != cfg.fp_cost or policy["fn_cost"] != cfg.fn_cost:
+        raise ValueError("operating policy cost model does not match params.yaml")
+    threshold = float(policy["thresholds"]["selected_calibrated"])
+    training_cost = float(policy["training_costs"]["selected_calibrated"])
+    logger.info("serving threshold: %.3f (training OOF cost %.0f)", threshold, training_cost)
+    return threshold, training_cost
 
 
 def _example_row(cfg: ChurnConfig) -> dict[str, Any]:
@@ -125,11 +117,10 @@ def build_serving_artifact(cfg: ChurnConfig | None = None) -> Path:
         "model_selection": selection,
         "threshold_selection": {
             "threshold": threshold,
-            "holdout_min_cost": min_cost,
-            "rule": "argmin of FP·fp_cost + FN·fn_cost over the params.yaml "
-            "threshold_grid on the persisted holdout, scored by the "
-            "isotonic-calibrated model — the same cost curve the evaluate "
-            "stage reports",
+            "training_oof_min_cost": min_cost,
+            "rule": "loaded from data/operating_policy.json; selected by argmin "
+            "of FP·fp_cost + FN·fn_cost over params.yaml threshold_grid using "
+            "training-side out-of-fold predictions before holdout scoring",
         },
         "example_row": example_row,
     }

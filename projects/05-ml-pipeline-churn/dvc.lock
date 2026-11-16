@@ -55,9 +55,9 @@ stages:
       size: 703
     - path: src/churn_pipeline/
       hash: md5
-      md5: 2624c1ec66f5344a619f92ea4ba0b60d.dir
-      size: 163912
-      nfiles: 17
+      md5: cd560a80ce65f0a11e2d0dd0105e7c98.dir
+      size: 214885
+      nfiles: 21
     params:
       params.yaml:
         c_grid:
@@ -80,31 +80,81 @@ stages:
           subsample: 0.5186934422187627
         seed: 42
         test_frac: 0.2
+        threshold_grid:
+        - 0.0
+        - 0.025
+        - 0.05
+        - 0.075
+        - 0.1
+        - 0.125
+        - 0.15
+        - 0.175
+        - 0.2
+        - 0.225
+        - 0.25
+        - 0.275
+        - 0.3
+        - 0.325
+        - 0.35
+        - 0.375
+        - 0.4
+        - 0.425
+        - 0.45
+        - 0.475
+        - 0.5
+        - 0.525
+        - 0.55
+        - 0.575
+        - 0.6
+        - 0.625
+        - 0.65
+        - 0.675
+        - 0.7
+        - 0.725
+        - 0.75
+        - 0.775
+        - 0.8
+        - 0.825
+        - 0.85
+        - 0.875
+        - 0.9
+        - 0.925
+        - 0.95
+        - 0.975
+        - 1.0
     outs:
     - path: data/holdout.parquet
       hash: md5
-      md5: 646e9855d59ee59d30f2c33a47f7771d
-      size: 21298
+      md5: 08b161206a1628a3600d522ffbaf9bbc
+      size: 21341
     - path: data/model.pkl
       hash: md5
-      md5: 8979b0a479165ef98340a52dbc2c5a93
-      size: 3608
+      md5: d34136a3d7aee90622a742b1e0ee51ed
+      size: 3555
     - path: data/model_meta.json
       hash: md5
       md5: 82c2a00e3cead0101c42073372571766
       size: 158
     - path: data/model_selection.json
       hash: md5
-      md5: e6bb3c79d293be184c5133ed08df9cc0
-      size: 367
+      md5: cd0275d917fd932c15e8b5a20c8c45ec
+      size: 256
+    - path: data/operating_policy.json
+      hash: md5
+      md5: 06e256203d71398c3ff53c3203f0f83b
+      size: 344
     - path: data/selected_model.pkl
       hash: md5
-      md5: 1e073ad774091768573f93d21f966adc
-      size: 255220
+      md5: ef8c7fd34a2f97d4ebbfcd8ea3b630ba
+      size: 255167
     - path: data/selected_model_calibrated.pkl
       hash: md5
-      md5: 91460b24028798472fffb1382be5b39a
-      size: 489090
+      md5: 36dc1b97117e88d14469c7be9307ed79
+      size: 488878
+    - path: data/training_predictions.npz
+      hash: md5
+      md5: b680fbc74c427d29845a213cc0e5ee1f
+      size: 80596
   evaluate:
     cmd: uv run --python 3.12.9 python -m churn_pipeline.cli evaluate 
       --params-file params.yaml

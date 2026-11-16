@@ -5,15 +5,15 @@ rate) with a seeded synthetic CI path (messy on purpose: 2% NaN age, 3% NaN
 support calls, a 9,999 charge outlier) · **Status:** working
 showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-open-data-mobility.md))
 
-> A churn scorer on real IBM telco data (7,043 customers): serving the
-> calibrated model at a 0.175 threshold cuts decision cost 42% (601 vs 1,035
-> for contacting everyone; 95% bootstrap interval -485 to -343). The cutoff
-> must be re-derived when a missed churner's price changes.
+> On 7,043 IBM telco customers, a calibrated churn policy frozen at 0.175 from
+> training OOF predictions costs 601 versus 1,035 for contact-everyone (95%
+> paired bootstrap CI -508 to -353). Re-select the cutoff when missed-churner
+> cost changes.
 >
 > **TL;DR:** subscription businesses where a missed churner costs five times a
 > false alarm, and the base rate makes "do nothing" look accurate.
-> The pipeline cuts decision cost by **41.9%** (1,035 → 601) vs that contact-everyone
-> policy, with a bootstrap 95% CI of [−485, −343].
+> The pipeline cuts decision cost by **41.9%** (1,035 → 601) vs contact-everyone,
+> with a paired bootstrap 95% CI of [−508, −353].
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn) ·
 > [Churn sandbox demo source →](https://github.com/amm-ds/portfolio/tree/main/apps/showcase-web/src/demos/churn-sandbox) (runs interactively in the showcase app: `make docker-up` → http://localhost:8000/demos/churn-sandbox)

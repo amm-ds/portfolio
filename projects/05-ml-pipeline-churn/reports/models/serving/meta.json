@@ -6,29 +6,24 @@
     "internet_service"
   ],
   "n_features": 4,
-  "built_at": "2026-10-17T19:14:33.291401+00:00",
+  "built_at": "2026-11-16T02:57:35.521136+00:00",
   "model_selection": {
     "family": "xgboost",
     "params": {
-      "n_estimators": 211.0,
       "learning_rate": 0.030921572415730004,
       "max_depth": 3.0,
+      "n_estimators": 211.0,
       "subsample": 0.5186934422187627
     },
     "objective": "cost",
-    "best_score": -2416.0,
-    "n_trials": 25,
-    "family_scores": {
-      "logreg": 2519.0,
-      "histgb": 2495.75,
-      "xgboost": 2447.5,
-      "lightgbm": 2498.6666666666665
-    }
+    "best_score": NaN,
+    "n_trials": 0,
+    "family_scores": {}
   },
   "threshold_selection": {
     "threshold": 0.175,
-    "holdout_min_cost": 601.0,
-    "rule": "argmin of FP\u00b7fp_cost + FN\u00b7fn_cost over the params.yaml threshold_grid on the persisted holdout, scored by the isotonic-calibrated model \u2014 the same cost curve the evaluate stage reports"
+    "training_oof_min_cost": 2425.0,
+    "rule": "loaded from data/operating_policy.json; selected by argmin of FP\u00b7fp_cost + FN\u00b7fn_cost over params.yaml threshold_grid using training-side out-of-fold predictions before holdout scoring"
   },
   "example_row": {
     "tenure_months": 29.0,

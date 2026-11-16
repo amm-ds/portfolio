@@ -12,15 +12,15 @@
   "cost_model": {
     "fp_cost": 1.0,
     "fn_cost": 5.0,
-    "note": "cost = fp_cost\u00b7FP + fn_cost\u00b7FN per 1,000-customer holdout"
+    "note": "cost = fp_cost\u00b7FP + fn_cost\u00b7FN across the 1,409-row holdout"
   },
   "headline": {
     "cost_naive": 1035.0,
     "cost_selected": 601.0,
     "delta_ci": {
-      "point": -416.0,
-      "lo": -485.0,
-      "hi": -343.0,
+      "point": -434.0,
+      "lo": -508.0,
+      "hi": -353.0,
       "significant_95": true
     }
   },

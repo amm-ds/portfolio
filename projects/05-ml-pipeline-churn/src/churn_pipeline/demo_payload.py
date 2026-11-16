@@ -142,7 +142,7 @@ def build_demo_payload(cfg: ChurnConfig) -> dict[str, Any]:
         "cost_model": {
             "fp_cost": cfg.fp_cost,
             "fn_cost": cfg.fn_cost,
-            "note": "cost = fp_cost·FP + fn_cost·FN per 1,000-customer holdout",
+            "note": f"cost = fp_cost·FP + fn_cost·FN across the {len(y_test):,}-row holdout",
         },
         "headline": {
             "cost_naive": naive["business_cost"],

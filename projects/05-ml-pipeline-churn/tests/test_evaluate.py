@@ -2,19 +2,23 @@
 
 import json
 from pathlib import Path
+from typing import Any
 
 import numpy as np
+import plotly.graph_objects as go
 import pytest
 from churn_pipeline.cli import evaluate_core, prepare_core, train_core
-from churn_pipeline.config import ChurnConfig
+from churn_pipeline.config import ChurnConfig, pd
 from churn_pipeline.evaluate import (
     artifact_paths,
     business_cost,
     cost_curve,
+    evaluate_holdout,
     expected_calibration_error,
     naive_majority_run,
     net_benefit,
     paired_bootstrap_cost_delta,
+    select_oof_thresholds,
 )
 
 
@@ -74,18 +78,60 @@ def test_paired_bootstrap_delta(small_cfg: ChurnConfig) -> None:
     assert d1["hi"] < 0 and d1["significant_95"]
 
 
-def test_naive_majority_degenerates_to_constant_costs(small_cfg: ChurnConfig) -> None:
-    """Constant base-rate probability: cheaper of alarm-all vs ignore-all."""
+def test_naive_majority_is_fixed_contact_everyone(small_cfg: ChurnConfig) -> None:
+    """The comparator never chooses contact-none by inspecting holdout cost."""
     y_true = np.array([0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
-    run, costs, optimal = naive_majority_run(small_cfg, y_true, 0.5)
+    run, costs, threshold = naive_majority_run(small_cfg, y_true, 0.5)
     assert run.name == "naive_majority"
-    n_pos, n_neg = 5, 5
-    assert costs.min() == min(1.0 * n_neg, 5.0 * n_pos)
+    assert costs.min() < 5.0 * int(y_true.sum())
     cost = run.get("business_cost")
-    assert cost is not None and cost.value == costs.min()
+    assert cost is not None and cost.value == 5.0
     auc = run.get("roc_auc")
     assert auc is not None and auc.value == 0.5
-    assert optimal in small_cfg.threshold_grid
+    assert threshold == 0.0
+
+
+def test_holdout_evaluation_preserves_nonoptimal_frozen_thresholds(
+    small_cfg: ChurnConfig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A lower holdout cost elsewhere in the grid must not move the policy."""
+
+    class FixedProbabilityModel:
+        def __init__(self, proba: np.ndarray) -> None:
+            self.proba = proba
+
+        def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
+            assert len(X) == len(self.proba)
+            return np.column_stack((1.0 - self.proba, self.proba))
+
+    def no_importance(*args: Any, **kwargs: Any) -> go.Figure:
+        return go.Figure()
+
+    monkeypatch.setattr("churn_pipeline.evaluate.importance_figure", no_importance)
+    y = np.array([0, 0, 0, 0, 1, 1, 1, 1])
+    proba = np.array([0.1, 0.3, 0.5, 0.7, 0.2, 0.4, 0.6, 0.8])
+    models: dict[str, Any] = {
+        name: FixedProbabilityModel(proba) for name in ("logreg", "selected", "selected_calibrated")
+    }
+    thresholds = {"logreg": 0.8, "selected": 0.8, "selected_calibrated": 0.8}
+    runs, _figures, summary = evaluate_holdout(
+        small_cfg,
+        models,
+        pd.DataFrame({"feature": range(len(y))}),
+        pd.Series(y),
+        train_base_rate=0.5,
+        thresholds=thresholds,
+    )
+
+    assert summary["calibrated_opt"] == 0.8
+    assert summary["calibrated_cost"] == 15.0
+    _costs, holdout_optimum = cost_curve(small_cfg, y, proba)
+    assert holdout_optimum != 0.8
+    assert summary["cost_delta_ci"]["point"] == summary["calibrated_cost"] - summary["naive_cost"]
+    assert summary["cost_delta_ci_logreg"]["point"] == (
+        summary["calibrated_cost"] - summary["logreg_default_cost"]
+    )
+    assert runs[2].name == "logreg_threshold_0.800"
 
 
 def test_end_to_end_cli_cores(small_cfg: ChurnConfig, params_file: Path) -> None:
@@ -95,7 +141,14 @@ def test_end_to_end_cli_cores(small_cfg: ChurnConfig, params_file: Path) -> None
     report_path = evaluate_core(small_cfg)
 
     paths = artifact_paths(small_cfg)
-    for key in ("logreg", "selected", "selected_calibrated", "holdout"):
+    for key in (
+        "logreg",
+        "selected",
+        "selected_calibrated",
+        "holdout",
+        "training_predictions",
+        "operating_policy",
+    ):
         assert paths[key].exists(), key
     assert (small_cfg.data_dir / "churn.parquet").exists()
     assert (small_cfg.data_dir / "dataset_contract.json").exists()
@@ -134,10 +187,27 @@ def test_end_to_end_cli_cores(small_cfg: ChurnConfig, params_file: Path) -> None
         assert "ece" in metrics[run], "ECE reported for selected runs"
     ci = metrics["_meta"]["cost_delta_ci"]
     assert ci["n_boot"] == 2000 and ci["lo"] <= ci["point"] <= ci["hi"]
+    calibrated_cost = metrics["selected_model_calibrated"]["business_cost"]
+    assert ci["point"] == calibrated_cost - metrics["naive_majority"]["business_cost"]
+    logreg_ci = metrics["_meta"]["cost_delta_ci_logreg"]
+    assert logreg_ci["point"] == (
+        calibrated_cost - metrics["logreg_threshold_0.5"]["business_cost"]
+    )
+    assert metrics["_meta"]["threshold_selection"]["data"] == "training_oof"
     assert (small_cfg.reports_dir / "figures" / "bootstrap_ci.json").exists()
-    selected_cost = metrics["selected_model"]["business_cost"]
-    naive_cost = metrics["naive_majority"]["business_cost"]
-    assert selected_cost <= naive_cost, "selected model should not lose to naive"
+
+    policy = json.loads(paths["operating_policy"].read_text())
+    with np.load(paths["training_predictions"]) as training:
+        expected_thresholds, _costs = select_oof_thresholds(
+            small_cfg,
+            np.asarray(training["y_train"], dtype=int),
+            {
+                name: np.asarray(training[name], dtype=float)
+                for name in ("logreg", "selected", "selected_calibrated")
+            },
+        )
+    assert policy["thresholds"] == expected_thresholds
+    assert metrics["_meta"]["calibrated_opt"] == expected_thresholds["selected_calibrated"]
 
     # HPO persisted its selection into the isolated params file
     prod = params_file.read_text()

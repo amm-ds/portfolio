@@ -13,8 +13,10 @@ from datetime import date
 from pathlib import Path
 from typing import Annotated, Any, cast
 
+import numpy as np
 import polars as pl
 import typer
+from numpy.typing import NDArray
 from portfolio_core import synthetic
 from portfolio_core.dq import DQReport
 from portfolio_core.io import fetch
@@ -23,12 +25,12 @@ from portfolio_core.plotting import save_html, save_json
 from portfolio_core.schemas import DatasetContract
 from portfolio_eval.report import ReportBuilder
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedKFold, cross_val_predict, train_test_split
 
 from churn_pipeline.config import ChurnConfig, pd, threadpool_limits, yaml
 from churn_pipeline.demo_payload import write_demo_payload
 from churn_pipeline.eda import eda_churn_profile_figure
-from churn_pipeline.evaluate import artifact_paths, evaluate_holdout
+from churn_pipeline.evaluate import artifact_paths, evaluate_holdout, select_oof_thresholds
 from churn_pipeline.hpo import ModelSelection, build_estimator, run_study
 from churn_pipeline.model import (
     TARGET_COL,
@@ -295,7 +297,45 @@ def train_core(cfg: ChurnConfig, params_file: Path = Path("params.yaml")) -> Pat
         )
         calibrated.fit(X_calib, y_calib)
 
+        # Freeze each operating point without touching the sealed holdout.
+        # The calibrated arm uses nested CV inside each outer training fold.
+        cv = StratifiedKFold(n_splits=cfg.cv_folds, shuffle=True, random_state=cfg.seed)
+        estimators = {
+            "logreg": grid.best_estimator_,
+            "selected": build_estimator(cfg, selection.family, selection.params),
+            "selected_calibrated": CalibratedClassifierCV(
+                estimator=build_estimator(cfg, selection.family, selection.params),
+                method="isotonic",
+                cv=2,
+            ),
+        }
+        oof: dict[str, NDArray[np.float64]] = {}
+        for name, estimator in estimators.items():
+            scores = cross_val_predict(
+                estimator, X_train, y_train, cv=cv, method="predict_proba", n_jobs=1
+            )
+            oof[name] = np.asarray(scores[:, 1], dtype=float)
+        thresholds, training_costs = select_oof_thresholds(cfg, np.asarray(y_train, dtype=int), oof)
+
     paths = artifact_paths(cfg)
+    np.savez_compressed(
+        paths["training_predictions"],
+        y_train=np.asarray(y_train, dtype=int),
+        logreg=oof["logreg"],
+        selected=oof["selected"],
+        selected_calibrated=oof["selected_calibrated"],
+    )
+    policy = {
+        "schema_version": 1,
+        "method": f"stratified {cfg.cv_folds}-fold out-of-fold predictions",
+        "n_train": len(X_train),
+        "fp_cost": cfg.fp_cost,
+        "fn_cost": cfg.fn_cost,
+        "thresholds": thresholds,
+        "training_costs": training_costs,
+    }
+    paths["operating_policy"].write_text(json.dumps(policy, indent=2) + "\n")
+    log.info("train: OOF-frozen thresholds %s", thresholds)
     with paths["logreg"].open("wb") as fh:
         pickle.dump(grid.best_estimator_, fh)
     with paths["selected"].open("wb") as fh:
@@ -341,9 +381,15 @@ def evaluate_core(cfg: ChurnConfig) -> Path:
     X_test = holdout[list(dict.fromkeys(feature_cols(cfg) + slice_cols(cfg)))]
     y_test = holdout[TARGET_COL].astype(int)
     meta = json.loads((cfg.data_dir / "model_meta.json").read_text())
+    policy = json.loads(paths["operating_policy"].read_text())
 
     runs, figures, summary = evaluate_holdout(
-        cfg, models, X_test, y_test, train_base_rate=float(meta["train_churn_rate"])
+        cfg,
+        models,
+        X_test,
+        y_test,
+        train_base_rate=float(meta["train_churn_rate"]),
+        thresholds={k: float(v) for k, v in policy["thresholds"].items()},
     )
 
     builder = ReportBuilder(
@@ -360,6 +406,13 @@ def evaluate_core(cfg: ChurnConfig) -> Path:
     metrics = json.loads(metrics_path.read_text())
     metrics["_meta"] = {
         "cost_delta_ci": summary["cost_delta_ci"],
+        "cost_delta_ci_logreg": summary["cost_delta_ci_logreg"],
+        "threshold_selection": {
+            "data": "training_oof",
+            "method": policy["method"],
+            "n_train": policy["n_train"],
+        },
+        "logreg_opt": summary["logreg_opt"],
         "selected_opt": summary["selected_opt"],
         "calibrated_opt": summary["calibrated_opt"],
         "naive_opt": summary["naive_opt"],
@@ -385,12 +438,12 @@ def evaluate_core(cfg: ChurnConfig) -> Path:
 def sensitivity_core(cfg: ChurnConfig, fn_costs: list[float]) -> Path:
     """What-if FN-cost sensitivity of the persisted pipeline (baseline untouched).
 
-    Re-scores the committed artifacts under alternative FN-cost assumptions —
-    the same evaluation code path as ``evaluate``, but only the cost model
-    changes: thresholds re-derive per variant on the same 1,409-row holdout,
-    and each variant's paired-bootstrap CI is recomputed at its own operating
-    points. Nothing is written except ``reports/sensitivity.json``: metrics.json,
-    figures and the served artifact remain the fn_cost=5 baseline.
+    Re-scores the committed artifacts under alternative FN-cost assumptions.
+    Thresholds are re-frozen from the persisted training-side OOF predictions
+    for each cost model, then applied unchanged to the holdout. Each variant's
+    paired-bootstrap CI compares its exact calibrated policy with contact
+    everyone. Nothing is written except ``reports/sensitivity.json``:
+    metrics.json, figures and the served artifact remain the fn_cost=5 baseline.
 
     The variant matching the production ``fn_cost`` doubles as a self-check:
     it must reproduce the baseline's reported costs bit-for-bit.
@@ -407,16 +460,39 @@ def sensitivity_core(cfg: ChurnConfig, fn_costs: list[float]) -> Path:
     base_rate = float(meta["train_churn_rate"])
 
     baseline_metrics = json.loads((cfg.reports_dir / "metrics.json").read_text())
-    baseline_naive = float(baseline_metrics["naive_majority"]["business_cost"])
+    with np.load(paths["training_predictions"]) as training:
+        y_train = np.asarray(training["y_train"], dtype=int)
+        training_proba = {
+            name: np.asarray(training[name], dtype=float)
+            for name in ("logreg", "selected", "selected_calibrated")
+        }
 
     variants: dict[str, Any] = {}
     for fn_cost in fn_costs:
         variant_cfg = cfg.model_copy(update={"fn_cost": float(fn_cost)})
+        thresholds, _training_costs = select_oof_thresholds(variant_cfg, y_train, training_proba)
         _runs, _figures, summary = evaluate_holdout(
-            variant_cfg, models, X_test, y_test, train_base_rate=base_rate
+            variant_cfg,
+            models,
+            X_test,
+            y_test,
+            train_base_rate=base_rate,
+            thresholds=thresholds,
         )
         ci = summary["cost_delta_ci"]
         key = f"fn{fn_cost:g}"
+        matches_baseline = (
+            float(fn_cost) == float(cfg.fn_cost)
+            and all(
+                summary[f"{run}_cost"] == float(baseline_metrics[f"{metric_run}"]["business_cost"])
+                for run, metric_run in (
+                    ("naive", "naive_majority"),
+                    ("selected", "selected_model"),
+                    ("calibrated", "selected_model_calibrated"),
+                )
+            )
+            and summary["calibrated_opt"] == float(baseline_metrics["_meta"]["calibrated_opt"])
+        )
         variants[key] = {
             "fn_cost": float(fn_cost),
             "fp_cost": float(variant_cfg.fp_cost),
@@ -433,9 +509,7 @@ def sensitivity_core(cfg: ChurnConfig, fn_costs: list[float]) -> Path:
                 "significant_95": ci["significant_95"],
                 "n_boot": ci["n_boot"],
             },
-            "matches_baseline": (
-                float(fn_cost) == float(cfg.fn_cost) and summary["naive_cost"] == baseline_naive
-            ),
+            "matches_baseline": matches_baseline,
         }
         log.info(
             "sensitivity %s: naive=%.0f selected=%.0f calibrated=%.0f t*=%.3f CI [%s, %s]",
@@ -452,9 +526,10 @@ def sensitivity_core(cfg: ChurnConfig, fn_costs: list[float]) -> Path:
         "baseline_fn_cost": float(cfg.fn_cost),
         "note": (
             "What-if re-scoring of the persisted artifacts under alternative "
-            "FN-cost assumptions; thresholds re-derived per variant on the "
-            "same holdout. The variant equal to the production fn_cost must "
-            "reproduce the baseline metrics (matches_baseline)."
+            "FN-cost assumptions; thresholds are re-frozen from training-side "
+            "OOF predictions per variant before one holdout evaluation. The "
+            "variant equal to the production fn_cost must reproduce the "
+            "baseline metrics (matches_baseline)."
         ),
         "variants": variants,
     }
