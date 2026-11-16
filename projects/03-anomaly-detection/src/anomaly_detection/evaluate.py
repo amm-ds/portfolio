@@ -1,9 +1,11 @@
 """Evaluation: ROC-AUC / PR-AUC per detector at a fixed contamination, plus
 report artifacts (metrics.json, report.html, interactive figures).
 
-Scoring uses the continuous anomaly scores against the held-out test window;
-the binary decision threshold is the ``1 - contamination`` quantile of the
-test scores, so the operating point is fixed a priori rather than tuned.
+Champion selection uses PR-AUC on the validation tail of the training window.
+Only after that choice is frozen are continuous scores evaluated on the
+held-out test window. The binary decision threshold is the
+``1 - contamination`` quantile of the test scores, fixed a priori rather than
+tuned against test labels.
 """
 
 import json
@@ -34,15 +36,15 @@ def predict_at_contamination(scores: np.ndarray, contamination: float) -> np.nda
     return (scores >= threshold).astype(int)
 
 
-def evaluate_scores(name: str, y_true: np.ndarray, scores: np.ndarray) -> RunResult:
+def evaluate_scores(
+    name: str, y_true: np.ndarray, scores: np.ndarray, split: str = "test"
+) -> RunResult:
     """ROC-AUC + PR-AUC of one detector's scores against ground truth."""
     return RunResult(
         name=name,
         metrics=[
-            MetricResult("roc_auc", float(skm.roc_auc_score(y_true, scores)), split="test"),
-            MetricResult(
-                "pr_auc", float(skm.average_precision_score(y_true, scores)), split="test"
-            ),
+            MetricResult("roc_auc", float(skm.roc_auc_score(y_true, scores)), split=split),
+            MetricResult("pr_auc", float(skm.average_precision_score(y_true, scores)), split=split),
         ],
     )
 
@@ -78,21 +80,15 @@ def _model_runs(config: AnomalyConfig) -> list[str]:
     return names
 
 
-def score_all(
-    config: AnomalyConfig,
+def _score_frame(
+    config: AnomalyConfig, frame: pl.DataFrame, split: str
 ) -> tuple[list[RunResult], dict[str, np.ndarray], np.ndarray, np.ndarray]:
-    """Score every persisted detector (untuned + tuned) on the test window.
-
-    Returns the per-model runs, the raw test scores per model, the ground
-    truth labels, and the test timestamps (all aligned row-wise).
-    """
-    df = load_features(config)
-    _, test = split_train_test(df, config.train_frac)
-    x_test = feature_matrix(test, config)
-    y_test = test["is_anomaly"].to_numpy().astype(int)
-    ts = test["ts"].to_numpy()
+    """Score every persisted detector on one already-isolated data frame."""
+    x = feature_matrix(frame, config)
+    y = frame["is_anomaly"].to_numpy().astype(int)
+    ts = frame["ts"].to_numpy()
     names = _model_runs(config)
-    logger.info("scoring %d runs on %d test rows", len(names), x_test.shape[0])
+    logger.info("scoring %d runs on %d %s rows", len(names), x.shape[0], split)
 
     runs: list[RunResult] = []
     scores_by_model: dict[str, np.ndarray] = {}
@@ -103,15 +99,34 @@ def score_all(
             path = config.models_dir / f"{name}.joblib"
         if not path.exists():
             raise FileNotFoundError(f"model artifact missing: {path}; run train/tune first")
-        scores = anomaly_scores(joblib.load(path), name.removesuffix("_tuned"), x_test)
-        run = evaluate_scores(name, y_test, scores)
+        scores = anomaly_scores(joblib.load(path), name.removesuffix("_tuned"), x)
+        run = evaluate_scores(name, y, scores, split=split)
         runs.append(run)
         scores_by_model[name] = scores
         roc = run.get("roc_auc")
         pr = run.get("pr_auc")
         assert roc is not None and pr is not None  # noqa: S101 - run metrics always recorded
-        logger.info("%s roc_auc=%.4f pr_auc=%.4f", name, roc.value, pr.value)
-    return runs, scores_by_model, y_test, ts
+        logger.info("%s %s roc_auc=%.4f pr_auc=%.4f", name, split, roc.value, pr.value)
+    return runs, scores_by_model, y, ts
+
+
+def score_all(
+    config: AnomalyConfig,
+) -> tuple[list[RunResult], dict[str, np.ndarray], np.ndarray, np.ndarray]:
+    """Score every persisted detector on the held-out test window."""
+    df = load_features(config)
+    _, test = split_train_test(df, config.train_frac)
+    return _score_frame(config, test, "test")
+
+
+def score_validation(
+    config: AnomalyConfig,
+) -> tuple[list[RunResult], dict[str, np.ndarray], np.ndarray, np.ndarray]:
+    """Score candidates on the last 20% of training, matching the HPO split."""
+    df = load_features(config)
+    train, _ = split_train_test(df, config.train_frac)
+    n_val = max(100, int(train.height * 0.2))
+    return _score_frame(config, train.tail(n_val), "validation")
 
 
 def best_model(runs: list[RunResult]) -> str:
@@ -124,6 +139,14 @@ def best_model(runs: list[RunResult]) -> str:
         return metric.value if metric is not None else 0.0
 
     return max(runs, key=pr_auc).name
+
+
+def select_champion(
+    config: AnomalyConfig,
+) -> tuple[str, list[RunResult], np.ndarray]:
+    """Freeze the champion using training-window validation evidence only."""
+    runs, _, y_validation, _ = score_validation(config)
+    return best_model(runs), runs, y_validation
 
 
 def roc_figure(
@@ -395,11 +418,11 @@ def hpo_importance_figure(config: AnomalyConfig, family: str) -> go.Figure | Non
 
 
 def run_evaluation(config: AnomalyConfig) -> tuple[dict[str, dict[str, float]], Path]:
-    """Full evaluate stage: runs, figures, HTML report, metrics.json, figure JSON."""
+    """Select on validation, then evaluate the frozen champion and all runs on test."""
+    champion, validation_runs, y_validation = select_champion(config)
+    logger.info("champion by validation PR-AUC: %s", champion)
     runs, scores_by_model, y_test, _ = score_all(config)
     add_random_baseline(runs, scores_by_model, y_test, config)
-    champion = best_model(runs)
-    logger.info("best model by PR-AUC: %s", champion)
 
     figures: dict[str, go.Figure] = {
         "eda_signals_overview": eda_signals_overview(load_raw(config)),
@@ -424,7 +447,21 @@ def run_evaluation(config: AnomalyConfig) -> tuple[dict[str, dict[str, float]], 
     builder.build(config.eval_dir, figures=figures)
     for name, fig in figures.items():
         save_json(fig, config.figures_dir / f"{name}.json")
-    logger.info("wrote %s/{metrics.json,report.html}", config.eval_dir)
+
+    selection = {
+        "schema_version": 1,
+        "champion": champion,
+        "selection_metric": "pr_auc",
+        "selection_split": "last_20_percent_of_train",
+        "n_validation_rows": len(y_validation),
+        "validation_anomaly_rate": float(np.mean(y_validation)),
+        "candidates": {
+            run.name: {metric.name: metric.value for metric in run.metrics}
+            for run in validation_runs
+        },
+    }
+    (config.eval_dir / "champion_selection.json").write_text(json.dumps(selection, indent=2) + "\n")
+    logger.info("wrote %s/{metrics.json,champion_selection.json,report.html}", config.eval_dir)
 
     metrics = json.loads((config.eval_dir / "metrics.json").read_text())
     return metrics, config.eval_dir / "report.html"

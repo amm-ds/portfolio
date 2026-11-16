@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+import anomaly_detection.evaluate as evaluate
 import numpy as np
 import pytest
 from anomaly_detection.config import AnomalyConfig
@@ -15,6 +16,7 @@ from anomaly_detection.evaluate import (
     random_scores,
     roc_figure,
     run_evaluation,
+    select_champion,
 )
 
 
@@ -113,6 +115,43 @@ def test_best_model_by_pr_auc() -> None:
         best_model([])
 
 
+def test_champion_selection_ignores_conflicting_test_ranking(
+    small_config: AnomalyConfig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A test-only winner must neither be selected nor scored during selection."""
+    y = np.array([0, 1])
+    validation_runs = [
+        evaluate_scores("validation_winner", y, np.array([0.0, 1.0]), split="validation"),
+        evaluate_scores("test_winner", y, np.array([0.0, 0.5]), split="validation"),
+    ]
+    test_runs = [
+        evaluate_scores("validation_winner", y, np.array([0.0, 0.5])),
+        evaluate_scores("test_winner", y, np.array([0.0, 1.0])),
+    ]
+    test_scored = False
+
+    def fake_score_all(
+        config: AnomalyConfig,
+    ) -> tuple[list[evaluate.RunResult], dict[str, np.ndarray], np.ndarray, np.ndarray]:
+        nonlocal test_scored
+        test_scored = True
+        return test_runs, {}, y, np.array([0, 1])
+
+    monkeypatch.setattr(
+        evaluate,
+        "score_validation",
+        lambda config: (validation_runs, {}, y, np.array([0, 1])),
+    )
+    monkeypatch.setattr(evaluate, "score_all", fake_score_all)
+
+    champion, selected_runs, selected_y = select_champion(small_config)
+
+    assert champion == "validation_winner"
+    assert selected_runs == validation_runs
+    np.testing.assert_array_equal(selected_y, y)
+    assert not test_scored
+
+
 def test_run_evaluation_writes_artifacts(small_config: AnomalyConfig, tmp_path: Path) -> None:
     from anomaly_detection.data import prepare
     from anomaly_detection.features import build_features, save_features
@@ -157,6 +196,13 @@ def test_run_evaluation_writes_artifacts(small_config: AnomalyConfig, tmp_path: 
     assert report_path.exists()
     assert (config.eval_dir / "metrics.json").exists()
     assert json.loads((config.eval_dir / "metrics.json").read_text()) == metrics
+    selection = json.loads((config.eval_dir / "champion_selection.json").read_text())
+    assert selection["selection_split"] == "last_20_percent_of_train"
+    assert selection["selection_metric"] == "pr_auc"
+    assert selection["champion"] in selection["candidates"]
+    assert set(selection["candidates"]) == set(metrics) - {"random"}
+    for values in selection["candidates"].values():
+        assert set(values) == {"roc_auc", "pr_auc"}
     for name in (
         "eda_signals_overview",
         "roc_curves",

@@ -38,8 +38,9 @@ uv run pytest projects/03-anomaly-detection -q
 
 The synthetic pipeline prepares 20,000 seeded telemetry rows at a 2% injection
 rate, enforces data-quality gates, builds rolling features, and trains on the
-first 70% of the timeline. Optuna tuning uses only a validation slice inside
-that train window. Evaluation uses the final 30% and a fixed alert threshold.
+first 70% of the timeline. Optuna tuning and champion selection use only the
+last 20% of that train window. The champion is frozen by validation PR-AUC
+before the final 30% is scored with a fixed alert threshold.
 
 The NAB track uses checksum-pinned series from `realAWSCloudwatch`,
 `realKnownCause`, and `realTraffic`. Three series have no labelled window in
@@ -93,9 +94,11 @@ coverage gate. The negative result and exact cells are committed in
 
 ### Synthetic CI track
 
-The seeded synthetic test window contains 5,983 rows at 1.89% prevalence.
-These measurements validate pipeline behavior; they do not estimate real
-incident-page load.
+The 2,791-row validation slice has 2.15% prevalence. Tuned One-Class SVM wins
+selection PR-AUC at 0.1514, ahead of tuned IsolationForest at 0.1330. The
+seeded test window then contains 5,983 rows at 1.89% prevalence. These
+measurements validate pipeline behavior; they do not estimate real
+incident-page load, and test PR-AUC does not select the champion.
 
 | run | ROC-AUC | PR-AUC |
 |---|---:|---:|
@@ -109,6 +112,7 @@ Rolling-median residuals lift synthetic IsolationForest to 0.9999 ROC-AUC and
 central limit of the synthetic evidence.
 
 Artifacts: [`reports/metrics.json`](reports/metrics.json),
+[`reports/champion_selection.json`](reports/champion_selection.json),
 [`reports/nab_metrics.json`](reports/nab_metrics.json),
 [`reports/report.html`](reports/report.html), and `reports/figures/`. The NAB
 figures cover representative timelines, score distributions, alert budgets,

@@ -36,9 +36,10 @@ sections:
 
     Read the diagram from left to right:
 
-    - **Past-only data:** Train on the first 70% of each series. A
-      hyperparameter search tries different model settings. It uses only the
-      last 20% of that training span. Score the later window once.
+    - **Past-only data:** Train on the first 70% of each series. The
+      hyperparameter search and synthetic champion selection use only the
+      last 20% of that training span. Freeze the champion by validation
+      PR-AUC, then score the later window once.
     - **Frozen operating point:** Set the threshold at the top 2% of training
       scores. This is the assumed contamination budget. It is the expected
       share of anomalies. Never tune it on test labels.
@@ -90,13 +91,13 @@ sections:
     Follow the NAB branch in the diagram first. Its split between nine
     evaluable and three excluded series explains the denominator behind the
     incident results. Then follow the synthetic and probe branches. Both end
-    at mechanics or contract checks, not headline evidence. Labels are used
-    for evaluation only. See the
-    [NAB dataset card](https://amm-ds.github.io/portfolio/data-registry/nab/).
+    at mechanics or contract checks, not headline evidence. Train-side labels
+    guide tuning and selection; test labels are reserved for final scoring.
+    See the [NAB dataset card](https://amm-ds.github.io/portfolio/data-registry/nab/).
 
     **Business summary:** NAB's nine evaluable series carry the headline; a
     synthetic stream checks the pipeline; the NSL-KDD probe checks the
-    contract; labels never train a model.
+    contract; labels never fit the unsupervised detector parameters.
   figures: []
 - id: eda
   text_md: |
@@ -188,14 +189,15 @@ sections:
     noise. In `hpo_importance`, look for gamma, OCSVM's boundary-width
     setting, carrying 99% of the search importance.
 
-    **The synthetic results do not transfer.** `telemetry_flags` and
-    `hpo_importance` show mechanics, not real precision. On the 5,983-row
-    window with 1.89% prevalence, untuned IsolationForest scores 0.9158
+    **Synthetic results do not transfer.** `telemetry_flags` and
+    `hpo_importance` are mechanics checks. On 2,791 validation rows (2.15%
+    anomalies), tuned OCSVM wins selection PR-AUC 0.1514 versus tuned
+    IsolationForest 0.1330, freezing the champion before test scoring. On
+    5,983 test rows (1.89% anomalies), untuned IsolationForest scores 0.9158
     ROC-AUC / 0.1239 PR-AUC. Tuned IsolationForest reaches 0.9171 ROC-AUC,
     tuned OCSVM reaches 0.1355 PR-AUC, and random scores 0.5091 / 0.0194.
-    Rolling-median residuals lift IsolationForest to 0.9999 / 0.9960, but
-    not on NAB. The NSL-KDD probe remains 0.8877 / 0.8979 at 56.9%
-    prevalence.
+    Rolling-median residuals lift IsolationForest to 0.9999 / 0.9960, but not
+    on NAB. NSL-KDD remains 0.8877 / 0.8979 at 56.9% prevalence.
 
     **Business summary:** Switching single detectors is not worth it;
     combining them is. At the frozen default, the rank-average ensemble
@@ -210,9 +212,10 @@ sections:
 
     In `pr_curves`, compare each synthetic curve with the 1.9% prevalence
     floor, which is the random level set by the anomaly share. Average
-    precision (AP) summarizes precision across recall levels. Tuned OCSVM
-    leads AP at 0.136, but the small lift above the floor warns against
-    treating minute ranking as incident detection.
+    precision (AP) summarizes precision across recall levels. Tuned OCSVM,
+    already selected on validation, leads test AP at 0.136. This value did not
+    select it; the small lift above the floor also warns against treating
+    minute ranking as incident detection.
 
     In `range_pr`, precision and recall describe matched incident windows,
     not individual minutes. The threshold sweep uses score quantiles,
@@ -410,9 +413,11 @@ sections:
     ## Protocol
 
     - **Splits:** Train on the first 70% of each series and score the later
-      span once. The hyperparameter slice is the last 20% of training.
-      Roughly 30 seeded Tree-structured Parzen Estimator (TPE) trials guide
-      the past-only search by learning from earlier trials.
+      span once. The hyperparameter and champion-selection slice is the last
+      20% of training. Select the synthetic champion by validation PR-AUC and
+      freeze it before test scoring. Roughly 30 seeded Tree-structured Parzen
+      Estimator (TPE) trials guide the past-only search by learning from
+      earlier trials.
     - **Threshold:** Fix the train-anchored top-2% quantile of each series'
       scores before scoring. This is the assumed contamination budget, with
       no label tuning.
@@ -488,7 +493,7 @@ key_concepts:
 - "**Alert-budget stream:** Deduplicated alert episodes capped at one page per series per 24 h, turning 1,609 raw alerts into 80 pages."
 - "**Rank-average ensemble:** The mean of each minute's normalized ranks under IsolationForest, LOF, and OCSVM; it wins the sweep at the frozen default without recalibration or tuning."
 - "**Event-aware range-F1:** A balance of event precision and recall that counts a labelled window as detected once one alert lands inside it."
-- "**Past-only splits:** Each series trains on its first 70% and scores a later span once, so no incident leaks into fitting or tuning."
+- "**Past-only splits:** Each series trains on its first 70% and scores a later span once, so no test incident leaks into fitting, tuning, or champion selection."
 - "**Windows touched:** The raw share of labelled windows hit, reported apart from range recall's mean over all 12 series."
 - "**Synthetic ladder:** A seeded stream that checks pipeline mechanics; its large residual-feature gains never appeared on NAB."
 - "**Operating point:** The threshold-budget and cooldown pair chosen on training data alone; adoption needs +0.05 and one transferring test evaluation."
@@ -496,7 +501,7 @@ figure_captions:
   eda_signals_overview: "Two days (2,880 minutes) of the seeded synthetic stream. CPU, memory, and latency follow a repeating daily cycle; injected anomalies appear as simultaneous CPU+latency spikes."
   telemetry_flags: "Synthetic test-window flags at the fixed 2% alert budget, compared with ground-truth anomalous minutes. The flags track simultaneous CPU+latency spikes; this is not a NAB result."
   hpo_importance: "One-Class Support Vector Machine tuning on synthetic train-only validation: gamma, the boundary-width setting, carries 99% of importance, moving from the failing `scale` default to 0.0131 (best validation PR-AUC 0.126)."
-  pr_curves: "Pointwise precision-recall curves on the synthetic test window, with the 1.9% prevalence floor. Tuned OCSVM leads average precision (AP) at 0.136; these curves do not measure event-window recall."
+  pr_curves: "Pointwise precision-recall curves on the synthetic test window, with the 1.9% prevalence floor. Tuned OCSVM was frozen by validation PR-AUC 0.151 before this test AP 0.136 was measured; these curves do not select the champion or measure event-window recall."
   threshold_sweep: "Synthetic precision and recall across alert budgets, with the fixed 2% point marked: 115 flags, about 15% precision and recall (14.8%), including 17 hits on anomalous minutes. This is point-level load, not 17 incidents."
   adaptive_stream: "Adaptive versus fixed thresholds in streaming simulation. Synthetic-calibrated median/interquartile-range drift detection fires on 31 of 120 real NAB chunks, so it remains too twitchy for the headline operating point."
   nab_timelines: "Six representative NAB test windows: amber bands are labelled events and pink crosses are IsolationForest alerts. These panels contain 897 alerts; nyc_taxi misses one window while the other five series touch theirs."

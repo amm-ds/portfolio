@@ -3,11 +3,13 @@
 ## Requirements
 
 - Detect anomalous minutes in synthetic telemetry (cpu, mem, latency_ms) with
-  unsupervised detectors; ground-truth `is_anomaly` used for evaluation only.
+  unsupervised detectors; train-side ground truth guides validation, while test
+  labels are reserved for final evaluation.
 - Data-quality gates must halt the pipeline loudly on violation and persist a
   human-readable report.
-- Detectors train on the train window only; scoring on the test window uses a
-  fixed contamination (no threshold tuning against ground truth).
+- Detectors train on the train window only; select the champion by PR-AUC on
+  the last 20% of training and freeze it before test scoring. The test window
+  uses fixed contamination with no threshold tuning against ground truth.
 - Per-model ROC-AUC + PR-AUC with overlay figures and a telemetry view marking
   the best model's flags.
 - Runtime < 1 min; fully seeded and reproducible; tests run offline.
@@ -96,6 +98,13 @@ cleanest, most auditable story.
 
 ## Changelog
 
+- 0.10.0 (2026-11-16): corrected synthetic champion selection to rank PR-AUC on
+  the last 20% of the training window (2,791 rows, 60 anomalies), then freeze
+  the winner before test scoring. Tuned OCSVM wins validation at 0.1514 versus
+  0.1330 for tuned IsolationForest; its test PR-AUC remains 0.1355 and is not a
+  selection input. `reports/champion_selection.json` records every candidate,
+  and a regression test gives validation and test conflicting winners. NAB
+  fusion, adoption, tuning, and artifacts are unchanged.
 - 0.9.0 (2026-11-04): wave-17 detector-layer refinement ablation (`nab-refine`,
   artifact `reports/nab_refinement.json`): three candidates measured against
   the committed headline recipe inside one artifact on identical windows

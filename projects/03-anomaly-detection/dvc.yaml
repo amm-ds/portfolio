@@ -50,6 +50,7 @@ stages:
       - data/models_tuned
     outs:
       - reports/report.html
+      - reports/champion_selection.json
       - reports/figures
     metrics:
       - reports/metrics.json
