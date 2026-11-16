@@ -1,114 +1,105 @@
 # 05 · Churn Modeling with Production-Grade sklearn Pipelines
 
-**Domain:** Classical ML · **Data:** IBM telco churn (7,043 rows, 26.5% base
-rate) with a seeded synthetic CI path (messy on purpose: 2% NaN age, 3% NaN
-support calls, a 9,999 charge outlier) · **Status:** working
-showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-open-data-mobility.md))
+**Domain:** Classical ML · **Data:** IBM telco churn (7,043 rows, 26.5% churn)
+with a seeded synthetic CI path · **Status:** working showcase
 
-> On 7,043 IBM telco customers, a calibrated churn policy frozen at 0.175 from
-> training OOF predictions costs 601 versus 1,035 for contact-everyone (95%
-> paired bootstrap CI -508 to -353). Re-select the cutoff when missed-churner
-> cost changes.
->
-> **TL;DR:** subscription businesses where a missed churner costs five times a
-> false alarm, and the base rate makes "do nothing" look accurate.
-> The pipeline cuts decision cost by **41.9%** (1,035 → 601) vs contact-everyone,
-> with a paired bootstrap 95% CI of [−508, −353].
+> On 7,043 IBM telco customers, a calibrated churn policy frozen at 0.175 from training OOF predictions costs 601 versus 1,035 for contact-everyone (95% paired bootstrap CI -508 to -353). Re-select the cutoff when missed-churner cost changes.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn) ·
-> [Churn sandbox demo source →](https://github.com/amm-ds/portfolio/tree/main/apps/showcase-web/src/demos/churn-sandbox) (runs interactively in the showcase app: `make docker-up` → http://localhost:8000/demos/churn-sandbox)
+> [Churn sandbox demo source →](https://github.com/amm-ds/portfolio/tree/main/apps/showcase-web/src/demos/churn-sandbox)
 
-## What it shows
+The 601 and 1,035 values are modeled cost units on one 1,409-row holdout, not
+realized ROI. The output is a priced contact list. A false alarm costs one retention voucher;
+a missed churner costs five. Accuracy prices those mistakes alike, so the
+project optimizes decision cost instead. One fitted `sklearn.Pipeline` applies
+outlier caps, missingness indicators, imputation, scaling, and one-hot encoding
+in both training and serving.
 
-Churn is asymmetric economics for any subscription business: a missed
-churner costs about five times a false alarm. This project delivers a
-production-grade decision pipeline that cuts that decision cost by **41.9%**
-(1,035 → 601) vs a contact-everyone policy on real IBM telco data:
+## Acceptance gates
 
-A single self-contained `sklearn.Pipeline` — custom `OutlierCapper` and
-`MissingValueIndicator` transformers, median imputation, scaling, one-hot
-encoding — followed by **cost-aware Optuna model selection** across four
-arms (logistic, HistGradientBoosting, XGBoost, LightGBM — all sklearn-API on
-the same in-pipeline preprocessing; seeded TPE with median pruning; trials
-scored by CV business cost at per-trial cost-optimal thresholds) whose
-winning config is written back to `params.yaml`. Client CRM extracts onboard
-via `prepare --input client.csv` through the same DQ gates and contract.
-Evaluation is a five-run ladder on one holdout: naive majority → logistic
-baseline (default and cost-tuned thresholds) → selected model raw and
-isotonic-calibrated — with calibration (ECE), permutation importance, PR
-curves, a business-cost curve (FP=1, FN=5), and a paired bootstrap CI on the
-cost delta vs naive.
+- Select models and thresholds from training-side cross-validation/OOF
+  predictions, then freeze them before holdout scoring.
+- Compare every candidate under the same FP=1/FN=5 cost model; report cost
+  beside ROC-AUC, macro F1, and calibration error.
+- Bootstrap the exact frozen policy against contact-everyone and logistic-at-0.5.
+- Treat the synthetic twin as an offline pipeline test, never business evidence.
 
-## Key results (IBM telco churn, 7,043 rows -> 1,409-row holdout)
+## Key results
 
-How to read this table: business cost (FP=1, FN=5) is the verdict column —
-lower is better; the bolded row is the selected model at its cost-optimal
-threshold.
+The stratified seed-42 split produces 5,634 training rows and one 1,409-row
+holdout. A separate 20% training carve-out fits isotonic calibration. The
+thresholds below are training-side OOF-frozen, not holdout optima; lower business
+cost is better.
 
-| run | threshold | ROC-AUC | F1 (macro) | ECE | business cost |
+| Run | Threshold | ROC-AUC | F1 (macro) | ECE | Business cost |
 |---|---|---|---|---|---|
-| naive majority | cost-optimal | 0.5000 | 0.2098 | - | 1,035 |
-| logistic, default 0.5 | 0.500 | 0.8292 | 0.7022 | - | 691 |
-| logistic, tuned | 0.300 | 0.8292 | 0.6151 | - | 611 |
-| selected (cost-HPO XGB) | 0.150 | 0.8387 | 0.6512 | 0.028 | 619 |
-| selected + isotonic | 0.175 | 0.8317 | 0.6745 | **0.016** | **601** |
+| Contact everyone (fixed) | 0.000 | 0.5000 | 0.2098 | – | 1,035 |
+| Logistic, default | 0.500 | 0.8292 | 0.7022 | – | 691 |
+| Logistic, OOF-frozen | 0.450 | 0.8292 | 0.6796 | – | 655 |
+| Selected raw XGB | 0.225 | 0.8387 | 0.6981 | 0.028 | 644 |
+| **Selected + isotonic ← served** | **0.175** | **0.8317** | **0.6745** | **0.016** | **601** |
 
-![Cost-aware selection plus isotonic calibration cuts business cost 41.9% versus the contact-everyone policy](../assets/projects/05-ml-pipeline-churn/business_cost_curve.png){ width="100%" }
+A seeded 25-trial Optuna search selects XGBoost by OOF business cost. On the
+holdout, isotonic calibration improves ECE 0.028 → 0.016 and the separately
+frozen policy cost 644 → 601. These are measured outcomes here, not a claim
+that isotonic calibration always helps.
 
-- Cost-aware HPO selected **XGBoost** on real data (synthetic track's winner
-  was a logistic) — the winner tracks the data. Deliverable vs naive:
-  **cost −41.9% (1,035 -> 601), bootstrap −416, 95% CI [-485, -343]**.
+![Holdout cost across thresholds; stars mark training-side OOF-frozen policies, including the served isotonic policy at 601 cost units](../assets/projects/05-ml-pipeline-churn/business_cost_curve.png){ width="100%" }
 
-![Paired-bootstrap distribution of the cost delta: all 2,000 resamples sit below zero — the −416 saving's 95% CI excludes zero](../assets/projects/05-ml-pipeline-churn/bootstrap_ci.png){ width="100%" }
-- Base rate 26.5% (vs 8.8% synthetic): the operating point does NOT transfer
-  (t*=0.175 vs 0.700) - the cost-curve procedure does. Calibration verdict
-  flips too: isotonic improves both ECE and the cost optimum on telco.
-- **Cost-model sensitivity** (`reports/sensitivity.json`, re-scored via
-  `cli sensitivity`): the served-isotonic cost and threshold move with the
-  missed-churner price — 510 at t=0.200 (FN=3), 601 at t=0.175 (FN=5),
-  699 at t=0.100 (FN=8) — and every variant's paired-bootstrap CI excludes
-  zero. Calibration's cost edge is itself cost-model dependent: isotonic
-  helps at FN=5 (619 → 601) but slightly hurts at FN=8 (691 → 699). The
-  naive comparator stays 1,035 throughout.
+The served policy costs **601 versus 1,035**, a 41.9% reduction in modeled cost.
+The paired cost delta is −434 with 95% CI [−508, −353] against contact-everyone,
+and −90 with 95% CI [−159, −26] against logistic-at-0.5. Each uses 2,000 paired
+holdout resamples at fixed thresholds. The intervals estimate customer-row
+sampling variation only, not model-search or threshold-selection instability.
 
-![The cost-optimal threshold moves with the base rate — 0.175 on telco versus 0.700 on synthetic — while the cost-curve procedure transfers](../assets/projects/05-ml-pipeline-churn/cost_surface.png){ width="100%" }
+![Two thousand paired holdout resamples of the exact served policy minus contact-everyone; the 95% cost-delta interval is −508 to −353](../assets/projects/05-ml-pipeline-churn/bootstrap_ci.png){ width="100%" }
 
-- Fairness slices: recall uniform across gender (0.90 both), higher for
-  seniors (0.97 vs 0.88); the real gap is contractual (month-to-month 0.98 vs
-  two-year 0.00 at FN=5) - a stated business choice, movable on the cost
-  surface. These slices are **raw-model** counts at t=0.150: the raw policy
-  misses 19 of 36 one-year and all 9 two-year churners — the served artifact
-  is isotonic-calibrated at t=0.175, so the counts must not be attributed to
-  serving.
-- Figures include `fairness_slices` (grouped bars) and `cost_surface`
-  (FN cost x threshold heatmap with the operating point marked).
-- 5/5 DQ gates on the pinned snapshot; full pipeline ~10 s, deterministic:
+### Cost sensitivity and fairness
 
-  | gate | column | contract | observed | status |
-  |---|---|---|---|---|
-  | null rate ≤ 5% | tenure_months | ≤ 0.050 | 0.000 | ✅ |
-  | null rate ≤ 5% | monthly_charges | ≤ 0.050 | 0.000 | ✅ |
-  | range [0, 240] | tenure_months | within bounds | [0.0, 72.0] | ✅ |
-  | range [0, 10,000] | monthly_charges | within bounds | [18.25, 118.75] | ✅ |
-  | binary {0, 1} | churned | within bounds | [0.0, 1.0] | ✅ |
+Changing the missed-churner price re-freezes the cutoff from the same training
+OOF predictions before holdout scoring:
 
-## Artifacts
+| FN cost | Served threshold | Served cost | Contact-everyone cost | Delta 95% CI |
+|---|---|---|---|---|
+| 3 | 0.250 | 514 | 1,035 | [−581, −456] |
+| 5 | 0.175 | 601 | 1,035 | [−508, −353] |
+| 8 | 0.150 | 718 | 1,035 | [−418, −204] |
 
-- Figures: interactive versions in the [case study on GitHub](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn), served from `reports/figures/` (HTML + JSON for the showcase app)
-- Metrics: `reports/metrics.json` (5-run ladder + `_meta.cost_delta_ci`) ·
-  Report: `reports/report.html` · DQ: `reports/dq_report.md` ·
-  Sensitivity: `reports/sensitivity.json` (FN=3/5/8 re-score)
-- Selection record: `data/model_selection.json` · Dataset identity card:
-  `data/dataset_contract.json` (SHA-256, seeded source)
+`fairness_slices` describes the **raw** XGB model at its OOF-frozen 0.225
+threshold, not the served calibrated policy. Recall is 0.918 for month-to-month,
+0.250 for one-year, and 0.000 for two-year contracts; the raw model misses 27 of
+36 one-year churners and all 9 two-year churners. Gender recall is nearly level
+(0.834 female / 0.829 male). Served-policy fairness therefore remains a fresh-
+data rollout gate.
 
-## Links
+### Data-quality record
 
-- Dataset card: [data-registry/telco-churn](https://amm-ds.github.io/portfolio/data-registry/telco-churn/) —
-  pinned source, SHA-256, DQ expectations
-- [Project README](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn/README.md) — full
-  results, reproduce commands, client takeaways
-- [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn/DESIGN.md) — requirements,
-  options considered, pipeline diagram, changelog, experiment versioning
-- Story: `projects/05-ml-pipeline-churn/story.yaml` (8 canonical sections +
-  roadmap, served by the showcase API)
-- Source: `projects/05-ml-pipeline-churn/src/churn_pipeline/`
+All five gates pass on the pinned real snapshot. The synthetic twin separately
+exercises missing values and extreme charges in CI.
+
+| Gate | Column | Contract | Observed | Status |
+|---|---|---|---|---|
+| Null rate ≤ 5% | tenure_months | ≤ 0.050 | 0.000 | Pass |
+| Null rate ≤ 5% | monthly_charges | ≤ 0.050 | 0.000 | Pass |
+| Range [0, 240] | tenure_months | Within bounds | [0.0, 72.0] | Pass |
+| Range [0, 10,000] | monthly_charges | Within bounds | [18.25, 118.75] | Pass |
+| Binary {0, 1} | churned | Within bounds | [0.0, 1.0] | Pass |
+
+## Limits
+
+- Final metrics come from one random snapshot split. Bootstrap intervals omit
+  selection instability, and no time axis supports drift or seasonality claims.
+- Cost units encode an assumed 1-versus-5 mistake price; they are not revenue,
+  savings realized in production, or ROI.
+- Fairness numbers describe the raw model, not the served calibrated policy.
+- Evidence covers one operator and 21 columns; transfer is unmeasured.
+
+## Artifacts and links
+
+- [Project README](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn/README.md) — full results and reproduce commands
+- [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn/DESIGN.md) — requirements and experiment history
+- `story.yaml` — canonical eight-section case study
+- `reports/metrics.json`, `data/operating_policy.json`, and
+  `reports/sensitivity.json` — exact policies and measurements
+- `reports/figures/` — interactive figures; `reports/report.html` — standalone report
+- Dataset card: [data-registry/telco-churn](https://amm-ds.github.io/portfolio/data-registry/telco-churn/)

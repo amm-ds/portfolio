@@ -191,32 +191,31 @@ sections:
     metrics_keys: [naive_majority, logreg_threshold_0.450, selected_model, selected_model_calibrated]
   - id: evaluation
     text_md: |
-      **The evaluation diagram shows a deployable artifact and a frozen-policy
-      estimate.** The artifact accepts raw customer records from a CRM, or
-      customer relationship management, system. It returns a scored contact
-      list using the same 0.175 threshold persisted during training.
+      **The evaluation diagram shows the saved model and one frozen-policy
+      estimate.** The artifact accepts raw customer rows from a CRM, or customer
+      relationship management, system. It returns a scored contact list at the
+      same 0.175 cutoff saved during training.
 
-      Follow the measurement chain from left to right. Before holdout scoring,
-      stratified three-fold OOF predictions price a 41-point threshold grid
-      under the 1-versus-5 cost model. The argmin, the cutoff with the smallest
-      OOF cost, is frozen in `operating_policy.json`. Evaluation then scores
-      that policy once. Two 2,000-resample paired bootstraps compare the exact
-      calibrated policy with contact-everyone and logistic-at-0.5.
+      Follow the measurement chain from left to right. Three-fold OOF predictions
+      price a 41-point cutoff grid under the 1-versus-5 cost model. OOF means
+      each training row is scored by a model that did not fit that row. The
+      lowest-cost cutoff is saved in `operating_policy.json` before holdout
+      scoring. Evaluation then scores that policy once. Two paired bootstraps,
+      with 2,000 resamples each, compare it with contact-everyone and
+      logistic-at-0.5.
 
       ```diagram auto-05-ml-pipeline-churn-3
       ```
 
-      The first watch item limits that interval. Resampling holdout rows at a
-      fixed threshold estimates customer sampling variation, not model-search
-      or threshold-selection instability. A fresh time-split would test the
-      frozen rule on later customers, but this snapshot has no time axis. A
-      time-stamped feed from the data owner is therefore required before
-      rollout, or real-world release.
+      The first watch item limits each interval. Resampling holdout rows at a
+      fixed cutoff estimates row noise. It does not measure changes from model
+      search or cutoff selection. A fresh time split would test the frozen rule
+      on later customers, but this snapshot has no time axis. Rollout, or real
+      release, therefore needs a time-stamped feed from the data owner.
 
-      The second watch item is the raw model's blind spot for two-year
-      churners. Fairness means checking performance across customer groups.
-      That blind spot makes served-policy fairness on fresh data another
-      rollout gate.
+      The second watch item is the raw model's blind spot for two-year churners.
+      Fairness means checking results across customer groups. Fresh data must
+      test the served calibrated policy before rollout.
 
       **Business summary:** The artifact accepts raw CRM rows behind the
       data-quality gates. The frozen policy's measured cost cut is about 42%

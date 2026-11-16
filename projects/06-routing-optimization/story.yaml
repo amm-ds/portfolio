@@ -156,12 +156,12 @@ sections:
         8 published references, with RC202 best at −3.85%. The remaining gaps
         include C2 at 6.50%, C203 at 19.48%, and C103 at 11.67%.
       - **Exact-solver role:** the full-scale per-instance record shows ALNS
-        and hinted CP-SAT tie on all 56, at about ten times the runtime for
-        CP-SAT; the solver-profile distributions summarize their distances.
+        and hinted CP-SAT tie on all 56, with measured mean runtimes of ~1.1 s
+        and 12.0 s; the solver-profile distributions summarize their distances.
         Without a hint and with the same ten-second budget, CP-SAT finds no
-        feasible plan on any instance. Only small cases carry proofs: a
-        25-customer C101 case is certified optimal in 2.9 s, and a 5-customer
-        case in 0.1 s.
+        feasible plan on any instance. These probes establish no general solver
+        speedup. Only small cases carry proofs: a 25-customer C101 case is
+        certified optimal in 2.9 s, and a 5-customer case in 0.1 s.
       - **Tuning limits:** the tuned 2-opt result in the gap figure reflects a
         gain of only 13.75% → 13.63%. Randomized restarts never pay, so ALNS
         keeps `k=1`, one start. Move budgets saturate at about twenty accepted
@@ -261,12 +261,11 @@ sections:
         instances. ALNS improves from a 6.6% median gap to best-known level by
         10 seconds. Single-worker CP-SAT stays near its 17.6% starting gap for
         the full window. This cold-start comparison differs from the headline
-        hinted arm, where CP-SAT starts from the tuned 2-opt plan.
+        hinted arm, where CP-SAT starts from the ALNS plan.
 
       **Business summary:** The family view gives a 4.23% average gap, a worst
-      residual of 19.48%, and eight beaten references. From the same cold start,
-      the frontier shows ALNS reaching reference quality ten times faster than
-      the exact solver's single worker.
+      residual of 19.48%, and eight beaten references. The frontier records the
+      two cold-start traces; it does not establish a general exact-solver speedup.
     figures: [family_gap, pareto_gap_runtime, frontier_gap_time]
   - id: conclusions
     text_md: |
@@ -275,11 +274,10 @@ sections:
       Follow the ALNS path in the conclusion diagram. On all 56 Solomon
       100-customer instances, HPO-tuned ALNS returns feasible, machine-checked
       plans with a 4.23% mean distance gap and +3.73 vehicle delta. It wins
-      distance on 52 of 56 at ~1.1 s per problem. The 95% confidence interval
-      (CI) is 3.1–5.3 points; here it summarizes instance spread, not sampling
-      uncertainty. Seed 42 makes runs deterministic, meaning exactly repeatable.
-      Seven tuned heuristic rungs take about 130 seconds; all eight solvers with
-      hinted CP-SAT take about 13 minutes.
+      distance on 52 of 56 at ~1.1 s per problem. These deterministic benchmark
+      results have per-instance spread, not a sampling-uncertainty interval. Seed
+      42 makes runs exactly repeatable. Seven tuned heuristic rungs take about
+      130 seconds; all eight solvers with hinted CP-SAT take about 13 minutes.
       [Full evaluation report](https://amm-ds.github.io/portfolio/projects/06-routing-optimization/)
 
       ## What the results show
@@ -288,8 +286,9 @@ sections:
         is feasible and checked.
       - Its fleet-first branch saves 0.07 vehicles for +0.07 points of gap, a
         measured choice.
-      - Its exact-solver branch certifies small cases. Hinted CP-SAT ties at about
-        ten times runtime; unhinted finds no feasible plan at equal budget.
+      - Its exact-solver branch certifies small cases. Hinted CP-SAT returns the
+        ALNS incumbent unchanged at 12.0 s mean runtime versus ~1.1 s for ALNS;
+        unhinted finds no feasible plan at equal budget.
       - Its tuning path keeps negatives: restarts never pay; 2-opt HPO moves mean
         gap only 13.75% → 13.63%.
       - Its reference comparison shows 8 best-known plans undercut, best RC202 at
@@ -340,7 +339,7 @@ sections:
       | distance | ALNS wins 52/56 within the ladder; `alns_fleet` wins the other 4. Fleet-first reaches different, occasionally shorter-distance local optima (best within a search neighborhood). |
       | vehicles first | fleet-first ranking: ALNS wins 38/56, `alns_fleet` 5/56, naive solvers 13 using fewer vehicles at far worse distance; no solver beats best-known fleet size (+3.73 mean, +3.66 fleet-first) |
       | negative gaps | ALNS undercuts 8 published references (best RC202 −3.85%); residual gaps include C2 6.50%, C203 19.48% and C103 11.67% |
-      | exact solver | hinted CP-SAT: UNKNOWN (no optimality proof) on all 56 at 100 customers, incumbents unchanged at ~10× runtime; unhinted at equal 10 s budget: no feasible plan or incumbent; certified optimal only in small cases: 25-customer C101 prefix at 191.8 in 2.9 s (2-opt hint 286.3 → 191.8, −33%) and a 5-customer case in 0.1 s |
+      | exact solver | hinted CP-SAT: UNKNOWN (no optimality proof) on all 56 at 100 customers, incumbents unchanged; mean runtime 12.0 s versus ~1.1 s for ALNS; unhinted at equal 10 s budget: no feasible plan or incumbent; certified optimal only in small cases: 25-customer C101 prefix at 191.8 in 2.9 s (2-opt hint 286.3 → 191.8, −33%) and a 5-customer case in 0.1 s |
 
       ## Protocol
 
@@ -397,8 +396,8 @@ figure_captions:
     Narrow windows are scattered through the geographic cluster, so the clock constrains visit order.
   pareto_gap_runtime: >-
     Mean runtime plotted against mean gap to published best-known distance over 56 instances.
-    Annotations show mean vehicle deltas. Hinted CP-SAT ties ALNS at about 10× the runtime;
-    the fleet-first ALNS arm (alns_fleet) lands beside ALNS.
+    Annotations show mean vehicle deltas. Hinted CP-SAT returns the ALNS incumbent
+    unchanged at 12.0 s mean runtime versus ~1.1 s for ALNS; alns_fleet lands beside ALNS.
   solver_profile: >-
     Route-distance distributions for all eight ladder solvers over 56 instances.
     Boxes show medians and interquartile ranges; points show instance outliers.

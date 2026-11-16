@@ -3,34 +3,34 @@
 **Domain:** Deep learning NLP · **Data:** AG News (real, HuggingFace `fancyzhx/ag_news`) ·
 **Status:** Working showcase
 
-> AG News sorter: the selected transformer + selective LLM cascade lifts fresh
-> macro-F1 from 0.9529432 to 0.9539265 and accuracy from 0.953 to 0.954,
-> reviewing 22 of 1,000 fresh items. Full evaluation: $0.023671
-> cloud-equivalent. License unknown.
->
-> Newsrooms, aggregators, and compliance teams routing a continuous stream of
-> headlines need topic triage that keyword rules break on at the first
-> unfamiliar wording. A full-data DistilBERT fine-tune supplies the baseline;
-> the selected cascade reviews only its low-confidence rows rather than sending
-> every item to an LLM.
+> AG News sorter: the selected transformer + selective LLM cascade lifts fresh macro-F1 from 0.9529432 to 0.9539265 and accuracy from 0.953 to 0.954, reviewing 22 of 1,000 fresh items. Full evaluation: $0.023671 cloud-equivalent. License unknown.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/04-nlp-classification)
 
-Fine-tuned transformers vs. a TF-IDF + LogisticRegression baseline on news
-topic classification — a hand-written PyTorch training loop, seeded Optuna
-HPO, a second encoder candidate, audited model selection, and a full 120k
-fine-tune on Apple-Silicon MPS.
+The cascade gain is a small measured trade-off, not established superiority: no
+paired cascade interval is persisted, and the dollar figure is a rate-card
+estimate rather than an observed cloud bill.
+
+The task is to sort English headline-plus-description items into four topics.
+A transformer predicts every item; only predictions below the validation-fitted
+confidence threshold τ=0.6 receive batched LLM review. TF-IDF + logistic
+regression remains the cheaper baseline.
+
+## Acceptance gates
+
+- Select the bounded candidate and cascade threshold on validation data only;
+  keep the bounded test and disjoint fresh holdout out of those decisions.
+- Compare accuracy and macro-F1 on the same fixed splits. Macro-F1 gives each
+  topic equal weight.
+- Report selective-review counts, latency, and estimated token cost beside the
+  quality delta; do not claim superiority without paired uncertainty.
 
 ## Key results
 
-**Headline:** the full 120k fine-tune of DistilBERT on Apple-Silicon MPS
-(laptop GPU, seed 42, 2 epochs, val macro-F1 0.9433 → 0.9464 during training)
-reaches **0.9460 test macro-F1** on the same untouched 1,000-row stratified
-test split as every other run, at ~18–27 min/epoch measured.
-
-*How to read: every run is scored on the same untouched 1,000-row stratified
-test split; rows are historical rungs of one scaling ladder, not separate
-experiments; bold = headline.*
+The full 120k fine-tune of DistilBERT (seed 42, two epochs) reaches **0.9460
+macro-F1** on the shared 1,000-row bounded test split and **0.9529** on the
+disjoint 1,000-row fresh holdout. The ladder below uses the same bounded test
+split; the rows are historical rungs, not independent experiments.
 
 | Run | Accuracy | F1 macro |
 |---|---|---|
@@ -39,14 +39,18 @@ experiments; bold = headline.*
 | `baseline_tfidf_logreg` | 0.8720 | 0.8714 |
 | `encoder_b` (roberta-base) | 0.8980 | 0.8982 |
 | `distilbert` (bounded 3.6k) | 0.9020 | 0.9021 |
-| `distilbert_tuned` (bounded 3.6k) | 0.9020 | 0.9021 |
-| `distilbert_fulldata_20k` | 0.9270 | 0.9270 |
+| `distilbert_tuned` (bounded; validation-selected HPO) | 0.9010 | 0.9011 |
 | `distilbert_full_120k` | **0.9460** | **0.9460** |
 
-**Final selected policy — transformer + selective LLM cascade.** At τ=0.6,
-only lower-confidence transformer rows go to `kimi-for-coding`, batched eight
-rows per call. The threshold is fitted on validation only; test and fresh are
-scored once, and the fresh 1,000 are disjoint from bounded test.
+Validation selects the HPO candidate by +0.0073 macro-F1, but its paired 95% CI
+[−0.0048, +0.0204] crosses zero. The tuning result is therefore inconclusive.
+Three seeded searches average 0.8910 ± 0.0042 validation macro-F1.
+
+### Selected cascade
+
+At τ=0.6, only lower-confidence full-data transformer rows go to LLM review,
+batched eight rows per call. Test and fresh are scored after the threshold is
+frozen; the fresh 1,000 are disjoint from bounded test.
 
 | Split | Transformer macro-F1 → cascade | Accuracy → cascade | Reviews |
 |---|---:|---:|---:|
@@ -55,25 +59,17 @@ scored once, and the fresh 1,000 are disjoint from bounded test.
 | Fresh holdout | 0.9529432 → 0.9539265 | 0.953 → 0.954 | 22 |
 
 The 44 total reviews take 96.933 s and an estimated $0.023671 cloud-equivalent
-across validation, test, and fresh. This is a small selective-review gain over
-the full-data transformer, not a proposal to send every item to an LLM. The
-keyword-first router remains the cheaper 0.9020-fresh-macro-F1 baseline. Exact
-artifact: `projects/04-nlp-classification/reports/llm_cascade.json`.
+across validation, test, and fresh. The keyword-first router remains the cheaper
+alternative at 0.9061 fresh macro-F1, with 75.4% of items staying on the keyword
+path. Neither router's small point gains establish superiority without a paired
+interval. Exact artifact: `projects/04-nlp-classification/reports/llm_cascade.json`.
 
-The older bounded numbers are historical rungs of one scaling ladder
-(0.9021 → 0.9270 → 0.9460, +4.4 pp from bounded to full data). HPO improved
-validation macro-F1 (0.8880 → 0.8953) but the gain sat inside seed noise
-(mean 0.8910 ± 0.0042 over 3 seeds) and did not transfer to test — the
-honesty rule kept the original artifact as `distilbert_tuned`.
+### Controlled data scale
 
-**Controlled data-scale ladder — the bounded↔full confound is closed
-(roadmap item, delivered).** `train-nn --full-data --subset N` trains seeded,
-stratified rungs on one device with identical hypers; subset 4,000 reproduces
-the bounded rows exactly, so the 3.6k rung exists as same-rows CPU/MPS twins
-that separate the device component from the data component. Every rung is
-scored on the shared 1,000-row test split and a disjoint 1,000-row fresh
-holdout; per-rung wall-clock and device provenance live in
-`reports/scale_meta_<N>.json`; figure `scale_ladder`.
+The scale ladder holds the device, seed, and hyperparameters fixed. Each tripling
+of training rows adds +1.5 / +1.6 / +1.3 macro-F1 points on bounded test and
++1.5 / +2.1 / +1.0 on fresh. Same-rows CPU/MPS twins differ by 0.0002 test
+macro-F1, so device choice does not explain the scale gain.
 
 | Train rows | Run | Device | Val F1 | Test macro-F1 | Fresh macro-F1 |
 |---|---|---|---|---|---|
@@ -83,98 +79,62 @@ holdout; per-rung wall-clock and device provenance live in
 | 36k | `distilbert_scale_40000` | MPS | 0.9320 | 0.9331 | 0.9428 |
 | 108k | `distilbert_full_120k` | MPS | 0.9464 | **0.9460** | 0.9529 |
 
-- **Device component measured, not assumed:** the same-rows twins differ by
-  0.0002 macro-F1 on the test split and 0.0105 on the fresh holdout — the
-  bounded↔full gap is **not** a device artifact.
-- **Data component measured:** at fixed device each 3× step buys +1.5 / +1.6 /
-  +1.3 pp on the test split — a monotone, decelerating curve that reproduces
-  on the fresh holdout (+1.5 / +2.1 / +1.0 pp). The legacy CPU 18k evidence
-  run (0.9270) lands between the 10.8k and 36k rungs, as its size predicts.
-- Rung wall-clock on this machine (batch 32, 2 epochs, shared-machine load):
-  84 s / 292 s / 995 s for 3.6k / 10.8k / 36k.
+### Training, calibration, and errors
 
-**Serving economics** (probe-hardware numbers, not the headline — measured
-on this machine, an Apple M4 Max, CPU, torch 2.14.1, 12 threads; batch=1
-end-to-end, n=200 predictions per variant; cost at a declared $1/M-input +
-$4/M-output rate card, ~51.5 in + ~3.5 out tokens per prediction; accuracy
-from the committed test-split metrics, int8 measured on a 2000-row train
-sample — single-machine probe figures, not production benchmarks):
+In `training_curve`, read the two histories separately: the solid two-epoch
+headline run and the dotted four-epoch probe have different learning-rate
+schedules. The star marks only the headline endpoint. The probe peaks at
+validation macro-F1 0.9477 in epoch 3, then declines while validation loss
+rises; extra epochs overfit rather than establish a better champion.
+
+![Separate full-data histories: the two-epoch headline run and the four-epoch probe, which peaks in epoch 3 and then overfits](../assets/projects/04-nlp-classification/training_curve.png){ width="100%" }
+
+One temperature fitted on validation cuts selected-model test ECE from 0.0360
+to 0.0227 (37%) without changing predictions. In `confusion_matrix_selected`,
+Business → Sci/Tech is the dominant bounded-test error at 25 of 250 Business
+items. The original default-artifact scaling curve moves 24/250 → 15/250 →
+14/250; more data reduces but does not remove this ambiguity.
+
+![Actual versus predicted topics for the selected bounded model; Business to Sci/Tech remains the dominant confusion](../assets/projects/04-nlp-classification/confusion_matrix_selected.png){ width="100%" }
+
+## Serving economics
+
+These are one-machine Apple M4 Max CPU probes at batch size 1, n=200, not
+production benchmarks. Cost uses a declared $1/M-input + $4/M-output rate card.
+The int8 quality score comes from a 2,000-row training sample, not test data.
 
 | Variant | Size (MB) | p50 latency (ms) | Throughput (pred/s) | Cost ($/1k preds) | Accuracy | F1 macro |
 |---|---|---|---|---|---|---|
 | `tfidf_logreg` | 0.5 | 0.2 | 4477.8 | 0.0000 | 0.8720 | 0.8714 |
-| `distilbert_tuned` fp32 (bounded) | 255.5 | 9.0 | 110.7 | 0.0656 | 0.9020 | 0.9021 |
+| `distilbert_tuned` fp32 (bounded) | 255.5 | 9.0 | 110.7 | 0.0656 | 0.9010 | 0.9011 |
 | `distilbert_full_120k` fp32 | 255.5 | 8.7 | 112.5 | 0.0654 | 0.9460 | 0.9460 |
-| `distilbert_full_120k` int8 (dynamic) | 132.3 | 13.2 | 77.6 | 0.0654 | 0.9635 | 0.9637 |
+| `distilbert_full_120k` int8 (dynamic) | 132.3 | 13.2 | 77.6 | 0.0654 | 0.9635* | 0.9637* |
 
-Dynamic int8 (`torch.quantization.quantize_dynamic`, qnnpack on arm64)
-halves model size with no measured quality loss (sample macro-F1 0.9627 →
-0.9637, Δ +0.0010) but is slower than fp32 at batch=1 on Apple Silicon —
-quantization buys memory, not speed, here. Data:
-`projects/04-nlp-classification/reports/latency_probe.json`.
+\* Training-sample quality only. Dynamic int8 halves model size but is slower
+than fp32 in this probe. Data: `reports/latency_probe.json`.
 
-![The full 120k DistilBERT fine-tune climbs to 0.946 macro-F1 on the test split within two epochs](../assets/projects/04-nlp-classification/training_curve.png){ width="100%" }
+## Limits
 
-Two epochs is a measured budget, not an assumption: a 4-epoch probe with
-early stopping disabled (same hypers, seed 42;
-`projects/04-nlp-classification/reports/history_probe4.json`) peaks at val
-macro-F1 0.9477 in epoch 3 — +0.0003 over epoch 2, −0.0003 by epoch 4 —
-while validation loss climbs again and train loss keeps falling. Epochs 3-4
-overfit rather than improve. Both history files are from the **full 120k
-data**, not the bounded subsample: `history_fulldata.json` is the shipped
-headline run (2 epochs, val macro-F1 0.9433 → 0.9464), `history_probe4.json`
-is the 4-epoch probe of the same full-data fine-tune (early stopping
-disabled) — read the probe as "extra epochs overfit", not as a better result.
+- The evidence covers English-only, single-label items with four clean topics;
+  hybrid Business/Sci-Tech articles need a multi-label contract.
+- Cascade gains are small, cover 44 reviews on fixed splits, and have no paired
+  interval. They do not justify reviewing every item with an LLM.
+- Serving speeds are machine-specific, and quantized quality is not measured on
+  test data.
 
-![4-epoch probe: validation macro-F1 plateaus after epoch 2 while train loss keeps falling](../assets/projects/04-nlp-classification/epochs_probe.png){ width="100%" }
+## Artifacts and reproduction
 
-Temperature
-scaling cuts test ECE 0.047 → 0.013 for free. The dominant confusion pair,
-Business → Sci/Tech (24/250 → 15/250 → 14/250 across the curve), is a
-labeling-ambiguity floor, not a data-scale problem. Representative
-misclassifications of the selected model (`distilbert_tuned`, wave-2
-artifact) on the untouched 1,000-row bounded test split — reproduced from
-the committed artifact + test split, bit-matching `metrics.json`; full list
-in `reports/misclassification_examples.json`:
-
-| text snippet | true | predicted |
-|---|---|---|
-| "Amazon Snaps Up China's Largest Web Retailer (NewsFactor) … will buy Joyo.com Limited --…" | Business | Sci/Tech |
-| "India's Tata makes powerful debut Shares in Indian software services giant Tata Consultancy close 16 higher…" | World | Business |
-| "Dell Exits Low-End China Consumer PC Market HONG KONG (Reuters) - Dell Inc., the world's largest PC maker…" | Sci/Tech | Business |
-| "U.S. Misses Cut in Olympic 100 Free ATHENS, Greece - Top American sprinters Jason Lezak and Ian Crocker…" | World | Sports |
-
-Full ladder:
-`projects/04-nlp-classification/reports/metrics.json`; decision record:
-`reports/selection.json`; fresh-holdout reading: `reports/fresh_holdout.json`;
-scale rungs: `reports/models/distilbert_scale_<N>.pt` +
-`reports/history_scale_<N>.json` + `reports/scale_meta_<N>.json`;
-interactive figures in `reports/figures/`.
-
-![Business → Sci/Tech stays the dominant confusion pair at full data — a labeling-ambiguity floor, not a data-scale problem](../assets/projects/04-nlp-classification/confusion_matrix_selected.png){ width="100%" }
-
-## Artifacts
-
-- `projects/04-nlp-classification/README.md` — problem, run ladder, HPO and
-  selection narrative, reproduce commands, client takeaways
-- `projects/04-nlp-classification/DESIGN.md` — requirements, options
-  considered, bounded-data contract, pipeline diagram, changelog
-- `projects/04-nlp-classification/story.yaml` — 8-section case study served by
-  the showcase API
-- `projects/04-nlp-classification/reports/report.html` — standalone themed
-  evaluation report
-- `projects/04-nlp-classification/reports/llm_cascade.json` — selected cascade,
-  split metrics, provenance, review counts, latency, and cost
-
-## Reproduce
+- [Project README](https://github.com/amm-ds/portfolio/tree/main/projects/04-nlp-classification/README.md) — run ladder, protocol, and commands
+- [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/04-nlp-classification/DESIGN.md) — requirements and design history
+- `story.yaml` — canonical eight-section case study
+- `reports/metrics.json`, `reports/selection.json`, `reports/fresh_holdout.json`,
+  and `reports/llm_cascade.json` — exact measurements
+- `reports/figures/` — interactive figure payloads
 
 ```bash
-uv run python -m nlp_classification.cli all   # prepare → baseline → train-nn → hpo → tuned → encoder-b → evaluate
-uv run python -m nlp_classification.cli llm-cascade  # provider-backed selective review
+uv run python -m nlp_classification.cli all
+# Provider-backed selective review; not part of offline reproduction:
+uv run python -m nlp_classification.cli llm-cascade
 ```
 
-Bounded data contract: 4,000 train / 1,000 test, stratified, seeded for the
-CPU ladder — documented in DESIGN.md. The headline run uses the full AG News
-train split (120k rows) via `train-nn --full-data` on an accelerator
-(Apple-Silicon MPS on this machine). Dataset card:
-[data-registry/ag-news](https://amm-ds.github.io/portfolio/data-registry/ag-news/).
+Dataset card: [data-registry/ag-news](https://amm-ds.github.io/portfolio/data-registry/ag-news/).

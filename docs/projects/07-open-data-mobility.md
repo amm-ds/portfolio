@@ -17,11 +17,19 @@ trips) + NOAA GHCN-Daily weather · **Status:** flagship — complete
 
 ![Zone-hour pickup demand concentrates in Midtown/Manhattan cores and the JFK/EWR airports — the busiest zone averages 213.9 pickups/hour across the 265-zone grid.](../assets/projects/07-open-data-mobility/zone_demand_map.png){ width="100%" }
 
-**Flagship — complete.** End-to-end demand nowcasting on real, messy,
-GB-scale public data: 41.2M NYC yellow-taxi trips (2024) joined with NOAA
-GHCN-Daily weather, engineered with lazy/streaming Polars under a 2 GB RAM
-peak, gated by per-month DQ contracts, and validated with leakage-proof
-temporal splits.
+**Flagship — complete.** End-to-end next-hour forecasting on 41.2M NYC
+yellow-taxi trips (2024) joined with NOAA GHCN-Daily weather. Lazy/streaming
+Polars keeps measured peak RAM near 2 GB; monthly data-quality gates and an
+embargoed temporal split keep the Q4 test window out of model selection.
+
+## Acceptance gates
+
+- Cut MAE at least 20% below same-hour-yesterday on the frozen Q4 holdout.
+- Reach 90% p90 coverage within about two percentage points overall, while
+  reporting the separate no-borough exception and demand-group coverage.
+- Keep the full pipeline under 8 GB RAM and reproducible with one command.
+- Select on embargoed validation only; a better test score cannot promote a
+  challenger after the freeze.
 
 ## Key results (temporal holdout Oct–Dec 2024, 584,855 zone-hours)
 
@@ -43,15 +51,27 @@ promoted on test performance. MASE normalises by in-sample lag-24 error
 
 ![The served tuned GBM removes 28.3% of forecast error vs same-hour-yesterday persistence while the xGB challenger that won the Q4 test window loses on embargoed validation.](../assets/projects/07-open-data-mobility/gbm_vs_nn.png){ width="100%" }
 
-p90 band calibration **90.8%** overall (target 90%; sparse N/A
-zones under-cover at 84.7%, flagged). Per-borough GBM MAE peaks in Manhattan
-(14.2 pickups/h) where volume peaks. Permutation importance: weekly/daily lag
-features dominate, weather ≈ 0 for point MAE. Weather elasticity:
-outer-borough curb demand drops 7–10% in rain (Queens 0.92×, Staten Island
-0.93×) while Manhattan holds (0.97×) and EWR rises (1.08×) — directional,
-with documented non-causal caveats.
+Two predeclared post-freeze comparisons quantify uncertainty without changing
+serving selection. For challenger-minus-naive MAE, negative values favor the
+challenger; 2,000 resamples use circular seven-day blocks or whole-zone clusters.
 
-![Rain cuts outer-borough curb demand 7–10% (Queens 0.92×, Staten Island 0.93×) while Manhattan holds at 0.97× and EWR rises 1.08×.](../assets/projects/07-open-data-mobility/weather_elasticity.png){ width="100%" }
+| Comparison | Point ΔMAE | Seven-day block 95% CI | Zone-cluster 95% CI |
+|---|---:|---:|---:|
+| xGB versus naive | −2.031 | [−2.503, −1.495] | [−2.691, −1.421] |
+| LightGBM versus naive | −1.935 | [−2.433, −1.350] | [−2.606, −1.340] |
+
+The p90 band covers **90.8%** of outcomes overall against a 90% target. The
+N/A **no-borough** bucket under-covers at 84.7% and is flagged separately from
+the demand-sparse conformal tercile; those are different groupings. Per-borough
+GBM MAE peaks in Manhattan (14.2 pickups/h) where volume peaks. Weekly and daily
+lag features dominate permutation importance; weather adds approximately zero
+to point MAE.
+
+The weather figure shows raw rainy-hour/dry-hour mean-pickup ratios: Queens
+0.92×, Staten Island 0.93×, Manhattan 0.97×, and EWR 1.08×. They have no
+hour-of-week normalization and describe associations only, not weather effects.
+
+![Raw rain-versus-dry mean-pickup ratios on the test window; these descriptive associations are not causal weather effects](../assets/projects/07-open-data-mobility/weather_elasticity.png){ width="100%" }
 
 ## Drift observatory
 

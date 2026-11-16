@@ -150,33 +150,26 @@ for a **10 s wall-time budget per instance** (vs ALNS's ~0.8 s).
 What this arm is and is not: it is an **incumbent-improvement probe and
 small-scale verifier** — not an independent baseline. Because the ALNS plan is
 injected as the hint and returned unchanged on timeout, the arm cannot rank
-ALNS against a solver that starts from scratch; an unhinted comparison
-(e.g. PyVRP or OR-Tools routing at an equal time budget) is planned.
+ALNS against a solver that starts from scratch. The separate unhinted arm below
+provides the cold-start check.
 
 Verdict, honestly stated:
 
 - **CP-SAT does not improve the ALNS incumbent anywhere on the 100-customer
-  benchmark.** On all 56 instances it ended its budget at `UNKNOWN` — it could
-  not even register its own hinted solution in time — and the arm returned the
-  ALNS plan unchanged: identical distances, identical vehicle counts
-  (ortools_cp ties ALNS 56/56, wins 0 on tie-break order), at **~10× the
-  runtime** of this solve's ALNS mean. The meaningful claim the run supports
-  is narrower than "independent comparison": a state-of-the-art exact solver,
-  given an order of magnitude more time **and a head-start hint**, could not
-  shave anything off any of the 56 ALNS plans — the incumbent quality is not a
-  symptom of a weakly-searched neighborhood.
-- **The unhinted equal-budget arm settles what the hinted tie could not.**
-  Same model, same 10 s/instance, no hint, no fallback: status UNKNOWN on all
-  56 instances — no feasible plan at all. The hinted arm's tie was a
-  head-start artifact; from scratch, the exact model produces nothing on
-  100-customer problems at this budget. ALNS's ~1 s feasible plans are the
-  measured state of the art *at this scale and budget* — not "CP-SAT matched
-  us" but "CP-SAT could not start".
-- **Where CP-SAT does dominate: small problems.** On a 25-customer prefix of
-  C101 it certifies the optimum instantly, improving the 2-opt hint
-  286.3 → 191.8 (−33 %) in 2.9 s; on the 5-customer test instance it proves
-  optimality in 0.1 s. The hand-written ladder stays the right tool at
-  100-customer scale, and CP-SAT is the right verifier at small scale.
+  benchmark.** On all 56 instances it ended its budget at `UNKNOWN` and returned
+  the ALNS plan unchanged: identical distances and vehicle counts. Measured mean
+  runtime is 12.0 s for this arm versus ~1.1 s for ALNS. This is a recorded probe
+  result, not evidence of a general exact-solver speedup or a proof of incumbent
+  quality.
+- **The unhinted equal-budget arm supplies the cold-start result.** Same model,
+  same 10 s/instance, no hint, no fallback: status UNKNOWN on all 56 instances,
+  with no feasible plan. The hinted tie therefore depends on its head start;
+  the cold-start arm does not establish a general solver ordering beyond these
+  instances and budgets.
+- **CP-SAT certifies small problems.** On a 25-customer prefix of C101 it proves
+  the optimum, improving the 2-opt hint 286.3 → 191.8 (−33 %) in 2.9 s; on the
+  5-customer test instance it proves optimality in 0.1 s. Those certificates do
+  not extend to the 100-customer cases.
 - The model itself is verified sound: with the hinted arcs fixed, CP-SAT
   proves the incumbent's feasibility in 1.4 s on C101, and every returned
   plan re-passes the `RoutePlan` hard gate (`_finish`).
