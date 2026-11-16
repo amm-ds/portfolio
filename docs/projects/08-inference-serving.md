@@ -4,10 +4,9 @@
 benchmark (synthetic task, no download) · **Status:** working showcase on
 the standard platform
 
-> One laptop, one run: five LLM serving setups, 760 requests, zero failures.
-> A 4-bit mixture-of-experts model answers in 0.81 s per request at about
-> $0.12 per 1M output tokens (electricity only). The reusable asset is the
-> harness for re-measuring any stack on target hardware.
+> One laptop, five LLM serving setups, 760 requests, zero failures. The 4-bit
+> MoE records 0.81 s p95 latency (0.63 s median) at about $0.12 per 1M output
+> tokens (electricity only). Reuse the harness to re-measure target hardware.
 >
 > Anyone deciding between local and cloud LLM serving usually gets vendor
 > rate cards, not measurements of the stack they would actually run.
@@ -47,7 +46,7 @@ concurrency — this is a cross-model grid, not a run ladder, so no Δ column.
 | gemma4:31b (dense) | mlx | 2.52 s / 17.6 | 8.28 s / 18.4 | 16.06 s / 18.5 |
 | qwen3:32b (dense, --full) | llamacpp | 5.06 s / 9.6 | 16.31 s / 9.6 | 31.27 s / 9.4 |
 
-![p95 latency grows roughly linearly with concurrency while aggregate tok/s stays flat — decode is memory-bandwidth bound, so batching hides latency but buys no free throughput.](../assets/projects/08-inference-serving/latency_concurrency.png){ width="100%" }
+![p95 latency grows roughly linearly with concurrency while aggregate tok/s stays flat or declines in this run; the chart does not isolate the cause or prove throughput is invariant.](../assets/projects/08-inference-serving/latency_concurrency.png){ width="100%" }
 
 Engine panel (gemma4:31b family, concurrency 1): **MLX 4-bit beats GGUF Q8_0
 on llama.cpp 2.9x on tok/s** (18.8 vs 6.4) with p95 2.47 s vs 7.12 s — but
@@ -61,8 +60,9 @@ combination, not which engine is intrinsically faster.
 
 Quality-vs-quant (same llama.cpp runner, concurrency 1): **QAT-int4 holds
 1.00 schema-valid and 1.00 keyword quality while running 53% faster than
-Q8_0** (9.8 vs 6.4 tok/s) — at this task size quantization buys speed, not
-quality loss.
+Q8_0** (9.8 vs 6.4 tok/s). The speed gap is measured; the quality result is a
+bounded schema/keyword tie, not evidence that quantization never hurts
+quality on other tasks.
 
 | dimension | setup |
 |---|---|
@@ -84,9 +84,10 @@ assumption, not by measurement error in tok/s.
 
 ## What the numbers say
 
-- **Decode is memory-bandwidth bound on unified memory**: aggregate tok/s is
-  flat (gemma4, gpt-oss, qwen3:32b) or declining (qwen3.6: 67.7 -> 50.2) as
-  concurrency rises — batching buys latency hiding, not free throughput.
+- **Aggregate throughput does not rise with concurrency here**: tok/s is flat
+  (gemma4, gpt-oss, qwen3:32b) or declining (qwen3.6: 67.7 -> 50.2) as
+  concurrency rises. This run does not isolate memory bandwidth, batching, or
+  another cause.
 - **p95 grows ~linearly with concurrency** on every arm: c=8 costs roughly
   8x the single-user latency. Single-user p95 is the honest interactive SLO;
   the serving layer's job is keeping that slope shallow.

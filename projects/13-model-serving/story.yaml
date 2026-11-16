@@ -1,7 +1,7 @@
 project_id: 13-model-serving
 headline: "The champion tabular MLP from experiment 12 ships as a small FastAPI service: native torch vs ONNX Runtime measured under the same seeded load — 1.6 ms p50 single-request, a ~950 req/s throughput knee, a measured 6.5 GB image whose venv is mostly torch and unused CUDA libraries, and about $0.000012 electricity per 1k predictions on a laptop."
 data_note: "Champion MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly, sha256-pinned) — the identical frame hash reproduces the committed 25.4316 test MAE to the last digit before serving begins."
-limits: "Single laptop, no GPU, one uvicorn worker, one model: absolute numbers do not transfer, the paired native-vs-ONNX deltas and curve shapes do; localhost latency has no network term; the wattage behind the cost line is a declared assumption, not a measurement."
+limits: "Single laptop, no GPU, one uvicorn worker, one model: absolute numbers, paired native-vs-ONNX deltas, and curve shapes are host-specific observations, not demonstrated transfer; localhost latency has no network term; the wattage behind the cost line is a declared assumption, not a measurement."
 short_version: |
   Experiment 12's champion MLP (25.4316 test MAE) is re-derived, exported to
   ONNX behind a hard parity gate (7.2e-07 max-abs), and served two ways from
@@ -200,8 +200,9 @@ sections:
       In `batch_throughput_curve`, compare the rising throughput with the
       flatter per-request latency. Throughput grows roughly linearly with
       batch size and reaches about 56k rows/s on both backends at size 128.
-      Rows/s counts prediction rows per second. The queue, rather than extra
-      calculation per row, dominates latency under saturation.
+      Rows/s counts prediction rows per second. This tests the explicit batch
+      endpoint; it does not implement or demonstrate dynamic request batching.
+      The chart does not isolate queueing from computation.
 
       In `backend_comparison_slope`, compare each paired native and ONNX
       point. ONNX leads some saturated cells by up to 15% and ties elsewhere.
@@ -222,9 +223,10 @@ sections:
       - Gates: reproduction exact (25.4316 vs 25.4316); parity max-abs 7.2e-07 on 512 probe rows, tolerance 1e-4.
       - Latency: p50 1.6 ms single-request on both backends; p95 under 6 ms through concurrency 4; p50 about 63 ms at 64 clients where the shared CPU saturates.
       - Throughput: peak near 970 req/s at concurrency 4 on both backends
-        (median 933 native / 970 ONNX); throughput sags at 16 clients under
-        queueing, then recovers as batching kicks in; ONNX up to 15% ahead
-        at saturated cells; zero errors across 4,320 requests per backend.
+        (median 933 native / 970 ONNX); throughput sags at 16 clients, then
+        partially recovers at 64. No dynamic batching is enabled to explain
+        that shape; ONNX is up to 15% ahead at saturated cells; zero errors
+        occur across 4,320 requests per backend.
       - Batch: ~56k rows/s at size 128 on both backends, with flat per-request latency under saturation.
 
       In `footprint_cost_bars`, compare the memory bars, image components,
@@ -351,11 +353,12 @@ sections:
 
       These limits apply to every result in the table and summary diagram.
 
-      - Single laptop, no GPU, one worker, shared CPU: absolute numbers do not
-        transfer. Committed concurrency-4 medians span 933–970 req/s across
-        the two backends. High-concurrency cells measure contention, not pure
-        service capacity. Curve shapes, the concurrency-4 knee, and batch
-        amortization are the durable read.
+      - Single laptop, no GPU, one worker, shared CPU: absolute numbers, paired
+        deltas, curve shapes, the concurrency-4 knee, and batch amortization
+        are host-specific observations, not demonstrated transfer. Committed
+        concurrency-4 medians span 933–970 req/s across the two backends.
+        High-concurrency cells measure contention, not pure service capacity.
+        Re-measure with the paired harness on the target deployment.
       - No TLS, auth, multi-worker or GPU path. The paired harness needs both
         backends, so a torch-free native image is future work.
       - The ~3.3 GB NVIDIA/CUDA stack inside the full image is never loaded by

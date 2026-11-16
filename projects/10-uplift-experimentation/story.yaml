@@ -323,7 +323,9 @@ sections:
       and policy verdict. Read it with the exact tables. On 64,000 randomized
       customers (Hillstrom, March 2008), the T-learner ranking beat random
       targeting by +$2,812 (+69%) profit at a 25% send budget, 95% CI
-      [+$718, +$4,767]. Qini is 12.03 [0.77, 24.39]. Mail-everyone earned
+      [+$718, +$4,767]. The primary two-arm Qini is 12.03 [0.77, 24.39].
+      The separate per-arm Mens AUUC interval is [−0.47, 24.21] and spans
+      zero, so it does not establish a per-arm ranking. Mail-everyone earned
       $16,103 at $0.01 per send. The setup uses five-fold cross-fitting on
       pre-treatment features only and 1,000 paired bootstrap policy intervals.
       Profit = incremental conversions × $114 − mailed × send cost.

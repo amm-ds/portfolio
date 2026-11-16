@@ -1,9 +1,8 @@
 project_id: 08-inference-serving
 short_version: >-
-  One laptop, one run: five LLM serving setups, 760 requests, zero failures.
-  A 4-bit mixture-of-experts model answers in 0.81 s per request at about
-  $0.12 per 1M output tokens (electricity only). The reusable asset is the
-  harness for re-measuring any stack on target hardware.
+  One laptop, five LLM serving setups, 760 requests, zero failures. The 4-bit
+  MoE records 0.81 s p95 latency (0.63 s median) at about $0.12 per 1M output
+  tokens (electricity only). Reuse the harness to re-measure target hardware.
 figure_captions:
   quality_quant: >-
     A compact pass/fail table for the bounded quality guardrail at concurrency
@@ -48,28 +47,25 @@ key_concepts:
 sections:
   - id: background
     text_md: |
-      **One laptop, one run.** A large language model (LLM) generates text;
-      serving software answers requests. Five setups ran on a quiet 128 GB
-      MacBook with Ollama 0.40.4.
+      **One laptop, one run.** Five large language model (LLM) serving setups
+      ran on a quiet 128 GB MacBook with Ollama 0.40.4.
 
       The benchmark pipeline diagram links prompts, load driver, endpoint,
-      request records, and reports. It shows 760 requests, 19 cells, and zero
-      failures. A cell is one setup at one concurrency, or simultaneous request
-      count.
+      request records, and reports: 760 requests, 19 cells, zero failures.
+      A cell is one setup at one concurrency, or simultaneous request count.
 
-      Records favor a 4-bit mixture-of-experts (MoE). Quantization
-      compresses model weights; 4-bit is one format. MoE uses some weights per
-      token, a text fragment. It answers in 0.81 s for one user and makes 7×
-      the tokens per second of the dense 32B model, which uses all 32 billion
-      parameters. Estimated electricity cost is $0.12 per 1M output tokens
-      under declared power assumptions. Values are not portable. The harness
-      supports re-measurement.
+      Records favor a 4-bit mixture-of-experts (MoE). Quantization compresses
+      model weights; MoE activates only 3B parameters per token, a text
+      fragment. At concurrency 1, it records 0.81 s p95 latency, 0.63 s median,
+      and 7× the dense 32B model's tokens per second. Estimated electricity
+      cost is $0.12 per 1M output tokens under declared power assumptions.
+      Values are not portable; re-measure with the harness.
 
       ```diagram 08-serving-benchmark
       ```
 
-      **Business summary:** The 4-bit MoE leads this 760-request,
-      zero-failure run with 0.81 s answers.
+      **Business summary:** The 4-bit MoE is fastest in this run, with 0.81 s
+      p95 latency at concurrency 1; bounded quality ties across tested arms.
     figures: []
     metrics_keys: []
   - id: objectives
@@ -398,7 +394,8 @@ sections:
         builds.
 
       **Business summary:** The committed evidence path covers 19 cells and 760
-      requests with zero failures. The 4-bit MoE leads every measured dimension
-      on this machine.
+      requests with zero failures. The 4-bit MoE is the fastest tested arm on
+      this machine; its bounded quality scores tie the other arms rather than
+      establishing a quality advantage.
     figures: []
     metrics_keys: []

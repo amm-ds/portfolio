@@ -1,8 +1,8 @@
 {
   "_meta": {
-    "created_at": "2026-11-16T06:08:14+01:00",
+    "created_at": "2026-11-16T06:08:18+01:00",
     "data_contract_sha256": null,
-    "git_sha": "be089367e4bb671c5cf000560a36ec2faebf6c4c",
+    "git_sha": "c5563c2d821d6519fd9b7951eb195c6f30261137",
     "params_sha256": "2f00ebeab80e20fd3df5b7ca4c8124777bebdbb13783b803226904b7478eb4bd",
     "schema_version": 1,
     "seed": 42,
@@ -164,7 +164,7 @@
       "onnx": 1.1528707684030653e-05
     },
     "system_load_watts": 65.0,
-    "throughput_basis": "median-of-repeats throughput at concurrency 16 (the saturation knee on this host)",
+    "throughput_basis": "median-of-repeats throughput at concurrency 16 (committed cost basis; the observed throughput knee is at concurrency 4)",
     "usd_per_kwh": 0.3
   },
   "docker": {

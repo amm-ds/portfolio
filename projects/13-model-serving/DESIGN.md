@@ -58,16 +58,20 @@ the alternative (in-process TestClient) would measure nothing real.
 
 ## 6. Honest cost framing, same as 08
 
-Cost per 1k predictions = measured throughput at the concurrency knee ×
-declared 65 W draw × $0.30/kWh. The wattage is an assumption (no wall meter)
-and says so next to the number.
+Cost per 1k predictions = measured throughput at the committed concurrency-16
+basis × declared 65 W draw × $0.30/kWh. This cost basis is distinct from the
+observed throughput knee near concurrency 4. The wattage is an assumption
+(no wall meter) and says so next to the number.
 
 ## Deliberately not built (skipped parts)
 
 - TLS/auth, multi-worker/multi-replica, GPU serving — out of scope for one
   laptop study.
-- A torch-free ONNX-only slim image — the paired harness needs both backends;
-  stripping torch (and the unused 3.3 GB CUDA stack) is a production follow-up,
-  noted in the story's limits.
+- A torch-free native-backend image — the shipped ONNX-only slim image already
+  removes torch; the full image retains both backends for the paired harness.
 - Showcase-API integration — Agent C wave (the project-local service is the
   deliverable here).
+
+The separate ONNX-only `Dockerfile.slim` is built and smoke-tested by
+`docker-slim`: 291 MB versus 6,466 MB for the full image, with the record in
+`reports/docker_slim.json`.

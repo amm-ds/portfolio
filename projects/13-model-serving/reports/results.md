@@ -45,11 +45,11 @@ Champion re-derivation: experiment 12's committed recipe (same sha256-pinned UCI
 
 ## Docker
 
-Image `portfolio-model-serving:13` total 6466 MB (base 145 + venv 6192 + model 1.0); compose smoke passed: True.
+Image `portfolio-model-serving:13` total 6466 MB (base 145 + venv 6192 + model 1.0); compose smoke passed: True. ONNX-only slim image `portfolio-model-serving:13-slim` total 291 MB; readiness/prediction smoke passed: True.
 
 ## Limits
 
-- Single laptop, no GPU, one uvicorn worker, one model: absolute numbers do not transfer; the paired native-vs-ONNX deltas and the shape of the curves are the transferable read.
+- Single laptop, no GPU, one uvicorn worker, one model: absolute numbers, paired native-vs-ONNX deltas, and curve shapes are host-specific observations, not demonstrated transfer; re-measure with the paired harness.
 - The load driver runs on the same machine as the service — localhost latency has no network term, and the CPU is shared between driver and service under high concurrency.
 - Fresh-process RSS is the steady state after warm-up, not a peak under load; the image size is the uncompressed on-disk total.
 - Cost per 1k predictions uses measured throughput with a declared 65 W system draw (no wall meter) and $0.30 per kWh — an assumption, stated next to the number, not a measurement.

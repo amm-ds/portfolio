@@ -19,8 +19,8 @@ stand before any benchmark number is trusted: the served artifact must be
 the champion (re-derived from the committed recipe, bit for bit), the
 export must compute the same function as the native model (parity gate),
 and the measurement must be paired, warmed, and seeded. The reusable asset
-is the protocol; the absolute laptop numbers do not transfer, the curve
-shapes and paired deltas do.
+is the protocol; absolute numbers, curve shapes, and paired deltas are all
+host-specific observations to re-measure on the target deployment.
 
 [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/13-model-serving)
 
@@ -57,8 +57,9 @@ Latency percentiles, concurrency sweep at 300 requests per cell:
 | 16 | 25.2 | 26.1 | 470 | 470 |
 | 64 | 65.4 | 63.1 | 628 | 716 |
 
-Batch endpoint, rows/s at sizes 1/8/32/128 (per-request latency stays
-flat under saturation — the queue, not the model, sets the price):
+Explicit batch endpoint, rows/s at sizes 1/8/32/128. Per-request latency
+stays comparatively flat under saturation; the figure does not separate
+queueing from computation or test dynamic request batching:
 
 | batch size | native rows/s | onnx rows/s |
 |---|---|---|
@@ -75,16 +76,18 @@ a shared CPU, not capability. The footprint story is measured, not
 estimated: fresh-process RSS 298 vs 318 MB (native vs ONNX), and a 6.47 GB
 image — 145 MB base, 6.19 GB venv, 1 MB model — dominated by torch and the
 3.3 GB CUDA stack a CPU service never loads. A `chown` after `COPY` once
-doubled the venv layer (12.8 GB); measuring found it. Electricity at the
-measured knee: ~$1.15e-05 per 1k predictions at a declared 65 W and $0.30
-per kWh — an assumption stated next to the number, not a measurement.
+doubled the venv layer (12.8 GB); measuring found it. Electricity uses the
+committed concurrency-16 throughput basis: ~$1.15e-05 per 1k predictions at
+a declared 65 W and $0.30 per kWh. That cost basis is not the concurrency-4
+throughput knee, and the wattage is an assumption, not a measurement.
 
-![Three honest footprints: fresh-process RSS, the measured 6.47 GB image broken into base, venv and model, and the electricity cost per 1k predictions at the measured knee.](../assets/projects/13-model-serving/footprint_cost_bars.png){ width="100%" }
+![Three honest footprints: fresh-process RSS, the measured 6.47 GB image broken into base, venv and model, and electricity cost per 1k predictions at the committed concurrency-16 basis.](../assets/projects/13-model-serving/footprint_cost_bars.png){ width="100%" }
 
 The full protocol (reproduction gate, 512-row parity probe grid, paired
 benchmark with warm-up excluded and median-of-3 repeats, fresh-process RSS
 probes, multi-stage Docker build with healthcheck-gated readiness),
 versions and hardware live in `reports/evaluation_metadata.json`;
-per-cell tables and figures in `reports/`. Deliberately skipped, and said
-so: TLS/auth, multi-worker serving, GPU serving, and a torch-free slim
-image.
+per-cell tables and figures in `reports/`. The measured ONNX-only slim image
+is 291 MB and passes its readiness/prediction smoke; the full image retains
+both backends. Deliberately skipped: TLS/auth, multi-worker serving, GPU
+serving, and a torch-free native-backend image.

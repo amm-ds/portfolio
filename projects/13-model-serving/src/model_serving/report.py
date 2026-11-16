@@ -26,9 +26,9 @@ log = get_logger(__name__)
 REPORT_TITLE = "13 — Model API Serving & Docker Deployment (champion MLP, UCI Bike Sharing)"
 
 LIMITS = [
-    "Single laptop, no GPU, one uvicorn worker, one model: absolute numbers "
-    "do not transfer; the paired native-vs-ONNX deltas and the shape of the "
-    "curves are the transferable read.",
+    "Single laptop, no GPU, one uvicorn worker, one model: absolute numbers, "
+    "paired native-vs-ONNX deltas, and curve shapes are host-specific "
+    "observations, not demonstrated transfer; re-measure with the paired harness.",
     "The load driver runs on the same machine as the service — localhost "
     "latency has no network term, and the CPU is shared between driver and "
     "service under high concurrency.",
@@ -66,16 +66,18 @@ def assemble_metrics(cfg: ServingConfig) -> dict[str, Any]:
             "batch": block["batch"],
             "rss_mb": block["rss_mb"],
         }
-    knee = f"c{cfg.bench.concurrency_levels[min(2, len(cfg.bench.concurrency_levels) - 1)]}"
+    cost_cell = f"c{cfg.bench.concurrency_levels[min(2, len(cfg.bench.concurrency_levels) - 1)]}"
     cost = {
         "usd_per_kwh": cfg.cost.usd_per_kwh,
         "system_load_watts": cfg.cost.system_load_watts,
         "throughput_basis": (
-            f"median-of-repeats throughput at concurrency {knee[1:]} "
-            f"(the saturation knee on this host)"
+            f"median-of-repeats throughput at concurrency {cost_cell[1:]} "
+            f"(committed cost basis; the observed throughput knee is at concurrency 4)"
         ),
         "cost_per_1k_predictions_usd": {
-            backend: cost_per_1k_usd(serving[backend]["concurrency"][knee]["throughput_rps"], cfg)
+            backend: cost_per_1k_usd(
+                serving[backend]["concurrency"][cost_cell]["throughput_rps"], cfg
+            )
             for backend in serving
         },
     }
@@ -227,7 +229,9 @@ def report_core(cfg: ServingConfig) -> Path:
     """metrics.json + evaluation_metadata.json + figures + report.html + results.md."""
     metrics = assemble_metrics(cfg)
     (cfg.reports_dir).mkdir(parents=True, exist_ok=True)
-    (cfg.reports_dir / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
+    (cfg.reports_dir / "metrics.json").write_text(
+        json.dumps(metrics, indent=2, sort_keys=True) + "\n"
+    )
     metadata = build_evaluation_metadata(cfg, metrics)
     (cfg.reports_dir / "evaluation_metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
 
@@ -291,6 +295,15 @@ def report_core(cfg: ServingConfig) -> Path:
         )
     else:
         docker_line = "Docker daemon unavailable — image size not measured."
+    slim_path = cfg.reports_dir / "docker_slim.json"
+    if slim_path.exists():
+        slim = _read_json(slim_path)
+        if slim.get("measured"):
+            docker_line += (
+                f" ONNX-only slim image `{slim.get('image_ref', '?')}` total "
+                f"{slim['total_mb']:.0f} MB; readiness/prediction smoke passed: "
+                f"{slim.get('smoke', {}).get('passed')}."
+            )
     (cfg.reports_dir / "results.md").write_text(
         f"# {REPORT_TITLE}\n\n"
         f"## Protocol\n\n{metadata['protocol']}\n\n"

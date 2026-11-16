@@ -61,6 +61,11 @@ The build context is the repository root (uv workspace); the root
 `data/models/` into `image/serving/` because every `data/` path is excluded
 from the context.
 
+The separate `docker-slim` command builds and smoke-tests the ONNX-only
+`Dockerfile.slim` image. Its committed measurement is 291 MB versus 6,466 MB
+for the full two-backend image; the slim image fixes `SERVING_BACKEND=onnx`
+and records its readiness/prediction smoke in `reports/docker_slim.json`.
+
 ## Benchmark design
 
 - Real subprocess service per backend; readiness gated on `/ready`.
@@ -76,15 +81,18 @@ Author run, one laptop (no GPU, one uvicorn worker): the reproduction gate is
 exact (**25.4316 vs 25.4316**) and the ONNX parity max-abs is **7.15e-07** on
 512 seeded probe rows (tolerance 1e-4). Single-request **p50 1.6 ms** with a
 **~950 req/s** knee near concurrency 4 and zero errors in every measured
-cell; the batch endpoint reaches **~56k rows/s** at size 128. Full record in
-`reports/metrics.json`.
+cell; the explicit batch endpoint reaches **~56k rows/s** at size 128. The
+full image measures **6.47 GB**; the smoke-passed ONNX-only slim image is
+**291 MB**. Full record in `reports/metrics.json` and
+`reports/docker_slim.json`.
 
 ## Limits
 
-Numbers come from one machine with no GPU and a single worker — the paired
-harness is the reusable asset, not the constants. The image measures
-**6.47 GB**, of which ~3.3 GB is unused CUDA; the per-prediction electricity
-cost is a declared-assumption estimate (65 W, $0.30/kWh), not a metered bill.
+Numbers, curve shapes, and paired deltas come from one machine with no GPU and
+a single worker — the paired harness is the reusable asset, not demonstrated
+transfer of those observations. The full image contains ~3.3 GB of unused
+CUDA; the per-prediction electricity cost is a declared-assumption estimate
+(65 W, $0.30/kWh), not a metered bill.
 
 ## Tests
 
@@ -107,9 +115,10 @@ lint-level Dockerfile/compose contract checks.
 ## Cost
 
 API cost is $0 (local). The report adds an amortized-electricity estimate —
-measured throughput at the concurrency knee, declared 65 W system draw and
-$0.30 per kWh, assumptions stated next to the number, same framing as
-experiment 08.
+measured throughput at the committed concurrency-16 basis, declared 65 W system
+draw and $0.30 per kWh. This cost basis is distinct from the observed
+concurrency-4 throughput knee; assumptions sit next to the number, same framing
+as experiment 08.
 
 ## Figures
 

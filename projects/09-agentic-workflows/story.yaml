@@ -310,7 +310,7 @@ sections:
 
       **Business summary:** Runs are captured once and re-scored offline for
       free. Held out: 13/13 answers with exact tool sets, 5/6 refusals, 18/19
-      step budget.
+      step budgets, and 12/19 latency budgets.
     figures:
       - cost_latency_bars
     metrics_keys:

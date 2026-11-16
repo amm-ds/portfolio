@@ -97,10 +97,12 @@ sections:
   - id: eda
     text_md: |
       Exploratory data analysis (EDA) means inspecting the data before
-      comparing methods. Use the EDA diagram to read the month. It shows just
-      under three million trips across 35 distinct pickup days, or about
-      95,600 a day on January's 31. The daily pattern is quiet at 4 a.m.,
-      has two evening peaks, and is busier on business days than weekends.
+      comparing methods. Use the EDA diagram to read the month. The raw
+      records span 35 distinct pickup dates: all 31 January dates plus four
+      out-of-month dates. The roughly 95,600 daily average uses January's 31
+      calendar days, not the 35 raw dates. The daily pattern is quiet at
+      4 a.m., has two evening peaks, and is busier on business days than
+      weekends.
 
       The fare view in the diagram shows a typical fare near $16. A long tail
       of airport and late-night rides stretches past $200. A handful of fares
@@ -179,7 +181,8 @@ sections:
       without letting one large ratio dominate an arithmetic average. Polars
       finishes all ten tasks in 0.16 s of median work against pandas's
       2.99 s, for geomean x19.2. DuckDB totals 0.22 s, for geomean x14.9.
-      Per-task speedups range from x6.7 to x43.5.
+      Polars's per-task speedups range from x6.7 to x43.5; DuckDB's range
+      from x4.1 to x38.4.
 
       The sqlite bars show the cost of conversion. sqlite returns correct
       answers, but conversions take 1.9-5.9 s per task and 40.55 s for the
@@ -199,8 +202,8 @@ sections:
         join, but the per-task import dominates the measured workflow.
 
       **Business summary:** The speedup figure shows Polars at x19.2 and
-      DuckDB at x14.9 over pandas by geomean. Task speedups span 7-44x, while
-      sqlite remains correct but pays a measured conversion cost.
+      DuckDB at x14.9 over pandas by geomean. Their per-task ranges differ,
+      while sqlite remains correct but pays a measured conversion cost.
     figures: [speedup_overview]
     metrics_keys: [groupby, read_csv, window]
   - id: evaluation
@@ -272,15 +275,16 @@ sections:
         sqlite's cold and warm reads are almost identical (5.82 vs 5.75 s)
         because conversion, not startup, dominates its cost.
 
-      Use the dot plot and heatmap to interpret the geomean alongside its
-      spread. The x19.2 / x14.9 summaries cover task speedups from 6.7x on
-      parquet write to 43.5x on the window task. For identical results, the
-      absolute totals are 2.99 s of median pandas work versus 0.16 s for
+      Use the dot plot and heatmap to interpret each geomean alongside its
+      spread. Polars's task speedups span 6.7x on parquet write to 43.5x on
+      the window task; DuckDB's span 4.1x to 38.4x. For identical results,
+      the absolute totals are 2.99 s of median pandas work versus 0.16 s for
       Polars, 0.22 s for DuckDB, and 40.55 s for sqlite.
 
       **Business summary:** Identical results take 0.16-0.22 s instead of
-      2.99 s. The figures show a 7-44x per-task spread, 2-3x memory headroom
-      for the columnar engines, and sqlite's measured conversion cost.
+      2.99 s. The figures show distinct per-task spreads for Polars and
+      DuckDB, 2-3x memory headroom for the columnar engines, and sqlite's
+      measured conversion cost.
     figures: [task_times_dotplot, memory_lollipop, normalized_heatmap]
   - id: conclusions
     text_md: |
@@ -426,9 +430,10 @@ figure_captions:
   speedup_overview: >-
     Speedup versus the two classical baselines, using median wall time on a log
     scale. pandas is on the left and sqlite is on the SQL tasks on the right;
-    the dashed line is x1. Polars and DuckDB sit 11-44x past pandas and up to
-    three orders of magnitude past sqlite (75-1985x). sqlite never crosses x1
-    against pandas (0.01-0.2x, or 5-110x slower), with one n/a exception.
+    the dashed line is x1. Against pandas, Polars spans x6.7-x43.5 and DuckDB
+    spans x4.1-x38.4; both reach up to three orders of magnitude past sqlite
+    (75-1985x). sqlite never crosses x1 against pandas (0.01-0.2x, or 5-110x
+    slower), with one n/a exception.
   scalability_lines: >-
     The left panel summarizes committed log-log growth exponents for all five
     tasks; the dashed reference at 1.0 means linear growth. The right panel

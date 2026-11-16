@@ -21,7 +21,7 @@
     "cpu_count": 16
   },
   "limits": [
-    "Single laptop, no GPU, one uvicorn worker, one model: absolute numbers do not transfer; the paired native-vs-ONNX deltas and the shape of the curves are the transferable read.",
+    "Single laptop, no GPU, one uvicorn worker, one model: absolute numbers, paired native-vs-ONNX deltas, and curve shapes are host-specific observations, not demonstrated transfer; re-measure with the paired harness.",
     "The load driver runs on the same machine as the service \u2014 localhost latency has no network term, and the CPU is shared between driver and service under high concurrency.",
     "Fresh-process RSS is the steady state after warm-up, not a peak under load; the image size is the uncompressed on-disk total.",
     "Cost per 1k predictions uses measured throughput with a declared 65 W system draw (no wall meter) and $0.30 per kWh \u2014 an assumption, stated next to the number, not a measurement."

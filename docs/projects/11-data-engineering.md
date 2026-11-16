@@ -14,10 +14,10 @@
 
 **TL;DR:** data teams choosing between pandas, Polars and DuckDB — now with
 stdlib sqlite as the honest classical baseline — where the answer depends on
-the task mix: the engines tie on warm parquet reads and sit up to 44x apart
-on group-by and window work. The benchmark is a reusable harness — pinned
-data, one contract per task, equal results enforced before any timing
-counts.
+the task mix: Polars and DuckDB read warm parquet in single-digit
+milliseconds and sit up to 44x ahead of pandas on group-by and window work.
+The benchmark is a reusable harness — pinned data, one contract per task,
+equal results enforced before any timing counts.
 
 [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/11-data-engineering)
 

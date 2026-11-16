@@ -13,9 +13,10 @@ working showcase on the standard platform
 > Headline: a 15-task deterministic suite grades a hosted multi-step
 > workflow at 15/15 on every grader — answers, exact tool-set, step budget,
 > latency — for $0.13 cloud-equivalent per suite (~$0.0088/task mean) of the
-> $2.00 cap, and a 19-task held-out
-> set (13 answer tasks + 6 designed-to-fail probes) verifies the behavior
-> generalizes beyond the tuning prompts.
+> $2.00 cap. The 19-task held-out set (13 answer tasks + 6 designed-to-fail
+> probes) checks behavior beyond the tuning prompts: answers and exact tool
+> sets pass 13/13, but graceful refusals pass 5/6, step budgets 18/19, and
+> latency budgets 12/19.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/09-agentic-workflows)
 
@@ -45,14 +46,15 @@ unprompted extra calls count as misses.
 | step budget | 15/15 |
 | latency | median **18.2 s**, p95 31.1 s per task; 60 s budget held 15/15 |
 | tokens / cost | ~85k in + ~12k out; suite total **$0.13** cloud-equivalent of the $2.00 suite cap (~$0.0088/task mean) |
-| held-out set | 13/13 answer success, 13/13 exact tool set (22 calls, all planned), **5/6 should-fail probes refused gracefully** (`detail.heldout`) |
+| held-out set | 13/13 answer success, 13/13 exact tool set (22 calls, all planned), **5/6 should-fail probes refused gracefully**, 18/19 step budgets, 12/19 latency budgets (`detail.heldout`) |
 
-One chart tells the whole verification story — the tuning suite passes all
-four graders 15/15, held-out answers pass 13/13, and 5 of 6
-designed-to-fail probes refuse gracefully (the one miss is a
-failure-message wording gap, detailed below):
+The suite-summary chart covers the tuning suite's four graders, held-out
+answers and tool sets, and should-fail refusals. Tuning passes 15/15 on each
+plotted grader; held-out answers pass 13/13 and 5 of 6 probes refuse
+gracefully. The chart does not plot the held-out step-budget miss (18/19) or
+the seven latency misses (12/19), detailed below:
 
-![Outcomes by split: tuning suite 15/15 on every grader, held-out answers 13/13, should-fail probes 5/6 refusals — the full verification story in one chart.](../assets/projects/09-agentic-workflows/suite_summary.png){ width="100%" }
+![Outcomes by split: tuning suite 15/15 on every plotted grader, held-out answers and exact tool sets 13/13, should-fail probes 5/6 refusals. Held-out step and latency outcomes are reported separately.](../assets/projects/09-agentic-workflows/suite_summary.png){ width="100%" }
 
 | suite | 15 tuning tasks + 19 held-out, 5 categories — 14 tuning tasks over the deterministic Atlas Valley corpus, 1 real-data lookup over 01's Wikipedia index (t15), held-out tasks reuse both corpora unseen |
 |---|---|
@@ -83,8 +85,12 @@ graph LR
     E -->|repair ≤ max retries| E
     E --> C[Critique]
     C -->|revise, ≤1| E
-    C -->|pass| R[WorkflowResult]
-    E -->|retries exhausted| F[End failure]
+    C -->|pass| R[WorkflowResult: ok]
+    E -->|terminal failure / no evidence| F[WorkflowResult: refused]
+    E -->|unexpected failure| X[WorkflowResult: failed]
+    P -->|deadline| D[WorkflowResult: deadline_exceeded]
+    E -->|deadline| D
+    C -->|deadline| D
 ```
 
 Consequential runs pause at a human checkpoint — typed state on disk,
@@ -97,12 +103,13 @@ graph LR
     H -->|reject + feedback| P
 ```
 
-![Static rendering of the typed workflow graph: Plan → Execute → Critique with bounded repair and revise loop-backs, End(failure) on exhausted retries, and the dashed human approval-gate lane.](../assets/projects/09-agentic-workflows/workflow_graph.svg){ width="100%" }
+![Static rendering of the typed workflow graph: Plan → Execute → Critique with bounded repair and revise loop-backs, a terminal failure path, and the dashed human approval-gate lane. The current terminal-outcome contract is enumerated in the Mermaid contract above.](../assets/projects/09-agentic-workflows/workflow_graph.svg){ width="100%" }
 
-Read this as a control-flow contract: Critique now also audits the tools
-used against the plan, the approval lane marks exactly where a human can
-pause a run, and both terminal ends (structured `WorkflowResult` on pass,
-`End(failure)` when retries are exhausted) are part of the typed graph.
+Read this as a control-flow contract: Critique also audits the tools used
+against the plan, and the approval lane marks exactly where a human can pause
+a run. Current code returns typed `ok`, `refused`, `failed`, or
+`deadline_exceeded` outcomes. Those new terminal paths have deterministic
+offline tests; the published live failure rates remain the legacy records.
 
 ![Which tools each task called, and how often — the per-call matrix the exact-set grader reads; on the final run every invocation lands in a task's expected set.](../assets/projects/09-agentic-workflows/tool_usage_matrix.png){ width="100%" }
 

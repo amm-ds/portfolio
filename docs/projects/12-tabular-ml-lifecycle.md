@@ -61,20 +61,24 @@ score:
 | tabular MLP (PyTorch) ← champion | 34.2 | 25.4 | 39.3 | 33.7 |
 
 Champion vs floor: +57.8 rentals/hour point estimate over 2,000 paired
-bootstrap resamples, 95% CI [52.5, 63.1] — excludes zero. The ladder is
-honest about its ordering: validation picked the MLP (34.2 vs LightGBM's
-34.4) before the test confirmed it, and on the single test pass LightGBM's
-MAE lands 0.06 rentals lower while the MLP answers with the better RMSE
-(39.3 vs 40.2) — a dead heat, shipped as the MLP because the loop and its
-measured controls are the deliverable. The ablation is read at face value:
-every early-stopping-off row worsens validation MAE, while dropout and
-weight decay sit inside row noise. The residual slices say where the
-remaining error lives — spring rush hours over-forecast, winter morning
-peaks under-forecast — and the limits sit next to the numbers: one city,
-two seasons, positional lags around the missing hours, transfer plausible
-but not measured.
+bootstrap resamples. The hourly 95% CI is [52.5, 63.1]; day-block and
+week-block sensitivity intervals are [44.2, 71.8] and [38.8, 73.4]. All
+exclude zero, and the wider block intervals expose serial dependence rather
+than providing independent confirmation. The ladder is honest about its
+ordering: validation picked the MLP (34.2 vs LightGBM's 34.4) before the
+test confirmed it, and on the single test pass LightGBM's MAE lands 0.06
+rentals lower while the MLP answers with the better RMSE (39.3 vs 40.2) — a
+dead heat, shipped as the MLP because the loop and its measured controls are
+the deliverable. The ablation is read at face value: every
+early-stopping-off row worsens validation MAE, while dropout and weight decay
+sit inside row noise. Variants are also test-scored after freezing; those
+scores are post-freeze diagnostics, never selectors. The residual slices say
+where the remaining error lives — spring rush hours over-forecast, winter
+morning peaks under-forecast — and the limits sit next to the numbers: one
+city over two years and four seasons, positional lags around the missing
+hours, transfer plausible but not measured.
 
-![2,000 paired bootstrap resamples of the MAE improvement over the floor; the 95% CI excludes zero.](../assets/projects/12-tabular-ml-lifecycle/bootstrap_ci.png){ width="100%" }
+![Three histograms of 2,000 paired resamples each: hourly rows, 24-hour blocks, and 168-hour blocks. All three 95% intervals exclude zero; the wider block intervals show serial-dependence sensitivity on the same test window.](../assets/projects/12-tabular-ml-lifecycle/bootstrap_ci.png){ width="100%" }
 
 The full protocol (time-based split, judging rules, 2,000 paired bootstrap
 resamples of the per-row MAE delta), versions and hardware live in

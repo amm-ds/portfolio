@@ -53,7 +53,7 @@ re-aggregated with `report` without re-running hours of local inference.
 
 Author run, one laptop (Apple Silicon): 19 cells / 760 requests / 0 failures.
 **MLX ≈ 2.9× GGUF tok/s** on the same models; a 4-bit mixture-of-experts model
-answers in 0.81 s per request at about $0.12 per 1M output tokens
+records 0.81 s p95 latency (0.63 s median) at about $0.12 per 1M output tokens
 (electricity only). Aggregates in `reports/metrics.json`; the re-aggregable
 record in `data/bench_run.json`.
 
@@ -61,9 +61,9 @@ record in `data/bench_run.json`.
 
 Numbers are hardware-specific — one machine, one Ollama build — so the
 reusable asset is the harness for re-measuring any stack on target hardware,
-not the constants. 4-bit quantization costs serving headroom, not
-structured-output validity; no MLX build exists for qwen3.6 (recorded as a
-data point, not forced).
+not the constants. The schema and keyword checks tie at 1.00 on this bounded
+task; they do not establish broader quality or prove quantization is harmless.
+No MLX build exists for qwen3.6 (recorded as a data point, not forced).
 
 ## Tests
 

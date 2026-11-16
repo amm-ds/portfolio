@@ -58,6 +58,12 @@ CIs from a paired row bootstrap.
 
 ![The response model posts the highest Qini area but the paired difference CI spans zero — the curve-area ranking is not established while T-learner's profit advantage is.](../assets/projects/10-uplift-experimentation/qini_curves.png){ width="100%" }
 
+The table's Qini intervals are the primary two-arm Mens-versus-control
+analysis. The separate per-arm AUUC read is Mens 12.03 [−0.47, 24.21] and
+Womens 3.37 [−6.78, 13.75]; both intervals span zero, so neither per-arm
+ranking is established. These are different contrasts from the primary
+policy-profit interval below, not interchangeable evidence.
+
 - Headline economics: at $0.01/email, **mail-everyone is the profit maximum
   ($16,103)**. The recommended top-25% T-learner policy's value is
   **concentration**: **+$2,812 (+69%) vs random at the same budget** (~61 of
