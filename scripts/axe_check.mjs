@@ -47,6 +47,7 @@ const VIEWPORTS = [
   { name: "mobile", width: 390, height: 844 },
 ];
 const REPORT_PATH = path.join(ROOT, "reports", "axe.json");
+const SKELETON_ONLY = process.env.AXE_SKELETON_ONLY === "1";
 
 async function main() {
   const browser = await chromium.launch();
@@ -57,7 +58,7 @@ async function main() {
   try {
     const results = [];
 
-    for (const theme of themes) {
+    for (const theme of SKELETON_ONLY ? [] : themes) {
       for (const viewport of VIEWPORTS) {
         // A fresh context per theme/viewport isolates storage and gives AxeBuilder
         // the explicit context it requires.
@@ -133,6 +134,72 @@ async function main() {
       }
     }
 
+    // The normal route scans wait for figures to settle, so they miss the
+    // transient pending state. Hold the dev-only diagram chunk, freeze both
+    // old/new animation selectors at the midpoint, and scan visible skeletons.
+    for (const theme of themes) {
+      for (const viewport of VIEWPORTS.filter(({ name }) => name !== "tablet")) {
+        const context = await browser.newContext({
+          viewport: { width: viewport.width, height: viewport.height },
+        });
+        await context.addInitScript(
+          ([key, value]) => window.localStorage.setItem(key, value),
+          ["portfolio-theme", theme.storageValue],
+        );
+        const page = await context.newPage();
+        try {
+          await page.route("**/src/components/diagrams/FlowDiagram.tsx*", async (route) => {
+            await new Promise((resolve) => setTimeout(resolve, 10_000));
+            await route.continue();
+          });
+          const route = "/projects/04-nlp-classification#pending-skeleton";
+          const url = `${BASE_URL}${route}`;
+          const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+          const skeleton = page.locator(".frame-skeleton").first();
+          await skeleton.waitFor({ state: "visible", timeout: 30_000 });
+          await skeleton.scrollIntoViewIfNeeded();
+          await page.addStyleTag({
+            content:
+              ".frame-skeleton, .frame-skeleton span { " +
+              "animation-play-state: paused !important; animation-delay: -0.7s !important; }",
+          });
+          const analysis = await new AxeBuilder({ page })
+            .include(".frame-skeleton")
+            .options({ rules: { "target-size": { enabled: true } } })
+            .analyze();
+          results.push({
+            theme: theme.name,
+            route,
+            viewport: viewport.name,
+            url,
+            httpStatus: response?.status() ?? null,
+            passes: analysis.passes.length,
+            violationCount: analysis.violations.length,
+            failingViolations: analysis.violations.map((v) => ({
+              id: v.id,
+              impact: v.impact,
+              help: v.help,
+              helpUrl: v.helpUrl,
+              nodes: v.nodes.map((n) => n.target),
+            })),
+            violations: analysis.violations.map((v) => ({
+              id: v.id,
+              impact: v.impact,
+              help: v.help,
+              helpUrl: v.helpUrl,
+              nodes: v.nodes.map((n) => ({ target: n.target, failureSummary: n.failureSummary })),
+            })),
+          });
+          console.log(
+            `[axe] ${theme.name} ${viewport.name} ${route} — ` +
+              `${analysis.violations.length} violations`,
+          );
+        } finally {
+          await context.close();
+        }
+      }
+    }
+
     await mkdir(path.dirname(REPORT_PATH), { recursive: true });
     await writeFile(REPORT_PATH, JSON.stringify({ baseUrl: BASE_URL, results }, null, 2));
     console.log(`[axe] report written to ${path.relative(ROOT, REPORT_PATH)}`);
@@ -156,7 +223,7 @@ async function main() {
       for (const f of failures) console.error(`  ${f}`);
       process.exitCode = 1;
     } else {
-      console.log("[axe] OK — no violations in dark or light at desktop, tablet, or mobile widths");
+      console.log(`[axe] OK — no violations in ${results.length} checked states`);
     }
   } finally {
     await browser.close();

@@ -62,5 +62,20 @@
     # match — anything else falls through to the SPA's own /experiments route.
     redir /experiments /projects 301
 
+    # One canonical document URL: non-root trailing slashes redirect before
+    # the SPA handler. Preserve deep paths and queries. Restrict the 301 to
+    # safe methods; other methods reach the API without a 301-to-GET rewrite.
+    @trailing_slash_query {
+        method GET HEAD
+        path_regexp trailing_slash ^(.+)/$
+        expression `{http.request.uri.query} != ""`
+    }
+    redir @trailing_slash_query "{re.trailing_slash.1}?{http.request.uri.query}" 301
+    @trailing_slash {
+        method GET HEAD
+        path_regexp trailing_slash ^(.+)/$
+    }
+    redir @trailing_slash {re.trailing_slash.1} 301
+
     reverse_proxy api:8000
 }

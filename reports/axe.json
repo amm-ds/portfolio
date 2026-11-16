@@ -792,6 +792,50 @@
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
+    },
+    {
+      "theme": "dark",
+      "route": "/projects/04-nlp-classification#pending-skeleton",
+      "viewport": "desktop",
+      "url": "http://127.0.0.1:4321/projects/04-nlp-classification#pending-skeleton",
+      "httpStatus": 200,
+      "passes": 2,
+      "violationCount": 0,
+      "failingViolations": [],
+      "violations": []
+    },
+    {
+      "theme": "dark",
+      "route": "/projects/04-nlp-classification#pending-skeleton",
+      "viewport": "mobile",
+      "url": "http://127.0.0.1:4321/projects/04-nlp-classification#pending-skeleton",
+      "httpStatus": 200,
+      "passes": 2,
+      "violationCount": 0,
+      "failingViolations": [],
+      "violations": []
+    },
+    {
+      "theme": "light",
+      "route": "/projects/04-nlp-classification#pending-skeleton",
+      "viewport": "desktop",
+      "url": "http://127.0.0.1:4321/projects/04-nlp-classification#pending-skeleton",
+      "httpStatus": 200,
+      "passes": 2,
+      "violationCount": 0,
+      "failingViolations": [],
+      "violations": []
+    },
+    {
+      "theme": "light",
+      "route": "/projects/04-nlp-classification#pending-skeleton",
+      "viewport": "mobile",
+      "url": "http://127.0.0.1:4321/projects/04-nlp-classification#pending-skeleton",
+      "httpStatus": 200,
+      "passes": 2,
+      "violationCount": 0,
+      "failingViolations": [],
+      "violations": []
     }
   ]
 }

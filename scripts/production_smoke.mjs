@@ -43,6 +43,39 @@ try {
     }
   });
 
+  for (const [source, destination] of [
+    ["/projects/?from=smoke", "/projects?from=smoke"],
+    ["/about/", "/about"],
+  ]) {
+    const trailingSlash = await context.request.get(`${BASE_URL}${source}`, { maxRedirects: 0 });
+    assert(trailingSlash.status() === 301, `${source} did not return a permanent redirect`);
+    assert(
+      trailingSlash.headers()["location"] === destination,
+      `unexpected ${source} Location: ${trailingSlash.headers()["location"]}`,
+    );
+  }
+  const postRedirect = await context.request.post(`${BASE_URL}/contact/unlock/`, {
+    data: { value: "not-an-email" },
+    maxRedirects: 0,
+  });
+  // The SPA catch-all already makes this direct API variant a 405 (not 307).
+  // Preserve that contract; the edge must not turn POST into a canonical GET.
+  assert(postRedirect.status() === 405, "API POST trailing slash must reach the API unchanged");
+  assert(!postRedirect.headers()["location"], "API POST received a canonical-page redirect");
+  const canonicalProjects = await context.request.get(`${BASE_URL}/projects?from=smoke`, {
+    headers: { Accept: "text/html" },
+  });
+  const canonicalProjectsHtml = await canonicalProjects.text();
+  assert(
+    canonicalProjectsHtml.includes("<title>Demos &amp; Experiments · alejandromerida.dev</title>"),
+    "canonical projects route lost its route-specific raw title",
+  );
+  assert(
+    /<link rel="canonical" href="[^"]+\/projects" \/>/.test(canonicalProjectsHtml),
+    "canonical projects route lost its route-specific canonical URL",
+  );
+  console.log("production trailing slash: permanent redirect + canonical raw head");
+
   const home = await page.goto(`${BASE_URL}/`, { waitUntil: "networkidle", timeout: 60_000 });
   assert(home?.status() === 200, "SPA root did not return 200");
   const homeCsp = home.headers()["content-security-policy"] ?? "";
