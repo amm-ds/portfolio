@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Release-artifact contract gate.
 
-Two checks, both learned from real gaps (external audits, 2026-11):
+Four release contracts, learned from real gaps (external audits, 2026-11):
 
 1. **Artifact completeness** — every shipped project (a ``projects/NN-*``
    directory whose ``portfolio.yaml`` is not marked ``planned``) must expose
@@ -10,10 +10,14 @@ Two checks, both learned from real gaps (external audits, 2026-11):
    Projects 11/12 failed this for days because per-project .gitignore files
    silently excluded the artifacts from git (fixed in v1.1.0) — this gate
    keeps that failure mode impossible.
-2. **12→13 feature contract** — project 13 serves project 12's champion
+2. **Story figure contract** — every figure rendered by a story must have a
+   non-empty committed JSON payload and a non-empty caption.
+3. **12→13 feature contract** — project 13 serves project 12's champion
    behind a request schema that mirrors 12's exported feature selection.
    The ``selected`` list must match between the two committed contracts;
    today nothing fails when 12's schema drifts without regenerating 13.
+4. **Metrics provenance** — every metrics artifact carries a valid ``_meta``
+   block identifying its source revision and reproducibility inputs.
 
 Run: uv run python scripts/check_release_artifacts.py
 """
@@ -39,6 +43,54 @@ def check_completeness() -> list[str]:
         for rel in REQUIRED:
             if not (project / rel).exists():
                 problems.append(f"{project.name}: missing {rel}")
+    return problems
+
+
+def check_story_figures(projects_root: Path = PROJECTS) -> list[str]:
+    """Every story-rendered figure has a non-empty JSON payload and caption."""
+    import yaml
+
+    problems: list[str] = []
+    for project in sorted(projects_root.iterdir()):
+        if not project.is_dir() or not project.name[:2].isdigit():
+            continue
+        manifest = project / "portfolio.yaml"
+        if not manifest.exists() or "planned" in manifest.read_text():
+            continue
+        story_path = project / "story.yaml"
+        if not story_path.exists():  # Reported by check_completeness.
+            continue
+        story = yaml.safe_load(story_path.read_text(encoding="utf-8"))
+        if not isinstance(story, dict):  # Story schema gates own malformed stories.
+            continue
+        rendered = sorted(
+            {
+                figure
+                for section in story.get("sections") or []
+                if isinstance(section, dict)
+                for figure in section.get("figures") or []
+            }
+        )
+        captions = story.get("figure_captions") or {}
+        for figure in rendered:
+            track, separator, bare = figure.partition(":")
+            stem = bare if separator else figure
+            candidates: list[Path] = []
+            if project.name == "02-demand-forecasting":
+                candidates.append(project / "reports_m5_full" / "figures" / f"{stem}.json")
+            candidates.append(
+                project / f"reports_{track}" / "figures" / f"{stem}.json"
+                if separator
+                else project / "reports" / "figures" / f"{stem}.json"
+            )
+            payload = next((path for path in candidates if path.is_file()), None)
+            if payload is None:
+                problems.append(f"{project.name}: missing story figure {figure}.json")
+            elif not payload.read_bytes().strip():
+                problems.append(f"{project.name}: empty story figure {payload.name}")
+            caption = captions.get(figure)
+            if not isinstance(caption, str) or not caption.strip():
+                problems.append(f"{project.name}: missing caption for story figure {figure}")
     return problems
 
 
@@ -84,14 +136,19 @@ def check_12_13_contract() -> list[str]:
 
 
 def main() -> int:
-    problems = [*check_completeness(), *check_12_13_contract(), *check_metrics_meta()]
+    problems = [
+        *check_completeness(),
+        *check_story_figures(),
+        *check_12_13_contract(),
+        *check_metrics_meta(),
+    ]
     if problems:
         for p in problems:
             print("ERROR:", p)
         return 1
     print(
-        "release-artifacts: OK (all shipped projects complete; 12→13 contract in sync; "
-        "metrics _meta present on every artifact)"
+        "release-artifacts: OK (all shipped projects complete; story figures present, "
+        "non-empty, and captioned; 12→13 contract in sync; metrics _meta present on every artifact)"
     )
     return 0
 
