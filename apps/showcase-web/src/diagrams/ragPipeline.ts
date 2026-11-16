@@ -96,8 +96,8 @@ export const RAG_PIPELINE_SPEC = {
     { id: "faiss-rerank", source: "faiss", target: "rerank", kind: "result", label: "top 5×k" },
     { id: "rerank-funnel", source: "rerank", target: "funnel", kind: "result", label: "ranked" },
     { id: "funnel-draft", source: "funnel", target: "draft", kind: "task", label: "top 3 passages" },
-    { id: "draft-verifier", source: "draft", target: "verifier", kind: "result", label: "draft + citations" },
-    { id: "verifier-draft", source: "verifier", target: "draft", kind: "error", label: "repair ≤ 2" },
+    { id: "draft-verifier", source: "draft", target: "verifier", kind: "result", label: "draft + citations", offset: -34 },
+    { id: "verifier-draft", source: "verifier", target: "draft", kind: "error", label: "repair ≤ 2", offset: 34 },
     { id: "verifier-answer", source: "verifier", target: "answer", kind: "result", label: "pass / abstain" },
   ],
 } as const satisfies DiagramSpec;

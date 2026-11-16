@@ -5,7 +5,7 @@ import type { DiagramSpec } from "../types";
 // architecture specs.
 export const AUTO_01_RAG_AGENT_4_SPEC = {
   id: "auto-01-rag-agent-4",
-  title: "Rag Agent — Conclusions & lessons",
+  title: "RAG Agent — Conclusions & lessons",
   direction: "LR",
   nodes: [
     {
@@ -59,11 +59,11 @@ export const AUTO_01_RAG_AGENT_4_SPEC = {
   ],
   edges: [
     { id: "draft-a-draft-j", source: "draft-a", target: "draft-j", kind: "task" },
-    { id: "verify-sp-verify-out", source: "verify-sp", target: "verify-out", kind: "task", label: "yes: keep claim" },
+    { id: "verify-sp-verify-out", source: "verify-sp", target: "verify-out", kind: "task", label: "yes: keep claim", offset: 200 },
     { id: "verify-sp-verify-ab", source: "verify-sp", target: "verify-ab", kind: "task", label: "no: remove text" },
     { id: "verify-ab-verify-rd", source: "verify-ab", target: "verify-rd", kind: "task", label: "yes" },
     { id: "verify-ab-verify-ref", source: "verify-ab", target: "verify-ref", kind: "task", label: "no" },
-    { id: "verify-rd-verify-sp", source: "verify-rd", target: "verify-sp", kind: "task" },
+    { id: "verify-rd-verify-sp", source: "verify-rd", target: "verify-sp", kind: "task", offset: 200 },
     { id: "draft-a-verify-sp", source: "draft-a", target: "verify-sp", kind: "task" },
     { id: "s15-verify-out", source: "s15", target: "verify-out", kind: "task" },
     { id: "verify-ref-verify-out", source: "verify-ref", target: "verify-out", kind: "task" },

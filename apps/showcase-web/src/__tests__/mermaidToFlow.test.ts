@@ -86,7 +86,20 @@ describe("SPEC_OVERRIDES", () => {
   it("has only known override shapes", () => {
     for (const [id, ov] of Object.entries(SPEC_OVERRIDES)) {
       expect(id).toMatch(/^auto-/);
-      expect(Object.keys(ov)).toEqual(expect.arrayContaining([expect.stringMatching(/labels|canvasHeight|kinds/)]));
+      expect(Object.keys(ov)).toEqual(expect.arrayContaining([expect.stringMatching(/labels|canvasHeight|kinds|offsets/)]));
     }
+  });
+
+  it("pins reviewed lanes for dense feedback graphs", () => {
+    expect(SPEC_OVERRIDES["auto-09-agentic-workflows-4"].offsets).toEqual({
+      "gate-p-gate-h": -34,
+      "gate-h-gate-p": 34,
+      "ex-cr": -34,
+      "cr-ex": 34,
+    });
+    expect(SPEC_OVERRIDES["auto-01-rag-agent-4"].offsets).toEqual({
+      "verify-sp-verify-out": 200,
+      "verify-rd-verify-sp": 200,
+    });
   });
 });

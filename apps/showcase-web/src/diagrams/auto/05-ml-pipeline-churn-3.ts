@@ -5,7 +5,7 @@ import type { DiagramSpec } from "../types";
 // architecture specs.
 export const AUTO_05_ML_PIPELINE_CHURN_3_SPEC = {
   id: "auto-05-ml-pipeline-churn-3",
-  title: "Ml Pipeline Churn — Evaluation setup",
+  title: "ML Pipeline Churn — Evaluation setup",
   direction: "LR",
   nodes: [
     {

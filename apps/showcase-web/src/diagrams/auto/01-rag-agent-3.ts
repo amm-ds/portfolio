@@ -5,7 +5,7 @@ import type { DiagramSpec } from "../types";
 // architecture specs.
 export const AUTO_01_RAG_AGENT_3_SPEC = {
   id: "auto-01-rag-agent-3",
-  title: "Rag Agent — Evaluation setup",
+  title: "RAG Agent — Evaluation setup",
   direction: "LR",
   nodes: [
     {

@@ -5,7 +5,7 @@ import type { DiagramSpec } from "../types";
 // architecture specs.
 export const AUTO_04_NLP_CLASSIFICATION_4_SPEC = {
   id: "auto-04-nlp-classification-4",
-  title: "Nlp Classification — Conclusions & lessons",
+  title: "NLP Classification — Conclusions & lessons",
   direction: "LR",
   nodes: [
     {

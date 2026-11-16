@@ -17,6 +17,18 @@ describe("diagram spec registry and schema", () => {
     }
   });
 
+  it.each([
+    { project: "01-rag-agent", title: "RAG Agent" },
+    { project: "04-nlp-classification", title: "NLP Classification" },
+    { project: "05-ml-pipeline-churn", title: "ML Pipeline Churn" },
+  ])("preserves manifest acronyms in $project diagram titles", ({ project, title }) => {
+    const specs = Object.values(DIAGRAM_SPECS).filter((spec) =>
+      spec.id.startsWith(`auto-${project}-`),
+    );
+    expect(specs).toHaveLength(4);
+    for (const spec of specs) expect(spec.title).toMatch(new RegExp(`^${title} — `));
+  });
+
   it("rejects duplicate nodes and dangling edges", () => {
     const invalid: DiagramSpec = {
       ...ROUTING_SPEC,
@@ -26,6 +38,14 @@ describe("diagram spec registry and schema", () => {
     expect(diagramSpecErrors(invalid)).toEqual(
       expect.arrayContaining(["duplicate node id: input", "dangling edge: broken"]),
     );
+  });
+
+  it("rejects non-finite reviewed route offsets", () => {
+    const invalid: DiagramSpec = {
+      ...ROUTING_SPEC,
+      edges: [{ ...ROUTING_SPEC.edges[0], offset: Number.POSITIVE_INFINITY }],
+    };
+    expect(diagramSpecErrors(invalid)).toContain(`invalid edge offset: ${ROUTING_SPEC.edges[0].id}`);
   });
 
   it("keeps the exact pilot tool names and evidence in the specs", () => {

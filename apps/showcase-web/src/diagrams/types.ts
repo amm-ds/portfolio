@@ -18,6 +18,8 @@ export interface DiagramSpecEdge {
   target: string;
   kind: DiagramMessageKind;
   label?: string;
+  /** Reviewed perpendicular offset in px for feedback or fan-out routes. */
+  offset?: number;
 }
 
 export interface DiagramSpec {
@@ -58,6 +60,9 @@ export function diagramSpecErrors(spec: DiagramSpec): string[] {
       errors.push(`dangling edge: ${edge.id}`);
     }
     if (!DIAGRAM_MESSAGE_KINDS.includes(edge.kind)) errors.push(`invalid edge kind: ${edge.id}`);
+    if (edge.offset !== undefined && !Number.isFinite(edge.offset)) {
+      errors.push(`invalid edge offset: ${edge.id}`);
+    }
   }
   return errors;
 }

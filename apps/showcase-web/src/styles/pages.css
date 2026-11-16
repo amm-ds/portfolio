@@ -469,6 +469,11 @@ button:disabled {
   color: var(--muted);
 }
 
+.channel-lock-note a {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
 .channel-unlock {
   margin: 0 0 0.25rem;
 }
@@ -1164,7 +1169,7 @@ button:disabled {
   color: var(--secondary);
 }
 
-.flow-node--cylinder > *:not(.flow-node__cylinder) {
+.flow-node--cylinder > *:not(.flow-node__cylinder):not(.react-flow__handle) {
   position: relative;
   z-index: 1;
 }
@@ -1438,6 +1443,7 @@ button:disabled {
 }
 
 .flow-edge__label {
+  box-sizing: border-box;
   position: absolute;
   width: max-content;
   max-width: 260px;
@@ -1454,12 +1460,34 @@ button:disabled {
   border-radius: 4px;
   box-shadow: var(--shadow-chip);
   pointer-events: none;
-  transition: border-color 0.12s ease, color 0.12s ease;
+  transition: border-color 0.12s ease, color 0.12s ease, opacity 0.12s ease;
 }
 
-.flow-edge.is-lit .flow-edge__label,
-.flow-edge.is-pinned .flow-edge__label {
+/* EdgeLabelRenderer portals labels outside .flow-edge, so both the semantic
+   color and interaction state must live on the label itself. */
+.flow-edge__label--task {
+  --edge-color: var(--secondary);
+}
+
+.flow-edge__label--result {
+  --edge-color: var(--accent-bright);
+}
+
+.flow-edge__label--error {
+  --edge-color: var(--danger);
+}
+
+.flow-edge__label.is-lit,
+.flow-edge__label.is-pinned {
   border-color: var(--edge-color);
+}
+
+.flow-edge__label.is-pinned {
+  box-shadow: 0 0 0 1px var(--edge-color), var(--shadow-chip);
+}
+
+.flow-edge__label.is-dim {
+  opacity: 0.22;
 }
 
 /* dimmed nodes during neighborhood focus */
@@ -1498,7 +1526,14 @@ button:disabled {
     border-top: 1px solid var(--border);
     border-left: 0;
   }
+}
 
+@media (max-width: 640px) {
+  /* Vertical gestures belong to the article; horizontal drags still pan the
+     readable, intentionally unfit mobile canvas. */
+  .flow-diagram .react-flow__pane {
+    touch-action: pan-y;
+  }
 }
 
 /* Native app articles: code widgets, spec cards, compact media, and video. */

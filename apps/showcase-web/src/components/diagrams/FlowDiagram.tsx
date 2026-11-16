@@ -1,10 +1,8 @@
 import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
-import dagre from "@dagrejs/dagre";
 import {
   BaseEdge,
   Controls,
   EdgeLabelRenderer,
-  getNodesBounds,
   getSmoothStepPath,
   getViewportForBounds,
   Handle,
@@ -26,9 +24,14 @@ import "@xyflow/react/dist/style.css";
 import { getDiagramSpec } from "../../diagrams";
 import { diagramSpecErrors, type DiagramMessageKind, type DiagramNodeKind, type DiagramSpec } from "../../diagrams/types";
 import { DiagramFallback } from "./DiagramFallback";
+import {
+  getFlowBounds,
+  layoutMeasuredNodes,
+  NODE_WIDTH,
+  parallelEdgeOffset,
+  selfLoopGeometry,
+} from "./flowGeometry";
 import type { FlowDiagramProps, FlowDiagramRegistryProps } from "./LazyFlowDiagram";
-
-const NODE_WIDTH = 196;
 /** Mermaid-logic shapes make a node's role readable before its label is:
  *  stadium for terminals, cylinder for stores, subroutine for tools,
  *  hexagon for APIs, rhombus for decision gates. */
@@ -53,17 +56,45 @@ type FlowNodeData = {
   label: string;
   kind: DiagramNodeKind;
   facts: readonly string[];
+  sourceHandleCount: number;
+  targetHandleCount: number;
   preview?: string;
 };
 type FlowNode = Node<FlowNodeData, "diagram">;
 type FlowEdgeData = {
   kind: DiagramMessageKind;
   label?: string;
-  /** Vertical shift of the mid segment — parallel call/result pairs bend
-   *  apart instead of drawing on top of each other. */
+  /** Perpendicular shift of the mid segment and its portaled label. */
   offset: number;
+  lit: boolean;
+  dim: boolean;
+  pinned: boolean;
 };
 type FlowEdge = Edge<FlowEdgeData>;
+
+function DiagramHandles({
+  type,
+  count,
+  position,
+}: {
+  type: "source" | "target";
+  count: number;
+  position: Position;
+}) {
+  const horizontal = position === Position.Left || position === Position.Right;
+  return Array.from({ length: count }, (_, index) => (
+    <Handle
+      key={`${type}-${index}`}
+      id={`${type}-${index}`}
+      type={type}
+      position={position}
+      isConnectable={false}
+      style={horizontal
+        ? { top: `${((index + 1) / (count + 1)) * 100}%` }
+        : { left: `${((index + 1) / (count + 1)) * 100}%` }}
+    />
+  ));
+}
 
 const DiagramNodeView = memo(function DiagramNodeView({
   data,
@@ -71,6 +102,8 @@ const DiagramNodeView = memo(function DiagramNodeView({
   targetPosition,
 }: NodeProps<FlowNode>) {
   const shape = KIND_SHAPES[data.kind];
+  const source = sourcePosition ?? Position.Right;
+  const target = targetPosition ?? Position.Left;
   return (
     <div className={`flow-node flow-node--${data.kind} flow-node--${shape}`}>
       {data.preview && (
@@ -87,43 +120,17 @@ const DiagramNodeView = memo(function DiagramNodeView({
           />
         </svg>
       )}
-      <Handle type="target" position={targetPosition ?? Position.Left} isConnectable={false} />
-      <span className="flow-node__kind">{data.kind}</span>
+      <DiagramHandles type="target" count={data.targetHandleCount} position={target} />
+      <span className="flow-node__kind">{data.kind}</span>{" "}
       <span className="flow-node__label">{data.label}</span>
-      <Handle type="source" position={sourcePosition ?? Position.Right} isConnectable={false} />
+      <DiagramHandles type="source" count={data.sourceHandleCount} position={source} />
     </div>
   );
 });
 
-function selfLoopGeometry(
-  sourceX: number,
-  sourceY: number,
-  targetX: number,
-  targetY: number,
-  sourcePosition: Position,
-): [string, number, number] {
-  const horizontal = sourcePosition === Position.Left || sourcePosition === Position.Right;
-  if (horizontal) {
-    const direction = sourcePosition === Position.Right ? 1 : -1;
-    const archY = Math.min(sourceY, targetY) - 88;
-    return [
-      `M ${sourceX} ${sourceY} C ${sourceX + 64 * direction} ${archY}, ${targetX - 64 * direction} ${archY}, ${targetX} ${targetY}`,
-      (sourceX + targetX) / 2,
-      archY - 8,
-    ];
-  }
-  const direction = sourcePosition === Position.Bottom ? 1 : -1;
-  const archX = Math.max(sourceX, targetX) + 88;
-  return [
-    `M ${sourceX} ${sourceY} C ${archX} ${sourceY + 64 * direction}, ${archX} ${targetY - 64 * direction}, ${targetX} ${targetY}`,
-    archX + 8,
-    (sourceY + targetY) / 2,
-  ];
-}
-
 /** Custom edge: separated smooth-step paths, explicit self-loops, and HTML
- *  labels above the node layer. Legibility states (muted/lit/dim) are driven
- *  by class names computed in FlowCanvas from hover/selection. */
+ *  labels above the node layer. Portaled labels receive focus state directly;
+ *  selectors on the SVG edge cannot reach EdgeLabelRenderer's DOM subtree. */
 const DiagramEdgeView = memo(function DiagramEdgeView({
   id,
   source,
@@ -137,34 +144,59 @@ const DiagramEdgeView = memo(function DiagramEdgeView({
   data,
   markerEnd,
 }: EdgeProps<FlowEdge>) {
+  const horizontal = sourcePosition === Position.Left || sourcePosition === Position.Right;
+  const backwards = source !== target && (horizontal ? targetX < sourceX : targetY < sourceY);
+  const labelShift = data?.offset || (backwards ? 48 : 0);
+  const middleX = (sourceX + targetX) / 2;
+  const middleY = (sourceY + targetY) / 2;
+  const sourceDirection = sourcePosition === Position.Right || sourcePosition === Position.Bottom ? 1 : -1;
+  const targetDirection = targetPosition === Position.Right || targetPosition === Position.Bottom ? 1 : -1;
+  // Reviewed offsets are lanes, not diagonal arcs: leave both nodes outward,
+  // travel outside intermediate columns, then enter the target from outside.
+  const sourceExit = horizontal ? sourceX + sourceDirection * 32 : sourceY + sourceDirection * 32;
+  const targetExit = horizontal ? targetX + targetDirection * 32 : targetY + targetDirection * 32;
+  const routedPath = horizontal
+    ? `M ${sourceX} ${sourceY} L ${sourceExit} ${sourceY} L ${sourceExit} ${middleY + labelShift} L ${targetExit} ${middleY + labelShift} L ${targetExit} ${targetY} L ${targetX} ${targetY}`
+    : `M ${sourceX} ${sourceY} L ${sourceX} ${sourceExit} L ${middleX + labelShift} ${sourceExit} L ${middleX + labelShift} ${targetExit} L ${targetX} ${targetExit} L ${targetX} ${targetY}`;
   const [path, baseLabelX, baseLabelY] =
     source === target
       ? selfLoopGeometry(sourceX, sourceY, targetX, targetY, sourcePosition)
-      : getSmoothStepPath({
-          sourceX,
-          sourceY,
-          sourcePosition,
-          targetX,
-          targetY,
-          targetPosition,
-          borderRadius: 14,
-          offset: data?.offset ?? 0,
-        });
-  // getSmoothStepPath bends reciprocal edges but keeps their label anchors
-  // together. Move each label with its path so call/repair text stays apart.
-  const horizontal = sourcePosition === Position.Left || sourcePosition === Position.Right;
-  const labelShift = data?.offset ?? 0;
+      : labelShift !== 0
+        ? [routedPath, middleX, middleY]
+        : getSmoothStepPath({
+            sourceX,
+            sourceY,
+            sourcePosition,
+            targetX,
+            targetY,
+            targetPosition,
+            borderRadius: 14,
+            offset: 0,
+          });
+  // Move each portaled label to the midpoint of its routed/stepped path.
   const labelX = baseLabelX + (horizontal ? 0 : labelShift);
   const labelY = baseLabelY + (horizontal ? labelShift : 0);
   const label = data?.label;
+  const labelState = data?.pinned ? " is-pinned" : data?.lit ? " is-lit" : data?.dim ? " is-dim" : "";
   return (
     <>
-      <BaseEdge id={id} path={path} className="flow-edge__path" markerEnd={markerEnd} />
+      <BaseEdge
+        id={id}
+        path={path}
+        className="flow-edge__path"
+        markerEnd={markerEnd}
+        data-source={source}
+        data-target={target}
+        style={{
+          strokeDasharray: data?.kind === "result" ? "8 4" : data?.kind === "error" ? "2 5" : undefined,
+        }}
+      />
       {label ? (
         <EdgeLabelRenderer>
           <div
-            className="flow-edge__label"
+            className={`flow-edge__label flow-edge__label--${data?.kind ?? "task"}${labelState}`}
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
+            aria-hidden="true"
           >
             {label}
           </div>
@@ -180,45 +212,73 @@ const NODE_A11Y_DESCRIPTION = "Press enter or space to inspect a node. Press esc
 const ARIA_LABEL_CONFIG = {
   "node.a11yDescription.default": NODE_A11Y_DESCRIPTION,
   "node.a11yDescription.keyboardDisabled": NODE_A11Y_DESCRIPTION,
-  "edge.a11yDescription.default": "Directed edges show task, result, and error messages. Edges are read-only.",
+  "edge.a11yDescription.default": "Directed edges show solid task, dashed result, and dotted error messages. Edges are read-only.",
 };
 
 function toFlow(spec: DiagramSpec): { nodes: FlowNode[]; edges: FlowEdge[] } {
-  // Parallel edges between the same pair draw on top of each other at offset
-  // 0; bend the mid segment alternately so call and result paths separate.
-  const pairCounts = new Map<string, number>();
   const pairKey = (a: string, b: string) => [a, b].sort().join("→");
+  const pairSizes = new Map<string, number>();
+  const pairOccurrences = new Map<string, number>();
+  const sourceCounts = new Map<string, number>();
+  const targetCounts = new Map<string, number>();
+  for (const edge of spec.edges) {
+    const key = pairKey(edge.source, edge.target);
+    pairSizes.set(key, (pairSizes.get(key) ?? 0) + 1);
+    sourceCounts.set(edge.source, (sourceCounts.get(edge.source) ?? 0) + 1);
+    targetCounts.set(edge.target, (targetCounts.get(edge.target) ?? 0) + 1);
+  }
+  const sourceOccurrences = new Map<string, number>();
+  const targetOccurrences = new Map<string, number>();
+  const labels = new Map(spec.nodes.map((node) => [node.id, node.label]));
   return {
     nodes: spec.nodes.map((node) => ({
       id: node.id,
       type: "diagram",
       position: { x: 0, y: 0 },
-      data: { label: node.label, kind: node.kind, facts: node.facts },
+      data: {
+        label: node.label,
+        kind: node.kind,
+        facts: node.facts,
+        sourceHandleCount: sourceCounts.get(node.id) ?? 0,
+        targetHandleCount: targetCounts.get(node.id) ?? 0,
+      },
       style: { width: node.kind === "gate" ? 236 : NODE_WIDTH },
-      ariaRole: "button",
+      ariaRole: node.facts.length > 0 ? "button" : "group",
+      ariaLabel: `${node.kind} ${node.label}`,
+      focusable: node.facts.length > 0,
+      selectable: node.facts.length > 0,
       deletable: false,
     })),
     edges: spec.edges.map((edge) => {
       const key = pairKey(edge.source, edge.target);
-      const occurrence = pairCounts.get(key) ?? 0;
-      pairCounts.set(key, occurrence + 1);
+      const occurrence = pairOccurrences.get(key) ?? 0;
+      pairOccurrences.set(key, occurrence + 1);
+      const sourceIndex = sourceOccurrences.get(edge.source) ?? 0;
+      sourceOccurrences.set(edge.source, sourceIndex + 1);
+      const targetIndex = targetOccurrences.get(edge.target) ?? 0;
+      targetOccurrences.set(edge.target, targetIndex + 1);
       return {
         id: edge.id,
         source: edge.source,
         target: edge.target,
+        sourceHandle: `source-${sourceIndex}`,
+        targetHandle: `target-${targetIndex}`,
         type: "diagram",
         data: {
           kind: edge.kind,
           label: edge.label,
-          offset: occurrence === 0 ? 0 : occurrence % 2 === 1 ? 26 : -26,
+          offset: parallelEdgeOffset(edge, occurrence, pairSizes.get(key) ?? 1),
+          lit: false,
+          dim: false,
+          pinned: false,
         },
         className: `flow-edge flow-edge--${edge.kind}`,
         style: {
-          strokeDasharray: edge.kind === "error" ? "7 4" : undefined,
+          strokeDasharray: edge.kind === "result" ? "8 4" : edge.kind === "error" ? "2 5" : undefined,
         },
         markerEnd: { type: MarkerType.ArrowClosed, color: EDGE_COLORS[edge.kind], width: 22, height: 22 },
-        ariaLabel: `${edge.label ?? edge.kind}: ${edge.source} to ${edge.target}`,
-        focusable: true,
+        ariaLabel: `${edge.kind} edge${edge.label ? ` “${edge.label}”` : ""}: ${labels.get(edge.source)} to ${labels.get(edge.target)}`,
+        focusable: false,
       };
     }),
   };
@@ -233,44 +293,10 @@ function touchesNode(edges: FlowEdge[], nodeId: string, focusId: string): boolea
   );
 }
 
-/** Dagre positions use measured v12 node dimensions, never guessed heights. */
-function layoutMeasuredNodes(nodes: FlowNode[], spec: DiagramSpec): FlowNode[] {
-  const graph = new dagre.graphlib.Graph();
-  graph.setGraph({
-    rankdir: spec.direction,
-    nodesep: 80,
-    ranksep: 128,
-    marginx: 64,
-    marginy: 112,
-  });
-  graph.setDefaultEdgeLabel(() => ({}));
-  for (const node of nodes) {
-    graph.setNode(node.id, {
-      width: node.measured?.width ?? NODE_WIDTH,
-      height: node.measured?.height ?? 80,
-    });
-  }
-  for (const edge of spec.edges) graph.setEdge(edge.source, edge.target);
-  dagre.layout(graph);
-
-  return nodes.map((node) => {
-    const width = node.measured?.width ?? NODE_WIDTH;
-    const height = node.measured?.height ?? 80;
-    const point = graph.node(node.id);
-    return {
-      ...node,
-      position: { x: point.x - width / 2, y: point.y - height / 2 },
-      sourcePosition: spec.direction === "LR" ? Position.Right : Position.Bottom,
-      targetPosition: spec.direction === "LR" ? Position.Left : Position.Top,
-    };
-  });
-}
-
 const MIN_CANVAS_HEIGHT = 240;
 const MAX_CANVAS_HEIGHT = 560;
-const MIN_ZOOM = 0.1;
-const MOBILE_INITIAL_ZOOM = 0.65;
-const MOBILE_BREAKPOINT = 640;
+const MIN_ZOOM = 0.05;
+const INITIAL_ZOOM = 1;
 const FIT_PADDING = 0.12;
 
 function canvasHeightCap(spec: DiagramSpec): number {
@@ -294,10 +320,11 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [pinnedEdgeId, setPinnedEdgeId] = useState<string | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const viewportAdjustedRef = useRef(false);
   // The inspector follows the nodes' own selection flag — one source of
   // truth, so closing it cannot disagree with the canvas selection ring.
   const selectedNode = nodes.find((node) => node.selected) ?? null;
-  const { setViewport } = useReactFlow();
+  const { fitBounds, getNodesBounds, setViewport } = useReactFlow<FlowNode, FlowEdge>();
   const instructionsId = useId();
 
   const clearSelection = () => {
@@ -328,6 +355,14 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
         const pinned = edge.id === pinnedEdgeId;
         return {
           ...edge,
+          data: {
+            kind: edge.data?.kind ?? "task",
+            label: edge.data?.label,
+            offset: edge.data?.offset ?? 0,
+            lit,
+            dim: connected !== null && !lit,
+            pinned,
+          },
           className:
             `flow-edge flow-edge--${edge.data?.kind ?? "task"}` +
             (connected ? (lit ? " is-lit" : " is-dim") : "") +
@@ -365,36 +400,32 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
   useEffect(() => {
     if (!laidOut || ready) return;
     let cancelled = false;
-    // Fit once, after the positioned nodes commit. Selection and hover updates
-    // re-run this effect's dependencies but the ready guard prevents a re-fit.
+    // Position once, after nodes and portaled labels can be bounded.
     const raf = requestAnimationFrame(() => {
       const canvas = canvasRef.current;
       if (cancelled || !canvas || canvas.clientWidth === 0 || canvas.clientHeight === 0) return;
 
-      const bounds = getNodesBounds(nodes, { nodeOrigin: [0, 0] });
-      // A fitted horizontal graph is unreadable on a phone. Keep its existing
-      // layout, but open at a readable zoom and let touch users pan across it.
-      const mobile = canvas.clientWidth <= MOBILE_BREAKPOINT;
-      const minInitialZoom = mobile ? MOBILE_INITIAL_ZOOM : MIN_ZOOM;
+      const bounds = getFlowBounds(nodes, spec, edges, getNodesBounds(nodes));
+      // Every diagram opens at 100% for readable labels. Users can pan, focus
+      // a node, or explicitly choose the fit control for a scaled overview.
       const firstViewport = getViewportForBounds(
         bounds,
         canvas.clientWidth,
         canvas.clientHeight,
-        minInitialZoom,
-        1,
+        INITIAL_ZOOM,
+        INITIAL_ZOOM,
         FIT_PADDING,
       );
       const nextHeight = autoCanvasHeight(bounds.height, firstViewport.zoom, spec);
-      // Recenter against the auto-height canvas without changing the initial zoom.
       const viewport = getViewportForBounds(
         bounds,
         canvas.clientWidth,
         nextHeight,
-        minInitialZoom,
-        1,
+        INITIAL_ZOOM,
+        INITIAL_ZOOM,
         FIT_PADDING,
       );
-      setCanvasHeight(autoCanvasHeight(bounds.height, viewport.zoom, spec));
+      setCanvasHeight(nextHeight);
       void setViewport(viewport, { duration: 0 });
       setReady(true);
     });
@@ -402,14 +433,55 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
       cancelled = true;
       cancelAnimationFrame(raf);
     };
-  }, [laidOut, nodes, ready, setViewport, spec]);
+  }, [edges, getNodesBounds, laidOut, nodes, ready, setViewport, spec]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let previousWidth = Math.round(canvas.clientWidth);
+    let resizeFrame = 0;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = Math.round(entry.contentRect.width);
+      if (!width || width === previousWidth) return;
+      previousWidth = width;
+      // WebKit reports a ResizeObserver loop when height is written directly
+      // from its callback. Defer frame/viewport writes to the next paint.
+      cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(() => {
+        // Preserve both frame and viewport after deliberate interaction. This
+        // also avoids resize feedback while the reader is exploring a detail.
+        if (viewportAdjustedRef.current) return;
+        const bounds = getFlowBounds(nodes, spec, edges, getNodesBounds(nodes));
+        const firstViewport = getViewportForBounds(
+          bounds,
+          width,
+          canvas.clientHeight,
+          INITIAL_ZOOM,
+          INITIAL_ZOOM,
+          FIT_PADDING,
+        );
+        const nextHeight = autoCanvasHeight(bounds.height, firstViewport.zoom, spec);
+        setCanvasHeight(nextHeight);
+        void setViewport(
+          getViewportForBounds(bounds, width, nextHeight, INITIAL_ZOOM, INITIAL_ZOOM, FIT_PADDING),
+          { duration: 0 },
+        );
+      });
+    });
+    observer.observe(canvas);
+    return () => {
+      cancelAnimationFrame(resizeFrame);
+      observer.disconnect();
+    };
+  }, [edges, getNodesBounds, nodes, ready, setViewport, spec]);
 
   return (
     <section className="flow-diagram" aria-label={spec.title}>
       <div className="flow-diagram__heading">
         <span className="flow-diagram__title">{spec.title}</span>
         <span className="flow-diagram__zoom-hint" id={instructionsId}>
-          Scroll or pinch to zoom · drag to pan
+          Pinch or use controls to zoom · drag to pan · Fit for overview
         </span>
       </div>
       <div className={`flow-diagram__body${selectedNode ? " has-inspector" : ""}`}>
@@ -425,29 +497,37 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             onNodesChange={onNodesChange}
-            onNodeClick={(_, node) =>
+            onKeyDown={(event) => {
+              if (event.key === "Escape") clearSelection();
+            }}
+            onNodeClick={(_, node) => {
+              if (node.data.facts.length === 0) return;
               setNodes((current) =>
                 current.map((n) => ({ ...n, selected: n.id === node.id })),
-              )
-            }
+              );
+            }}
             onNodeMouseEnter={(_, node) => setHoveredId(node.id)}
             onNodeMouseLeave={() => setHoveredId(null)}
             onEdgeClick={(_, edge) =>
               setPinnedEdgeId((current) => (current === edge.id ? null : edge.id))
             }
             onPaneClick={clearSelection}
+            onMoveStart={(event) => {
+              if (event) viewportAdjustedRef.current = true;
+            }}
             nodesDraggable={false}
             nodesConnectable={false}
-            nodesFocusable
+            nodesFocusable={false}
             autoPanOnNodeFocus
-            edgesFocusable
+            edgesFocusable={false}
             edgesReconnectable={false}
             elementsSelectable
             deleteKeyCode={null}
             selectionOnDrag={false}
             panOnDrag
-            zoomOnScroll
+            zoomOnScroll={false}
             zoomOnPinch
+            preventScrolling={false}
             minZoom={MIN_ZOOM}
             maxZoom={1.75}
             onlyRenderVisibleElements={false}
@@ -455,7 +535,23 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
             aria-describedby={instructionsId}
             ariaLabelConfig={ARIA_LABEL_CONFIG}
           >
-            <Controls position="bottom-right" showInteractive={false} />
+            <Controls
+              position="bottom-right"
+              showInteractive={false}
+              onZoomIn={() => {
+                viewportAdjustedRef.current = true;
+              }}
+              onZoomOut={() => {
+                viewportAdjustedRef.current = true;
+              }}
+              onFitView={() => {
+                viewportAdjustedRef.current = true;
+                void fitBounds(getFlowBounds(nodes, spec, edges, getNodesBounds(nodes)), {
+                  padding: FIT_PADDING,
+                  duration: 0,
+                });
+              }}
+            />
           </ReactFlow>
         </div>
         {selectedNode && selectedNode.data.facts.length > 0 && (
@@ -479,9 +575,9 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
         )}
       </div>
       <div className="flow-diagram__legend" aria-label="Edge message kinds">
-        <span className="flow-legend--task">→ task</span>
-        <span className="flow-legend--result">→ result</span>
-        <span className="flow-legend--error">⇢ error / repair</span>
+        <span className="flow-legend--task">— task (solid)</span>
+        <span className="flow-legend--result">┄ result (dashed)</span>
+        <span className="flow-legend--error">⋯ error / repair (dotted)</span>
       </div>
     </section>
   );

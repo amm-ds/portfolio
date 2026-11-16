@@ -60,18 +60,27 @@ const SECTION_TITLES = {
 // Hand-review overrides from the Wave D visual pass (playwright screenshots of
 // the converted corpus). Keyed by spec id; `labels` maps flat node ids to
 // replacement labels, `canvasHeight` pins the auto-sized canvas cap, `kinds`
-// pins node kinds over keyword inference (post-kind-inference visual review,
-// round 2 — reasons inline).
+// pins node kinds over keyword inference, and `offsets` records reviewed
+// perpendicular routes for reciprocal feedback edges.
 const SPEC_OVERRIDES = {
-  // Self-loop graph: the auto-height fit under-computes dagre's rank margins
-  // and the bottom rank (Critique / WorkflowResult) clipped.
-  "auto-09-agentic-workflows-4": { canvasHeight: 480 },
+  // Self-loop graph: reserve a taller canvas and separate both feedback pairs.
+  "auto-09-agentic-workflows-4": {
+    canvasHeight: 480,
+    offsets: {
+      "gate-p-gate-h": -34,
+      "gate-h-gate-p": 34,
+      "ex-cr": -34,
+      "cr-ex": 34,
+    },
+  },
   // Subgraph-annotated gate label wrapped into unreadable "·" shards.
   "auto-01-rag-agent-4": {
     labels: { "verify-sp": "Verify loop: 0.6 support floor vs cited chunk?" },
     // The sealed question set is evaluation DATA ("scored once" described the
-    // protocol, not a model step).
+    // protocol, not a model step). Route the answer and redraft lanes around
+    // the intermediate coherence gate and abstain branch.
     kinds: { s15: "data" },
+    offsets: { "verify-sp-verify-out": 200, "verify-rd-verify-sp": 200 },
   },
   // --- kind-inference review (playwright pass over the recolored corpus) ---
   // "parquet" is the file format, not the step: reading/writing are tasks.
@@ -442,6 +451,7 @@ function emitSpec(specId, title, parsed, origin) {
   const overrides = SPEC_OVERRIDES[specId] ?? {};
   const labelOverrides = overrides.labels ?? {};
   const kindOverrides = overrides.kinds ?? {};
+  const offsetOverrides = overrides.offsets ?? {};
   const { nodes, edges } = flatten(parsed);
   const finalNodes = nodes.map((n) => ({
     ...n,
@@ -469,7 +479,8 @@ function emitSpec(specId, title, parsed, origin) {
   const edgeLines = edges
     .map((e) => {
       const label = e.label ? `, label: ${JSON.stringify(e.label)}` : "";
-      return `    { id: ${JSON.stringify(e.id)}, source: ${JSON.stringify(e.source)}, target: ${JSON.stringify(e.target)}, kind: ${JSON.stringify(e.kind)}${label} },`;
+      const offset = offsetOverrides[e.id] === undefined ? "" : `, offset: ${offsetOverrides[e.id]}`;
+      return `    { id: ${JSON.stringify(e.id)}, source: ${JSON.stringify(e.source)}, target: ${JSON.stringify(e.target)}, kind: ${JSON.stringify(e.kind)}${label}${offset} },`;
     })
     .join("\n");
   return {
@@ -603,6 +614,33 @@ function writeBarrel() {
   return specs.length;
 }
 
+function syncExistingTitles() {
+  // Converted story fences are no longer available for full regeneration, but
+  // their manifest-owned title prefix must not become stale. Keep the reviewed
+  // section suffix and every node/layout override byte-for-byte intact.
+  let synced = 0;
+  for (const fileName of readdirSync(AUTO_DIR).filter((f) => f.endsWith(".ts"))) {
+    const projectDir = /^(\d{2}-.+)-\d+\.ts$/.exec(fileName)?.[1];
+    if (!projectDir) continue;
+    const filePath = path.join(AUTO_DIR, fileName);
+    const source = readFileSync(filePath, "utf8");
+    const currentTitle = /title: "([^"]+)"/.exec(source)?.[1];
+    const suffix = currentTitle?.includes(" — ")
+      ? currentTitle.slice(currentTitle.indexOf(" — "))
+      : null;
+    if (suffix === null || suffix === undefined) {
+      throw new Error(`src/diagrams/auto/${fileName}: missing project title/section suffix`);
+    }
+    const title = `${projectTitle(projectDir)}${suffix}`;
+    const updated = source.replace(/title: "[^"]+"/, `title: ${JSON.stringify(title)}`);
+    if (updated !== source) {
+      writeFileSync(filePath, updated);
+      synced++;
+    }
+  }
+  console.log(`synchronized ${synced} existing spec title(s)`);
+}
+
 function main() {
   mkdirSync(AUTO_DIR, { recursive: true });
   const storyDirs = readdirSync(path.join(REPO_ROOT, "projects"))
@@ -646,6 +684,7 @@ function main() {
     process.exitCode = 1;
     return;
   }
+  syncExistingTitles();
   const registered = writeBarrel();
   console.log(`generated ${generated} spec(s) this run; ${registered} registered in src/diagrams/auto/index.ts`);
 }
