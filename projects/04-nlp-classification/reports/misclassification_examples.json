@@ -1,14 +1,14 @@
 {
-  "model": "distilbert_tuned (wave-2 artifact, reports/models/distilbert.pt \u2014 selection.json winner)",
+  "model": "distilbert_tuned (HPO-retrained, reports/models/distilbert_tuned.pt \u2014 validation selection)",
   "split": "bounded test split, 1000 rows, stratified 250/class, seed 42",
   "n_test": 1000,
-  "accuracy": 0.902,
-  "f1_macro": 0.9020969724519001,
+  "accuracy": 0.901,
+  "f1_macro": 0.9010575861537158,
   "confusion_pairs_top": [
     {
       "true": "Business",
       "predicted": "Sci/Tech",
-      "count": 24
+      "count": 25
     },
     {
       "true": "World",
@@ -16,41 +16,36 @@
       "count": 20
     },
     {
-      "true": "Sci/Tech",
-      "predicted": "Business",
-      "count": 16
-    },
-    {
       "true": "World",
       "predicted": "Sci/Tech",
-      "count": 10
+      "count": 17
+    },
+    {
+      "true": "Sci/Tech",
+      "predicted": "Business",
+      "count": 12
     },
     {
       "true": "World",
       "predicted": "Sports",
-      "count": 8
+      "count": 7
     },
     {
-      "true": "Sci/Tech",
+      "true": "Business",
       "predicted": "World",
-      "count": 6
+      "count": 4
     }
   ],
   "examples": [
     {
-      "text": "Amazon Snaps Up China's Largest Web Retailer (NewsFactor) NewsFactor - Amazon.com (Nasdaq: AMZN) has said it will buy Joyo.com Limited --...",
-      "true": "Business",
-      "predicted": "Sci/Tech"
-    },
-    {
-      "text": "India's Tata makes powerful debut Shares  in Indian software services giant Tata Consultancy close 16 higher on their market debut, raisi...",
-      "true": "World",
-      "predicted": "Business"
-    },
-    {
-      "text": "Dell Exits Low-End China Consumer PC Market  HONG KONG (Reuters) - Dell Inc. &lt;DELL.O&gt;, the world's  largest PC maker, said on Monda...",
+      "text": "Dell Exits Low-End China Consumer PC Market  HONG KONG (Reuters) - Dell Inc. &lt;DELL.O&gt;, the world's  largest PC maker, said on Monday it has left the low-end  consumer PC mark",
       "true": "Sci/Tech",
       "predicted": "Business"
+    },
+    {
+      "text": "U.S. Misses Cut in Olympic 100 Free ATHENS, Greece - Top American sprinters Jason Lezak and Ian Crocker missed the cut in the Olympic 100-meter freestyle preliminaries Tuesday, a s",
+      "true": "World",
+      "predicted": "Sports"
     },
     {
       "text": "Future Doctors, Crossing Borders Students at the Mount Sinai School of Medicine learn that diet and culture shape health in East Harlem.",
@@ -58,23 +53,28 @@
       "predicted": "Sci/Tech"
     },
     {
-      "text": "U.S. Misses Cut in Olympic 100 Free ATHENS, Greece - Top American sprinters Jason Lezak and Ian Crocker missed the cut in the Olympic 100...",
-      "true": "World",
-      "predicted": "Sports"
-    },
-    {
-      "text": "103 arrests for Internet fraud, related crimes since June: US (AFP) AFP - US authorities arrested at least 103 suspects and filed 117 cri...",
+      "text": "Hurricane center #39;s projection on Charley not far off, data show FORT LAUDERDALE, Fla. - (KRT) - Despite criticism that it should have better anticipated Hurricane Charley #39;s",
       "true": "Sci/Tech",
-      "predicted": "World"
+      "predicted": "Business"
     },
     {
-      "text": "Audit finds no fraud in Venezuelan recall vote CARACAS : An audit of last Sunday #39;s recall vote in Venezuela, which favored keeping Pr...",
+      "text": "Amazon Snaps Up China's Largest Web Retailer (NewsFactor) NewsFactor - Amazon.com (Nasdaq: AMZN) has said it will buy Joyo.com Limited -- a British Virgin Islands company that oper",
+      "true": "Business",
+      "predicted": "Sci/Tech"
+    },
+    {
+      "text": "Senate Republican Unveils Plan for Intelligence The plan would give the proposed national director responsibility for intelligence-gathering of the C.I.A. and the Pentagon.",
+      "true": "World",
+      "predicted": "Sci/Tech"
+    },
+    {
+      "text": "Audit finds no fraud in Venezuelan recall vote CARACAS : An audit of last Sunday #39;s recall vote in Venezuela, which favored keeping President Hugo Chavez in office, found no evi",
       "true": "Business",
       "predicted": "World"
     },
     {
-      "text": "Tyncastle sale gets official go ahead Of the votes received by proxy and from shareholders in the room at a stormy extraordinary general...",
-      "true": "Sports",
+      "text": "India's Tata makes powerful debut Shares  in Indian software services giant Tata Consultancy close 16 higher on their market debut, raising \\$1.2bn for the company.",
+      "true": "World",
       "predicted": "Business"
     }
   ]

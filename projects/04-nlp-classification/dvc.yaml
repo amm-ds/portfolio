@@ -116,9 +116,9 @@ stages:
       - reports/llm_cascade.json
 
   # Manual stage (run explicitly via `dvc repro fresh_holdout` or the CLI).
-  # Roadmap experiment over the persisted artifacts — no retraining: scores
-  # them on a fresh holdout drawn from the complement of the bounded test
-  # split and runs the TF-IDF -> transformer routing sweep.
+  # Roadmap diagnostics over persisted artifacts — no retraining/reselection:
+  # score the fresh complement of bounded test and run the routing sweep with
+  # the candidate already frozen by validation selection.
   fresh_holdout:
     cmd: uv run python -m nlp_classification.cli fresh-holdout
     deps:

@@ -145,12 +145,13 @@ def test_run_fresh_holdout_endpoints_and_selection(
     for run in doc["runs"].values():
         assert {"accuracy", "f1_macro", "f1_weighted"} <= set(run)
 
-    sel = doc["selection_on_fresh"]
-    assert set(sel["candidates_f1_macro"]) == {"wave2_artifact", "hpo_retrained"}
-    assert sel["test_selected"] == "hpo_retrained"
-    # the hpo fake is the most confident -> wins on the fresh holdout too
-    assert sel["fresh_winner"] == "hpo_retrained"
-    assert sel["agrees_with_test_selection"]
+    comparison = doc["candidate_comparison_fresh"]
+    assert set(comparison["candidates_f1_macro"]) == {"wave2_artifact", "hpo_retrained"}
+    assert comparison["validation_selected"] == "hpo_retrained"
+    delta = comparison["paired_delta_hpo_minus_wave2"]
+    assert delta["delta_f1_macro"] > 0.0
+    assert len(delta["ci_95"]) == 2
+    assert "fresh_winner" not in comparison
 
     cascade = doc["cascade"]["rows"]
     taus = [row["tau"] for row in cascade]
@@ -168,4 +169,4 @@ def test_run_fresh_holdout_endpoints_and_selection(
     out = tmp_path / "reports" / "fresh_holdout.json"
     assert out.exists()
     on_disk = json.loads(out.read_text())
-    assert on_disk["selection_on_fresh"]["fresh_winner"] == "hpo_retrained"
+    assert on_disk["candidate_comparison_fresh"]["validation_selected"] == "hpo_retrained"

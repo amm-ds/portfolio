@@ -301,17 +301,19 @@ def llm_cascade_cmd() -> None:
 def fresh_holdout_cmd() -> None:
     """Score persisted artifacts on a fresh holdout; run the routing sweep.
 
-    Roadmap experiment (no retraining): fresh-holdout selection reading +
-    confidence-routed TF-IDF -> transformer serving, written to
+    Roadmap experiment (no retraining/reselection): fresh candidate diagnostics
+    + confidence-routed TF-IDF -> transformer serving, written to
     reports/fresh_holdout.json.
     """
     started = time.perf_counter()
     doc = run_fresh_holdout(_cfg())
-    sel = doc["selection_on_fresh"]
+    comparison = doc["candidate_comparison_fresh"]
+    delta = comparison["paired_delta_hpo_minus_wave2"]
     typer.echo(
         f"fresh holdout: n={doc['fresh_holdout']['n_fresh']} | "
-        f"fresh winner={sel['fresh_winner']} (margin {sel['margin_f1_macro']:+.4f} macro-F1, "
-        f"agrees_with_test_selection={sel['agrees_with_test_selection']}) | "
+        f"validation selected={comparison['validation_selected']} | "
+        f"fresh HPO-minus-wave2 delta={delta['delta_f1_macro']:+.4f} macro-F1 "
+        f"(95% CI {delta['ci_95'][0]:+.4f} to {delta['ci_95'][1]:+.4f}) | "
         f"cascade rows={len(doc['cascade']['rows'])} "
         f"in {time.perf_counter() - started:.1f}s"
     )

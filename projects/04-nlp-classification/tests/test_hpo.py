@@ -14,7 +14,7 @@ import optuna
 import pytest
 import torch
 from nlp_classification.config import HPOBest, NLPConfig
-from nlp_classification.evaluate import select_tuned_run
+from nlp_classification.evaluate import select_and_score_tuned_run, select_tuned_run
 from nlp_classification.hpo import make_study, suggest_config, tuned_config
 from nlp_classification.model import train_nn
 from nlp_classification.shims import Dataset
@@ -115,17 +115,62 @@ def test_train_nn_reports_epochs_to_callback() -> None:
     assert all(0.0 <= f1 <= 1.0 for _, f1 in seen)
 
 
-def test_select_tuned_run_picks_winner_and_persists(tmp_path: Path) -> None:
-    y_true = [0, 1, 2, 3]
+def test_select_tuned_run_picks_validation_winner_and_persists(tmp_path: Path) -> None:
+    y_val = [0, 1, 2, 3]
     y_pred_hpo = [0, 1, 2, 3]  # perfect
     y_pred_wave2 = [0, 1, 2, 2]  # one error
-    run, record = select_tuned_run(y_true, y_pred_hpo, y_pred_wave2, tmp_path / "sel.json")
+    run, record = select_tuned_run(y_val, y_pred_hpo, y_pred_wave2, tmp_path / "sel.json")
     assert run.name == "distilbert_tuned"
     assert record["winner"] == "hpo_retrained"
+    assert record["criterion"] == "f1_macro on the validation split"
     assert record["candidates"]["hpo_retrained"]["f1_macro"] == 1.0
+    delta = record["paired_delta_hpo_minus_wave2"]
+    assert delta["delta_f1_macro"] == pytest.approx(1 / 3)
+    assert len(delta["ci_95"]) == 2
     persisted = json.loads((tmp_path / "sel.json").read_text())
     assert persisted["winner"] == "hpo_retrained"
 
-    # flip quality: the wave-2 artifact must win when it scores higher
-    _, record2 = select_tuned_run(y_true, y_pred_wave2, y_pred_hpo, tmp_path / "sel.json")
+    # flip validation quality: the wave-2 artifact must win
+    _, record2 = select_tuned_run(y_val, y_pred_wave2, y_pred_hpo, tmp_path / "sel.json")
     assert record2["winner"] == "wave2_artifact"
+
+
+def test_selection_marks_identical_candidates_inconclusive(tmp_path: Path) -> None:
+    y_val = [0, 1, 2, 3]
+    predictions = [0, 1, 2, 2]
+    _, record = select_tuned_run(y_val, predictions, predictions, tmp_path / "sel.json")
+
+    assert record["paired_delta_hpo_minus_wave2"]["ci_95"] == [0.0, 0.0]
+    assert record["selection_status"] == "inconclusive"
+
+
+def test_test_labels_cannot_influence_selection(tmp_path: Path) -> None:
+    y_val = [0, 1, 2, 3]
+    hpo_val = y_val
+    wave2_val = [0, 1, 2, 2]
+    hpo_test = [0, 1, 2, 3]
+    wave2_test = [0, 0, 0, 0]
+
+    original_run, original = select_and_score_tuned_run(
+        y_val,
+        hpo_val,
+        wave2_val,
+        [0, 1, 2, 3],
+        hpo_test,
+        wave2_test,
+        tmp_path / "original.json",
+    )
+    changed_run, changed = select_and_score_tuned_run(
+        y_val,
+        hpo_val,
+        wave2_val,
+        [3, 2, 1, 0],
+        hpo_test,
+        wave2_test,
+        tmp_path / "changed.json",
+    )
+
+    assert changed == original
+    assert changed["winner"] == "hpo_retrained"
+    assert original_run.get("f1_macro").value == 1.0  # type: ignore[union-attr]
+    assert changed_run.get("f1_macro").value == 0.0  # type: ignore[union-attr]

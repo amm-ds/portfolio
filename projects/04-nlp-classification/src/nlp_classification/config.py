@@ -112,7 +112,7 @@ class NLPConfig(PortfolioBaseModel):
     # Controlled data-scale ladder (roadmap: bounded-vs-full confound)
     scale_ladder: ScaleLadder = Field(default_factory=ScaleLadder)
 
-    # Fresh-holdout selection + confidence-routed serving (roadmap experiments)
+    # Fresh-holdout diagnostics + confidence-routed serving (roadmap experiments)
     fresh_holdout_samples: int = Field(
         default=1000,
         ge=10,

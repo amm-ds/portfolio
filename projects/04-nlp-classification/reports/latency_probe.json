@@ -43,8 +43,8 @@
       "mean_input_tokens": 51.49268292682927,
       "mean_output_tokens": 3.526829268292683,
       "cost_per_1k_usd": 0.06559999999999999,
-      "accuracy": 0.902,
-      "f1_macro": 0.9020969724519001,
+      "accuracy": 0.901,
+      "f1_macro": 0.9010575861537158,
       "f1_source": "committed metrics.json (1000-row test split)"
     },
     {

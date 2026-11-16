@@ -1,18 +1,15 @@
-"""Fresh-holdout model selection + confidence-routed serving (roadmap work).
+"""Fresh-holdout diagnostics + confidence-routed serving (roadmap work).
 
 Two bounded experiments over the persisted artifacts — no retraining:
 
-1. **Fresh-holdout selection.** The reported ``distilbert_tuned`` run was
-   chosen by test macro-F1 (``reports/selection.json``), so the bounded
-   1,000-row test split is not a clean holdout for the tuned-vs-artifact
-   comparison. This stage recomputes exactly which rows the bounded split
-   contains (the seeded draw is deterministic), takes the complement inside
-   the full AG News test partition (7.6k rows), draws a fresh seeded
-   stratified holdout from it, and scores both selection candidates plus the
-   TF-IDF baseline, ``encoder_b``, any persisted controlled-scale rungs
-   (``distilbert_scale_<N>``) and — when the artifact exists — the full 120k
-   fine-tune. The point is an unbiased reading of the two candidates;
-   no further selection is applied.
+1. **Fresh-holdout candidate diagnostics.** The reported ``distilbert_tuned``
+   run is frozen by validation macro-F1 (``reports/selection.json``). This
+   stage recomputes exactly which rows the bounded split contains (the seeded
+   draw is deterministic), takes the complement inside the full AG News test
+   partition (7.6k rows), draws a fresh seeded stratified holdout from it, and
+   scores both candidates plus the TF-IDF baseline, ``encoder_b``, any
+   persisted controlled-scale rungs (``distilbert_scale_<N>``) and — when the
+   artifact exists — the full 120k fine-tune. Fresh labels never select a model.
 
 2. **Confidence-routed serving** (the cost-sensitive routing item). Serve
    TF-IDF where it is confident (max class probability >= tau), escalate the
@@ -45,7 +42,7 @@ from nlp_classification.data import (
     stratified_subsample_indices,
     tokenize_dataset,
 )
-from nlp_classification.evaluate import load_tokenizer
+from nlp_classification.evaluate import load_tokenizer, paired_macro_f1_delta
 from nlp_classification.model import (
     BASELINE_PATH,
     ENCODER_B_MODEL_PATH,
@@ -172,27 +169,26 @@ def run_fresh_holdout(cfg: NLPConfig, loader: Any = load_ag_news) -> dict[str, A
             y_true, [int(v) for v in proba.argmax(axis=-1)]
         )
 
-    # Fresh selection reading: what the unbiased holdout says about the two
-    # candidates the test split could not cleanly separate.
-    test_selection = json.loads(Path(cfg.selection_path).read_text())
+    # Fresh data is diagnostic only: the validation selection remains frozen.
+    validation_selection = json.loads(Path(cfg.selection_path).read_text())
     cand = {
         WAVE2: runs["distilbert_wave2_artifact"]["f1_macro"],
         HPO: runs["distilbert_hpo_retrained"]["f1_macro"],
     }
-    fresh_winner = max(cand, key=lambda name: cand[name])
-    selection_on_fresh = {
+    candidate_comparison_fresh = {
         "candidates_f1_macro": cand,
-        "fresh_winner": fresh_winner,
-        "margin_f1_macro": cand[fresh_winner] - cand[WAVE2 if fresh_winner == HPO else HPO],
-        "test_selected": test_selection["winner"],
-        "agrees_with_test_selection": fresh_winner == test_selection["winner"],
-        "note": "reading only — no further selection applied; both candidates "
-        "reported so the margin can be read either way",
+        "paired_delta_hpo_minus_wave2": paired_macro_f1_delta(
+            y_true,
+            [int(v) for v in nn_preds[HPO]],
+            [int(v) for v in nn_preds[WAVE2]],
+        ),
+        "validation_selected": validation_selection["winner"],
+        "note": "diagnostic only — no selection or adoption decision uses fresh labels",
     }
 
     # Confidence-routed serving: TF-IDF above the cutoff, transformer below.
-    # The transformer is the served bounded model (the test-selection winner).
-    served_key = HPO if test_selection["winner"] == "hpo_retrained" else WAVE2
+    # The transformer is the served bounded model selected on validation.
+    served_key = HPO if validation_selection["winner"] == "hpo_retrained" else WAVE2
     transformer_pred = nn_preds[served_key]
     transformer_label = (
         "distilbert_tuned (HPO-retrained)"
@@ -222,24 +218,23 @@ def run_fresh_holdout(cfg: NLPConfig, loader: Any = load_ag_news) -> dict[str, A
 
     doc: dict[str, Any] = {
         "generated_by": "nlp_classification.cli fresh-holdout",
-        "bounded_selection_caveat": "reports/selection.json used the bounded test "
-        "split; this fresh holdout is disjoint from it",
+        "selection_protocol": "validation only; fresh holdout is diagnostic and disjoint "
+        "from the bounded test split",
         "fresh_holdout": provenance,
         "class_balance_fresh": {
             labels[i]: int(np.sum(np.asarray(y_true) == i)) for i in range(n_labels)
         },
         "runs": runs,
-        "selection_on_fresh": selection_on_fresh,
+        "candidate_comparison_fresh": candidate_comparison_fresh,
         "cascade": cascade,
         "runtime_s": round(time.perf_counter() - started, 1),
     }
     out_path = Path(cfg.reports_dir) / "fresh_holdout.json"
     out_path.write_text(json.dumps(doc, indent=2) + "\n")
     logger.info(
-        "fresh holdout: %d rows; fresh winner=%s (margin %.4f); cascade rows=%d -> %s",
+        "fresh holdout: %d rows; paired delta=%.4f; cascade rows=%d -> %s",
         len(fresh),
-        fresh_winner,
-        selection_on_fresh["margin_f1_macro"],
+        candidate_comparison_fresh["paired_delta_hpo_minus_wave2"]["delta_f1_macro"],
         len(cascade_rows),
         out_path,
     )

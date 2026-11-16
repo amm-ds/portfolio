@@ -1,11 +1,12 @@
 """Evaluation on the bounded test split (1000 rows, stratified).
 
 Six runs are scored with the platform's ``classification_metrics`` plus
-weighted F1, all on the same untouched test split: two naive floors
+weighted F1 on the same bounded test split: two naive floors
 (``naive_majority``, ``random_uniform``), the TF-IDF + LogisticRegression
 baseline, the wave-2 DistilBERT artifact, a second encoder (``encoder_b``),
-and ``distilbert_tuned`` — the winner of an honest selection between the
-HPO-retrained model and the wave-2 artifact (see ``reports/selection.json``).
+and ``distilbert_tuned`` — the validation-selected candidate from the
+HPO-retrained model and wave-2 artifact, with a paired bootstrap interval
+(see ``reports/selection.json``).
 When the full-data artifact exists, the 120k fine-tune
 (``distilbert_full_120k``) is scored alongside them, and when controlled
 scale-ladder artifacts exist (``train-nn --full-data --subset N``), each
@@ -20,6 +21,7 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
+import numpy as np
 import plotly.graph_objects as go
 import torch
 from plotly.subplots import make_subplots
@@ -77,42 +79,99 @@ def f1_macro_of(run: RunResult) -> float:
     return metric.value
 
 
-def select_tuned_run(
+def paired_macro_f1_delta(
     y_true: list[int],
-    y_pred_hpo: list[int],
-    y_pred_wave2: list[int],
+    y_pred_candidate: list[int],
+    y_pred_reference: list[int],
+    *,
+    n_bootstrap: int = 2000,
+    seed: int = 42,
+) -> dict[str, Any]:
+    """Paired row-bootstrap interval for candidate minus reference macro-F1."""
+    if not y_true or not (len(y_true) == len(y_pred_candidate) == len(y_pred_reference)):
+        raise ValueError("paired macro-F1 inputs must be non-empty and have equal lengths")
+    if n_bootstrap < 1:
+        raise ValueError("n_bootstrap must be positive")
+
+    observed = float(
+        skm.f1_score(y_true, y_pred_candidate, average="macro", zero_division=0)
+        - skm.f1_score(y_true, y_pred_reference, average="macro", zero_division=0)
+    )
+    rng = np.random.default_rng(seed)
+    deltas = []
+    for indices in rng.integers(0, len(y_true), size=(n_bootstrap, len(y_true))):
+        sampled_true = [y_true[int(i)] for i in indices]
+        sampled_candidate = [y_pred_candidate[int(i)] for i in indices]
+        sampled_reference = [y_pred_reference[int(i)] for i in indices]
+        deltas.append(
+            skm.f1_score(sampled_true, sampled_candidate, average="macro", zero_division=0)
+            - skm.f1_score(sampled_true, sampled_reference, average="macro", zero_division=0)
+        )
+    lower, upper = np.percentile(deltas, [2.5, 97.5])
+    return {
+        "delta_f1_macro": observed,
+        "ci_95": [float(lower), float(upper)],
+        "method": "paired row bootstrap, percentile interval",
+        "n_bootstrap": n_bootstrap,
+        "seed": seed,
+        "inconclusive": bool(lower <= 0.0 <= upper),
+    }
+
+
+def select_tuned_run(
+    y_val: list[int],
+    y_pred_hpo_val: list[int],
+    y_pred_wave2_val: list[int],
     selection_path: str | Path,
 ) -> tuple[RunResult, dict[str, Any]]:
-    """Honest selection: the reported ``distilbert_tuned`` run is whichever of
-    the HPO-retrained model and the wave-2 artifact scores better on the test
-    split. The decision (both candidates' scores, winner, margin) is persisted.
-    """
-    run_hpo = run_result("distilbert_tuned_candidate_hpo", y_true, y_pred_hpo)
-    run_wave2 = run_result("distilbert_tuned_candidate_wave2", y_true, y_pred_wave2)
+    """Select on validation only and persist paired candidate uncertainty."""
+    run_hpo = run_result("distilbert_tuned_candidate_hpo", y_val, y_pred_hpo_val)
+    run_wave2 = run_result("distilbert_tuned_candidate_wave2", y_val, y_pred_wave2_val)
     candidates = {"hpo_retrained": run_hpo, "wave2_artifact": run_wave2}
     winner_name = max(candidates, key=lambda k: f1_macro_of(candidates[k]))
     winner = candidates[winner_name]
     winner_run = RunResult(name="distilbert_tuned", metrics=winner.metrics)
+    paired_delta = paired_macro_f1_delta(y_val, y_pred_hpo_val, y_pred_wave2_val)
     record = {
-        "criterion": "f1_macro on the bounded test split",
+        "criterion": "f1_macro on the validation split",
+        "selection_split": "validation",
+        "n_validation": len(y_val),
         "candidates": {
             name: {m.name: m.value for m in run.metrics} for name, run in candidates.items()
         },
         "winner": winner_name,
+        "selection_status": "inconclusive" if paired_delta["inconclusive"] else "conclusive",
         "margin_f1_macro": f1_macro_of(winner)
         - f1_macro_of(
             candidates["wave2_artifact" if winner_name == "hpo_retrained" else "hpo_retrained"]
         ),
+        "paired_delta_hpo_minus_wave2": paired_delta,
     }
     path = Path(selection_path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(record, indent=2))
+    path.write_text(json.dumps(record, indent=2) + "\n")
     logger.info(
-        "model selection: %s wins distilbert_tuned (margin %.4f f1_macro)",
+        "validation selection: %s (margin %.4f f1_macro, %s)",
         winner_name,
         record["margin_f1_macro"],
+        record["selection_status"],
     )
     return winner_run, record
+
+
+def select_and_score_tuned_run(
+    y_val: list[int],
+    y_pred_hpo_val: list[int],
+    y_pred_wave2_val: list[int],
+    y_test: list[int],
+    y_pred_hpo_test: list[int],
+    y_pred_wave2_test: list[int],
+    selection_path: str | Path,
+) -> tuple[RunResult, dict[str, Any]]:
+    """Freeze the validation choice before scoring that candidate on test."""
+    _, selection = select_tuned_run(y_val, y_pred_hpo_val, y_pred_wave2_val, selection_path)
+    selected_test = y_pred_hpo_test if selection["winner"] == "hpo_retrained" else y_pred_wave2_test
+    return run_result("distilbert_tuned", y_test, selected_test), selection
 
 
 def confusion_matrix_figure(
@@ -368,9 +427,15 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     persisted controlled-scale rungs are scored when their artifacts exist.
     Returns the metrics dict exactly as written to ``reports/metrics.json``.
     """
+    metrics_path = Path(cfg.reports_dir) / "metrics.json"
+    previous_meta: dict[str, Any] = {}
+    if metrics_path.exists():
+        previous_meta = json.loads(metrics_path.read_text()).get("_meta", {})
     train_ds = Dataset.load_from_disk(str(cfg.train_dir))
+    val_ds = Dataset.load_from_disk(str(cfg.val_dir))
     test_ds = Dataset.load_from_disk(str(cfg.test_dir))
     labels = _load_label_names(cfg.data_dir)
+    y_val = [int(v) for v in val_ds[LABEL_COLUMN]]
     y_true = [int(v) for v in test_ds[LABEL_COLUMN]]
     texts = list(test_ds[TEXT_COLUMN])
     n_test = len(y_true)
@@ -382,6 +447,15 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     # TF-IDF baseline (wave-2 artifact)
     baseline = load_baseline(cfg.models_dir / BASELINE_PATH)
     y_pred_base = predict_baseline(baseline, texts)
+
+    # Validation predictions choose the tuned run; test predictions are scored
+    # only after that choice has been frozen.
+    y_pred_wave2_val = _predict_with(
+        cfg, cfg.model_name, cfg.models_dir / NN_MODEL_PATH, val_ds, len(labels)
+    )
+    y_pred_hpo_val = _predict_with(
+        cfg, cfg.model_name, cfg.models_dir / TUNED_MODEL_PATH, val_ds, len(labels)
+    )
 
     # encoder predictions (each model tokenized with its own tokenizer)
     y_pred_wave2 = _predict_with(
@@ -399,7 +473,15 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     run_base = run_result("baseline_tfidf_logreg", y_true, y_pred_base.tolist())
     run_wave2 = run_result("distilbert", y_true, y_pred_wave2)
     run_encoder_b = run_result("encoder_b", y_true, y_pred_encoder_b)
-    run_tuned, selection = select_tuned_run(y_true, y_pred_hpo, y_pred_wave2, cfg.selection_path)
+    run_tuned, selection = select_and_score_tuned_run(
+        y_val,
+        y_pred_hpo_val,
+        y_pred_wave2_val,
+        y_true,
+        y_pred_hpo,
+        y_pred_wave2,
+        cfg.selection_path,
+    )
     runs = [run_majority, run_random, run_base, run_wave2, run_encoder_b, run_tuned]
 
     # controlled data-scale ladder rungs (``train-nn --full-data --subset N``):
@@ -465,7 +547,6 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     history = TrainingHistory.from_json(
         full_history_path if full_history_path.exists() else cfg.history_path
     )
-    val_ds = Dataset.load_from_disk(str(cfg.val_dir))
     figures = {
         "eda_class_balance": eda_class_balance_figure(train_ds, val_ds, test_ds, labels),
         "confusion_matrix_selected": confusion_matrix_figure(
@@ -473,7 +554,7 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
             y_pred_selected,
             labels,
             "Confusion matrix — selected model",
-            "counts on the untouched 1,000-row test split; true on y, predicted on x",
+            "counts on the bounded 1,000-row test split; true on y, predicted on x",
         ),
         "per_class_f1_comparison": per_class_f1_comparison_figure(
             y_true, y_pred_selected, y_pred_base.tolist(), labels
@@ -507,12 +588,12 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     for name, fig in figures.items():
         save_json(fig, Path(cfg.reports_dir) / "figures" / f"{name}.json")
 
-    # meta block: seed-variance study + calibration verdict (not a "run")
-    meta: dict[str, Any] = {"calibration": cal}
+    # Preserve platform provenance across derived-artifact regeneration, then
+    # refresh seed-variance and calibration blocks (not model runs).
+    meta: dict[str, Any] = {**previous_meta, "calibration": cal}
     seeds_file = Path(cfg.reports_dir) / "hpo_seeds.json"
     if seeds_file.exists():
         meta["hpo_seeds"] = json.loads(seeds_file.read_text())
-    metrics_path = Path(cfg.reports_dir) / "metrics.json"
     metrics_data = json.loads(metrics_path.read_text())
     metrics_data["_meta"] = meta
     metrics_path.write_text(json.dumps(metrics_data, indent=2))

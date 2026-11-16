@@ -70,7 +70,7 @@ Full run ladder:
 | baseline_tfidf_logreg | 0.8720 | 0.8714 | TF-IDF 1-2g 8k + LogisticRegression |
 | encoder_b | 0.8980 | 0.8982 | roberta-base, defaults, 2 epochs (val F1 0.9106) |
 | distilbert | 0.9020 | 0.9021 | wave-2 defaults (val F1 0.8880), CPU |
-| distilbert_tuned | 0.9020 | 0.9021 | selection winner = wave-2 artifact |
+| distilbert_tuned | 0.9010 | 0.9011 | validation selection = HPO-retrained artifact; inconclusive paired CI |
 | distilbert_scale_4000 | 0.9020 | 0.9019 | controlled ladder 3.6k rung, MPS (val F1 0.8849, 84 s) |
 | distilbert_scale_12000 | 0.9170 | 0.9170 | controlled ladder 10.8k rung, MPS (val F1 0.9120, 292 s) |
 | distilbert_scale_40000 | 0.9330 | 0.9331 | controlled ladder 36k rung, MPS (val F1 0.9320, 995 s) |
@@ -112,38 +112,45 @@ rows, seed variance exceeds the HPO effect. Seed 42's best matches the 12-trial
 study bit-for-bit (same RNG stream → determinism re-confirmed across studies).
 
 Calibration (temperature scaling on the 400-row val split, ECE on test):
-T = 0.843 (mildly under-confident model), ECE **0.0467 → 0.0133** (−71 %
-relative). Argmax unchanged — a free reliability upgrade for
+T = 0.927 (mildly under-confident selected model), ECE **0.0360 → 0.0227**
+(−37 % relative). Argmax unchanged — a free reliability upgrade for
 confidence-thresholded routing. Stored in `metrics.json → _meta`.
 
 HPO (Optuna, 12 trials, seeded TPE + median pruning between epochs): best
 validation macro-F1 0.8953 (lr 3.82e-5, warmup 0.042, wd 0.018, epochs 2;
-2/12 pruned) vs 0.8880 for defaults — but its retrained model scored 0.9011
-on test vs the wave-2 artifact's 0.9021. The honesty rule selected the wave-2
-artifact as `distilbert_tuned` (margin +0.0010 ≈ noise; persisted in
-`reports/selection.json`). Retrained model reproduces its trial's validation
-score exactly (0.8952711591867994) — the loop is deterministic across runs.
+2/12 pruned) vs 0.8880 for defaults. Validation-only selection therefore
+freezes the HPO-retrained artifact as `distilbert_tuned`. The paired
+HPO-minus-wave2 delta is +0.0073 with 95% row-bootstrap CI [−0.0048, +0.0204]
+(2,000 resamples, seed 42), so the result is explicitly inconclusive. Only
+after selection is frozen is the candidate scored on test: HPO 0.9011 versus
+wave-2 0.9021 macro-F1. Test labels cannot change the persisted decision.
+Retraining reproduces the trial's validation score exactly (0.8952711591867994).
 
-Error analysis: dominant confusion Business → Sci/Tech (24/250); examples and
-per-class comparison in `reports/error_analysis.md` and
-`reports/figures/per_class_f1_comparison.*`.
+Error analysis: dominant confusion Business → Sci/Tech (25/250 for the selected
+HPO artifact); examples and per-class comparison in `reports/error_analysis.md`
+and `reports/figures/per_class_f1_comparison.*`.
 
-Fresh-holdout reading (2026-10-29, `cli fresh-holdout`, no retraining;
-scale rungs scored 2026-10-30 through the same command):
-1,000-row stratified holdout drawn from the 6,600-row complement of the
-bounded test split (seeds 43/45, disjoint by construction). Macro-F1:
-TF-IDF 0.8785, wave-2 artifact 0.8962, HPO-retrained 0.9031 (**fresh winner,
-+0.0069 — the test split's +0.0010 verdict flips; both inside noise**),
-encoder_b 0.9074, full-data model 0.9529 (confirms the bounded 0.9460 on
-untouched data). Controlled-ladder rungs on the same holdout: 3.6k MPS twin
-0.9067, 10.8k 0.9219, 36k 0.9428 — the same-device data-scale slope as the
-test split. Confidence-routed serving (TF-IDF max-proba router, escalate
-below τ to the served transformer): τ=0.50 escalates 24.6% and reaches
-0.9020 macro-F1, above either constituent alone. Full table:
+Fresh-holdout diagnostics (`cli fresh-holdout`, no retraining or fresh
+selection): 1,000-row stratified holdout drawn from the 6,600-row complement
+of the bounded test split (seeds 43/45, disjoint by construction). Macro-F1:
+TF-IDF 0.8785, wave-2 artifact 0.8962, HPO-retrained 0.9031, encoder_b 0.9074,
+full-data model 0.9529. Fresh HPO-minus-wave2 is +0.0069 with paired 95% CI
+[−0.0025, +0.0161], also inconclusive; validation selection remains frozen.
+Controlled-ladder rungs on the same holdout: 3.6k MPS twin 0.9067, 10.8k
+0.9219, 36k 0.9428 — the same-device data-scale slope as the test split.
+Confidence-routed serving (TF-IDF max-proba router, escalate below τ to the
+validation-selected transformer): τ=0.50 escalates 24.6% and reaches 0.9061
+macro-F1, above either constituent's point score. Full table:
 `reports/fresh_holdout.json`.
 
 ## Changelog
 
+- 2026-11-16 — Selection protocol corrected without retraining: validation
+  macro-F1 freezes `distilbert_tuned`; a paired 2,000-resample bootstrap CI
+  makes the HPO/default comparison inconclusive. Test scores and the fixed
+  fresh holdout are diagnostics only. Existing weights were reused; evaluation,
+  routing tables, figures, calibration, and error artifacts were regenerated.
+  The provider-backed LLM cascade was not rerun.
 - 2026-10-30 · v0.7.0 — Controlled data-scale ladder (roadmap item closed):
   `train-nn --full-data --subset N` now persists per-rung artifacts
   (`distilbert_scale_<N>.pt`, `history_scale_<N>.json`, `scale_meta_<N>.json`

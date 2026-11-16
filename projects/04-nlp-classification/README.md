@@ -56,7 +56,7 @@ platform's `classification_metrics` + weighted F1. Full numbers in
 | 3 | `baseline_tfidf_logreg` | 0.8720 | 0.8714 | TF-IDF (1–2g, 8k) + LogisticRegression |
 | 4 | `encoder_b` | 0.8980 | 0.8982 | roberta-base, default hypers, 2 epochs |
 | 5 | `distilbert` | **0.9020** | **0.9021** | DistilBERT, default hypers |
-| 6 | `distilbert_tuned` | **0.9020** | **0.9021** | selection winner (see below) |
+| 6 | `distilbert_tuned` | **0.9010** | **0.9011** | validation-selected HPO-retrained artifact (see below) |
 | 7 | `distilbert_full_120k` | **0.9460** | **0.9460** | full 120k fine-tune on Apple-Silicon MPS |
 
 ### Final selected policy: transformer + selective LLM cascade
@@ -79,9 +79,10 @@ fresh items are disjoint from the bounded test split by construction. No test or
 fresh labels or examples tune the router.
 
 The earlier keyword-first router remains the cheaper, lower-quality baseline:
-0.9020 fresh macro-F1 with 75.4% of items on the keyword path. The full-data
-transformer reaches 0.9529432 fresh; the selected cascade buys a small further
-gain with 22 reviews, not a claim that LLM review should replace classification.
+0.9061 fresh macro-F1 with 75.4% of items on the keyword path. The full-data
+transformer reaches 0.9529432 fresh; the selected cascade has a small observed
+gain with 22 reviews. No paired cascade interval is persisted, so these point
+gains are descriptive rather than established superiority.
 
 Macro-F1 ladder vs. the better naive floor (`random_uniform`): TF-IDF **+61.8
 pp.**, encoder_b **+64.5 pp.**, bounded DistilBERT family **+64.9 pp.**, full-data
@@ -114,7 +115,7 @@ reproduce with `uv run python -m nlp_classification.latency_probe --n 200`.
 | Variant | Size (MB) | p50 latency (ms) | Throughput (pred/s) | Cost ($/1k preds) | Accuracy | F1 macro |
 |---|---|---|---|---|---|---|
 | `tfidf_logreg` | 0.5 | 0.2 | 4477.8 | 0.0000 | 0.8720 | 0.8714 |
-| `distilbert_tuned` fp32 (bounded) | 255.5 | 9.0 | 110.7 | 0.0656 | 0.9020 | 0.9021 |
+| `distilbert_tuned` fp32 (bounded) | 255.5 | 9.0 | 110.7 | 0.0656 | 0.9010 | 0.9011 |
 | `distilbert_full_120k` fp32 | 255.5 | 8.7 | 112.5 | 0.0654 | 0.9460 | 0.9460 |
 | `distilbert_full_120k` int8 (dynamic) | 132.3 | 13.2 | 77.6 | 0.0654 | 0.9635 | 0.9637 |
 
@@ -219,15 +220,13 @@ from **0.8880** (defaults) to **0.8953** (best trial: lr 3.82e-5, warmup
 0.042, wd 0.018, 2 epochs; 2/12 trials pruned). The tuned model reproduces
 its trial's validation score bit-for-bit when retrained (`reports/hpo_study.json`).
 
-But validation gains did not transfer: on the shared test split the
-HPO-retrained model scored **0.9011** macro-F1 vs the default artifact's
-**0.9021**. The reported `distilbert_tuned` run is therefore the **default
-artifact** (decision persisted in
-[`reports/selection.json`](reports/selection.json), margin +0.0010 — i.e.
-noise). **This choice uses test macro-F1, so the test split is not a clean
-final holdout for the tuned-versus-artifact comparison.** Lesson: at 1k test
-rows, a +0.7 pp. validation improvement is inside sampling noise; HPO here is a
-*process* demonstration, not a guaranteed win.
+Validation-only selection chooses the **HPO-retrained artifact**: +0.0073
+macro-F1 over the default, with a paired 2,000-resample bootstrap 95% CI of
+**[−0.0048, +0.0204]**. The interval crosses zero, so the selection is
+**inconclusive**, not a demonstrated tuning win
+([`reports/selection.json`](reports/selection.json)). After freezing that
+choice, test macro-F1 is **0.9011** for HPO versus **0.9021** for the default.
+Test labels do not enter selection; the fresh split remains diagnostic only.
 
 **Seed variance — is the HPO gain even real?** The `hpo-seeds` stage re-ran
 the study under 3 fixed sampler seeds (6 trials each, epochs 2–3 budget):
@@ -240,8 +239,8 @@ re-confirmed.) Full data in `reports/hpo_seeds.json` and
 `metrics.json → _meta.hpo_seeds`.
 
 **Calibration.** Temperature scaling fitted on the 400-row validation split
-(T = 0.843 — the fine-tuned model is mildly *under*-confident) cuts test ECE
-from **0.0467 to 0.0133** (−71 % relative). Predictions are unchanged (argmax
+(T = 0.927 — the selected model is mildly *under*-confident) cuts test ECE
+from **0.0360 to 0.0227** (−37 % relative). Predictions are unchanged (argmax
 is temperature-invariant), so calibration is a free reliability upgrade for any
 confidence-thresholded routing; numbers in `metrics.json → _meta.calibration`.
 
@@ -257,31 +256,31 @@ Early stopping fired after epoch 2 (patience 1); best epoch-1 weights were
 restored and saved to `reports/models/distilbert.pt`.
 
 **Error analysis.** The dominant confusion of the selected bounded transformer is
-**Business → Sci/Tech (24 of 250 Business rows)**; the full-data model shows
+**Business → Sci/Tech (25 of 250 Business rows)**; the full-data model shows
 the **same pair (14 of 250)** — e.g. *"Amazon Snaps Up China's Largest Web
 Retailer…"* and *"PeopleSoft customers reassured…"* — stories about
-technology companies that are legitimately business news. The pair is stable
-across the scaling curve (24 → 15 → 14 of 250); only its frequency shrinks
-with data. Full table in [`reports/error_analysis.md`](reports/error_analysis.md);
+technology companies that are legitimately business news. The original
+default-artifact scaling curve moves 24 → 15 → 14 of 250; only its frequency
+shrinks with data. Full table in [`reports/error_analysis.md`](reports/error_analysis.md);
 per-class comparison vs the TF-IDF baseline in
 `reports/figures/per_class_f1_comparison.*`.
 
-**Misclassified examples** — selected bounded transformer (`distilbert_tuned`, default
-artifact per `reports/selection.json`) on the shared 1,000-row bounded
-test split; reproduced by running the committed artifact on the committed
+**Misclassified examples** — selected bounded transformer (`distilbert_tuned`,
+HPO-retrained artifact per `reports/selection.json`) on the shared 1,000-row
+bounded test split; reproduced by running the committed artifact on the committed
 test split — the reproduced predictions bit-match `reports/metrics.json`
-(accuracy 0.9020, macro-F1 0.9020969724519001). Full list with all 8
+(accuracy 0.9010, macro-F1 0.9010575861537158). Full list with all 8
 examples and per-pair confusion counts:
 [`reports/misclassification_examples.json`](reports/misclassification_examples.json).
 
 | text snippet | true | predicted |
 |---|---|---|
-| "Amazon Snaps Up China's Largest Web Retailer (NewsFactor) NewsFactor - Amazon.com (Nasdaq: AMZN) has said it will buy Joyo.com Limited --…" | Business | Sci/Tech |
-| "India's Tata makes powerful debut Shares in Indian software services giant Tata Consultancy close 16 higher on their market debut, raisi…" | World | Business |
 | "Dell Exits Low-End China Consumer PC Market HONG KONG (Reuters) - Dell Inc. &lt;DELL.O&gt;, the world's largest PC maker, said on Monda…" | Sci/Tech | Business |
-| "Future Doctors, Crossing Borders Students at the Mount Sinai School of Medicine learn that diet and culture shape health in East Harlem." | World | Sci/Tech |
 | "U.S. Misses Cut in Olympic 100 Free ATHENS, Greece - Top American sprinters Jason Lezak and Ian Crocker missed the cut in the Olympic 100…" | World | Sports |
-| "103 arrests for Internet fraud, related crimes since June: US (AFP) AFP - US authorities arrested at least 103 suspects and filed 117 cri…" | Sci/Tech | World |
+| "Future Doctors, Crossing Borders Students at the Mount Sinai School of Medicine learn that diet and culture shape health in East Harlem." | World | Sci/Tech |
+| "Hurricane center #39;s projection on Charley not far off, data show FORT LAUDERDALE, Fla. - (KRT) - Despite criticism that it should have better anticipated Hurricane Charley #39;s…" | Sci/Tech | Business |
+| "Amazon Snaps Up China's Largest Web Retailer (NewsFactor) NewsFactor - Amazon.com (Nasdaq: AMZN) has said it will buy Joyo.com Limited --…" | Business | Sci/Tech |
+| "Senate Republican Unveils Plan for Intelligence The plan would give the proposed national director responsibility for intelligence-gathering of the C.I.A. and the Pentagon." | World | Sci/Tech |
 
 **Why fine-tuning beats bag-of-words here.** TF-IDF + logistic regression sees
 each headline as an unordered weighted word bag: it captures which *words*
@@ -294,17 +293,16 @@ cannot express.
 **Honest limits.** Deliberately bounded showcase at the core: 4k train / 1k
 test stratified subsample for the bounded ladder, ≤4 epochs, max_length 128.
 The HPO studies (12-trial main + 3×6 seed variance) are small-budget
-demonstrations whose gains sit within seed noise. Test macro-F1 also selects
-`distilbert_tuned`, so that comparison is not an unbiased final-holdout result
-— the fresh-holdout run (`reports/fresh_holdout.json`) settles it: the fresh
-winner is the HPO-retrained model by +0.0069, i.e. both candidates are tied
-within noise, and the full-data model keeps its edge on untouched data
-(0.9529 fresh vs 0.9460 bounded). The controlled scale ladder removes the
-last confound — same-rows CPU/MPS twins at 3.6k bracket the device effect at
-≤0.011 macro-F1, and the same-device rungs isolate a data-scale slope of
-+1.3–1.6 pp. per 3× step on both the test split and the fresh holdout.
-Temperature scaling cuts ECE by 71% on the shared test split. Full-data and
-rung MPS timings are machine-specific.
+demonstrations whose gains sit within seed noise. Validation selects
+`distilbert_tuned`, but its paired interval crosses zero. The fixed fresh
+holdout (`reports/fresh_holdout.json`) is diagnostic, not another selection:
+HPO minus default is +0.0069 with 95% CI [−0.0025, +0.0161], also inconclusive.
+The full-data model's fresh point score is 0.9529 versus 0.9460 on bounded test.
+The controlled scale ladder removes the last confound — same-rows CPU/MPS twins
+at 3.6k bracket the device effect at ≤0.011 macro-F1, and the same-device rungs
+isolate a data-scale slope of +1.3–1.6 pp. per 3× step on both the test split
+and the fresh holdout. Temperature scaling cuts ECE by 37% on the shared test
+split. Full-data and rung MPS timings are machine-specific.
 
 Figures (interactive HTML + showcase-API JSON in `reports/figures/`):
 
@@ -341,7 +339,7 @@ uv run python -m nlp_classification.cli train-tuned      # retrains with HPO bes
 uv run python -m nlp_classification.cli train-encoder-b  # roberta-base candidate
 uv run python -m nlp_classification.cli evaluate         # full ladder (incl. scale rungs when trained) + selection + calibration
 
-# fresh-holdout selection reading + confidence-routed serving (no retraining):
+# fresh-holdout diagnostics + confidence-routed serving (no retraining/reselection):
 uv run python -m nlp_classification.cli fresh-holdout      # -> reports/fresh_holdout.json (~1 min)
 
 # selected selective-review cascade (provider-backed; not run by the offline gates):
