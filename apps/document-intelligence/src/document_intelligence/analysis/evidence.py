@@ -63,69 +63,30 @@ def _surface_entries(page: ParsedPage) -> list[tuple[str, BBox | None]]:
 
 
 def _resolve(quote: str, page: ParsedPage) -> tuple[Evidence, bool]:
-    """Resolve one quote to page coordinates; report whether it is ambiguous.
+    """Resolve within one parser passage; never join disjoint source regions.
 
     Ambiguity means the folded quote matches more than one distinct passage
-    with no single whole-passage match to disambiguate it; the evidence then
+    with no single passage-ending match to disambiguate it; the evidence then
     points at the first occurrence and validation surfaces a warning.
     """
     normalized_quote = " ".join(_fold(quote).split())
     if not normalized_quote:
         return Evidence(quote=quote), False
-    entries = _surface_entries(page)
-    parts: list[str] = []
-    owner: list[int] = []
-    for entry_index, (text, _bbox) in enumerate(entries):
-        words = _fold(text).split()
-        if parts and words:
-            parts.append(" ")
-            owner.append(entry_index)
-        for word_index, word in enumerate(words):
-            parts.append(word)
-            owner.extend([entry_index] * len(word))
-            if word_index < len(words) - 1:
-                parts.append(" ")
-                owner.append(entry_index)
-    page_text = "".join(parts)
-    matches: list[tuple[frozenset[int], int]] = []
-    seen: set[frozenset[int]] = set()
-    start = page_text.find(normalized_quote)
-    while start >= 0:
-        end = start + len(normalized_quote)
-        entry_set = frozenset(index for index in owner[start:end] if index < len(entries))
-        if entry_set and entry_set not in seen:
-            seen.add(entry_set)
-            matches.append((entry_set, start))
-        start = page_text.find(normalized_quote, start + 1)
+    matches: list[tuple[int, bool]] = []
+    for entry_index, (text, _bbox) in enumerate(_surface_entries(page)):
+        normalized_entry = " ".join(_fold(text).split())
+        start = normalized_entry.find(normalized_quote)
+        if start >= 0:
+            matches.append((entry_index, start + len(normalized_quote) == len(normalized_entry)))
     if not matches:
         return Evidence(quote=quote), False
 
-    def touches_entry_boundaries(entry_set: frozenset[int], start: int) -> bool:
-        end = start + len(normalized_quote)
-        last_owner = owner[start] if start < len(owner) else -1
-        ends_at_boundary = end >= len(page_text) or owner[end] not in entry_set
-        return last_owner in entry_set and ends_at_boundary
-
-    whole = [match for match in matches if touches_entry_boundaries(*match)]
-    if len(whole) == 1:
-        chosen = whole[0]
-        ambiguous = False
-    elif len(whole) > 1:
-        chosen = whole[0]
-        ambiguous = True
-    else:
-        chosen = matches[0]
-        ambiguous = len(matches) > 1
-    entry_set, _start = chosen
-    boxes = [entries[index][1] for index in entry_set]
-    if any(box is None for box in boxes):
+    whole = [match for match in matches if match[1]]
+    chosen = whole[0] if whole else matches[0]
+    ambiguous = len(whole) > 1 if whole else len(matches) > 1
+    bbox = _surface_entries(page)[chosen[0]][1]
+    if bbox is None:
         return Evidence(quote=quote), False
-    bbox = (
-        min(box[0] for box in boxes if box is not None),
-        min(box[1] for box in boxes if box is not None),
-        max(box[2] for box in boxes if box is not None),
-        max(box[3] for box in boxes if box is not None),
-    )
     return Evidence(quote=quote, page=page.page, bbox=bbox, resolved=True), ambiguous
 
 

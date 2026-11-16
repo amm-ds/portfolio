@@ -36,12 +36,12 @@ function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
 
-function stubApi() {
+function stubApi(response = analysisResponse) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string) => {
-      if (url === "/documents") return jsonResponse([documentRecord]);
-      if (url === `/documents/${documentRecord.id}/analysis`) return jsonResponse(analysisResponse);
+      if (url === "/documents") return jsonResponse([response.document]);
+      if (url === `/documents/${documentRecord.id}/analysis`) return jsonResponse(response);
       if (url === `/documents/${documentRecord.id}/content`) {
         return new Response(new TextEncoder().encode("%PDF-test"), { status: 200 });
       }
@@ -93,6 +93,17 @@ describe("App workbench", () => {
     expect(screen.getByText("API unavailable")).toBeInTheDocument();
     expect(screen.getByText("No document selected")).toBeInTheDocument();
     expect(screen.getByText("Analysis idle")).toBeInTheDocument();
+  });
+
+  it("does not count failed pages twice in document progress", async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({} as CanvasRenderingContext2D);
+    stubApi({
+      ...analysisResponse,
+      progress: { page_count: 2, processed_pages: 2, failed_pages: 1 },
+    });
+    render(<App />);
+    expect((await screen.findAllByText(/2\/2 pages/)).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/3\/2 pages/)).not.toBeInTheDocument();
   });
 
   it("keeps terminal identity messaging and the theme switcher", async () => {

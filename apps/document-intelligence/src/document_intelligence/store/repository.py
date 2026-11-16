@@ -9,6 +9,7 @@ from document_intelligence.domain.analysis import (
     DocumentRecord,
     PageAnalysis,
 )
+from document_intelligence.jobs.queue import Job
 
 
 class Repository(Protocol):
@@ -19,15 +20,10 @@ class Repository(Protocol):
     def list_documents(
         self, tenant_id: str, status: str | None = None, limit: int = 100
     ) -> list[DocumentRecord]: ...
-    def upsert_analysis(self, record: AnalysisRecord) -> bool: ...
     def get_analysis(self, tenant_id: str, document_id: UUID) -> AnalysisRecord | None: ...
-    def save_page_result(
-        self,
-        tenant_id: str,
-        document_id: UUID,
-        job_id: UUID,
-        page: PageAnalysis,
-    ) -> bool: ...
+    def begin_analysis(self, job: Job, analyzer: str, page_count: int) -> bool: ...
+    def save_page_result(self, job: Job, page: PageAnalysis) -> bool: ...
+    def complete_analysis(self, job: Job) -> AnalysisRecord | None: ...
     def append_event(
         self,
         tenant_id: str,

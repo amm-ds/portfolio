@@ -45,8 +45,8 @@ function isAbort(error: unknown): boolean {
 /** A document still has work in flight while its status is active or its progress is incomplete. */
 function isActiveAnalysis(response: AnalysisResponse): boolean {
   if (ACTIVE_STATUSES.has(response.document.status)) return true;
-  const { page_count, processed_pages, failed_pages } = response.progress;
-  return page_count > 0 && processed_pages + failed_pages < page_count;
+  const { page_count, processed_pages } = response.progress;
+  return page_count > 0 && processed_pages < page_count;
 }
 
 export function useWorkbench() {
@@ -62,8 +62,9 @@ export function useWorkbench() {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [chatSending, setChatSending] = useState(false);
-  const [chatError, setChatError] = useState<{ page: number; message: string } | null>(null);
+  const [chatSendingKeys, setChatSendingKeys] = useState<ReadonlySet<string>>(new Set());
+  const pendingChatKeysRef = useRef(new Set<string>());
+  const [chatError, setChatError] = useState<{ documentId: string; page: number; message: string } | null>(null);
   const [chatVersion, setChatVersion] = useState(0);
   const chatsRef = useRef(new Map<string, ChatMessage[]>());
   const detailGeneration = useRef(0);
@@ -214,6 +215,7 @@ export function useWorkbench() {
   }, [pageCount, selectedPage]);
 
   const selectDocument = useCallback((documentId: string) => {
+    selectedIdRef.current = documentId;
     setSelectedId(documentId);
     setError(null);
     setNotice(null);
@@ -294,25 +296,31 @@ export function useWorkbench() {
     async (page: number, content: string) => {
       const documentId = selectedIdRef.current;
       const trimmed = content.trim();
-      if (!documentId || !trimmed || chatSending) return;
-      const requestId = documentId;
+      if (!documentId || !trimmed) return;
+      const key = chatKey(documentId, page);
+      if (pendingChatKeysRef.current.has(key)) return;
+      pendingChatKeysRef.current.add(key);
       appendChat(documentId, page, { role: "user", content: trimmed });
-      setChatSending(true);
+      setChatSendingKeys((current) => new Set(current).add(key));
       setChatError(null);
-      const history = chatsRef.current.get(chatKey(requestId, page)) ?? [];
+      const history = chatsRef.current.get(key) ?? [];
       const bounded = history.slice(-CHAT_HISTORY_LIMIT).map(({ role, content: text }) => ({ role, content: text }));
       try {
-        const response = await api.pageChat(requestId, page, bounded);
-        if (selectedIdRef.current !== requestId) return;
-        appendChat(requestId, page, { role: "assistant", content: response.answer, citations: response.citations });
+        const response = await api.pageChat(documentId, page, bounded);
+        appendChat(documentId, page, { role: "assistant", content: response.answer, citations: response.citations });
       } catch (reason) {
         if (isAbort(reason)) return;
-        setChatError({ page, message: errorMessage(reason) });
+        setChatError({ documentId, page, message: errorMessage(reason) });
       } finally {
-        if (selectedIdRef.current === requestId) setChatSending(false);
+        pendingChatKeysRef.current.delete(key);
+        setChatSendingKeys((current) => {
+          const next = new Set(current);
+          next.delete(key);
+          return next;
+        });
       }
     },
-    [appendChat, chatSending],
+    [appendChat],
   );
 
   const retryChat = useCallback(
@@ -356,6 +364,13 @@ export function useWorkbench() {
     [selectedDocument, downloading],
   );
 
+  const chatSending = selectedId
+    ? chatSendingKeys.has(chatKey(selectedId, selectedPage))
+    : false;
+  const visibleChatError = chatError?.documentId === selectedId
+    ? { page: chatError.page, message: chatError.message }
+    : null;
+
   return {
     documents,
     selectedId,
@@ -382,7 +397,7 @@ export function useWorkbench() {
     reanalyze,
     chatHistory,
     chatSending,
-    chatError,
+    chatError: visibleChatError,
     sendChat,
     retryChat,
     download,

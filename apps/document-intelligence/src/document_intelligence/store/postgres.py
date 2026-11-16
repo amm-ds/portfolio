@@ -15,10 +15,12 @@ from document_intelligence.domain.analysis import (
     PageAnalysis,
     PageAnalysisResult,
 )
+from document_intelligence.jobs.queue import Job
 from document_intelligence.store.db_models import (
     AuditEventRow,
     DocumentAnalysisRow,
     DocumentRow,
+    JobRow,
 )
 
 
@@ -99,37 +101,69 @@ class PostgresRepository:
             ).all()
             return [_document(row) for row in rows]
 
-    def upsert_analysis(self, record: AnalysisRecord) -> bool:
-        values = record.model_dump()
-        values["analysis"] = (
-            record.analysis.model_dump(mode="json") if record.analysis is not None else None
-        )
-        with Session(self.engine) as session:
-            existing = session.get(DocumentAnalysisRow, record.document_id)
-            if existing is None:
-                session.add(DocumentAnalysisRow(**values))
-            else:
-                for key, value in values.items():
-                    setattr(existing, key, value)
-            session.commit()
-        return True
-
     def get_analysis(self, tenant_id: str, document_id: UUID) -> AnalysisRecord | None:
         with Session(self.engine) as session:
             row = session.get(DocumentAnalysisRow, document_id)
             return _analysis(row) if row and row.tenant_id == tenant_id else None
 
-    def save_page_result(
-        self,
-        tenant_id: str,
-        document_id: UUID,
-        job_id: UUID,
-        page: PageAnalysis,
-    ) -> bool:
-        """Replace one page inside the stored analysis JSON with one UPDATE."""
+    def _current_lease(self, session: Session, job: Job) -> JobRow | None:
+        if job.lease_owner is None:
+            return None
+        return session.scalar(
+            select(JobRow)
+            .where(
+                JobRow.id == job.id,
+                JobRow.tenant_id == job.tenant_id,
+                JobRow.document_id == job.document_id,
+                JobRow.status == "leased",
+                JobRow.lease_owner == job.lease_owner,
+                JobRow.attempts == job.attempts,
+                JobRow.lease_expires_at > self.clock.now(),
+            )
+            .with_for_update()
+        )
+
+    def begin_analysis(self, job: Job, analyzer: str, page_count: int) -> bool:
+        """Reset analysis and mark processing only while this attempt owns the lease."""
         with Session(self.engine) as session:
-            row = session.get(DocumentAnalysisRow, document_id)
-            if row is None or row.tenant_id != tenant_id or row.job_id != job_id:
+            row = session.get(DocumentAnalysisRow, job.document_id, with_for_update=True)
+            document = session.get(DocumentRow, job.document_id, with_for_update=True)
+            if document is None or document.tenant_id != job.tenant_id:
+                return False
+            if self._current_lease(session, job) is None:
+                return False
+            now = self.clock.now()
+            values = {
+                "document_id": job.document_id,
+                "tenant_id": job.tenant_id,
+                "analyzer": analyzer,
+                "job_id": job.id,
+                "analysis": None,
+                "page_count": page_count,
+                "processed_pages": 0,
+                "failed_pages": 0,
+                "created_at": row.created_at if row else now,
+                "updated_at": now,
+            }
+            if row is None:
+                session.add(DocumentAnalysisRow(**values))
+            else:
+                for key, value in values.items():
+                    setattr(row, key, value)
+            document.status = "processing"
+            document.page_count = page_count
+            document.version += 1
+            document.updated_at = now
+            session.commit()
+            return True
+
+    def save_page_result(self, job: Job, page: PageAnalysis) -> bool:
+        """Atomically replace one page after fencing the job attempt and owner."""
+        with Session(self.engine) as session:
+            row = session.get(DocumentAnalysisRow, job.document_id, with_for_update=True)
+            if row is None or row.tenant_id != job.tenant_id or row.job_id != job.id:
+                return False
+            if self._current_lease(session, job) is None:
                 return False
             stored = PageAnalysisResult.model_validate(row.analysis) if row.analysis else None
             pages = [item for item in (stored.pages if stored else []) if item.page != page.page]
@@ -141,6 +175,26 @@ class PostgresRepository:
             row.updated_at = self.clock.now()
             session.commit()
             return True
+
+    def complete_analysis(self, job: Job) -> AnalysisRecord | None:
+        """Fence and complete the document only after every page was persisted."""
+        with Session(self.engine) as session:
+            row = session.get(DocumentAnalysisRow, job.document_id, with_for_update=True)
+            if row is None or row.tenant_id != job.tenant_id or row.job_id != job.id:
+                return None
+            document = session.get(DocumentRow, job.document_id, with_for_update=True)
+            if document is None or document.tenant_id != job.tenant_id:
+                return None
+            if self._current_lease(session, job) is None:
+                return None
+            if row.page_count == 0 or row.processed_pages != row.page_count:
+                return None
+            document.status = "completed"
+            document.page_count = row.page_count
+            document.version += 1
+            document.updated_at = self.clock.now()
+            session.commit()
+            return _analysis(row)
 
     def append_event(
         self,

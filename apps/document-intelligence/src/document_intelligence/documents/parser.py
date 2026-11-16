@@ -147,7 +147,31 @@ def _extract_images(page_dict: dict[str, Any], page_number: int) -> list[ParsedI
     return images
 
 
-def parse_pdf(content: bytes, page_text_max_chars: int | None = None) -> ParsedDocument:
+def _checked_page_count(document: Any, max_pages: int | None) -> int:
+    page_count = int(document.page_count)
+    if page_count == 0:
+        raise ValueError("PDF has no pages")
+    if max_pages is not None and page_count > max_pages:
+        raise ValueError(f"PDF has {page_count} pages; the limit is {max_pages}")
+    return page_count
+
+
+def pdf_page_count(content: bytes, max_pages: int | None = None) -> int:
+    """Validate the PDF and enforce its page bound before queueing work."""
+    try:
+        with pymupdf.open(stream=content, filetype="pdf") as document:  # type: ignore[no-untyped-call]
+            return _checked_page_count(document, max_pages)
+    except ValueError:
+        raise
+    except RuntimeError as exc:
+        raise ValueError("Invalid or unreadable PDF") from exc
+
+
+def parse_pdf(
+    content: bytes,
+    page_text_max_chars: int | None = None,
+    max_pages: int | None = None,
+) -> ParsedDocument:
     """Extract per-page text spans, tables, and image placeholders.
 
     ``page_text_max_chars`` clips only the model-facing page text; parser spans
@@ -155,8 +179,7 @@ def parse_pdf(content: bytes, page_text_max_chars: int | None = None) -> ParsedD
     """
     try:
         with pymupdf.open(stream=content, filetype="pdf") as document:  # type: ignore[no-untyped-call]
-            if document.page_count == 0:
-                raise ValueError("PDF has no pages")
+            page_count = _checked_page_count(document, max_pages)
             pages: list[ParsedPage] = []
             for page_index, page in enumerate(document):
                 page_number = page_index + 1
@@ -186,6 +209,8 @@ def parse_pdf(content: bytes, page_text_max_chars: int | None = None) -> ParsedD
                         tables=tables,
                     )
                 )
-            return ParsedDocument(page_count=document.page_count, pages=pages)
-    except (RuntimeError, ValueError) as exc:
+            return ParsedDocument(page_count=page_count, pages=pages)
+    except ValueError:
+        raise
+    except RuntimeError as exc:
         raise ValueError("Invalid or unreadable PDF") from exc

@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -47,6 +47,31 @@ class Settings(BaseSettings):
     max_upload_bytes: int = Field(default=10_000_000, gt=0)
     page_concurrency: int = Field(default=3, ge=1, le=5)
     page_text_max_chars: int = Field(default=24_000, gt=0)
+    max_pdf_pages: int = Field(default=500, ge=1, le=5000)
+
+    @model_validator(mode="after")
+    def validate_runtime_configuration(self) -> "Settings":
+        """Reject unsafe or unusable production adapters during startup."""
+        if self.blob_backend == "s3" and not self.s3_bucket.strip():
+            raise ValueError("S3 blob storage requires DOCUMENT_INTELLIGENCE_S3_BUCKET")
+        if self.environment != "production":
+            return self
+        problems = []
+        if self.identity_mode != "gateway":
+            problems.append("gateway identity is required")
+        if not self.gateway_shared_secret.get_secret_value():
+            problems.append("DOCUMENT_INTELLIGENCE_GATEWAY_SHARED_SECRET is required")
+        if self.repository_backend != "postgres":
+            problems.append("Postgres persistence is required")
+        if self.analyzer_backend != "model":
+            problems.append("the fixture analyzer is not allowed")
+        if not self.model_api_key.get_secret_value():
+            problems.append("DOCUMENT_INTELLIGENCE_MODEL_API_KEY is required")
+        if not self.model_name.strip() or not self.model_base_url.strip():
+            problems.append("model name and base URL are required")
+        if problems:
+            raise ValueError("Invalid production configuration: " + "; ".join(problems))
+        return self
 
 
 @lru_cache

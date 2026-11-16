@@ -1,6 +1,7 @@
 """End-to-end page-analysis intake, progress, isolation, and download tests."""
 
 import asyncio
+import threading
 from pathlib import Path
 from unittest.mock import Mock
 from uuid import UUID
@@ -10,6 +11,7 @@ from fastapi.testclient import TestClient
 
 from document_intelligence.analysis.page_analyzer import DeterministicPageAnalyzer
 from document_intelligence.analysis.page_chat import DeterministicPageChat
+from document_intelligence.analysis.service import LeaseLostError
 from document_intelligence.api.app import create_app
 from document_intelligence.clock import ManualClock
 from document_intelligence.config import Settings
@@ -20,6 +22,7 @@ from document_intelligence.domain.analysis import (
     PageAnalysisOutput,
 )
 from document_intelligence.jobs.memory import InMemoryJobQueue
+from document_intelligence.jobs.queue import Job
 from document_intelligence.store.memory import InMemoryRepository
 from document_intelligence.worker import Worker
 from tests.conftest import FIXTURES, HEADERS, app_state, process, upload
@@ -108,6 +111,53 @@ def test_full_analysis_progress_events_and_downloads(client: TestClient) -> None
     assert content.content == (FIXTURES / "analysis-multipage.pdf").read_bytes()
 
 
+def test_partial_exports_include_queued_pages_before_worker_pickup(client: TestClient) -> None:
+    result = upload(client)
+    document_id = result["document"]["id"]  # type: ignore[index]
+
+    exported = client.get(f"/documents/{document_id}/analysis/export?format=json", headers=HEADERS)
+    assert exported.status_code == 200
+    pages = exported.json()["analysis"]["pages"]
+    assert [(page["page"], page["status"]) for page in pages] == [(1, "queued"), (2, "queued")]
+
+    markdown = client.get(f"/documents/{document_id}/analysis/export?format=md", headers=HEADERS)
+    assert "## Page 1 — queued" in markdown.text
+    assert "## Page 2 — queued" in markdown.text
+    queued_page = client.get(
+        f"/documents/{document_id}/pages/2/export?format=json", headers=HEADERS
+    )
+    assert queued_page.status_code == 200
+    assert queued_page.json()["page"]["status"] == "queued"
+    assert (
+        client.get(
+            f"/documents/{document_id}/pages/3/export?format=json", headers=HEADERS
+        ).status_code
+        == 404
+    )
+
+
+def test_page_limit_is_enforced_before_creating_a_job(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    app = app_state(client)
+    monkeypatch.setattr(app.service, "max_pdf_pages", 1)
+    response = client.post(
+        "/documents",
+        headers=HEADERS,
+        files={
+            "file": (
+                "analysis-multipage.pdf",
+                (FIXTURES / "analysis-multipage.pdf").read_bytes(),
+                "application/pdf",
+            )
+        },
+    )
+    assert response.status_code == 400
+    assert "limit is 1" in response.json()["error"]["message"]
+    assert app.queue.list("tenant-a") == []
+    assert app.repository.list_documents("tenant-a") == []
+
+
 def test_partial_page_failure_stays_on_that_page(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -147,9 +197,9 @@ def test_progress_is_persisted_after_every_page(
     observed: list[tuple[int, bool]] = []
     original = app.repository.save_page_result
 
-    def spy(tenant_id: str, document_id: UUID, job_id: UUID, page: PageAnalysis) -> bool:
+    def spy(job: Job, page: PageAnalysis) -> bool:
         observed.append((page.page, page.status == "completed"))
-        return original(tenant_id, document_id, job_id, page)
+        return original(job, page)
 
     monkeypatch.setattr(app.repository, "save_page_result", spy)
     job = app.queue.acquire("manual", 60)
@@ -340,3 +390,49 @@ def test_crash_mid_run_resets_cleanly_on_retry(
     payload = client.get(f"/documents/{document_id}/analysis", headers=HEADERS).json()
     assert payload["progress"]["processed_pages"] == 2
     assert payload["document"]["status"] == "completed"
+
+
+def test_expired_worker_attempt_stops_before_resetting_newer_work(
+    client: TestClient, clock: ManualClock
+) -> None:
+    result = upload(client)
+    app = app_state(client)
+    first = app.queue.acquire("worker-a", 10)
+    assert first
+    clock.advance(11)
+    second = app.queue.acquire("worker-b", 10)
+    assert second and second.attempts == 2
+
+    with pytest.raises(LeaseLostError):
+        asyncio.run(app.service.process(first))
+
+    document_id = UUID(str(result["document"]["id"]))  # type: ignore[index]
+    assert app.repository.get_analysis("tenant-a", document_id) is None
+    document = app.repository.get_document("tenant-a", document_id)
+    assert document is not None and document.status == "uploaded"
+
+
+def test_lease_loss_signal_prevents_inflight_page_persistence(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    result = upload(client)
+    app = app_state(client)
+    job = app.queue.acquire("worker-a", 60)
+    assert job
+    lease_lost = threading.Event()
+    original = app.service.analyzer.analyze_page
+
+    async def lose_lease(page: ParsedPage) -> PageAnalysisOutput:
+        lease_lost.set()
+        return await original(page)
+
+    monkeypatch.setattr(app.service.analyzer, "analyze_page", lose_lease)
+    with pytest.raises(LeaseLostError):
+        asyncio.run(app.service.process(job, lease_lost))
+
+    document_id = UUID(str(result["document"]["id"]))  # type: ignore[index]
+    stored = app.repository.get_analysis("tenant-a", document_id)
+    assert stored is not None
+    assert stored.progress.processed_pages == 0
+    document = app.repository.get_document("tenant-a", document_id)
+    assert document is not None and document.status == "processing"

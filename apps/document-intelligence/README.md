@@ -20,16 +20,19 @@ visible.
 - **Cited page chat:** ask about one selected page; the answer carries exact,
   page-scoped citations. Conversations are ephemeral — nothing is persisted.
 - **Downloads:** canonical JSON and readable Markdown exports for the full
-  document or a single page, including progress and unresolved issues.
+  document or a single page, including progress, unresolved issues, and explicit
+  `queued` placeholders for known pages not analyzed yet.
 - **Operations:** tenant-scoped storage, a leased Postgres worker with bounded
   page concurrency, bounded retries, and append-only operational audit events.
 
 The model never supplies trusted page numbers or bounding boxes. PyMuPDF owns
 the coordinates. Deterministic code resolves every quote against the page's
 text spans, extracted table lines, and image placeholders after a unicode
-compatibility fold (ligatures, curly quotes, dashes). Quotes that occur on
-several passages resolve to the first whole-passage match and surface a
-warning; quotes that match nothing stay visible as errors on that page.
+compatibility fold (ligatures, curly quotes, dashes). Each quote must occur in
+one parser-declared passage; synthetic joins across spans, tables, or images are
+rejected. Quotes that occur on several passages resolve to the first
+whole-passage match and surface a warning; quotes that match nothing stay
+visible as errors on that page.
 Document text is untrusted input; analysis and chat agents have no tools or
 write capabilities.
 
@@ -72,10 +75,10 @@ npm run dev
 The Vite UI defaults to `http://localhost:4323` and proxies API requests to port
 8001. The compose API is bound to `127.0.0.1`; identity mode, environment,
 gateway shared secret, and the database password are compose env overrides.
-Production must use Postgres and
-`DOCUMENT_INTELLIGENCE_IDENTITY_MODE=gateway`; unsigned tenant headers are not
-authentication. See `specs/operations.md` for identity, web serving, and
-rate limiting.
+Production startup requires Postgres, gateway identity with a shared secret,
+and the model analyzer with provider credentials; unsigned tenant headers and
+fixture analysis are not production configuration. See `specs/operations.md`
+for identity, web serving, and rate limiting.
 
 ## AI provider
 

@@ -8,6 +8,7 @@ import {
   failedPageAnalysis,
   pageOneAnalysis,
   resolvedEvidence,
+  uploadedAnalysisResponse,
 } from "../test/fixtures";
 import { PageAnalysisPanel } from "./PageAnalysisPanel";
 
@@ -171,11 +172,25 @@ describe("PageAnalysisPanel", () => {
     expect(download).toHaveBeenCalledWith("page", "md", 1);
   });
 
-  it("disables page downloads until that page analysis exists", () => {
+  it("allows partial exports for known pages that are still queued", () => {
     render(<PageAnalysisPanel workbench={makeWorkbench({ selectedPageAnalysis: null })} />);
-    expect(screen.getByRole("button", { name: "Page 1 JSON" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Page 1 Markdown" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Page 1 JSON" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Page 1 Markdown" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Full JSON" })).toBeEnabled();
+  });
+
+  it("disables exports when the PDF page count is not known", () => {
+    render(
+      <PageAnalysisPanel
+        workbench={makeWorkbench({
+          selectedDocument: uploadedAnalysisResponse.document,
+          selectedAnalysis: uploadedAnalysisResponse,
+          selectedPageAnalysis: null,
+        })}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Page 1 JSON" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Full JSON" })).toBeDisabled();
   });
 
   it("shows idle and loading states without a document or analysis", () => {

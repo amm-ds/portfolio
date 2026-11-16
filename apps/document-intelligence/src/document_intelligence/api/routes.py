@@ -142,7 +142,7 @@ def export_analysis(
             headers={"Content-Disposition": f'attachment; filename="{document_id}.md"'},
         )
     return Response(
-        export_json(document_payload(record, stored)),
+        export_json(document_payload(record, stored, include_pending=True)),
         media_type="application/json",
         headers={"Content-Disposition": f'attachment; filename="{document_id}.json"'},
     )

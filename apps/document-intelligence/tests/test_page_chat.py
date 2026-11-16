@@ -1,6 +1,8 @@
 """Page chat citations, prompt-injection isolation, and tenant scoping."""
 
 import asyncio
+import threading
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,13 +10,14 @@ from pydantic_ai.messages import ModelMessage, ModelResponse, TextPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
 from document_intelligence.analysis.page_chat import PydanticAIPageChat
-from document_intelligence.documents.parser import parse_pdf
+from document_intelligence.documents.parser import ParsedDocument, parse_pdf
 from document_intelligence.domain.analysis import (
+    DocumentRecord,
     Evidence,
     PageChatMessage,
     PageChatResponse,
 )
-from tests.conftest import FIXTURES, HEADERS, process
+from tests.conftest import FIXTURES, HEADERS, app_state, process
 
 
 def test_page_chat_resolves_exact_citations_and_prompt_injection_has_no_tools() -> None:
@@ -147,3 +150,41 @@ def test_chat_last_message_must_be_user(client: TestClient) -> None:
         },
     )
     assert ok.status_code == 200, ok.text
+
+
+def test_chat_pdf_parsing_and_blob_reads_do_not_block_the_event_loop(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    result = process(client, "cv.pdf")
+    app = app_state(client)
+    document_id = UUID(str(result["document"]["id"]))  # type: ignore[index]
+    parsed = parse_pdf((FIXTURES / "cv.pdf").read_bytes())
+    started = threading.Event()
+    release = threading.Event()
+
+    def blocking_parse(_record: DocumentRecord) -> ParsedDocument:
+        started.set()
+        if not release.wait(timeout=2):
+            raise RuntimeError("test parser was never released")
+        return parsed
+
+    monkeypatch.setattr(app.service, "_parse_document", blocking_parse)
+
+    async def run_chat() -> PageChatResponse:
+        task = asyncio.create_task(
+            app.service.chat(
+                "tenant-a",
+                document_id,
+                1,
+                [PageChatMessage(role="user", content="What NAME is shown?")],
+            )
+        )
+        try:
+            assert await asyncio.to_thread(started.wait, 1)
+            await asyncio.wait_for(asyncio.sleep(0.02), timeout=0.2)
+        finally:
+            release.set()
+        return await task
+
+    response = asyncio.run(run_chat())
+    assert response.answer == "NAME: Ada Example"

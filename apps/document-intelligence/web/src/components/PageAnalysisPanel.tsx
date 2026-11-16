@@ -66,8 +66,10 @@ export function PageAnalysisPanel({ workbench }: { workbench: Workbench }) {
   const analyzer = selectedAnalysis?.analyzer ?? null;
   const pageState: "completed" | "failed" | "pending" = page ? page.status : "pending";
 
-  const canDownloadPage = page?.status === "completed";
-  const canDownloadFull = Boolean(selectedAnalysis?.analysis && selectedAnalysis.analysis.pages.length > 0);
+  const hasKnownPageCount =
+    selectedDocument.page_count !== null || (selectedAnalysis?.progress.page_count ?? 0) > 0;
+  const canDownloadPage = hasKnownPageCount && selectedPage <= pageCount;
+  const canDownloadFull = hasKnownPageCount;
 
   return (
     <section className="analysis-panel panel" aria-labelledby="analysis-heading">
@@ -175,7 +177,7 @@ export function PageAnalysisPanel({ workbench }: { workbench: Workbench }) {
             type="button"
             className="button button--small"
             disabled={!canDownloadFull || workbench.downloading !== null}
-            title={canDownloadFull ? "Download the full analysis as JSON" : "No completed page analyses yet"}
+            title={canDownloadFull ? "Download the full analysis as JSON" : "PDF page count is not known yet"}
             onClick={() => void workbench.download("full", "json")}
           >
             {workbench.downloading === "full:json:0" ? "Downloading…" : "Full JSON"}
@@ -184,7 +186,7 @@ export function PageAnalysisPanel({ workbench }: { workbench: Workbench }) {
             type="button"
             className="button button--small"
             disabled={!canDownloadFull || workbench.downloading !== null}
-            title={canDownloadFull ? "Download the full analysis as Markdown" : "No completed page analyses yet"}
+            title={canDownloadFull ? "Download the full analysis as Markdown" : "PDF page count is not known yet"}
             onClick={() => void workbench.download("full", "md")}
           >
             {workbench.downloading === "full:md:0" ? "Downloading…" : "Full Markdown"}

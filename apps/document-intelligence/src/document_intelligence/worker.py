@@ -41,12 +41,13 @@ class Worker:
             return False
         logger.info("Job %s started (%s, document %s)", job.id, job.stage, job.document_id)
         heartbeat_stop = threading.Event()
+        lease_lost = threading.Event()
         heartbeat = threading.Thread(
-            target=self._heartbeat_loop, args=(job, heartbeat_stop), daemon=True
+            target=self._heartbeat_loop, args=(job, heartbeat_stop, lease_lost), daemon=True
         )
         heartbeat.start()
         try:
-            asyncio.run(self.service.process(job))
+            asyncio.run(self.service.process(job, lease_lost))
             if not self.queue.complete(job.id, self.owner):
                 raise RuntimeError("Lease lost before completion")
         except Exception as exc:
@@ -75,9 +76,10 @@ class Worker:
             heartbeat.join(timeout=1)
         return True
 
-    def _heartbeat_loop(self, job: Job, stop: threading.Event) -> None:
+    def _heartbeat_loop(self, job: Job, stop: threading.Event, lease_lost: threading.Event) -> None:
         while not stop.wait(self.settings.heartbeat_seconds):
             if not self.queue.heartbeat(job.id, self.owner, self.settings.lease_seconds):
+                lease_lost.set()
                 logger.warning("Job %s: heartbeat rejected; lease lost", job.id)
                 return
 
@@ -106,6 +108,8 @@ def main() -> None:
         settings.max_upload_bytes,
         settings.page_concurrency,
         settings.page_text_max_chars,
+        settings.lease_seconds,
+        settings.max_pdf_pages,
     )
     stop = threading.Event()
 

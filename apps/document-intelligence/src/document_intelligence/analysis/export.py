@@ -8,6 +8,7 @@ from document_intelligence.domain.analysis import (
     DocumentRecord,
     Evidence,
     PageAnalysis,
+    PageAnalysisResult,
 )
 
 ExportFormat = Literal["json", "md"]
@@ -24,16 +25,44 @@ def export_json(payload: dict[str, object]) -> str:
     return json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n"
 
 
-def document_payload(record: DocumentRecord, analysis: AnalysisRecord | None) -> dict[str, object]:
+def _queued_page(page_number: int) -> PageAnalysis:
+    return PageAnalysis(
+        page=page_number,
+        status="queued",
+        summary={"summary": "Analysis has not run for this page yet.", "key_points": []},
+        text_chars=0,
+        image_count=0,
+        table_count=0,
+    )
+
+
+def _export_pages(record: DocumentRecord, analysis: AnalysisRecord | None) -> list[PageAnalysis]:
+    stored = (
+        {page.page: page for page in analysis.analysis.pages}
+        if analysis and analysis.analysis
+        else {}
+    )
+    page_count = record.page_count or (analysis.page_count if analysis else 0)
+    return [stored.get(number, _queued_page(number)) for number in range(1, page_count + 1)]
+
+
+def document_payload(
+    record: DocumentRecord, analysis: AnalysisRecord | None, include_pending: bool = False
+) -> dict[str, object]:
+    result = analysis.analysis if analysis else None
+    if include_pending:
+        result = PageAnalysisResult(pages=_export_pages(record, analysis))
     return {
         "document": record.model_dump(mode="json"),
-        "analysis": (
-            analysis.analysis.model_dump(mode="json") if analysis and analysis.analysis else None
-        ),
+        "analysis": result.model_dump(mode="json") if result else None,
         "progress": (
             analysis.progress.model_dump(mode="json")
             if analysis
-            else {"page_count": 0, "processed_pages": 0, "failed_pages": 0}
+            else {
+                "page_count": record.page_count or 0,
+                "processed_pages": 0,
+                "failed_pages": 0,
+            }
         ),
         "analyzer": analysis.analyzer if analysis else None,
         "created_at": (
@@ -48,19 +77,15 @@ def document_payload(record: DocumentRecord, analysis: AnalysisRecord | None) ->
 def page_payload(
     record: DocumentRecord, analysis: AnalysisRecord | None, page_number: int
 ) -> dict[str, object] | None:
-    page = find_page(analysis, page_number)
+    page = next(
+        (page for page in _export_pages(record, analysis) if page.page == page_number), None
+    )
     if page is None:
         return None
     return {
         "document": record.model_dump(mode="json"),
         "page": page.model_dump(mode="json"),
     }
-
-
-def find_page(analysis: AnalysisRecord | None, page_number: int) -> PageAnalysis | None:
-    if analysis is None or analysis.analysis is None:
-        return None
-    return next((page for page in analysis.analysis.pages if page.page == page_number), None)
 
 
 def _evidence_marker(evidence: Evidence) -> str:
@@ -140,7 +165,7 @@ def export_document_markdown(record: DocumentRecord, analysis: AnalysisRecord | 
         ),
         "",
     ]
-    pages = analysis.analysis.pages if analysis and analysis.analysis else []
+    pages = _export_pages(record, analysis)
     if not pages:
         lines.extend(["No page analysis is available yet.", ""])
     for page in pages:
@@ -154,7 +179,9 @@ def export_document_markdown(record: DocumentRecord, analysis: AnalysisRecord | 
 def export_page_markdown(
     record: DocumentRecord, analysis: AnalysisRecord | None, page_number: int
 ) -> str | None:
-    page = find_page(analysis, page_number)
+    page = next(
+        (page for page in _export_pages(record, analysis) if page.page == page_number), None
+    )
     if page is None:
         return None
     lines = [

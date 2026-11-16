@@ -68,7 +68,7 @@ export default function App() {
                       <span title={selectedDocument.id}>{selectedDocument.id.slice(0, 8)}</span>
                       {" · "}SHA {selectedDocument.sha256.slice(0, 12)}…
                       {selectedAnalysis?.progress && selectedAnalysis.progress.page_count > 0
-                        ? ` · ${selectedAnalysis.progress.processed_pages + selectedAnalysis.progress.failed_pages}/${selectedAnalysis.progress.page_count} pages`
+                        ? ` · ${selectedAnalysis.progress.processed_pages}/${selectedAnalysis.progress.page_count} pages`
                         : ""}
                       {workbench.detailLoading ? " · refreshing…" : ""}
                     </p>

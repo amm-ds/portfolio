@@ -47,7 +47,8 @@ All models inherit a strict Pydantic base with unknown fields forbidden.
 `PageAnalysisResult` has discriminator `page-analysis-v1` and contains one
 `PageAnalysis` per parsed page:
 
-- `page`, `status` (`completed` | `failed`), per-page `error`, `issues`.
+- `page`, stored `status` (`completed` | `failed`), per-page `error`, `issues`;
+  exports additionally use `queued` for known pages without a result yet.
 - `PageSummary`: one page-scoped summary plus `CitedText` key points.
 - `PageEntity[]`: literal source `text`, normalized `name`, `type`, one citation.
 - `PageTopic[]`: label, rationale, and supporting citations.
@@ -94,11 +95,13 @@ and provider configuration constrain external calls.
 
 `analysis/evidence.py` discards incoming coordinates and resolves quotes
 against the page's text spans, extracted table lines, and image placeholders
-after a unicode compatibility fold (ligatures, curly quotes, dashes). The
-page and bounding box come only from matching PyMuPDF-owned geometry. Quotes
-that match several passages resolve to the first whole-passage match and
-produce a warning issue; quotes that match nothing produce an error issue on
-that page instead of trusted coordinates. Entity mentions must occur
+after a unicode compatibility fold (ligatures, curly quotes, dashes). Each
+quote must lie within one parser-declared passage; joins across disjoint text,
+table, or image regions are unresolved. The page and bounding box come only
+from matching PyMuPDF-owned geometry. Quotes that match several passages
+resolve to the first whole-passage match and produce a warning issue; quotes
+that match nothing produce an error issue on that page instead of trusted
+coordinates. Entity mentions must occur
 literally in their cited quote. Every key point, entity, and topic is
 checked. Validation also requires at least one key point and one topic on
 pages with content.
@@ -120,9 +123,11 @@ contract:
 - tenant predicates on every document-scoped read;
 - append-only operational audit events in Postgres.
 
-Reanalysis overwrites the analysis row and resets progress; a page result is
-only applied when its job id still owns the row, so a superseded run cannot
-clobber a newer one. Blobs live under `<tenant>/<sha256>.pdf`. Local storage
+Reanalysis overwrites the analysis row and resets progress. Start, page, and
+final writes verify the job id, attempt, owner, and unexpired lease; Postgres
+holds row locks across each JSON read/modify/write, so concurrent pages cannot
+overwrite one another and a lost-lease worker cannot clobber a newer attempt.
+Blobs live under `<tenant>/<sha256>.pdf`. Local storage
 uses atomic writes; the S3-compatible adapter uses the normal AWS credential
 chain.
 

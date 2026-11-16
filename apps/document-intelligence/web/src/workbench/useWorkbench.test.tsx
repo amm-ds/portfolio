@@ -299,4 +299,86 @@ describe("useWorkbench", () => {
     // 25 exchanges are 50 turns; only the bounded window stays stored.
     expect(result.current.chatHistory(1)).toHaveLength(CHAT_STORE_LIMIT);
   });
+
+  it("keys chat busy state by document and keeps late answers with their original chat", async () => {
+    const secondDocument = {
+      ...documentRecord,
+      id: "22222222-2222-4222-8222-222222222222",
+      filename: "second-report.pdf",
+    };
+    const secondAnalysis = { ...analysisResponse, document: secondDocument };
+    let resolveFirstChat: (response: Response) => void = () => {};
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === "/documents") return jsonResponse([documentRecord, secondDocument]);
+      if (url === `/documents/${documentRecord.id}/analysis`) return jsonResponse(analysisResponse);
+      if (url === `/documents/${secondDocument.id}/analysis`) return jsonResponse(secondAnalysis);
+      if (url.endsWith("/content")) return bufferResponse();
+      if (url === `/documents/${documentRecord.id}/pages/1/chat`) {
+        return new Promise<Response>((resolve) => {
+          resolveFirstChat = resolve;
+        });
+      }
+      if (url === `/documents/${secondDocument.id}/pages/1/chat`) {
+        return jsonResponse({ answer: "Second answer.", citations: [] });
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result } = renderHook(() => useWorkbench());
+    await act(async () => {});
+    let firstSend = Promise.resolve();
+    act(() => {
+      firstSend = result.current.sendChat(1, "first question");
+    });
+    expect(result.current.chatSending).toBe(true);
+
+    act(() => result.current.selectDocument(secondDocument.id));
+    await act(async () => {});
+    expect(result.current.chatSending).toBe(false);
+    await act(async () => {
+      await result.current.sendChat(1, "second question");
+    });
+    expect(result.current.chatHistory(1)[1]).toMatchObject({ content: "Second answer." });
+
+    await act(async () => {
+      resolveFirstChat(jsonResponse({ answer: "First answer.", citations: [] }));
+      await firstSend;
+    });
+    expect(result.current.chatSending).toBe(false);
+    act(() => result.current.selectDocument(documentRecord.id));
+    await act(async () => {});
+    expect(result.current.chatHistory(1)[1]).toMatchObject({ content: "First answer." });
+  });
+
+  it("treats processed pages as including failures when deciding to poll", async () => {
+    const completedWithFailure: AnalysisResponse = {
+      ...analysisResponse,
+      analysis: {
+        schema_version: "page-analysis-v1",
+        pages: [pageOneAnalysis, { ...pageTwoAnalysis, status: "failed" }],
+      },
+      progress: { page_count: 2, processed_pages: 2, failed_pages: 1 },
+    };
+    let analysisCalls = 0;
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === "/documents") return jsonResponse([documentRecord]);
+      if (url.endsWith("/analysis")) {
+        analysisCalls += 1;
+        return jsonResponse(completedWithFailure);
+      }
+      if (url.endsWith("/content")) return bufferResponse();
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result } = renderHook(() => useWorkbench());
+    await act(async () => {});
+    expect(result.current.selectedAnalysis?.progress).toEqual(completedWithFailure.progress);
+    expect(analysisCalls).toBe(1);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(analysisCalls).toBe(1);
+  });
 });

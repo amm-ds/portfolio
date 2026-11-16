@@ -5,6 +5,7 @@ import hmac
 import time
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from document_intelligence.analysis.page_analyzer import DeterministicPageAnalyzer
@@ -22,7 +23,9 @@ def gateway_client(tmp_path: Path, secret: str) -> TestClient:
         environment="production",
         identity_mode="gateway",
         gateway_shared_secret=secret,
-        repository_backend="memory",
+        repository_backend="postgres",
+        analyzer_backend="model",
+        model_api_key="offline-test-key",
         blob_dir=tmp_path / "blobs",
     )
     clock = ManualClock()
@@ -62,25 +65,27 @@ def test_valid_signed_gateway_identity_is_accepted(tmp_path: Path) -> None:
         assert response.json() == []
 
 
-def test_development_identity_fails_closed_in_production(tmp_path: Path) -> None:
-    settings = Settings(
-        environment="production",
-        identity_mode="development",
-        repository_backend="memory",
-        blob_dir=tmp_path / "blobs",
-    )
-    clock = ManualClock()
-    app = create_app(
-        settings=settings,
-        repository=InMemoryRepository(clock),
-        queue=InMemoryJobQueue(clock),
-        blobs=LocalBlobStore(tmp_path / "blobs"),
-        analyzer=DeterministicPageAnalyzer(),
-        page_chat=DeterministicPageChat(),
-        clock=clock,
-    )
-    with TestClient(app) as client:
-        response = client.get(
-            "/documents", headers={"X-Dev-Tenant": "tenant-a", "X-Dev-Actor": "actor-a"}
-        )
-        assert response.status_code == 500
+@pytest.mark.parametrize(
+    ("override", "message"),
+    [
+        ({"identity_mode": "development"}, "gateway identity"),
+        ({"gateway_shared_secret": ""}, "GATEWAY_SHARED_SECRET"),
+        ({"repository_backend": "memory"}, "Postgres persistence"),
+        ({"analyzer_backend": "fixture"}, "fixture analyzer"),
+        ({"model_api_key": ""}, "MODEL_API_KEY"),
+    ],
+)
+def test_invalid_production_configuration_fails_at_startup(
+    override: dict[str, str], message: str
+) -> None:
+    values = {
+        "environment": "production",
+        "identity_mode": "gateway",
+        "gateway_shared_secret": "test-gateway-secret",
+        "repository_backend": "postgres",
+        "analyzer_backend": "model",
+        "model_api_key": "offline-test-key",
+    }
+    values.update(override)
+    with pytest.raises(ValueError, match=message):
+        Settings.model_validate(values)

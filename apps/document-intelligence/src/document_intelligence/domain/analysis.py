@@ -29,7 +29,7 @@ EntityType = Literal[
     "region",
     "other",
 ]
-PageStatus = Literal["completed", "failed"]
+PageStatus = Literal["completed", "failed", "queued"]
 
 
 class Evidence(StrictModel):

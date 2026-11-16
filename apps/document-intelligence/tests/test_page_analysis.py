@@ -169,6 +169,26 @@ def test_table_lines_and_image_placeholders_are_quotable() -> None:
     assert image_evidence.bbox == (54, 260, 154, 360)
 
 
+def test_quotes_cannot_join_disjoint_text_table_or_image_passages() -> None:
+    table = ParsedTable(index=1, bbox=(10, 100, 400, 200), markdown="| Widget | $40 |")
+    placeholder = image_placeholder(1, 1)
+    page = ParsedPage(
+        page=1,
+        text="alpha\nbeta",
+        spans=[
+            TextSpan(page=1, text="alpha", bbox=(1, 2, 50, 20)),
+            TextSpan(page=1, text="beta", bbox=(1, 22, 50, 40)),
+        ],
+        text_chars=9,
+        image_count=1,
+        images=[ParsedImage(index=1, bbox=(54, 260, 154, 360))],
+        table_count=1,
+        tables=[table],
+    )
+    for quote in ("alpha beta", f"beta {table.markdown}", f"{table.markdown} {placeholder}"):
+        assert not resolve_quote(quote, page).resolved
+
+
 def test_substring_matches_do_not_warn_when_one_whole_passage_matches() -> None:
     page = ParsedPage(
         page=1,

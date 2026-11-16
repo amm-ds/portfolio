@@ -45,10 +45,11 @@ DOCUMENT_INTELLIGENCE_POSTGRES_PASSWORD=<strong password> \
 ```
 
 Required for any non-localhost exposure: gateway identity mode, the shared
-secret, and a real database password. The app refuses to boot in production
-with development identity or an empty gateway secret; do not republish the API
-port on a host interface without the gateway topology described under
-"Web serving and rate limiting" below.
+secret, and a real database password. Production startup also requires Postgres
+and `analyzer_backend=model` with provider credentials; development identity,
+empty secrets, in-memory persistence, and fixture analysis fail immediately.
+Do not republish the API port on a host interface without the gateway topology
+described under "Web serving and rate limiting" below.
 
 The smoke proves upload, real worker analysis with per-page progress, page
 mode data (summary/key points, entities, topics, issues), cited page chat,
@@ -136,6 +137,7 @@ calls free or exactly once.
 DOCUMENT_INTELLIGENCE_PAGE_CONCURRENCY=3        # 1..5, per worker run
 DOCUMENT_INTELLIGENCE_PAGE_TEXT_MAX_CHARS=24000 # model-facing text per page
 DOCUMENT_INTELLIGENCE_MAX_UPLOAD_BYTES=10000000
+DOCUMENT_INTELLIGENCE_MAX_PDF_PAGES=500          # checked before queueing a job
 ```
 
 Progress is stored on the single `document_analyses` row and updated after
@@ -183,7 +185,8 @@ page with their error, and the document still completes.
 
 Back up the database and blobs together. A crash between independent blob,
 document, and queue operations can require orphan cleanup or a new analysis
-request. Progress writes and document transitions are single-row operations.
+request. Progress writes are row-locked; start/final transitions verify the
+exact job attempt, owner, and lease in the same transaction.
 
 ## Downloads and retention
 

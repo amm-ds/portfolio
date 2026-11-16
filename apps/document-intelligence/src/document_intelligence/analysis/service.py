@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import logging
+import threading
 from pathlib import Path
 from typing import Literal
 from uuid import UUID, uuid4
@@ -14,7 +15,11 @@ from document_intelligence.analysis.evidence import (
 from document_intelligence.analysis.page_analyzer import PageAnalyzer
 from document_intelligence.analysis.page_chat import PageChat
 from document_intelligence.clock import Clock
-from document_intelligence.documents.parser import ParsedDocument, parse_pdf
+from document_intelligence.documents.parser import (
+    ParsedDocument,
+    parse_pdf,
+    pdf_page_count,
+)
 from document_intelligence.documents.storage import BlobStore
 from document_intelligence.domain.analysis import (
     AnalysisRecord,
@@ -41,6 +46,10 @@ class DocumentBusyError(RuntimeError):
     """A reanalysis was requested while the document is still being analyzed."""
 
 
+class LeaseLostError(RuntimeError):
+    """The current worker no longer owns the exact leased job attempt."""
+
+
 class AnalysisService:
     def __init__(
         self,
@@ -54,6 +63,8 @@ class AnalysisService:
         max_upload_bytes: int = 10_000_000,
         page_concurrency: int = 3,
         page_text_max_chars: int = 24_000,
+        lease_seconds: int = 60,
+        max_pdf_pages: int = 500,
     ) -> None:
         self.repository = repository
         self.queue = queue
@@ -65,6 +76,8 @@ class AnalysisService:
         self.max_upload_bytes = max_upload_bytes
         self.page_concurrency = page_concurrency
         self.page_text_max_chars = page_text_max_chars
+        self.lease_seconds = lease_seconds
+        self.max_pdf_pages = max_pdf_pages
 
     def document(self, tenant_id: str, document_id: UUID) -> DocumentRecord:
         record = self.repository.get_document(tenant_id, document_id)
@@ -83,6 +96,7 @@ class AnalysisService:
         existing = self.repository.get_by_sha(tenant_id, digest)
         if existing:
             return existing, False
+        page_count = pdf_page_count(content, self.max_pdf_pages)
         now = self.clock.now()
         record = DocumentRecord(
             id=uuid4(),
@@ -93,6 +107,7 @@ class AnalysisService:
             storage_key=f"{tenant_id}/{digest}.pdf",
             status="uploaded",
             version=1,
+            page_count=page_count,
             created_at=now,
             updated_at=now,
         )
@@ -132,50 +147,25 @@ class AnalysisService:
         return parse_pdf(
             self.blobs.get(record.storage_key),
             page_text_max_chars=self.page_text_max_chars,
+            max_pages=self.max_pdf_pages,
         )
 
-    def _transition_document(
-        self,
-        record: DocumentRecord,
-        status: Literal["processing", "completed", "failed"],
-        page_count: int | None = None,
-    ) -> None:
-        latest = self.document(record.tenant_id, record.id)
-        updated = latest.model_copy(
-            update={
-                "status": status,
-                "version": latest.version + 1,
-                "page_count": page_count if page_count is not None else latest.page_count,
-                "updated_at": self.clock.now(),
-            }
-        )
-        if not self.repository.update_document(updated, latest.version):
-            raise RuntimeError("Document changed during analysis")
+    def _ensure_lease(self, job: Job, lease_lost: threading.Event | None) -> None:
+        if (
+            (lease_lost is not None and lease_lost.is_set())
+            or job.lease_owner is None
+            or not self.queue.heartbeat(job.id, job.lease_owner, self.lease_seconds)
+        ):
+            raise LeaseLostError(f"Lease lost for job {job.id} attempt {job.attempts}")
 
-    def _reset_analysis(self, record: DocumentRecord, job: Job, page_count: int) -> None:
-        previous = self.repository.get_analysis(record.tenant_id, record.id)
-        now = self.clock.now()
-        self.repository.upsert_analysis(
-            AnalysisRecord(
-                document_id=record.id,
-                tenant_id=record.tenant_id,
-                analyzer=self.analyzer.name,
-                job_id=job.id,
-                analysis=None,
-                page_count=page_count,
-                processed_pages=0,
-                failed_pages=0,
-                created_at=previous.created_at if previous else now,
-                updated_at=now,
-            )
-        )
-
-    async def process(self, job: Job) -> None:
-        """Parse once, analyze pages with bounded concurrency, persist per page."""
+    async def process(self, job: Job, lease_lost: threading.Event | None = None) -> None:
+        """Parse once and persist only while this exact attempt owns the lease."""
+        self._ensure_lease(job, lease_lost)
         record = self.document(job.tenant_id, job.document_id)
         parsed = self._parse_document(record)
-        self._transition_document(record, "processing")
-        self._reset_analysis(record, job, parsed.page_count)
+        self._ensure_lease(job, lease_lost)
+        if not self.repository.begin_analysis(job, self.analyzer.name, parsed.page_count):
+            raise LeaseLostError(f"Analysis start rejected for job {job.id}")
         self.repository.append_event(
             record.tenant_id,
             record.id,
@@ -189,26 +179,22 @@ class AnalysisService:
         async def analyze_one(page_index: int) -> None:
             page = parsed.pages[page_index]
             async with semaphore:
+                self._ensure_lease(job, lease_lost)
                 try:
                     output = await self.analyzer.analyze_page(page)
                     result = build_page_analysis(output, page)
                 except Exception as exc:
                     result = failed_page_analysis(page, f"{type(exc).__name__}: {exc}")
-                saved = self.repository.save_page_result(
-                    record.tenant_id, record.id, job.id, result
-                )
-                if not saved:
-                    logger.warning(
-                        "Dropped stale page result for document %s page %s (job %s)",
-                        record.id,
-                        page.page,
-                        job.id,
-                    )
+                self._ensure_lease(job, lease_lost)
+                if not self.repository.save_page_result(job, result):
+                    raise LeaseLostError(f"Page write rejected for job {job.id}")
 
         await asyncio.gather(*(analyze_one(index) for index in range(parsed.page_count)))
-        final = self.repository.get_analysis(record.tenant_id, record.id)
-        progress = final.progress if final else None
-        self._transition_document(record, "completed", page_count=parsed.page_count)
+        self._ensure_lease(job, lease_lost)
+        final = self.repository.complete_analysis(job)
+        if final is None:
+            raise LeaseLostError(f"Final transition rejected for job {job.id}")
+        progress = final.progress
         self.repository.append_event(
             record.tenant_id,
             record.id,
@@ -217,9 +203,9 @@ class AnalysisService:
             canonical_json(
                 {
                     "job_id": str(job.id),
-                    "page_count": progress.page_count if progress else parsed.page_count,
-                    "processed_pages": progress.processed_pages if progress else 0,
-                    "failed_pages": progress.failed_pages if progress else 0,
+                    "page_count": progress.page_count,
+                    "processed_pages": progress.processed_pages,
+                    "failed_pages": progress.failed_pages,
                 }
             ),
         )
@@ -254,7 +240,9 @@ class AnalysisService:
         messages: list[PageChatMessage],
     ) -> PageChatResponse:
         record = self.document(tenant_id, document_id)
-        parsed = self._parse_document(record)
+        if record.page_count is not None and page_number > record.page_count:
+            raise PageNotFoundError(f"Page {page_number} does not exist")
+        parsed = await asyncio.to_thread(self._parse_document, record)
         page = parsed.page(page_number)
         if page is None:
             raise PageNotFoundError(f"Page {page_number} does not exist")

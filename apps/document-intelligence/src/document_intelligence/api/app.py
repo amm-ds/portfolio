@@ -91,6 +91,8 @@ def create_app(
         resolved_settings.max_upload_bytes,
         resolved_settings.page_concurrency,
         resolved_settings.page_text_max_chars,
+        resolved_settings.lease_seconds,
+        resolved_settings.max_pdf_pages,
     )
     state = AppState(
         settings=resolved_settings,
