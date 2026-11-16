@@ -667,7 +667,11 @@ def test_legacy_path_preserves_drafted_claims_on_judge_failure(
     """
     result = make_result("One supported claim. A second claim that might fail.")
     report = verify_result(
-        "q?", result, retriever, config, _ExplodingJudge()  # type: ignore[arg-type]
+        "q?",
+        result,
+        retriever,
+        config,
+        _ExplodingJudge(),  # type: ignore[arg-type]
     )
     assert report.verifier_failed
     assert len(report.claims) == 2
