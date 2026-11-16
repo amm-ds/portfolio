@@ -341,6 +341,16 @@ interface HistogramPlan {
   opacity: number | null;
 }
 
+interface HeatmapVisualPlan {
+  min: number;
+  max: number;
+  colors: string[];
+  title?: string;
+  show: boolean;
+  gridIndex: number;
+  seriesIndex: number;
+}
+
 interface AnnotationPoint {
   x: number;
   y: number;
@@ -466,7 +476,7 @@ const TOOLTIP_MAX_ENTRIES = 8;
  *  most TOOLTIP_MAX_ENTRIES series lines with a +N-more tail, and identical
  *  series+value runs collapsed into one line (the "many repeated entries"
  *  class of popup noise on dense charts). */
-function formatAxisTooltip(params: unknown): string {
+function formatAxisTooltip(params: unknown, horizontalBarSeries: ReadonlySet<number>): string {
   const list = Array.isArray(params) ? params : [params];
   const rows: string[] = [];
   const seen = new Set<string>();
@@ -474,12 +484,19 @@ function formatAxisTooltip(params: unknown): string {
   for (const raw of list) {
     const p = raw as {
       seriesName?: string;
+      seriesIndex?: number;
       value?: unknown;
       marker?: string;
       axisValueLabel?: string;
       axisValue?: string | number;
     };
-    const value = Array.isArray(p.value) ? p.value[p.value.length - 1] : p.value;
+    const valueIndex =
+      p.seriesIndex !== undefined && horizontalBarSeries.has(p.seriesIndex) ? 0 : -1;
+    const value = Array.isArray(p.value)
+      ? valueIndex === 0
+        ? p.value[0]
+        : p.value[p.value.length - 1]
+      : p.value;
     const numeric = typeof value === "number" ? value : Number(value);
     const text = Number.isFinite(numeric) ? formatTick(numeric) : String(value ?? "—");
     const key = `${p.seriesName ?? ""}${text}`;
@@ -553,6 +570,14 @@ export function plotlyToECharts(
   const layout = payload.layout ?? {};
   if (!asRecord(layout)) fail("payload.layout missing");
   const data = Array.isArray(payload.data) ? payload.data : fail("payload.data missing");
+  if (
+    layout.barmode !== undefined &&
+    layout.barmode !== "group" &&
+    layout.barmode !== "stack" &&
+    layout.barmode !== "overlay"
+  ) {
+    fail(`unsupported barmode "${String(layout.barmode)}"`);
+  }
 
   const tpl = asRecord(asRecord(layout.template).layout);
   const colorway = (
@@ -654,7 +679,7 @@ export function plotlyToECharts(
   const namedSeries: string[] = [];
   /** value axes that carry outside bar labels ("0.616 (−31%)"): headroom */
   const labelHeadroomAxes = new Set<string>();
-  let heatmapVisual: { min: number; max: number; colors: string[]; title?: string } | null = null;
+  const heatmapVisuals: HeatmapVisualPlan[] = [];
 
   const traceColor = (i: number, explicit: unknown): string => {
     const raw =
@@ -708,7 +733,7 @@ export function plotlyToECharts(
     // funnels are not cartesian: no grid, no axis extents
     const gridIndex = type === "funnel" ? -1 : gridIndexFor(xIdx, yIdx);
     const name = typeof t.name === "string" && t.name !== "" ? t.name : undefined;
-    if (name && !namedSeries.includes(name)) namedSeries.push(name);
+    if (name && t.showlegend !== false && !namedSeries.includes(name)) namedSeries.push(name);
     const marker = asRecord(t.marker);
     const line = asRecord(t.line);
 
@@ -878,13 +903,15 @@ export function plotlyToECharts(
       } else if (hasText) {
         draft.itemStyle = { color: lineColor };
       }
-      // fill between this trace and the next (plotly `fill: "tonexty"`,
-      // e.g. confidence bands): rendered as a silent polygon layer later
+      // Plotly `tonexty` fills backwards to the PREVIOUS trace (usually the
+      // upper bound immediately before a flagged lower-bound trace).
       if (t.fill === "tonexty") {
-        draft.__bandToNext = true;
+        draft.__bandToPrevious = true;
         if (typeof t.fillcolor === "string") draft.__bandFill = remapColor(t.fillcolor, theme);
       } else if (t.fill === "tozeroy") {
         draft.areaStyle = { opacity: 0.25 };
+      } else if (t.fill !== undefined && t.fill !== "none") {
+        fail(`unsupported scatter fill "${String(t.fill)}"`);
       }
       series.push(draft);
       // error bars ride the same custom series the bars use; plotly's
@@ -987,6 +1014,7 @@ export function plotlyToECharts(
         yIdx,
         data: dataItems,
         itemStyle: { color, opacity: opacity ?? 1 },
+        __horizontal: horizontal,
       };
       if (widthArr.length > 0) draft.__barWidthData = widthArr[0];
       series.push(draft);
@@ -1160,31 +1188,96 @@ export function plotlyToECharts(
       const colorbarTitle = asRecord(
         asRecord(asRecord(t.marker).colorbar).title ?? asRecord(t.colorbar).title,
       ).text;
-      heatmapVisual = {
-        min: zMin,
-        max: zMax,
+      for (const key of ["zmin", "zmax", "zmid"] as const) {
+        if (t[key] !== undefined && num(t[key]) === undefined) fail(`heatmap.${key} is not numeric`);
+      }
+      const authoredZMin = num(t.zmin);
+      const authoredZMax = num(t.zmax);
+      const zMid = num(t.zmid);
+      let visualMin = authoredZMin ?? zMin;
+      let visualMax = authoredZMax ?? zMax;
+      if (zMid !== undefined) {
+        // Plotly centers a zmid scale by moving the unspecified endpoint(s).
+        // Two asymmetric authored endpoints cannot be represented faithfully
+        // by ECharts' linear visualMap, so keep the Plotly fallback instead.
+        const tolerance = 1e-9 * Math.max(1, Math.abs(visualMin), Math.abs(visualMax), Math.abs(zMid));
+        if (
+          authoredZMin !== undefined &&
+          authoredZMax !== undefined &&
+          Math.abs((visualMin + visualMax) / 2 - zMid) > tolerance
+        ) {
+          fail("heatmap.zmid conflicts with authored zmin/zmax");
+        } else if (authoredZMin !== undefined) {
+          visualMax = 2 * zMid - visualMin;
+        } else if (authoredZMax !== undefined) {
+          visualMin = 2 * zMid - visualMax;
+        } else {
+          const radius = Math.max(Math.abs(zMin - zMid), Math.abs(zMax - zMid));
+          visualMin = zMid - radius;
+          visualMax = zMid + radius;
+        }
+      }
+      if (!Number.isFinite(visualMin) || !Number.isFinite(visualMax) || !(visualMax > visualMin)) {
+        fail("heatmap has an invalid color domain");
+      }
+      heatmapVisuals.push({
+        min: visualMin,
+        max: visualMax,
         colors,
+        show: t.showscale !== false,
+        gridIndex,
+        seriesIndex: series.length - 1,
         ...(typeof colorbarTitle === "string" && colorbarTitle
           ? { title: colorbarTitle.replace(BR_RE, " ") }
           : {}),
-      };
+      });
+    }
+  }
+
+  // --- stacked bars: one ECharts stack per grid/orientation, with cumulative
+  // positive and negative extents so the axis fits the completed stacks ------
+  if (layout.barmode === "stack") {
+    const totals = new Map<string, { positive: number; negative: number }>();
+    for (const draft of series) {
+      if (draft.type !== "bar") continue;
+      const horizontal = draft.__horizontal === true;
+      const gridIndex = draft.gridIndex ?? 0;
+      draft.stack = `plotly-${gridIndex}-${horizontal ? "h" : "v"}`;
+      for (const item of draft.data as Array<{ value: [unknown, unknown] }>) {
+        const [first, second] = item.value;
+        const category = horizontal ? second : first;
+        const rawValue = horizontal ? first : second;
+        if (typeof rawValue !== "number" || !Number.isFinite(rawValue)) continue;
+        const key = `${gridIndex}\0${horizontal}\0${String(category)}`;
+        const total = totals.get(key) ?? { positive: 0, negative: 0 };
+        if (rawValue >= 0) total.positive += rawValue;
+        else total.negative += rawValue;
+        totals.set(key, total);
+        (horizontal ? xAdd : yAdd)(horizontal ? draft.xIdx : draft.yIdx, total.positive);
+        (horizontal ? xAdd : yAdd)(horizontal ? draft.xIdx : draft.yIdx, total.negative);
+      }
     }
   }
 
   // --- confidence bands (plotly `fill: "tonexty"`): silent polygon between
-  // the flagged trace and the next one on the same grid ----------------------
+  // the flagged trace and the previous one on the same grid ------------------
   for (let s = 0; s < series.length; s++) {
     const draft = series[s];
-    if (draft.__bandToNext !== true) continue;
+    if (draft.__bandToPrevious !== true) continue;
     const fillRaw = draft.__bandFill;
-    const lower = series[s + 1];
-    delete draft.__bandToNext;
+    const previous = series[s - 1];
+    delete draft.__bandToPrevious;
     delete draft.__bandFill;
-    if (!lower || lower.gridIndex !== draft.gridIndex) continue;
+    if (!previous || previous.gridIndex !== draft.gridIndex) {
+      fail("tonexty requires a previous trace on the same grid");
+    }
     if (draft.type !== "line" && draft.type !== "scatter") continue;
-    if (lower.type !== "line" && lower.type !== "scatter") continue;
-    const upperPts = (draft.data as Array<{ value: unknown[] }>).map((d) => d.value);
-    const lowerPts = (lower.data as Array<{ value: unknown[] }>).map((d) => d.value);
+    if (previous.type !== "line" && previous.type !== "scatter") {
+      fail("tonexty requires a previous scatter trace");
+    }
+    const currentPts = (draft.data as Array<{ value: unknown[] }>).map((d) => d.value);
+    const previousPts = (previous.data as Array<{ value: unknown[] }>).map((d) => d.value);
+    if (currentPts.length === 0 || previousPts.length === 0) fail("tonexty requires two non-empty traces");
     const fill = typeof fillRaw === "string" ? fillRaw : String((draft.lineStyle as Record<string, unknown> | undefined)?.color ?? "#38bdf8");
     const bandOpacity = typeof fillRaw === "string" ? 1 : 0.22;
     series.push({
@@ -1192,17 +1285,16 @@ export function plotlyToECharts(
       gridIndex: draft.gridIndex,
       xIdx: draft.xIdx,
       yIdx: draft.yIdx,
-      // the item value is one real upper point: inside the data extent, so
-      // the series influences the axis range exactly as the line itself does
-      data: [{ value: upperPts[0] ?? [0, 0] }],
+      // one real point keeps the custom series inside the source data extent
+      data: [{ value: currentPts[0] }],
       silent: true,
       z: 1,
       // the polygon reads the closure's point lists (per-band), not params:
       // echarts v6 does not expose the raw item on the renderItem params
       renderItem: (_params: unknown, api: { coord: (v: unknown[]) => number[] }) => {
         const pts = [
-          ...upperPts.map((p) => api.coord(p)),
-          ...[...lowerPts].reverse().map((p) => api.coord(p)),
+          ...currentPts.map((p) => api.coord(p)),
+          ...[...previousPts].reverse().map((p) => api.coord(p)),
         ];
         return {
           type: "polygon",
@@ -1252,7 +1344,6 @@ export function plotlyToECharts(
       // {0, 0} → the exact-axis pin resolves max = 1 and every bar renders
       // at full height ("bars are 100% in all cases")
       yAdd(plan.yIdx, counts.reduce((a, c) => Math.max(a, c), 0) / norm);
-      if (plan.name && !namedSeries.includes(plan.name)) namedSeries.push(plan.name);
     }
   }
 
@@ -1703,7 +1794,11 @@ export function plotlyToECharts(
     showLegend && legendOrient === "vertical"
       ? Math.min(Math.max(122, longestName * 7.8 + 46), Math.round(width * 0.46))
       : 0;
-  const rightBand = Math.max(margin.r * scale, legendBand, heatmapVisual ? 60 : 0);
+  const rightBand = Math.max(
+    margin.r * scale,
+    legendBand,
+    heatmapVisuals.some((visual) => visual.show) ? 60 : 0,
+  );
   const innerWpx = Math.max(40, width - leftBand - rightBand);
   // subplot headers shrink + wrap to their grid width so neighboring titles
   // can never collide, however narrow the canvas
@@ -2107,6 +2202,11 @@ export function plotlyToECharts(
       yInstances.findIndex((inst) => inst.gridIndex === draft.gridIndex),
     );
   }
+  const horizontalBarSeries = new Set<number>();
+  series.forEach((draft, index) => {
+    if (draft.type === "bar" && draft.__horizontal === true) horizontalBarSeries.add(index);
+    delete draft.__horizontal;
+  });
   const dataSeries = series.filter((s) => !s.silent);
   const cartesianSeries = dataSeries.filter((s) => s.type !== "funnel");
   const totalPoints = cartesianSeries.reduce(
@@ -2144,28 +2244,35 @@ export function plotlyToECharts(
       borderColor: HOVER_BORDER,
       textStyle: { color: HOVER_TEXT, fontSize: 12, fontFamily },
       axisPointer: { type: "line", lineStyle: { color: palette.axisLineColor } },
-      formatter: itemTrigger ? itemFormatter : formatAxisTooltip,
+      formatter: itemTrigger
+        ? itemFormatter
+        : (params: unknown) => formatAxisTooltip(params, horizontalBarSeries),
     },
   };
   if (legend) option.legend = legend;
-  if (heatmapVisual) {
-    option.visualMap = {
-      type: "continuous",
-      min: heatmapVisual.min,
-      max: heatmapVisual.max,
-      // every cartesian heatmap series draws its colors from the visualMap
-      seriesIndex: series.map((s, i) => (s.type === "heatmap" ? i : -1)).filter((i) => i !== -1),
-      orient: "vertical",
-      right: 6,
-      top: "middle",
-      calculable: false,
-      inRange: { color: heatmapVisual.colors },
-      textStyle: { color: palette.textColor, fontSize: 11 },
-      // the plotly colorbar title becomes the legend's top-end label
-      ...(heatmapVisual.title
-        ? { text: [heatmapVisual.title, formatTick(heatmapVisual.min)] }
-        : {}),
-    };
+  if (heatmapVisuals.length > 0) {
+    const visibleCount = heatmapVisuals.filter((visual) => visual.show).length;
+    const visualMaps = heatmapVisuals.map((visual) => {
+      const grid = grids[remapGrid(visual.gridIndex)];
+      const panelColorbar = visibleCount > 1 && visual.show && grid;
+      return {
+        type: "continuous",
+        min: visual.min,
+        max: visual.max,
+        show: visual.show,
+        seriesIndex: [visual.seriesIndex],
+        orient: "vertical",
+        ...(panelColorbar
+          ? { left: Math.round(grid.left + grid.width + 6), top: Math.round(grid.top + grid.height / 2) }
+          : { right: 6, top: "middle" }),
+        calculable: false,
+        inRange: { color: visual.colors },
+        textStyle: { color: palette.textColor, fontSize: 11 },
+        // the plotly colorbar title becomes the legend's top-end label
+        ...(visual.title ? { text: [visual.title, formatTick(visual.min)] } : {}),
+      };
+    });
+    option.visualMap = visualMaps.length === 1 ? visualMaps[0] : visualMaps;
   }
   return option as unknown as EChartsOption;
 }

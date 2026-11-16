@@ -20,7 +20,6 @@ const FIGURES_DIR = resolve(process.cwd(), "../../projects/05-ml-pipeline-churn/
 const FIGURE_NAMES = [
   "calibration_curve",
   "business_cost_curve",
-  "cost_surface",
   "decision_curve",
   "eda_churn_profile",
   "fairness_slices",
@@ -195,10 +194,20 @@ describe("plotlyToECharts over the committed churn figures", () => {
   });
 
   it("maps the heatmap to a visualMap + heatmap series", () => {
-    const option = asOpt(plotlyToECharts(loadFigure("cost_surface"), "dark"));
+    const payload: PlotlyPayload = {
+      data: [{
+        type: "heatmap",
+        x: ["a", "b"],
+        y: ["c", "d"],
+        z: [[1, 2], [3, 4]],
+        colorscale: [[0, "rgb(0,0,0)"], [1, "rgb(255,255,255)"]],
+      }],
+      layout: { height: 560 },
+    };
+    const option = asOpt(plotlyToECharts(payload, "dark"));
     const heatmapIdx = option.series.findIndex((s) => s.type === "heatmap");
     expect(heatmapIdx).toBeGreaterThanOrEqual(0);
-    expect(option.series[heatmapIdx].data).toHaveLength(41 * 19);
+    expect(option.series[heatmapIdx].data).toHaveLength(4);
     expect(option.visualMap).toBeDefined();
     expect(option.visualMap.type).toBe("continuous");
     expect(option.visualMap.seriesIndex).toContain(heatmapIdx);
@@ -513,6 +522,205 @@ describe("choropleth fallback (projects/07)", () => {
   });
 });
 
+describe("Phase 5 conversion semantics", () => {
+  it("converts every committed figure affected by the corrected semantics", () => {
+    const figures = [
+      "02-demand-forecasting/reports/figures/probabilistic_band.json",
+      "02-demand-forecasting/reports/figures/forecast_fan.json",
+      "03-anomaly-detection/reports/figures/range_pr.json",
+      "09-agentic-workflows/reports/figures/cost_latency_bars.json",
+      "09-agentic-workflows/reports/figures/node_waterfall.json",
+      "09-agentic-workflows/reports/figures/tool_usage_matrix.json",
+      "10-uplift-experimentation/reports/figures/qini_curves.json",
+      "12-tabular-ml-lifecycle/reports/figures/correlation_heatmap.json",
+      "12-tabular-ml-lifecycle/reports/figures/residual_heatmap.json",
+      "13-model-serving/reports/figures/latency_concurrency_lines.json",
+    ];
+    for (const figure of figures) {
+      const payload = JSON.parse(readFileSync(resolve(process.cwd(), "../../projects", figure), "utf8")) as PlotlyPayload;
+      expect(supportsECharts(payload), figure).toBe(true);
+      expect(asOpt(plotlyToECharts(payload, "dark")).series.length, figure).toBeGreaterThan(0);
+    }
+  });
+
+  it("stacks vertical bars and autoranges to positive and negative cumulative totals", () => {
+    const payload: PlotlyPayload = {
+      data: [
+        { type: "bar", name: "a", x: ["one", "two"], y: [2, -2] },
+        { type: "bar", name: "b", x: ["one", "two"], y: [3, 4] },
+      ],
+      layout: { barmode: "stack" },
+    };
+    const option = asOpt(plotlyToECharts(payload, "dark"));
+    const bars = option.series.filter((s) => s.type === "bar");
+    expect(bars).toHaveLength(2);
+    expect(bars[0].stack).toBeDefined();
+    expect(bars[1].stack).toBe(bars[0].stack);
+    expect(option.yAxis[0].max).toBeGreaterThan(5);
+    expect(option.yAxis[0].min).toBeLessThan(-2);
+    const tooltip = option.tooltip.formatter as (params: unknown) => string;
+    expect(
+      tooltip([{ seriesIndex: 0, seriesName: "a", value: ["one", 2], axisValueLabel: "one", marker: "" }]),
+    ).toContain("a: 2");
+
+    const grouped = asOpt(plotlyToECharts({ ...payload, layout: { barmode: "group" } }, "dark"));
+    expect(grouped.series.filter((s) => s.type === "bar").every((s) => s.stack === undefined)).toBe(true);
+    expect(supportsECharts({ ...payload, layout: { barmode: "relative" } })).toBe(false);
+  });
+
+  it("stacks horizontal bars and formats tooltips from the x value, not the y category", () => {
+    const option = asOpt(
+      plotlyToECharts(
+        {
+          data: [
+            { type: "bar", name: "plan", orientation: "h", y: ["a", "b"], x: [1.25, 2.5] },
+            { type: "bar", name: "execute", orientation: "h", y: ["a", "b"], x: [2.75, 0.5] },
+          ],
+          layout: { barmode: "stack" },
+        },
+        "dark",
+      ),
+    );
+    const bars = option.series.filter((s) => s.type === "bar");
+    expect(bars[0].stack).toBe(bars[1].stack);
+    expect(option.xAxis[0].max).toBeGreaterThan(4);
+    const tooltip = option.tooltip.formatter as (params: unknown) => string;
+    const html = tooltip([
+      { seriesIndex: 0, seriesName: "plan", value: [1.25, "a"], axisValueLabel: "a", marker: "" },
+      { seriesIndex: 1, seriesName: "execute", value: [2.75, "a"], axisValueLabel: "a", marker: "" },
+    ]);
+    expect(html).toBe("a<br/>plan: 1.25<br/>execute: 2.75");
+    expect(html).not.toContain("plan: a");
+  });
+
+  it("honors layout, template, and per-trace showlegend=false", () => {
+    const traces = [
+      { type: "scatter", mode: "lines", name: "shown", x: [0], y: [1] },
+      { type: "scatter", mode: "lines", name: "hidden", x: [0], y: [2], showlegend: false },
+    ] as PlotlyPayload["data"];
+    expect(asOpt(plotlyToECharts({ data: traces, layout: { showlegend: false } }, "dark")).legend).toBeUndefined();
+    expect(
+      asOpt(
+        plotlyToECharts(
+          { data: traces, layout: { template: { layout: { showlegend: false } } } },
+          "dark",
+        ),
+      ).legend,
+    ).toBeUndefined();
+    const option = asOpt(plotlyToECharts({ data: traces, layout: {} }, "dark"));
+    expect(option.legend.data).toEqual(["shown"]);
+    expect(asOpt(plotlyToECharts({ data: [traces[1]], layout: {} }, "dark")).legend).toBeUndefined();
+    const histogram = asOpt(
+      plotlyToECharts(
+        { data: [{ type: "histogram", name: "hidden histogram", x: [1, 2], showlegend: false }], layout: {} },
+        "dark",
+      ),
+    );
+    expect(histogram.legend).toBeUndefined();
+  });
+
+  it("honors zmin/zmax and centers zmid domains without changing authored bounds", () => {
+    const trace = {
+      type: "heatmap",
+      x: ["a", "b"],
+      y: ["row"],
+      z: [[-2, 4]],
+    };
+    const explicit = asOpt(
+      plotlyToECharts({ data: [{ ...trace, zmin: -5, zmax: 5 }], layout: {} } as PlotlyPayload, "dark"),
+    );
+    expect(explicit.visualMap.min).toBe(-5);
+    expect(explicit.visualMap.max).toBe(5);
+
+    const centered = asOpt(plotlyToECharts({ data: [{ ...trace, zmid: 0 }], layout: {} } as PlotlyPayload, "dark"));
+    expect(centered.visualMap.min).toBe(-4);
+    expect(centered.visualMap.max).toBe(4);
+    const fromMin = asOpt(
+      plotlyToECharts({ data: [{ ...trace, zmin: -2, zmid: 0 }], layout: {} } as PlotlyPayload, "dark"),
+    );
+    expect([fromMin.visualMap.min, fromMin.visualMap.max]).toEqual([-2, 2]);
+    const fromMax = asOpt(
+      plotlyToECharts({ data: [{ ...trace, zmax: 4, zmid: 0 }], layout: {} } as PlotlyPayload, "dark"),
+    );
+    expect([fromMax.visualMap.min, fromMax.visualMap.max]).toEqual([-4, 4]);
+    expect(
+      supportsECharts({ data: [{ ...trace, zmin: -5, zmax: 4, zmid: 0 }], layout: {} } as PlotlyPayload),
+    ).toBe(false);
+  });
+
+  it("keeps color mapping but hides the colorbar for showscale=false", () => {
+    const option = asOpt(
+      plotlyToECharts(
+        {
+          data: [
+            {
+              type: "heatmap",
+              x: ["a", "b"],
+              y: ["row"],
+              z: [[0, 2]],
+              zmin: 0,
+              zmax: 4,
+              showscale: false,
+              colorscale: [[0, "#000000"], [1, "#ffffff"]],
+            },
+          ],
+          layout: {},
+        } as PlotlyPayload,
+        "dark",
+      ),
+    );
+    expect(option.visualMap.show).toBe(false);
+    expect(option.visualMap.seriesIndex).toEqual([0]);
+    expect(option.visualMap.min).toBe(0);
+    expect(option.visualMap.max).toBe(4);
+    expect(option.visualMap.inRange.color).toEqual(["#000000", "#ffffff"]);
+  });
+
+  it("gives independent heatmap panels independent visualMap domains and series", () => {
+    const option = asOpt(
+      plotlyToECharts(
+        {
+          data: [
+            {
+              type: "heatmap",
+              x: ["a", "b"],
+              y: ["left"],
+              z: [[-2, 2]],
+              zmid: 0,
+              colorbar: { title: { text: "left residual" } },
+            },
+            {
+              type: "heatmap",
+              xaxis: "x2",
+              yaxis: "y2",
+              x: ["a", "b"],
+              y: ["right"],
+              z: [[100, 300]],
+              zmin: 0,
+              zmax: 400,
+              colorbar: { title: { text: "right count" } },
+            },
+          ],
+          layout: {
+            xaxis: { domain: [0, 0.4] },
+            xaxis2: { domain: [0.6, 1] },
+            yaxis: { domain: [0, 1] },
+            yaxis2: { domain: [0, 1] },
+          },
+        } as PlotlyPayload,
+        "dark",
+      ),
+    );
+    const maps = option.visualMap as unknown as Array<Record<string, any>>;
+    expect(maps).toHaveLength(2);
+    expect(maps.map((map) => [map.min, map.max])).toEqual([[-2, 2], [0, 400]]);
+    expect(maps.map((map) => map.seriesIndex)).toEqual([[0], [1]]);
+    expect(maps.map((map) => map.text[0])).toEqual(["left residual", "right count"]);
+    expect(maps.every((map) => map.show)).toBe(true);
+    expect(maps[0].left).toBeLessThan(maps[1].left);
+  });
+});
+
 describe("supportsECharts", () => {
   it("rejects trace types outside the pilot subset", () => {
     expect(
@@ -668,20 +876,102 @@ describe("supportsECharts", () => {
     expect(visualMap.text?.[0]).toBe("Pearson r");
   });
 
-  it("accepts fill bands (tonexty) as a silent polygon between the pair", () => {
+  it("fills tonexty backwards to the previous trace, with exact band geometry", () => {
     const payload: PlotlyPayload = {
       data: [
-        { type: "scatter", mode: "lines", x: [0, 1, 2], y: [2, 3, 2], fill: "tonexty", fillcolor: "rgba(45,212,191,0.2)" },
-        { type: "scatter", mode: "lines", x: [0, 1, 2], y: [1, 1.5, 1] },
+        { type: "scatter", mode: "lines", x: [0, 1, 2], y: [2, 3, 2] },
+        {
+          type: "scatter",
+          mode: "lines",
+          x: [0, 1, 2],
+          y: [1, 1.5, 1],
+          fill: "tonexty",
+          fillcolor: "rgba(45,212,191,0.2)",
+        },
       ],
       layout: { height: 560 },
     };
     expect(supportsECharts(payload)).toBe(true);
     const option = asOpt(plotlyToECharts(payload, "dark"));
     const band = option.series.find((s) => s.type === "custom" && s.renderItem && s.z === 1)!;
-    expect(band).toBeDefined();
     expect(band.silent).toBe(true);
-    expect(typeof band.renderItem).toBe("function");
+    const rendered = band.renderItem(null, { coord: (point: number[]) => point });
+    expect(rendered.shape.points).toEqual([
+      [0, 1],
+      [1, 1.5],
+      [2, 1],
+      [2, 2],
+      [1, 3],
+      [0, 2],
+    ]);
+    expect(rendered.style.fill).toBe("rgba(45,212,191,0.2)");
+  });
+
+  it("keeps multiple previous-trace bands independent", () => {
+    const line = (name: string, y: number[], fill?: string) => ({
+      type: "scatter",
+      mode: "lines",
+      name,
+      x: [0, 1],
+      y,
+      ...(fill ? { fill, fillcolor: "rgba(56,189,248,0.12)" } : {}),
+    });
+    const option = asOpt(
+      plotlyToECharts(
+        {
+          data: [line("upper a", [4, 5]), line("lower a", [2, 3], "tonexty"), line("upper b", [10, 12]), line("lower b", [8, 9], "tonexty")],
+          layout: {},
+        } as PlotlyPayload,
+        "dark",
+      ),
+    );
+    const bands = option.series.filter((s) => s.type === "custom" && s.z === 1);
+    expect(bands).toHaveLength(2);
+    expect(bands[0].renderItem(null, { coord: (point: number[]) => point }).shape.points).toEqual([
+      [0, 2],
+      [1, 3],
+      [1, 5],
+      [0, 4],
+    ]);
+    expect(bands[1].renderItem(null, { coord: (point: number[]) => point }).shape.points).toEqual([
+      [0, 8],
+      [1, 9],
+      [1, 12],
+      [0, 10],
+    ]);
+  });
+
+  it("falls back for tonexty without a compatible previous trace and for unsupported fills", () => {
+    expect(
+      supportsECharts({
+        data: [{ type: "scatter", mode: "lines", x: [0], y: [1], fill: "tonexty" }],
+        layout: {},
+      }),
+    ).toBe(false);
+    expect(
+      supportsECharts({
+        data: [
+          { type: "scatter", mode: "lines", x: [0], y: [2], yaxis: "y2" },
+          { type: "scatter", mode: "lines", x: [0], y: [1], fill: "tonexty" },
+        ],
+        layout: { yaxis2: { domain: [0.6, 1] }, yaxis: { domain: [0, 0.4] } },
+      }),
+    ).toBe(false);
+    expect(
+      supportsECharts({
+        data: [
+          { type: "bar", x: ["a"], y: [2] },
+          { type: "scatter", mode: "lines", x: [0], y: [1], fill: "tonexty" },
+        ],
+        layout: {},
+      }),
+    ).toBe(false);
+    expect(
+      supportsECharts({
+        data: [{ type: "scatter", mode: "lines", x: [0, 1], y: [1, 2], fill: "toself" }],
+        layout: {},
+      }),
+    ).toBe(false);
   });
 
   it("rejects unsupported marker symbols and histnorms (rect shapes are supported)", () => {
