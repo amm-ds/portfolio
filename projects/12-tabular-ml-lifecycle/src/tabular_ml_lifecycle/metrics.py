@@ -1,4 +1,4 @@
-"""Regression metrics + paired bootstrap CIs for the scored-once test window.
+"""Regression metrics + paired row/block bootstrap CIs for the frozen test window.
 
 MAPE guards its denominator (hourly counts can be 0; ``max(y, 1)``) — the
 guard is part of the metric definition so the number is never NaN-driven.
@@ -63,6 +63,42 @@ def paired_bootstrap_deltas(
     deltas = np.empty(n_boot)
     for b in range(n_boot):
         take = rng.integers(0, n, size=n)
+        deltas[b] = float(np.mean(floor_err[take]) - np.mean(champion_err[take]))
+    lo, hi = np.percentile(deltas, [2.5, 97.5])
+    ci = BootstrapCI(
+        point=float(np.mean(floor_err) - np.mean(champion_err)),
+        lo=float(lo),
+        hi=float(hi),
+        n_boot=n_boot,
+        significant_95=bool(lo > 0.0),
+    )
+    return ci, deltas
+
+
+def paired_block_bootstrap_deltas(
+    y_true: np.ndarray,
+    pred_champion: np.ndarray,
+    pred_floor: np.ndarray,
+    n_boot: int,
+    seed: int,
+    block_size: int,
+) -> tuple[BootstrapCI, np.ndarray]:
+    """Paired non-overlapping block bootstrap for serially dependent hours.
+
+    Blocks stay intact and use the same positions for both models. The test
+    window contains whole weeks, so day (24) and week (168) blocks divide it.
+    """
+    n = len(y_true)
+    if block_size <= 0 or n == 0 or n % block_size != 0:
+        raise ValueError("block_size must be positive and divide the ordered sample length")
+    rng = np.random.default_rng(seed)
+    floor_err = np.abs(y_true - pred_floor)
+    champion_err = np.abs(y_true - pred_champion)
+    starts = np.arange(0, n, block_size)
+    deltas = np.empty(n_boot)
+    for b in range(n_boot):
+        blocks = rng.choice(starts, size=len(starts), replace=True)
+        take = np.concatenate([np.arange(start, start + block_size) for start in blocks])
         deltas[b] = float(np.mean(floor_err[take]) - np.mean(champion_err[take]))
     lo, hi = np.percentile(deltas, [2.5, 97.5])
     ci = BootstrapCI(

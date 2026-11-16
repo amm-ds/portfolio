@@ -2,8 +2,8 @@
 
 Each ``*_core`` is a thin, testable function the CLI commands wrap; ``all``
 chains them in-process so the full pipeline runs in one interpreter. Only the
-evaluate stage touches the test window, and only to write each candidate's
-score once.
+evaluate stage touches the test window. Candidate scores confirm the frozen
+champion; ablation scores are explicitly post-freeze diagnostics.
 """
 
 import json
@@ -42,6 +42,7 @@ from tabular_ml_lifecycle.features import (
 from tabular_ml_lifecycle.metrics import (
     mae,
     mape,
+    paired_block_bootstrap_deltas,
     paired_bootstrap_deltas,
     rmse,
 )
@@ -58,12 +59,15 @@ log = get_logger(__name__)
 
 CANDIDATE_MODELS = ["ridge", "random_forest", "lightgbm_hpo", "mlp"]
 TEST_LIMITS = [
-    "The test window is scored once per candidate; model selection, early "
-    "stopping and the ablation choice used validation only.",
+    "Model selection, early stopping and the shipped ablation configuration used "
+    "validation only. Test scores for all ablation variants are post-freeze "
+    "diagnostics, not selection evidence.",
+    "Hourly errors are serially dependent. Day/week block bootstraps are "
+    "sensitivity analyses on the same test window, not independent confirmations.",
     "MAPE denominators are floored at 1 rental; near-zero hours inflate MAPE "
     "even when the absolute error is small — read MAE first.",
-    "Two seasons, one city, one system: transfer to other fleets or regimes "
-    "is plausible, not measured.",
+    "Two years and four seasons, one city, one system: transfer to other fleets "
+    "or regimes is plausible, not measured.",
 ]
 
 
@@ -169,10 +173,8 @@ def train_core(cfg: LifecycleConfig) -> Path:
     selection = json.loads((cfg.data_dir / "feature_selection.json").read_text())
     selected: list[str] = selection["selected"]
     train_df, val_df = _load_split(cfg, "train"), _load_split(cfg, "val")
-    test_df = _load_split(cfg, "test")  # used ONLY by the ablation record, never for selection
     X_train, y_train = train_df[selected], train_df[TARGET_COL].astype(float)
     X_val, y_val = val_df[selected], val_df[TARGET_COL].astype(float)
-    y_test = test_df[TARGET_COL].astype(float)
 
     series = pd.read_parquet(cfg.data_dir / "series.parquet")
     cnt = pd.Series(series[TARGET_COL].to_numpy(), index=series[TIMESTAMP_COL])
@@ -211,7 +213,6 @@ def train_core(cfg: LifecycleConfig) -> Path:
     mlp = MLPRegressor(cfg, cfg.seed)
     mlp_cols = ["hour", *selected]  # raw hour feeds the embedding; never a candidate feature
     X_train_mlp, X_val_mlp = train_df[mlp_cols], val_df[mlp_cols]
-    X_test_mlp = test_df[mlp_cols]
     mlp.fit(X_train_mlp, y_train, X_val_mlp, y_val, selected)
     torch.save(mlp.model.state_dict(), models_dir / "mlp.pt")  # type: ignore[union-attr]
     _write_json(
@@ -257,9 +258,7 @@ def train_core(cfg: LifecycleConfig) -> Path:
     save_html(lc_fig, cfg.reports_dir / "figures" / "learning_curves.html")
     save_json(lc_fig, cfg.reports_dir / "figures" / "learning_curves.json")
 
-    ablation_rows = mlp.ablation(
-        X_train_mlp, y_train, X_val_mlp, y_val, X_test_mlp, y_test, selected
-    )
+    ablation_rows = mlp.ablation(X_train_mlp, y_train, X_val_mlp, y_val, selected)
     ablation_payload = [
         {
             "variant": r.variant,
@@ -267,7 +266,6 @@ def train_core(cfg: LifecycleConfig) -> Path:
             "weight_decay_on": r.weight_decay_on,
             "early_stopping_on": r.early_stopping_on,
             "val_mae": r.val_mae,
-            "test_mae": r.test_mae,
             "epochs_run": r.epochs_run,
             "selected": r.dropout_on and r.weight_decay_on and r.early_stopping_on,
         }
@@ -316,12 +314,13 @@ def train_core(cfg: LifecycleConfig) -> Path:
 
 
 def evaluate_core(cfg: LifecycleConfig) -> Path:
-    """Score every candidate once on the frozen test window; bootstrap the gap."""
+    """Confirm the frozen champion and record post-freeze diagnostics."""
     started = time.perf_counter()
     train_runs = json.loads((cfg.reports_dir / "train_runs.json").read_text())
     test_df = _load_split(cfg, "test")
     selected = train_runs["selected_features"]
-    X_test, y_test = test_df[selected], test_df[TARGET_COL].astype(float).to_numpy()
+    y_test_series = test_df[TARGET_COL].astype(float)
+    X_test, y_test = test_df[selected], y_test_series.to_numpy()
 
     series = pd.read_parquet(cfg.data_dir / "series.parquet")
     cnt = pd.Series(series[TARGET_COL].to_numpy(), index=series[TIMESTAMP_COL])
@@ -369,6 +368,49 @@ def evaluate_core(cfg: LifecycleConfig) -> Path:
     ci, boot_deltas = paired_bootstrap_deltas(
         y_test, preds[champion], preds["seasonal_naive"], cfg.bootstrap_resamples, cfg.seed
     )
+    day_ci, day_deltas = paired_block_bootstrap_deltas(
+        y_test,
+        preds[champion],
+        preds["seasonal_naive"],
+        cfg.bootstrap_resamples,
+        cfg.seed + 1,
+        block_size=24,
+    )
+    week_ci, week_deltas = paired_block_bootstrap_deltas(
+        y_test,
+        preds[champion],
+        preds["seasonal_naive"],
+        cfg.bootstrap_resamples,
+        cfg.seed + 2,
+        block_size=168,
+    )
+
+    # The champion and shipped MLP configuration are frozen above. Refit the
+    # deterministic variants solely to label their test scores as diagnostics.
+    train_df, val_df = _load_split(cfg, "train"), _load_split(cfg, "val")
+    mlp_cols = ["hour", *selected]
+    diagnostic_rows = MLPRegressor(cfg, cfg.seed).ablation(
+        train_df[mlp_cols],
+        train_df[TARGET_COL].astype(float),
+        val_df[mlp_cols],
+        val_df[TARGET_COL].astype(float),
+        selected,
+        X_test=test_df[mlp_cols],
+        y_test=y_test_series,
+    )
+    diagnostic_payload = [
+        {
+            "variant": r.variant,
+            "dropout_on": r.dropout_on,
+            "weight_decay_on": r.weight_decay_on,
+            "early_stopping_on": r.early_stopping_on,
+            "val_mae": r.val_mae,
+            "test_mae": r.test_mae,
+            "epochs_run": r.epochs_run,
+            "selected": r.dropout_on and r.weight_decay_on and r.early_stopping_on,
+        }
+        for r in diagnostic_rows
+    ]
 
     comparison_fig = figures.model_comparison_figure(runs)
     save_html(comparison_fig, cfg.reports_dir / "figures" / "model_comparison.html")
@@ -383,9 +425,20 @@ def evaluate_core(cfg: LifecycleConfig) -> Path:
     save_html(rvf_fig, cfg.reports_dir / "figures" / "residual_vs_fitted.html")
     save_json(rvf_fig, cfg.reports_dir / "figures" / "residual_vs_fitted.json")
 
-    boot_fig = figures.bootstrap_ci_figure(boot_deltas, ci.to_dict())
+    deltas_by_method = {"hourly": boot_deltas, "day": day_deltas, "week": week_deltas}
+    ci_by_method = {
+        "hourly": ci.to_dict(),
+        "day": day_ci.to_dict(),
+        "week": week_ci.to_dict(),
+    }
+    boot_fig = figures.bootstrap_ci_figure(deltas_by_method, ci_by_method)
     save_html(boot_fig, cfg.reports_dir / "figures" / "bootstrap_ci.html")
     save_json(boot_fig, cfg.reports_dir / "figures" / "bootstrap_ci.json")
+    sensitivity = {
+        "hourly": ci.to_dict(),
+        "day": {"block_hours": 24, **day_ci.to_dict()},
+        "week": {"block_hours": 168, **week_ci.to_dict()},
+    }
 
     metrics_path = cfg.reports_dir / "metrics.json"
     _write_json(
@@ -393,13 +446,18 @@ def evaluate_core(cfg: LifecycleConfig) -> Path:
         {
             **runs,
             "_meta": {
-                "split": "test window: final test_weeks of the series, scored once per candidate",
+                "split": "test window: final test_weeks; one score per candidate",
                 "champion": champion,
                 "champion_selected_by": "lowest validation MAE (test never consulted)",
                 "val_mae": val_scores,
                 "mae_improvement_vs_floor_ci": ci.to_dict(),
+                "serial_dependence_sensitivity": sensitivity,
                 "hpo": train_runs["hpo"],
-                "ablation": train_runs["ablation"],
+                "ablation_post_freeze_diagnostics": diagnostic_payload,
+                "ablation_protocol": (
+                    "Validation selected the shipped configuration before test scoring; "
+                    "test scores are diagnostics, never selectors."
+                ),
                 "limits": TEST_LIMITS,
             },
         },
@@ -408,11 +466,13 @@ def evaluate_core(cfg: LifecycleConfig) -> Path:
     metadata = {
         "protocol": (
             "Time-based split: the final 8 weeks of the 2011-2012 hourly series are "
-            "the test window, scored once per candidate; the 8 weeks before it are "
-            "validation (model selection, LightGBM HPO objective, MLP early stopping, "
-            "ablation choice); everything earlier is training. Lag features read only "
-            "the past. Paired bootstrap on the test window prices the champion-vs-floor "
-            "MAE gap."
+            "the test window; the 8 weeks before it are validation (model selection, "
+            "LightGBM HPO, MLP early stopping and shipped ablation configuration); "
+            "everything earlier is training. Each candidate receives one test score. "
+            "Ablation variants are also test-scored only after freezing and are labeled "
+            "post-freeze diagnostics. The champion-vs-floor MAE gap uses paired hourly "
+            "bootstrap resampling, with paired non-overlapping 24-hour and 168-hour "
+            "block bootstraps as serial-dependence sensitivity analyses."
         ),
         "versions": _versions(),
         "hardware": {
@@ -432,14 +492,17 @@ def evaluate_core(cfg: LifecycleConfig) -> Path:
     _write_json(cfg.reports_dir / "evaluation_metadata.json", metadata)
     log.info(
         "evaluate: test MAE floor=%.1f champion=%s %.1f | improvement +%.1f, "
-        "95%% CI [%.1f, %.1f] significant=%s",
+        "hourly 95%% CI [%.1f, %.1f], day [%.1f, %.1f], week [%.1f, %.1f]",
         runs["seasonal_naive"]["mae"],
         champion,
         runs[champion]["mae"],
         ci.point,
         ci.lo,
         ci.hi,
-        ci.significant_95,
+        day_ci.lo,
+        day_ci.hi,
+        week_ci.lo,
+        week_ci.hi,
     )
     return metrics_path
 

@@ -2,9 +2,9 @@
 
 ## Protocol
 
-Time-based split: the final 8 weeks of the 2011-2012 hourly series are the test window, scored once per candidate; the 8 weeks before it are validation (model selection, LightGBM HPO objective, MLP early stopping, ablation choice); everything earlier is training. Lag features read only the past. Paired bootstrap on the test window prices the champion-vs-floor MAE gap.
+Time-based split: the final 8 weeks of the 2011-2012 hourly series are the test window; the 8 weeks before it are validation (model selection, LightGBM HPO, MLP early stopping and shipped ablation configuration); everything earlier is training. Each candidate receives one test score. Ablation variants are also test-scored only after freezing and are labeled post-freeze diagnostics. The champion-vs-floor MAE gap uses paired hourly bootstrap resampling, with paired non-overlapping 24-hour and 168-hour block bootstraps as serial-dependence sensitivity analyses.
 
-## Scored-once test window
+## Frozen test window
 
 | candidate | test MAE | test RMSE | test MAPE % |
 |---|---|---|---|
@@ -14,13 +14,15 @@ Time-based split: the final 8 weeks of the 2011-2012 hourly series are the test 
 | LightGBM (Optuna HPO) | 25.4 | 40.2 | 27.4 |
 | tabular MLP (PyTorch) | 25.4 | 39.3 | 33.7 |
 
-Champion: **mlp** — MAE improvement vs floor +57.8, 95% CI [52.5, 63.1], significant_95=True.
+Champion: **mlp** — MAE improvement vs floor +57.8, hourly 95% CI [52.5, 63.1], significant_95=True. Serial-dependence sensitivity (95% CI): hourly: [52.5, 63.1]; day: [44.2, 71.8]; week: [38.8, 73.4].
 
-## MLP regularization ablation (2x2x2)
+## Post-freeze MLP regularization diagnostics (2x2x2)
 
-| dropout | weight decay | early stopping | val MAE | test MAE |
+Validation selected the shipped configuration before test scoring. These test scores are diagnostics, never selectors.
+
+| dropout | weight decay | early stopping | val MAE | post-freeze test MAE |
 |---|---|---|---|---|
-| on | on | on | 34.2 | 25.4 ✅ |
+| on | on | on | 34.2 (shipped) | 25.4 |
 | on | on | off | 35.3 | 26.8 |
 | on | off | on | 34.3 | 25.4 |
 | on | off | off | 34.8 | 26.2 |
@@ -31,8 +33,9 @@ Champion: **mlp** — MAE improvement vs floor +57.8, 95% CI [52.5, 63.1], signi
 
 ## Limits
 
-- The test window is scored once per candidate; model selection, early stopping and the ablation choice used validation only.
+- Model selection, early stopping and the shipped ablation configuration used validation only. Test scores for all ablation variants are post-freeze diagnostics, not selection evidence.
+- Hourly errors are serially dependent. Day/week block bootstraps are sensitivity analyses on the same test window, not independent confirmations.
 - MAPE denominators are floored at 1 rental; near-zero hours inflate MAPE even when the absolute error is small — read MAE first.
-- Two seasons, one city, one system: transfer to other fleets or regimes is plausible, not measured.
+- Two years and four seasons, one city, one system: transfer to other fleets or regimes is plausible, not measured.
 
 Figures: `reports/figures/` (JSON + HTML). Full record: `reports/metrics.json`, `reports/train_runs.json`, `reports/evaluation_metadata.json`.

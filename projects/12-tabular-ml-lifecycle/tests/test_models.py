@@ -6,7 +6,13 @@ import pytest
 from tabular_ml_lifecycle.config import LifecycleConfig, MLPConfig
 from tabular_ml_lifecycle.data import TARGET_COL, make_synthetic_frame, split_windows
 from tabular_ml_lifecycle.features import apply_split, build_features, seasonal_naive_predict
-from tabular_ml_lifecycle.metrics import mae, mape, paired_bootstrap_mae_delta, rmse
+from tabular_ml_lifecycle.metrics import (
+    mae,
+    mape,
+    paired_block_bootstrap_deltas,
+    paired_bootstrap_mae_delta,
+    rmse,
+)
 from tabular_ml_lifecycle.mlp import MLPRegressor
 from tabular_ml_lifecycle.models import ridge_estimator, run_hpo
 
@@ -49,6 +55,22 @@ def test_bootstrap_is_seeded() -> None:
     a = paired_bootstrap_mae_delta(y, y + 1, y + 3, 200, seed=5)
     b = paired_bootstrap_mae_delta(y, y + 1, y + 3, 200, seed=5)
     assert (a.point, a.lo, a.hi) == (b.point, b.lo, b.hi)
+
+
+def test_day_block_bootstrap_keeps_paired_days_intact() -> None:
+    y = np.zeros(48)
+    champion = np.zeros(48)
+    floor = np.concatenate([np.zeros(24), np.full(24, 10.0)])
+    ci, deltas = paired_block_bootstrap_deltas(y, champion, floor, 200, seed=5, block_size=24)
+    assert ci.point == pytest.approx(5.0)
+    assert set(deltas) == {0.0, 5.0, 10.0}
+    assert (ci.lo, ci.hi) == (0.0, 10.0)
+
+
+def test_block_bootstrap_requires_whole_blocks() -> None:
+    y = np.zeros(25)
+    with pytest.raises(ValueError, match="divide"):
+        paired_block_bootstrap_deltas(y, y, y, 100, seed=5, block_size=24)
 
 
 def test_ridge_deterministic(small_cfg: LifecycleConfig, xy: tuple) -> None:

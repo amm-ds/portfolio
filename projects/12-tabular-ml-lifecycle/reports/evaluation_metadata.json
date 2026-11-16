@@ -1,5 +1,5 @@
 {
-  "protocol": "Time-based split: the final 8 weeks of the 2011-2012 hourly series are the test window, scored once per candidate; the 8 weeks before it are validation (model selection, LightGBM HPO objective, MLP early stopping, ablation choice); everything earlier is training. Lag features read only the past. Paired bootstrap on the test window prices the champion-vs-floor MAE gap.",
+  "protocol": "Time-based split: the final 8 weeks of the 2011-2012 hourly series are the test window; the 8 weeks before it are validation (model selection, LightGBM HPO, MLP early stopping and shipped ablation configuration); everything earlier is training. Each candidate receives one test score. Ablation variants are also test-scored only after freezing and are labeled post-freeze diagnostics. The champion-vs-floor MAE gap uses paired hourly bootstrap resampling, with paired non-overlapping 24-hour and 168-hour block bootstraps as serial-dependence sensitivity analyses.",
   "versions": {
     "python": "3.12.9",
     "tabular_ml_lifecycle": "0.1.0",
@@ -19,13 +19,14 @@
     "torch_threads": 1
   },
   "runtime": {
-    "train_s": 50.789,
-    "evaluate_s": 0.523
+    "train_s": 44.377,
+    "evaluate_s": 14.255
   },
   "seed": 42,
   "limits": [
-    "The test window is scored once per candidate; model selection, early stopping and the ablation choice used validation only.",
+    "Model selection, early stopping and the shipped ablation configuration used validation only. Test scores for all ablation variants are post-freeze diagnostics, not selection evidence.",
+    "Hourly errors are serially dependent. Day/week block bootstraps are sensitivity analyses on the same test window, not independent confirmations.",
     "MAPE denominators are floored at 1 rental; near-zero hours inflate MAPE even when the absolute error is small \u2014 read MAE first.",
-    "Two seasons, one city, one system: transfer to other fleets or regimes is plausible, not measured."
+    "Two years and four seasons, one city, one system: transfer to other fleets or regimes is plausible, not measured."
   ]
 }

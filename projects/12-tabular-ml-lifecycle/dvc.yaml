@@ -54,7 +54,6 @@ stages:
       - data/feature_selection.json
       - data/features_train.parquet
       - data/features_val.parquet
-      - data/features_test.parquet
       - data/series.parquet
     params:
       - seed
@@ -81,6 +80,8 @@ stages:
       - src/tabular_ml_lifecycle/
       - params.yaml
       - data/models/
+      - data/features_train.parquet
+      - data/features_val.parquet
       - data/features_test.parquet
       - data/series.parquet
       - reports/train_runs.json

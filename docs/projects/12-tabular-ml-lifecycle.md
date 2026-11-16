@@ -7,10 +7,9 @@
 [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/12-tabular-ml-lifecycle/DESIGN.md) ·
 [Dataset card](https://amm-ds.github.io/portfolio/data-registry/bike-sharing/)
 
-> Real UCI Capital Bikeshare hourly demand (17,379 rows): a seeded ladder from
-> seasonal-naive to LightGBM and a hand-written PyTorch MLP reaches 25.4 MAE on the
-> scored-once 8-week test vs 83.2 for the floor - a 57.8/hour gain (95% CI 52.5-63.1);
-> validation picked the MLP.
+> Real UCI Capital Bikeshare hourly demand (17,379 rows): the validation-selected
+> PyTorch MLP reaches 25.4 test MAE vs 83.2 for the seasonal-naive floor. The
+> 57.8/hour gain has hourly 95% CI 52.5-63.1 and week-block sensitivity 38.8-73.4.
 
 **TL;DR:** teams asking how much better than "same hour last week" a model can
 honestly get on one tabular series — and whether a deep model with a

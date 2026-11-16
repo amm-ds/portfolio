@@ -208,7 +208,7 @@ def ablation_dotplot_figure(rows: list[dict[str, Any]]) -> go.Figure:
     add_takeaway(
         fig,
         "Teal is the shipped configuration; grey dots score each control off. "
-        "Controls were chosen on validation — test was not consulted (see limits).",
+        "Selection used validation only; variant test scores are post-freeze diagnostics.",
     )
     return fig
 
@@ -236,7 +236,7 @@ def model_comparison_figure(runs: dict[str, dict[str, float]]) -> go.Figure:
     )
     apply_theme(fig, height=540)
     fig.update_layout(
-        title="Scored-once test window — MAE by candidate",
+        title="Frozen test window — one MAE score per candidate",
         xaxis_title="test MAE (rentals)",
         margin={"l": 220, "r": 140, "t": 110, "b": 70},
     )
@@ -327,7 +327,7 @@ def residual_vs_fitted_figure(y_true: np.ndarray, y_pred: np.ndarray) -> go.Figu
     fig.add_hline(y=0, line={"color": "#64748b", "dash": "dash"})
     apply_theme(fig, height=560)
     fig.update_layout(
-        title="Residual vs fitted on the scored-once test window",
+        title="Residual vs fitted on the frozen test window",
         xaxis_title="fitted rentals",
         yaxis_title="residual (actual - fitted)",
     )
@@ -339,23 +339,45 @@ def residual_vs_fitted_figure(y_true: np.ndarray, y_pred: np.ndarray) -> go.Figu
     return fig
 
 
-def bootstrap_ci_figure(deltas: np.ndarray, ci: dict[str, Any]) -> go.Figure:
-    """Bootstrap distribution of the MAE improvement (floor - champion)."""
-    fig = go.Figure()
-    fig.add_histogram(x=deltas, nbinsx=60, name="bootstrap deltas", marker_color="#2dd4bf")
-    fig.add_vline(x=0, line={"color": "#64748b", "dash": "dash"})
-    fig.add_vline(x=ci["lo"], line={"color": "#fbbf24", "dash": "dot"})
-    fig.add_vline(x=ci["hi"], line={"color": "#fbbf24", "dash": "dot"})
-    apply_theme(fig, height=540)
+def bootstrap_ci_figure(
+    deltas_by_method: dict[str, np.ndarray], ci_by_method: dict[str, dict[str, Any]]
+) -> go.Figure:
+    """Hourly, day-block and week-block MAE-improvement sensitivity."""
+    labels = {"hourly": "hourly rows", "day": "24-hour blocks", "week": "168-hour blocks"}
+    methods = list(deltas_by_method)
+    fig = make_subplots(
+        rows=len(methods),
+        cols=1,
+        shared_xaxes=True,
+        subplot_titles=[labels.get(method, method) for method in methods],
+        vertical_spacing=0.08,
+    )
+    for row, method in enumerate(methods, start=1):
+        ci = ci_by_method[method]
+        fig.add_histogram(
+            x=deltas_by_method[method],
+            nbinsx=60,
+            name=labels.get(method, method),
+            marker_color="#2dd4bf",
+            row=row,
+            col=1,
+        )
+        fig.add_vline(x=0, line={"color": "#64748b", "dash": "dash"}, row=row, col=1)
+        fig.add_vline(x=ci["lo"], line={"color": "#fbbf24", "dash": "dot"}, row=row, col=1)
+        fig.add_vline(x=ci["hi"], line={"color": "#fbbf24", "dash": "dot"}, row=row, col=1)
+        fig.update_yaxes(title_text="resamples", row=row, col=1)
+    apply_theme(fig, height=780)
     fig.update_layout(
-        title="Paired bootstrap — MAE improvement over the seasonal-naive floor",
-        xaxis_title="MAE(floor) - MAE(champion), rentals per hour",
-        yaxis_title="resamples",
+        title="Paired bootstrap sensitivity — MAE improvement over the seasonal-naive floor",
         showlegend=False,
+    )
+    fig.update_xaxes(
+        title_text="MAE(floor) - MAE(champion), rentals per hour", row=len(methods), col=1
     )
     add_takeaway(
         fig,
-        f"{ci['n_boot']:,} paired resamples: point +{ci['point']:.1f}, 95% CI "
-        f"[{ci['lo']:.1f}, {ci['hi']:.1f}] — the whole histogram sits right of zero.",
+        "Day and week blocks preserve local serial dependence. Compare their interval "
+        "widths with hourly resampling; these are sensitivity analyses on the same test "
+        "window, not independent confirmations.",
     )
     return fig

@@ -58,15 +58,15 @@ class MLPHistory:
 
 @dataclass
 class MLPAblationRow:
-    """One ablation variant, each seeded and scored once per split."""
+    """One seeded ablation variant; test MAE is an optional post-freeze diagnostic."""
 
     variant: str
     dropout_on: bool
     weight_decay_on: bool
     early_stopping_on: bool
     val_mae: float
-    test_mae: float
     epochs_run: int
+    test_mae: float | None = None
 
 
 def _huber(pred: torch.Tensor, target: torch.Tensor, delta: float) -> torch.Tensor:
@@ -205,15 +205,18 @@ class MLPRegressor:
         y_train: pd.Series,
         X_val: pd.DataFrame,
         y_val: pd.Series,
-        X_test: pd.DataFrame,
-        y_test: pd.Series,
         numeric_cols: list[str],
+        *,
+        X_test: pd.DataFrame | None = None,
+        y_test: pd.Series | None = None,
     ) -> list[MLPAblationRow]:
-        """2x2x2 overfitting-control grid (dropout / weight decay / early stop).
+        """2x2x2 validation grid with optional post-freeze test diagnostics.
 
-        Every variant is seeded and scored once per split; all selection
-        decisions use validation — see the limits in the evaluation metadata.
+        Training calls this without test inputs. Evaluation may supply them only
+        after the champion and shipped configuration have been frozen.
         """
+        if (X_test is None) != (y_test is None):
+            raise ValueError("X_test and y_test must be supplied together")
         cfg = self.cfg
         rows: list[MLPAblationRow] = []
         for dropout_on in (True, False):
@@ -231,7 +234,10 @@ class MLPRegressor:
                         early_stopping=es_on,
                     )
                     val_pred = candidate.predict(X_val)
-                    test_pred = candidate.predict(X_test)
+                    test_mae = None
+                    if X_test is not None and y_test is not None:
+                        test_pred = candidate.predict(X_test)
+                        test_mae = float(np.mean(np.abs(y_test.to_numpy() - test_pred)))
                     variant = (
                         f"dropout={'on' if dropout_on else 'off'}|"
                         f"wd={'on' if wd_on else 'off'}|"
@@ -244,8 +250,8 @@ class MLPRegressor:
                             weight_decay_on=wd_on,
                             early_stopping_on=es_on,
                             val_mae=float(np.mean(np.abs(y_val.to_numpy() - val_pred))),
-                            test_mae=float(np.mean(np.abs(y_test.to_numpy() - test_pred))),
                             epochs_run=candidate.history.epochs_run,
+                            test_mae=test_mae,
                         )
                     )
         return rows

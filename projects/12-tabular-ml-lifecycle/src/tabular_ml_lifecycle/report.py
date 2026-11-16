@@ -37,16 +37,16 @@ def _results_table(metrics: dict[str, Any]) -> str:
 
 def _ablation_table(meta: dict[str, Any]) -> str:
     lines = [
-        "| dropout | weight decay | early stopping | val MAE | test MAE |",
+        "| dropout | weight decay | early stopping | val MAE | post-freeze test MAE |",
         "|---|---|---|---|---|",
     ]
-    for row in meta.get("ablation", []):
-        flag = " ✅" if row["selected"] else ""
+    for row in meta.get("ablation_post_freeze_diagnostics", []):
+        flag = " (shipped)" if row["selected"] else ""
         lines.append(
             f"| {'on' if row['dropout_on'] else 'off'} | "
             f"{'on' if row['weight_decay_on'] else 'off'} | "
             f"{'on' if row['early_stopping_on'] else 'off'} | "
-            f"{row['val_mae']:.1f} | {row['test_mae']:.1f}{flag} |"
+            f"{row['val_mae']:.1f}{flag} | {row['test_mae']:.1f} |"
         )
     return "\n".join(lines)
 
@@ -59,25 +59,38 @@ def build_report(reports_dir: Path, project_dir: Path) -> Path:
     figures = figures_from_json(reports_dir / "figures")
     ci = meta.get("mae_improvement_vs_floor_ci", {})
 
+    sensitivity = meta.get("serial_dependence_sensitivity", {})
+    sensitivity_text = "; ".join(
+        f"{method}: [{row['lo']:.1f}, {row['hi']:.1f}]" for method, row in sensitivity.items()
+    )
     report = EvalReport(title=REPORT_TITLE)
     report.add_html("Protocol", f"<p>{metadata['protocol']}</p>")
     report.add_markdown_table(
-        "Scored-once test window — every candidate, one score", _results_table(metrics)
+        "Frozen test window — one score per candidate", _results_table(metrics)
     )
     report.add_html(
         "Champion vs floor",
         "<p>Champion: <b>{}</b> (selected by lowest validation MAE). MAE improvement over the "
-        "seasonal-naive floor: point +{:.1f} rentals, 95% paired-bootstrap CI [{:.1f}, {:.1f}] "
-        "over {:,} resamples — significant_95={}.</p>".format(
+        "seasonal-naive floor: point +{:.1f} rentals, hourly 95% paired-bootstrap CI "
+        "[{:.1f}, {:.1f}] over {:,} resamples — significant_95={}. Serial-dependence "
+        "sensitivity (95% CI): {}.</p>".format(
             RUN_LABELS.get(meta.get("champion", ""), meta.get("champion", "?")),
             ci.get("point", float("nan")),
             ci.get("lo", float("nan")),
             ci.get("hi", float("nan")),
             ci.get("n_boot", 0),
             ci.get("significant_95"),
+            sensitivity_text,
         ),
     )
-    report.add_markdown_table("MLP regularization ablation (2x2x2)", _ablation_table(meta))
+    report.add_html(
+        "Ablation protocol",
+        "<p>Validation selected the shipped configuration before test scoring. The test "
+        "column below contains post-freeze diagnostics only and never selects a variant.</p>",
+    )
+    report.add_markdown_table(
+        "Post-freeze MLP regularization diagnostics (2x2x2)", _ablation_table(meta)
+    )
     first_plotly = True
     for name, fig in figures.items():
         report.add_figure(name.replace("_", " ").title(), fig, include_plotlyjs=first_plotly)
@@ -90,11 +103,15 @@ def build_report(reports_dir: Path, project_dir: Path) -> Path:
     (reports_dir / "results.md").write_text(
         f"# {REPORT_TITLE}\n\n"
         f"## Protocol\n\n{metadata['protocol']}\n\n"
-        f"## Scored-once test window\n\n{_results_table(metrics)}\n\n"
+        f"## Frozen test window\n\n{_results_table(metrics)}\n\n"
         f"Champion: **{meta.get('champion')}** — MAE improvement vs floor "
-        f"+{ci.get('point', float('nan')):.1f}, 95% CI [{ci.get('lo', float('nan')):.1f}, "
-        f"{ci.get('hi', float('nan')):.1f}], significant_95={ci.get('significant_95')}.\n\n"
-        f"## MLP regularization ablation (2x2x2)\n\n{_ablation_table(meta)}\n\n"
+        f"+{ci.get('point', float('nan')):.1f}, hourly 95% CI "
+        f"[{ci.get('lo', float('nan')):.1f}, {ci.get('hi', float('nan')):.1f}], "
+        f"significant_95={ci.get('significant_95')}. Serial-dependence sensitivity "
+        f"(95% CI): {sensitivity_text}.\n\n"
+        f"## Post-freeze MLP regularization diagnostics (2x2x2)\n\n"
+        "Validation selected the shipped configuration before test scoring. These test "
+        f"scores are diagnostics, never selectors.\n\n{_ablation_table(meta)}\n\n"
         f"## Limits\n\n{limits}\n\n"
         "Figures: `reports/figures/` (JSON + HTML). "
         "Full record: `reports/metrics.json`, `reports/train_runs.json`, "

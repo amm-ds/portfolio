@@ -54,8 +54,18 @@ def test_train_and_evaluate_core_smoke(small_cfg: LifecycleConfig) -> None:
     ci = meta["mae_improvement_vs_floor_ci"]
     assert ci["n_boot"] == small_cfg.bootstrap_resamples
     assert ci["point"] > 0  # at least one learned model must beat the floor here
-    assert len(meta["ablation"]) == 8
-    assert sum(1 for row in meta["ablation"] if row["selected"]) == 1
+    train_runs = json.loads((small_cfg.reports_dir / "train_runs.json").read_text())
+    assert len(train_runs["ablation"]) == 8
+    assert all("test_mae" not in row for row in train_runs["ablation"])
+    diagnostics = meta["ablation_post_freeze_diagnostics"]
+    assert len(diagnostics) == 8
+    assert sum(1 for row in diagnostics if row["selected"]) == 1
+    assert all(row["test_mae"] >= 0 for row in diagnostics)
+    sensitivity = meta["serial_dependence_sensitivity"]
+    assert set(sensitivity) == {"hourly", "day", "week"}
+    assert sensitivity["day"]["block_hours"] == 24
+    assert sensitivity["week"]["block_hours"] == 168
+    assert all(row["n_boot"] == small_cfg.bootstrap_resamples for row in sensitivity.values())
     metadata = json.loads((small_cfg.reports_dir / "evaluation_metadata.json").read_text())
     for block in ("protocol", "versions", "hardware", "runtime"):
         assert block in metadata
@@ -84,7 +94,12 @@ def test_report_assembly_smoke(small_cfg: LifecycleConfig) -> None:
                         "n_boot": 2000,
                         "significant_95": True,
                     },
-                    "ablation": [
+                    "serial_dependence_sensitivity": {
+                        "hourly": {"lo": 20.0, "hi": 40.0},
+                        "day": {"lo": 18.0, "hi": 42.0},
+                        "week": {"lo": 15.0, "hi": 45.0},
+                    },
+                    "ablation_post_freeze_diagnostics": [
                         {
                             "dropout_on": True,
                             "weight_decay_on": True,

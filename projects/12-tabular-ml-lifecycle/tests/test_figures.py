@@ -86,11 +86,14 @@ def test_evaluation_figures_build(small_frame: pd.DataFrame) -> None:
         small_frame["cnt"].to_numpy()[:100], small_frame["cnt"].to_numpy()[:100] * 0.95
     )
     assert len(rvf.data) == 1
+    deltas = __import__("numpy").linspace(10, 50, 100)
+    ci = {"point": 30.0, "lo": 22.0, "hi": 38.0, "n_boot": 2000}
     boot = figures.bootstrap_ci_figure(
-        __import__("numpy").linspace(10, 50, 100),
-        {"point": 30.0, "lo": 22.0, "hi": 38.0, "n_boot": 2000},
+        {"hourly": deltas, "day": deltas, "week": deltas},
+        {"hourly": ci, "day": ci, "week": ci},
     )
     assert boot.layout.title.text
+    assert len(boot.data) == 3
 
 
 def test_mi_lollipop_marks_pruned_grey() -> None:

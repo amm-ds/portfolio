@@ -4,7 +4,7 @@ Classical-ML + DL showcase: predict hourly bike rentals on the real **UCI
 Bike Sharing** series (Capital Bikeshare, Washington D.C., 2011–2012) through
 the full lifecycle — sha256-pinned ingest, DQ gates, time-based split,
 leakage-safe feature engineering, seeded model selection from a seasonal-naive
-floor to a hand-written PyTorch MLP, and a scored-once test window with
+floor to a hand-written PyTorch MLP, and a frozen test window with
 paired bootstrap CIs.
 
 **Status:** working showcase on the standard platform.
@@ -17,7 +17,7 @@ UCI Bike Sharing `hour.csv` (17,379 hourly rows, behind the same DQ gates and
 DatasetContract — see [data-registry/bike-sharing](../../docs/data-registry/bike-sharing.md));
 a seeded synthetic twin with the same schema remains as the clearly labeled
 CI path (`data_source: synthetic`) so tests never touch the network. The
-split is time-based: the **final 8 weeks are the scored-once test window**,
+split is time-based: the **final 8 weeks are the frozen test window**,
 the 8 weeks before it are validation, everything earlier is training.
 
 ## Design
@@ -26,7 +26,7 @@ Everything from raw frame to metric follows one contract:
 
 ```text
 raw zip ──▶ sha256 gate ──▶ hour.csv ──▶ DQ gates (26 checks)
-      ──▶ time split: train | validation 8wk | test 8wk (scored once)
+      ──▶ time split: train | validation 8wk | frozen test 8wk
       ──▶ features: cyclical hour/weekday/month, calendar binaries,
           lags 1h/24h/168h (past-only, positional)
       ──▶ selection: MI (train) + permutation (ridge on validation)
@@ -34,7 +34,7 @@ raw zip ──▶ sha256 gate ──▶ hour.csv ──▶ DQ gates (26 checks)
       ──▶ ladder, every run seeded:
           seasonal naive | ridge | random forest | LightGBM + Optuna HPO
           | tabular MLP (PyTorch, hand-written loop)
-      ──▶ scored-once test: MAE/RMSE/MAPE + paired bootstrap CIs
+      ──▶ frozen test: MAE/RMSE/MAPE + paired bootstrap CIs
 ```
 
 - **Leakage rules** (`data/feature_selection.json` is the contract): lags at
@@ -59,7 +59,7 @@ raw zip ──▶ sha256 gate ──▶ hour.csv ──▶ DQ gates (26 checks)
 
 Full rationale and rejected alternatives: [DESIGN.md](DESIGN.md).
 
-## Results (real run: UCI Bike Sharing, 17,379 rows → 1,344-row scored-once test window)
+## Results (real run: UCI Bike Sharing, 17,379 rows → 1,344-row frozen test window)
 
 | candidate | val MAE | test MAE | test RMSE | test MAPE % |
 |---|---|---|---|---|
@@ -76,26 +76,28 @@ Key findings:
   never by test.
 - **The floor is real:** the seasonal-naive comparator (same hour last week)
   posts 83.2 test MAE; the champion improves on it by 57.8
-  rentals/hour on average, 95% paired-bootstrap CI [52.5, 63.1] over 2,000
-  resamples — CI excludes zero.
+  rentals/hour on average. The hourly paired-bootstrap 95% CI is [52.5, 63.1];
+  day-block and week-block sensitivity intervals are wider at [44.2, 71.8] and
+  [38.8, 73.4], respectively (2,000 resamples each). All exclude zero.
 - **Feature selection agreed with the EDA:** mutual information ranks the
   three lags first (MI 0.89 / 0.76 / 0.71 nats), then the cyclical hour pair;
   the correlated-pair pruning dropped `atemp` (r = 0.987 with `temp`) — the
   heatmap's near-duplicate pair, resolved by rule rather than by hand.
 - **Read the ablation at face value:** the 2x2x2 grid is on `ablation_dotplot`.
-  Early stopping is the load-bearing control (every off-row is worse); the
-  validation argmin is a dropout-off row ~2 rentals inside row noise, so the
-  pre-registered configuration stands. The test column is evidence, never a
-  selector (see limits).
+  Early stopping is the load-bearing control (every off-row is worse on
+  validation); the validation argmin is a dropout-off row about 2 rentals below
+  the shipped configuration. The pre-registered configuration stands. Variant
+  test scores are post-freeze diagnostics, never selectors.
 - **The MLP-trees race is a dead heat:** validation picks the MLP (34.2 vs
   34.4); on the single test pass LightGBM's MAE is 0.06 rentals lower while
   the MLP holds the better RMSE (39.3 vs 40.2). Both crush the floor's 83.2.
 - **The residual slices name the next feature:** `residual_heatmap` and
   `residual_vs_fitted` for the champion show where the model still
   under-forecasts (rush-hour peaks and bad weather).
-- **Limits, labeled:** the test window is scored once per candidate and no
-  choice used it; MAPE denominators are floored at 1 rental; one city, two
-  seasons — transfer is plausible, not measured.
+- **Limits, labeled:** validation made every choice; ablation test scores are
+  post-freeze diagnostics. Day/week intervals expose serial-dependence
+  sensitivity. MAPE denominators are floored at 1 rental; one city over two
+  years/four seasons — transfer is plausible, not measured.
 
 ## Limits
 
@@ -121,7 +123,7 @@ uv run dvc metrics show                          # run ladder from the lockfile
 Deterministic: seed 42 controls the synthetic twin, the splits, the Optuna
 sampler, LightGBM (`deterministic=True, num_threads=1`), the random forest
 (`n_jobs=1`) and the MLP (seeded init + shuffling, single-threaded). Tests
-(34, no network, synthetic fixtures only, 91% src coverage):
+(36, no network, synthetic fixtures only):
 
 ```bash
 uv run pytest projects/12-tabular-ml-lifecycle -q
@@ -137,21 +139,21 @@ uv run pytest projects/12-tabular-ml-lifecycle -q
 
 - **A lifecycle, not a notebook:** pinned ingest, DQ gates as halting
   checks, a written feature-selection contract, a seeded model ladder, and a
-  scored-once holdout — every stage one `dvc repro` away.
+  frozen holdout — every stage one `dvc repro` away.
 - **Leakage handled structurally:** past-only lags, fitted scalers, dropped
   target-sum columns, and a test window no choice ever touches — with tests
   that mutate future rows to prove lags never look ahead.
 - **Deep learning without a framework hiding the loop:** the PyTorch MLP
   carries a hand-written training loop with the overfitting controls measured,
   not assumed (loss curves, learning curves, 2x2x2 ablation).
-- **Honest uncertainty:** every candidate's test score carries paired
-  bootstrap CIs against the floor; residual slices say where the model is
-  still wrong.
+- **Honest uncertainty:** the champion-floor gap carries paired hourly,
+  day-block, and week-block intervals; residual slices say where the model is
+  still wrong. Variant test scores are labeled post-freeze diagnostics.
 
 ## Roadmap
 
 - **Delivered:** real UCI data behind sha256 + DQ gates; time split with a
-  scored-once test window; MI/permutation/correlation feature selection; the
+  frozen test window; MI/permutation/correlation feature selection; the
   five-model seeded ladder with time-budgeted LightGBM HPO and the
   hand-written PyTorch MLP; bootstrap CIs; residual analysis.
 - **Delivered:** overfitting-control artifacts (per-epoch loss curves,
