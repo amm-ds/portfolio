@@ -63,6 +63,42 @@ EXCLUDE_DIRS = {
 }
 EXCLUDE_FILES = {".DS_Store", "agent_chat.db", ".env"}
 EXCLUDE_SUFFIXES = {".pyc"}
+# R8.1: never ship secrets. Provenance labels are not a safety mechanism —
+# a private key, a dotenv variant, or a local database must never leave the
+# machine in a handoff archive, whatever its origin.
+_SECRET_NAME_PATTERNS = (
+    ".env",
+    ".pem",
+    ".key",
+    ".db",
+    ".sqlite",
+    ".sqlite3",
+    ".p12",
+    ".pfx",
+    ".jks",
+    ".keystore",
+)
+_SECRET_NAME_FRAGMENTS = (
+    "secret",
+    "credential",
+    "private",
+    "id_rsa",
+    "id_ecdsa",
+    "id_ed25519",
+)
+
+
+def _is_secret(name: str) -> bool:
+    lowered = name.lower()
+    if lowered.startswith(".env"):
+        return True
+    if any(lowered.endswith(suffix) for suffix in _SECRET_NAME_PATTERNS):
+        return True
+    if lowered.endswith(".pub"):
+        return False  # public keys are not secrets
+    return any(fragment in lowered for fragment in _SECRET_NAME_FRAGMENTS)
+
+
 # reproducible data (corpus + vector index): rebuilt by the app's own pipeline
 EXCLUDE_PREFIXES = ("data/raw/", "data/index/")
 # repo scope additionally skips the repo-root data/ registry (DVC-tracked
@@ -156,6 +192,8 @@ def collect_files(origins: dict[str, set[str]], root: Path) -> dict[str, FileEnt
         if parts & EXCLUDE_DIRS:
             continue
         if path.name in EXCLUDE_FILES or path.suffix in EXCLUDE_SUFFIXES:
+            continue
+        if _is_secret(path.name):
             continue
         if any(rel.startswith(p) or f"/{p}" in rel for p in EXCLUDE_PREFIXES):
             continue
