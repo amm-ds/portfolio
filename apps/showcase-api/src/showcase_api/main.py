@@ -41,7 +41,7 @@ from routing_optimization.schemas import Problem, RoutePlan, TwoOptTuning
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from showcase_api import __version__, serving
-from showcase_api import spa as _spa_module  # WEB_DIST is patched per test — read at call time
+from showcase_api import spa as _spa_module
 from showcase_api.contact import prune_contact_store
 from showcase_api.contact import router as contact_router
 from showcase_api.live import _LIVE_GUARD, _run_bounded_with_timeout
@@ -60,6 +60,8 @@ logger = get_logger(__name__)
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 PROJECTS_ROOT = REPO_ROOT / "projects"
+# Test fixture compatibility: patch this module global, read it at request time.
+WEB_DIST = _spa_module.WEB_DIST
 _DOCS_ASSETS = Path(__file__).with_name("static")
 
 _PID_RE = r"^\d{2}-[a-z0-9-]+$"
@@ -347,7 +349,7 @@ def projects(request: Request) -> Response:
     if "text/html" in accept:
         return (
             HTMLResponse(_route_index_html("/projects"), headers={"Cache-Control": "no-cache"})
-            if _spa_module.WEB_DIST.exists()
+            if WEB_DIST.exists()
             else JSONResponse({"error": "web build not found"}, status_code=503)
         )
     etag, body = _cached_payload(
