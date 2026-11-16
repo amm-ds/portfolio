@@ -27,7 +27,9 @@ async def send_message(ctx: RunContext[ChatDeps], channel: str, text: str) -> st
         Confirmation, or a note that the message was not sent.
     """
     summary = f"post to #{channel}: {text[:120]}"
-    approved = await ctx.deps.approvals.request("send_message", summary)
+    approved = await ctx.deps.approvals.request(
+        "send_message", summary, {"channel": channel, "text": text}
+    )
     if not approved:
         return f"Message to #{channel} NOT sent: denied by operator."
     ctx.deps.sent.append(SentMessage(channel=channel, text=text))

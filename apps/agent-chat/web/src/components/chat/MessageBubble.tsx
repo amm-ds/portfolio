@@ -34,7 +34,12 @@ export function MessageBubble({
                 <ApprovalCard
                   key={part.approval.id}
                   approval={part.approval}
-                  locked={locked || part.approval.status !== "pending"}
+                  locked={
+                    locked ||
+                    part.approval.status === "submitting" ||
+                    part.approval.status === "approved" ||
+                    part.approval.status === "rejected"
+                  }
                   onRespond={onRespondApproval ?? (() => undefined)}
                 />
               );

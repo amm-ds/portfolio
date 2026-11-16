@@ -149,6 +149,12 @@ async def chat(
     deps = ChatDeps(approvals=gate, memory=state.notebook, session_id=session_id)
     usage_limits = build_usage_limits(state.settings)
     title = body.message[:60]
+    prior_usage = conversation.usage if conversation is not None else None
+    usage_before = (
+        (prior_usage.input_tokens, prior_usage.output_tokens, prior_usage.requests)
+        if prior_usage is not None
+        else (0, 0, 0)
+    )
 
     async def produce() -> None:
         try:
@@ -173,9 +179,9 @@ async def chat(
                             DoneEvent(
                                 answer=result.output,
                                 usage=UsageSummary(
-                                    input_tokens=usage.input_tokens,
-                                    output_tokens=usage.output_tokens,
-                                    requests=usage.requests,
+                                    input_tokens=usage.input_tokens - usage_before[0],
+                                    output_tokens=usage.output_tokens - usage_before[1],
+                                    requests=usage.requests - usage_before[2],
                                 ),
                                 conversation_id=conversation_id,
                             )
@@ -191,12 +197,20 @@ async def chat(
                     message="The agent run failed. Check server logs for details.",
                 )
             )
-        finally:
-            await queue.put(None)
 
     async def produce_with_timeout() -> None:
-        async with asyncio.timeout(state.settings.run_timeout_s):
-            await produce()
+        try:
+            async with asyncio.timeout(state.settings.run_timeout_s):
+                await produce()
+        except TimeoutError:
+            await queue.put(
+                ErrorEvent(
+                    code="run_timeout",
+                    message="The agent run exceeded its time limit and was stopped.",
+                )
+            )
+        finally:
+            await queue.put(None)
 
     async def generate() -> AsyncIterator[str]:
         task = asyncio.create_task(produce_with_timeout())

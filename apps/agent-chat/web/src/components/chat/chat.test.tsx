@@ -60,16 +60,19 @@ const head: ChatEvent[] = [
   { type: "text_delta", delta: "and the metrics." },
   { type: "tool_call_start", call_id: "t1", name: "search_docs", args: { q: "p99" } },
   { type: "tool_call_end", call_id: "t1", name: "search_docs", result: '{"hits": 2}' },
+  { type: "tool_call_start", call_id: "t2", name: "restart_service", args: { service: "api" } },
   {
     type: "approval_request",
     approval_id: "ap1",
     tool: "restart_service",
     summary: "production impact",
+    payload: { service: "api" },
   },
 ];
 
 const tail = (decision: { approvalId: string; approved: boolean }): ChatEvent[] => [
   { type: "approval_response", approval_id: decision.approvalId, approved: decision.approved },
+  { type: "tool_call_end", call_id: "t2", name: "restart_service", result: "restart complete" },
   { type: "text_delta", delta: "Restarting now." },
   {
     type: "done",
@@ -104,13 +107,15 @@ describe("ChatSurface scripted conversation", () => {
     expect(screen.getByText("done")).toBeInTheDocument(); // tool state
 
     // Approval prompt is actionable once the run parks for approval.
-    const approval = screen.getByRole("group", { name: "approval: restart_service" });
+    const approval = await screen.findByRole("group", { name: "approval: restart_service" });
     expect(approval).toHaveTextContent("production impact");
+    expect(approval).toHaveTextContent('"service": "api"');
     await screen.findByText("awaiting_approval"); // phase badge in the titlebar
     await user.click(screen.getByRole("button", { name: "approve" }));
 
     // The resumed run commits the answer, citations, and usage.
     expect(await screen.findByText("Restarted the api service; p99 recovered.")).toBeInTheDocument();
+    expect(screen.getByText("approved — executed")).toBeInTheDocument();
     expect(screen.getByText("runbook/incident-triage.md · “restart when error rate > 1%”")).toBeInTheDocument();
     expect(screen.getByText(/812 tok/)).toBeInTheDocument();
     expect(screen.queryByText(/uncertainty:/)).not.toBeInTheDocument();

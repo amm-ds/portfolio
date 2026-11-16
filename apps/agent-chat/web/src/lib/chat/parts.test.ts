@@ -7,7 +7,13 @@ const scripted: ChatEvent[] = [
   { type: "text_delta", delta: "then the metrics." },
   { type: "tool_call_start", call_id: "tc_1", name: "search_docs", args: { q: "uptime" } },
   { type: "tool_call_end", call_id: "tc_1", name: "search_docs", result: "3 hits" },
-  { type: "approval_request", approval_id: "ap_1", tool: "restart_service", summary: "production impact" },
+  {
+    type: "approval_request",
+    approval_id: "ap_1",
+    tool: "restart_service",
+    summary: "production impact",
+    payload: { service: "api" },
+  },
   { type: "approval_response", approval_id: "ap_1", approved: true },
   { type: "text_delta", delta: "Approved — restarting." },
   {
@@ -37,6 +43,36 @@ describe("reduceEvents", () => {
     const approval = parts.find((p) => p.kind === "approval");
     expect(approval).toMatchObject({
       approval: { id: "ap_1", tool: "restart_service", summary: "production impact", status: "approved" },
+    });
+  });
+
+  it("keeps local submission distinct from the server decision", () => {
+    const request = scripted.find((event) => event.type === "approval_request");
+    expect(request).toBeDefined();
+    if (request?.type !== "approval_request") throw new Error("missing approval request");
+    const parts = reduceEvents([request], { ap_1: "submitting" });
+    expect(parts[0]).toMatchObject({ approval: { status: "submitting", execution: "pending" } });
+  });
+
+  it("marks an approved action executed only after its tool result", () => {
+    const request = scripted.find((event) => event.type === "approval_request");
+    if (request?.type !== "approval_request") throw new Error("missing approval request");
+    const before = reduceEvents([
+      { type: "tool_call_start", call_id: "restart-1", name: "restart_service", args: { service: "api" } },
+      request,
+      { type: "approval_response", approval_id: "ap_1", approved: true },
+    ]);
+    expect(before.find((part) => part.kind === "approval")).toMatchObject({
+      approval: { status: "approved", execution: "pending" },
+    });
+    const after = reduceEvents([
+      { type: "tool_call_start", call_id: "restart-1", name: "restart_service", args: { service: "api" } },
+      request,
+      { type: "approval_response", approval_id: "ap_1", approved: true },
+      { type: "tool_call_end", call_id: "restart-1", name: "restart_service", result: "done" },
+    ]);
+    expect(after.find((part) => part.kind === "approval")).toMatchObject({
+      approval: { status: "approved", execution: "completed" },
     });
   });
 

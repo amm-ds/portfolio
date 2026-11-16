@@ -39,6 +39,8 @@ export interface ApprovalRequest {
   tool: string;
   /** Human-readable why this tool needs confirmation. */
   summary: string;
+  /** Complete immutable tool arguments; summary may be truncated. */
+  payload: Record<string, unknown>;
 }
 
 export interface ApprovalResponse {
@@ -120,10 +122,14 @@ function requireNumber(obj: Record<string, unknown>, key: string, ctx: string): 
   return value;
 }
 
-function requireArgs(obj: Record<string, unknown>, ctx: string): Record<string, unknown> {
-  const value = obj.args;
+function requireObjectField(
+  obj: Record<string, unknown>,
+  key: "args" | "payload",
+  ctx: string,
+): Record<string, unknown> {
+  const value = obj[key];
   if (!isRecord(value)) {
-    throw new ChatEventError(`${ctx}: expected object "args"`, JSON.stringify(obj));
+    throw new ChatEventError(`${ctx}: expected object "${key}"`, JSON.stringify(obj));
   }
   return value;
 }
@@ -186,7 +192,7 @@ export function parseChatEvent(payload: string): ChatEvent | null {
         type: "tool_call_start",
         call_id: requireString(raw, "call_id", ctx),
         name: requireString(raw, "name", ctx),
-        args: requireArgs(raw, ctx),
+        args: requireObjectField(raw, "args", ctx),
       };
     case "tool_call_end":
       return {
@@ -201,6 +207,7 @@ export function parseChatEvent(payload: string): ChatEvent | null {
         approval_id: requireString(raw, "approval_id", ctx),
         tool: requireString(raw, "tool", ctx),
         summary: requireString(raw, "summary", ctx),
+        payload: requireObjectField(raw, "payload", ctx),
       };
     case "approval_response":
       if (typeof raw.approved !== "boolean") {

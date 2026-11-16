@@ -163,6 +163,7 @@ export class MockChatApi implements ChatApi {
       approval_id: APPROVAL_ID,
       tool: "restart_service",
       summary: "restarts production traffic — confirm before executing",
+      payload: { service: "api" },
     };
   }
 

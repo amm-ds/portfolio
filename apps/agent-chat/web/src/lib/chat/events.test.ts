@@ -33,13 +33,14 @@ describe("parseChatEvent", () => {
   it("parses approval_request / approval_response", () => {
     expect(
       parseChatEvent(
-        '{"type":"approval_request","approval_id":"ap_1","tool":"send_message","summary":"posts to #ops"}',
+        '{"type":"approval_request","approval_id":"ap_1","tool":"send_message","summary":"posts to #ops","payload":{"channel":"ops","text":"Deploy done."}}',
       ),
     ).toEqual({
       type: "approval_request",
       approval_id: "ap_1",
       tool: "send_message",
       summary: "posts to #ops",
+      payload: { channel: "ops", text: "Deploy done." },
     });
     expect(
       parseChatEvent('{"type":"approval_response","approval_id":"ap_1","approved":false}'),
@@ -87,6 +88,9 @@ describe("parseChatEvent", () => {
     expect(() =>
       parseChatEvent('{"type":"approval_request","approval_id":"a","tool":"t"}'),
     ).toThrow(/summary/);
+    expect(() =>
+      parseChatEvent('{"type":"approval_request","approval_id":"a","tool":"t","summary":"s"}'),
+    ).toThrow(/payload/);
     expect(() =>
       parseChatEvent('{"type":"approval_response","approval_id":"a","approved":"yes"}'),
     ).toThrow(/approved/);

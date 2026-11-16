@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 from pydantic_ai import UsageLimitExceeded
 
-from agent_chat.agent import build_agent, build_usage_limits
+from agent_chat.agent import _evidence_citation, build_agent, build_usage_limits
 from agent_chat.approvals import AutoApproval, DenyAll
 from agent_chat.config import Settings
 from agent_chat.deps import ChatDeps
@@ -194,6 +194,49 @@ class TestSkillsOnTheAgent:
         result = await agent.run("refund window?", deps=ChatDeps(approvals=AutoApproval()))
         assert result.output.citations[0].quote != "invented"
         assert "30 days" in result.output.citations[0].quote
+
+
+class TestCitationProvenance:
+    def test_retrieval_fallback_preserves_source_and_chunk(self) -> None:
+        citation = _evidence_citation(
+            "The first response is within 1 hour.",
+            ["sla.md#7 (score 0.90): Severity-1 receives a first response within 1 hour."],
+        )
+        assert citation is not None
+        assert citation.source == "sla.md#7"
+        assert "within 1 hour" in citation.quote
+
+    async def test_quote_from_another_source_is_repaired(
+        self, seeded_store: object, embedder: object
+    ) -> None:
+        from agent_chat.rag.embeddings import HashingEmbedder
+        from agent_chat.rag.store import SQLiteVectorStore
+
+        assert isinstance(seeded_store, SQLiteVectorStore)
+        assert isinstance(embedder, HashingEmbedder)
+        model = scripted_model(
+            [
+                FakeStep(tool_call=("retrieve", {"query": "first response"})),
+                FakeStep(
+                    tool_call=(
+                        "final_result",
+                        {
+                            "text": "The first response is within 1 hour.",
+                            "citations": [{"source": "refunds.md", "quote": "within 1 hour"}],
+                            "uncertainty": "low",
+                        },
+                    )
+                ),
+            ]
+        )
+        agent = build_agent(
+            model=model,
+            settings=Settings(embedder="hashing", model_retries=0),
+            vector_store=seeded_store,
+            embedder=embedder,
+        )
+        result = await agent.run("SLA?", deps=ChatDeps(approvals=AutoApproval()))
+        assert result.output.citations[0].source.endswith("sla.md#0")
 
 
 class TestExecutorCapability:

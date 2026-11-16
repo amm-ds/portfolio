@@ -8,6 +8,7 @@ them from any thread/loop via ``call_soon_threadsafe``. Timeout = default deny.
 """
 
 import asyncio
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from uuid import uuid4
@@ -47,32 +48,43 @@ class _PendingApproval:
     session_id: str
 
 
+def _resolve_future(future: asyncio.Future[bool], approved: bool) -> None:
+    """Run on the owning loop; a simultaneous timeout may already have won."""
+    if not future.done():
+        future.set_result(approved)
+
+
 @dataclass
 class ApprovalHub:
     """App-wide registry of in-flight approval requests."""
 
     timeout_s: float
     _pending: dict[str, _PendingApproval] = field(default_factory=dict)
+    _lock: threading.Lock = field(default_factory=threading.Lock, init=False, repr=False)
 
     def gate(self, session_id: str, sink: EventSink) -> ApprovalGate:
         """An ``ApprovalGate`` for one chat run, emitting into that run's sink."""
         return _SseApprovalGate(hub=self, session_id=session_id, sink=sink)
 
     def resolve(self, approval_id: str, session_id: str, approved: bool) -> bool:
-        """Resolve only an approval owned by this session; never cross sessions."""
-        pending = self._pending.get(approval_id)
-        if pending is None or pending.session_id != session_id or pending.future.done():
-            return False
-        pending.loop.call_soon_threadsafe(pending.future.set_result, approved)
+        """Atomically claim one decision; retries and concurrent posts lose."""
+        with self._lock:
+            pending = self._pending.get(approval_id)
+            if pending is None or pending.session_id != session_id or pending.future.done():
+                return False
+            del self._pending[approval_id]
+        pending.loop.call_soon_threadsafe(_resolve_future, pending.future, approved)
         return True
 
     def _register(self, approval_id: str, future: asyncio.Future[bool], session_id: str) -> None:
-        self._pending[approval_id] = _PendingApproval(
-            asyncio.get_running_loop(), future, session_id
-        )
+        with self._lock:
+            self._pending[approval_id] = _PendingApproval(
+                asyncio.get_running_loop(), future, session_id
+            )
 
     def _deregister(self, approval_id: str) -> None:
-        self._pending.pop(approval_id, None)
+        with self._lock:
+            self._pending.pop(approval_id, None)
 
 
 @dataclass
@@ -83,11 +95,15 @@ class _SseApprovalGate:
     session_id: str
     sink: EventSink
 
-    async def request(self, tool: str, summary: str) -> bool:
+    async def request(self, tool: str, summary: str, payload: dict[str, object]) -> bool:
         approval_id = uuid4().hex[:12]
         future: asyncio.Future[bool] = asyncio.get_running_loop().create_future()
         self.hub._register(approval_id, future, self.session_id)
-        self.sink(ApprovalRequestEvent(approval_id=approval_id, tool=tool, summary=summary))
+        self.sink(
+            ApprovalRequestEvent(
+                approval_id=approval_id, tool=tool, summary=summary, payload=payload
+            )
+        )
         try:
             approved = await asyncio.wait_for(future, timeout=self.hub.timeout_s)
         except TimeoutError:

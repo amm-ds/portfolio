@@ -19,8 +19,13 @@ export interface ApprovalState {
   id: string;
   tool: string;
   summary: string;
-  status: "pending" | "approved" | "rejected";
+  payload: Record<string, unknown>;
+  status: "submitting" | "pending" | "approved" | "rejected" | "failed";
+  /** Approved actions become completed only on the matching tool_call_end. */
+  execution: "pending" | "completed";
 }
+
+export type LocalApprovalStatus = "submitting" | "failed";
 
 export type Part =
   | { kind: "text"; text: string }
@@ -41,7 +46,10 @@ export interface Step {
  * text part; a tool_call_start opens a tool part that the matching
  * tool_call_end closes; the approval decision merges into the approval part.
  */
-export function reduceEvents(events: readonly ChatEvent[]): Part[] {
+export function reduceEvents(
+  events: readonly ChatEvent[],
+  localApprovalStatus: Readonly<Record<string, LocalApprovalStatus>> = {},
+): Part[] {
   const parts: Part[] = [];
   for (const event of events) {
     switch (event.type) {
@@ -70,6 +78,23 @@ export function reduceEvents(events: readonly ChatEvent[]): Part[] {
               kind: "tool_call",
               call: { ...part.call, status: "done", result: event.result },
             };
+            for (let approvalIndex = parts.length - 1; approvalIndex >= 0; approvalIndex -= 1) {
+              const approvalPart = parts[approvalIndex];
+              if (
+                approvalPart.kind !== "approval" ||
+                approvalPart.approval.tool !== event.name ||
+                approvalPart.approval.status !== "approved" ||
+                approvalPart.approval.execution !== "pending" ||
+                !Object.entries(approvalPart.approval.payload).every(
+                  ([key, value]) => JSON.stringify(part.call.args[key]) === JSON.stringify(value),
+                )
+              ) continue;
+              parts[approvalIndex] = {
+                kind: "approval",
+                approval: { ...approvalPart.approval, execution: "completed" },
+              };
+              break;
+            }
           }
         }
         break;
@@ -79,7 +104,14 @@ export function reduceEvents(events: readonly ChatEvent[]): Part[] {
         if (index === -1) {
           parts.push({
             kind: "approval",
-            approval: { id: event.approval_id, tool: event.tool, summary: event.summary, status: "pending" },
+            approval: {
+              id: event.approval_id,
+              tool: event.tool,
+              summary: event.summary,
+              payload: event.payload,
+              status: localApprovalStatus[event.approval_id] ?? "pending",
+              execution: "pending",
+            },
           });
         }
         break;
@@ -88,7 +120,11 @@ export function reduceEvents(events: readonly ChatEvent[]): Part[] {
         const index = parts.findIndex((p) => p.kind === "approval" && p.approval.id === event.approval_id);
         if (index !== -1) {
           const part = parts[index];
-          if (part.kind === "approval") {
+          if (
+            part.kind === "approval" &&
+            part.approval.status !== "approved" &&
+            part.approval.status !== "rejected"
+          ) {
             parts[index] = {
               kind: "approval",
               approval: {
@@ -101,8 +137,20 @@ export function reduceEvents(events: readonly ChatEvent[]): Part[] {
         break;
       }
       case "done":
-      case "error":
+      case "error": {
+        for (const [index, part] of parts.entries()) {
+          if (
+            part.kind === "approval" &&
+            (part.approval.status === "pending" || part.approval.status === "submitting")
+          ) {
+            parts[index] = {
+              kind: "approval",
+              approval: { ...part.approval, status: "failed" },
+            };
+          }
+        }
         break;
+      }
     }
   }
   return parts;
@@ -144,7 +192,12 @@ export function deriveSteps(parts: readonly Part[]): Step[] {
       steps.push({
         kind: "tool",
         label: part.approval.tool,
-        status: part.approval.status === "pending" ? "pending" : "done",
+        status:
+          part.approval.status === "failed"
+            ? "error"
+            : part.approval.status === "pending" || part.approval.status === "submitting"
+              ? "pending"
+              : "done",
       });
       seenTool = true;
     } else if (part.text.trim() !== "") {

@@ -1,23 +1,16 @@
 /**
  * Chat state container: conversations, the active run's event log (folded to
- * parts for rendering), usage, health, and the approval cycle.
+ * parts for rendering), per-run usage, health, and the approval cycle.
  *
- * Approval flow (mirrors the backend, routes_chat.py): the run's SSE stream
- * stays OPEN while parked on `approval_request` — the hook flips to
- * "awaiting_approval", then `respondApproval` POSTs the decision to
- * /approvals/{id}; the server emits `approval_response` on the same stream and
- * the run resumes. There is no reconnect or resume token.
- *
- * The backend persists each run itself and returns its conversation id in the
- * `done` event, so "+ new" is a purely local action: the conversation comes
- * into existence with the first completed run. Turns loaded from history
- * (content only) render as plain markdown.
+ * Approval decisions remain non-terminal until the server echoes them on the
+ * run's SSE stream. Navigation invalidates the active run and any older history
+ * load, so late events cannot overwrite a newly selected conversation.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Citation, ChatEvent, Usage } from "./events";
 import type { ChatApi, ConversationMeta, HealthInfo } from "./client";
 import { commitFinalAnswer, reduceEvents } from "./parts";
-import type { Part } from "./parts";
+import type { LocalApprovalStatus, Part } from "./parts";
 
 export type RunPhase = "idle" | "streaming" | "awaiting_approval";
 
@@ -37,6 +30,7 @@ export interface ChatState {
   events: ChatEvent[];
   parts: Part[];
   phase: RunPhase;
+  /** Usage delta for the latest completed run, never conversation-cumulative. */
   usage: Usage | null;
   health: HealthInfo | null;
   error: string | null;
@@ -60,6 +54,10 @@ export function useChat(api: ChatApi) {
   const activeIdRef = useRef<string | null>(null);
   const historyRef = useRef<DisplayMessage[]>([]);
   const runEventsRef = useRef<ChatEvent[]>([]);
+  const navigationRef = useRef(0);
+  const runIdRef = useRef(0);
+  const listMutationRef = useRef(0);
+  const localApprovalStatusRef = useRef<Record<string, LocalApprovalStatus>>({});
   activeIdRef.current = state.activeId;
   historyRef.current = state.messages;
 
@@ -73,22 +71,31 @@ export function useChat(api: ChatApi) {
       if (!message) return;
       const controller = new AbortController();
       abortRef.current = controller;
-
+      // Starting a run also invalidates any still-loading selected history.
+      const navigation = ++navigationRef.current;
+      const runId = ++runIdRef.current;
+      const conversationId = activeIdRef.current ?? undefined;
+      const isCurrent = () => navigationRef.current === navigation && runIdRef.current === runId;
       const events: ChatEvent[] = [];
+      localApprovalStatusRef.current = {};
       runEventsRef.current = events;
-      // Clear the previous run's usage so observers cannot mistake it for completion.
       setState((s) => ({ ...s, phase: "streaming", usage: null, error: null, events, parts: [] }));
 
       try {
         for await (const event of api.streamChat(
-          { message: message.content, conversation_id: activeIdRef.current ?? undefined },
+          { message: message.content, conversation_id: conversationId },
           controller.signal,
         )) {
+          if (!isCurrent()) return;
           events.push(event);
-          const parts = reduceEvents(events);
-          const patch: Partial<ChatState> = { events: [...events], parts };
+          if (event.type === "approval_response") {
+            delete localApprovalStatusRef.current[event.approval_id];
+          }
+          const patch: Partial<ChatState> = {
+            events: [...events],
+            parts: reduceEvents(events, localApprovalStatusRef.current),
+          };
           if (event.type === "approval_request") {
-            // The stream stays open, parked until decideApproval is answered.
             patch.phase = "awaiting_approval";
           } else if (event.type === "approval_response") {
             patch.phase = "streaming";
@@ -99,15 +106,21 @@ export function useChat(api: ChatApi) {
           }
           setState((s) => ({ ...s, ...patch }));
         }
+        if (!isCurrent()) return;
+        if (controller.signal.aborted) {
+          setState((s) => ({ ...s, phase: "idle" }));
+          return;
+        }
         const done = events.find((e) => e.type === "done");
         if (done && done.type === "done") {
           // The atomic answer supersedes every trailing streamed fragment;
           // tool/approval parts and earlier plan/critique text remain intact.
-          const streamed = reduceEvents(events);
+          const streamed = reduceEvents(events, localApprovalStatusRef.current);
           const committed = done.answer.text === ""
             ? streamed
             : commitFinalAnswer(streamed, done.answer.text);
           runEventsRef.current = [];
+          localApprovalStatusRef.current = {};
           setState((s) => ({
             ...s,
             activeId: done.conversation_id,
@@ -125,16 +138,22 @@ export function useChat(api: ChatApi) {
             phase: "idle",
           }));
         } else {
-          const pendingApproval = reduceEvents(events).some(
+          const pendingApproval = reduceEvents(events, localApprovalStatusRef.current).some(
             (p) => p.kind === "approval" && p.approval.status === "pending",
           );
           setState((s) => ({ ...s, phase: pendingApproval ? "awaiting_approval" : "idle" }));
         }
+        const listMutation = listMutationRef.current;
         void api.listConversations().then(
-          (conversations) => setState((s) => ({ ...s, conversations })),
+          (conversations) => {
+            if (isCurrent() && listMutationRef.current === listMutation) {
+              setState((s) => ({ ...s, conversations }));
+            }
+          },
           () => undefined,
         );
       } catch (error) {
+        if (!isCurrent()) return;
         if (controller.signal.aborted) {
           setState((s) => ({ ...s, phase: "idle" }));
         } else {
@@ -154,7 +173,7 @@ export function useChat(api: ChatApi) {
   const send = useCallback(
     async (text: string) => {
       const content = text.trim();
-      if (content === "" || state.phase !== "idle") return;
+      if (content === "" || state.phase !== "idle" || abortRef.current !== null) return;
 
       // No conversation pre-creation: the backend persists the run itself and
       // returns the new conversation id in the done event.
@@ -168,16 +187,24 @@ export function useChat(api: ChatApi) {
 
   const respondApproval = useCallback(
     (id: string, approved: boolean) => {
-      if (state.phase !== "awaiting_approval") return;
-      // Fold the operator decision in immediately so the approval card shows
-      // its state before the echoed approval_response arrives (idempotent).
-      const events = [...runEventsRef.current, { type: "approval_response", approval_id: id, approved } as ChatEvent];
-      runEventsRef.current = events;
-      setState((s) => ({ ...s, phase: "streaming", events, parts: reduceEvents(events) }));
+      if (
+        state.phase !== "awaiting_approval" ||
+        localApprovalStatusRef.current[id] === "submitting"
+      ) return;
+      localApprovalStatusRef.current[id] = "submitting";
+      const events = runEventsRef.current;
+      setState((s) => ({
+        ...s,
+        events: [...events],
+        parts: reduceEvents(events, localApprovalStatusRef.current),
+      }));
       void api.decideApproval(id, approved).catch((error: unknown) => {
+        if (localApprovalStatusRef.current[id] !== "submitting") return;
+        localApprovalStatusRef.current[id] = "failed";
         setState((s) => ({
           ...s,
-          phase: "streaming",
+          phase: "awaiting_approval",
+          parts: reduceEvents(runEventsRef.current, localApprovalStatusRef.current),
           error: error instanceof Error ? error.message : String(error),
         }));
       });
@@ -187,13 +214,29 @@ export function useChat(api: ChatApi) {
 
   const select = useCallback(
     async (id: string) => {
+      const navigation = ++navigationRef.current;
       stop();
+      activeIdRef.current = id;
+      historyRef.current = [];
       runEventsRef.current = [];
-      setState((s) => ({ ...s, activeId: id, events: [], parts: [], usage: null, error: null, phase: "idle" }));
+      localApprovalStatusRef.current = {};
+      setState((s) => ({
+        ...s,
+        activeId: id,
+        messages: [],
+        events: [],
+        parts: [],
+        usage: null,
+        error: null,
+        phase: "idle",
+      }));
       try {
         const conv = await api.getConversation(id);
-        setState((s) => ({ ...s, messages: conv.messages }));
+        if (navigationRef.current === navigation) {
+          setState((s) => ({ ...s, messages: conv.messages }));
+        }
       } catch (error) {
+        if (navigationRef.current !== navigation) return;
         setState((s) => ({
           ...s,
           error: error instanceof Error ? error.message : String(error),
@@ -205,8 +248,12 @@ export function useChat(api: ChatApi) {
   );
 
   const create = useCallback(() => {
+    navigationRef.current += 1;
     stop();
+    activeIdRef.current = null;
+    historyRef.current = [];
     runEventsRef.current = [];
+    localApprovalStatusRef.current = {};
     setState((s) => ({
       ...s,
       activeId: null,
@@ -221,21 +268,41 @@ export function useChat(api: ChatApi) {
 
   const remove = useCallback(
     async (id: string) => {
-      await api.deleteConversation(id);
-      setState((s) => {
-        const cleared = s.activeId === id;
-        return {
+      const clearActive = activeIdRef.current === id;
+      listMutationRef.current += 1;
+      if (clearActive) {
+        // Invalidate before awaiting DELETE so a late done cannot resurrect it.
+        navigationRef.current += 1;
+        stop();
+        activeIdRef.current = null;
+        historyRef.current = [];
+        runEventsRef.current = [];
+        localApprovalStatusRef.current = {};
+        setState((s) => ({
+          ...s,
+          activeId: null,
+          messages: [],
+          events: [],
+          parts: [],
+          usage: null,
+          phase: "idle",
+          error: null,
+        }));
+      }
+      try {
+        await api.deleteConversation(id);
+        setState((s) => ({
           ...s,
           conversations: s.conversations.filter((c) => c.id !== id),
-          activeId: cleared ? null : s.activeId,
-          messages: cleared ? [] : s.messages,
-          events: cleared ? [] : s.events,
-          parts: cleared ? [] : s.parts,
-          phase: cleared ? "idle" : s.phase,
-        };
-      });
+        }));
+      } catch (error) {
+        setState((s) => ({
+          ...s,
+          error: error instanceof Error ? error.message : String(error),
+        }));
+      }
     },
-    [api],
+    [api, stop],
   );
 
   useEffect(() => {
@@ -244,16 +311,26 @@ export function useChat(api: ChatApi) {
       (health) => !cancelled && setState((s) => ({ ...s, health })),
       () => !cancelled && setState((s) => ({ ...s, health: { status: "unreachable" } })),
     );
+    const listMutation = listMutationRef.current;
+    const navigation = navigationRef.current;
     void api.listConversations().then(
       (conversations) => {
-        if (cancelled || conversations.length === 0) return;
+        if (
+          cancelled ||
+          conversations.length === 0 ||
+          listMutationRef.current !== listMutation
+        ) return;
         setState((s) => ({ ...s, conversations }));
-        void select(conversations[0].id);
+        // A selection/new conversation made while the list was in flight wins.
+        if (navigationRef.current === navigation && activeIdRef.current === null) {
+          void select(conversations[0].id);
+        }
       },
       () => undefined,
     );
     return () => {
       cancelled = true;
+      navigationRef.current += 1;
       abortRef.current?.abort();
     };
   }, [api, select]);

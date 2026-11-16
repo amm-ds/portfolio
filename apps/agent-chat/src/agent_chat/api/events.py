@@ -44,6 +44,7 @@ class ApprovalRequestEvent(BaseModel):
     approval_id: str
     tool: str
     summary: str
+    payload: dict[str, object]
 
 
 class ApprovalResponseEvent(BaseModel):

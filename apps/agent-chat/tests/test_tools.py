@@ -69,6 +69,63 @@ class TestFetchUrl:
         with pytest.raises(ValueError, match="private and reserved addresses"):
             await fetch_url("http://127.0.0.1/admin")
 
+    def test_socket_uses_the_validated_pinned_address(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import importlib
+
+        mod = importlib.import_module("agent_chat.tools.fetch_url")
+        targets: list[tuple[str, int]] = []
+
+        def fake_create_connection(
+            address: tuple[str, int], timeout: float, source_address: object
+        ) -> object:
+            targets.append(address)
+            return object()
+
+        monkeypatch.setattr(mod.socket, "create_connection", fake_create_connection)
+        connection = mod._PinnedHTTPConnection("example.test", port=80, pinned_ip="93.184.216.34")
+        connection.connect()
+        assert targets == [("93.184.216.34", 80)]
+
+    def test_private_redirect_is_rejected_before_a_second_connection(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import importlib
+
+        mod = importlib.import_module("agent_chat.tools.fetch_url")
+        connections: list[tuple[str, str]] = []
+
+        class FakeResponse:
+            status = 302
+
+            def getheader(self, name: str) -> str:
+                assert name == "Location"
+                return "http://127.0.0.1/admin"
+
+        class FakeConnection:
+            def __init__(self, host: str, *, port: int, pinned_ip: str) -> None:
+                connections.append((host, pinned_ip))
+
+            def request(self, method: str, target: str, headers: dict[str, str]) -> None:
+                pass
+
+            def getresponse(self) -> FakeResponse:
+                return FakeResponse()
+
+            def close(self) -> None:
+                pass
+
+        def fake_getaddrinfo(host: str, port: int, *, type: int) -> list[object]:
+            address = "127.0.0.1" if host == "127.0.0.1" else "93.184.216.34"
+            return [(2, type, 6, "", (address, port))]
+
+        monkeypatch.setattr(mod, "_PinnedHTTPConnection", FakeConnection)
+        monkeypatch.setattr(mod.socket, "getaddrinfo", fake_getaddrinfo)
+        with pytest.raises(ValueError, match="private and reserved addresses"):
+            mod._read_title("http://public.test/start")
+        assert connections == [("public.test", "93.184.216.34")]
+
 
 class TestSendMessageGate:
     def _ctx(self, deps: ChatDeps) -> RunContext[ChatDeps]:

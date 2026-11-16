@@ -1,23 +1,25 @@
 """fetch_url: read a web page's title. Network only when explicitly enabled.
 
-The agent only receives this tool when ``Settings.fetch_url_enabled`` is true
-(see ``agent_chat.agent.build_agent``) — an adopter opts into network access
-deliberately. Downloads are capped and run in a worker thread so the event
-loop is never blocked by the socket.
+Every redirect hop is resolved and validated independently. The socket connects
+to the validated address rather than resolving the host again, closing the DNS
+check/use gap. Downloads are capped and run in a worker thread.
 """
 
 import asyncio
+import http.client
 import ipaddress
 import re
 import socket
-from urllib.error import URLError
-from urllib.parse import urlparse
-from urllib.request import Request, urlopen
+import ssl
+from urllib.parse import ParseResult, urljoin, urlparse
 
 from pydantic import BaseModel, Field
 
 _TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.IGNORECASE | re.DOTALL)
 _MAX_BYTES = 200_000  # titles live in the first chunk of the document
+_MAX_REDIRECTS = 5
+_TIMEOUT_S = 10.0
+_REDIRECT_STATUSES = {301, 302, 303, 307, 308}
 
 
 class FetchedPage(BaseModel):
@@ -28,42 +30,93 @@ class FetchedPage(BaseModel):
     fetched_at: str  # ISO 8601 UTC
 
 
-def _validate_public_url(url: str) -> None:
-    """Reject non-HTTP targets, credentials, and private/reserved addresses."""
+def _public_target(url: str) -> tuple[ParseResult, int, list[str]]:
+    """Validate one URL hop and return its port and public resolved addresses."""
     parsed = urlparse(url)
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
         raise ValueError("only http(s) URLs are supported")
     if parsed.username or parsed.password:
         raise ValueError("URLs with credentials are not allowed")
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
     try:
-        addresses = socket.getaddrinfo(parsed.hostname, parsed.port or 443)
+        addresses = socket.getaddrinfo(parsed.hostname, port, type=socket.SOCK_STREAM)
     except socket.gaierror as exc:
         raise ValueError(f"could not resolve {parsed.hostname}") from exc
-    for address_info in addresses:
-        ip = ipaddress.ip_address(address_info[4][0])
-        if (
-            ip.is_private
-            or ip.is_loopback
-            or ip.is_link_local
-            or ip.is_multicast
-            or ip.is_reserved
-            or ip.is_unspecified
-        ):
+    if not addresses:
+        raise ValueError(f"could not resolve {parsed.hostname}")
+    resolved = [str(address_info[4][0]) for address_info in addresses]
+    for address in resolved:
+        if not ipaddress.ip_address(address).is_global:
             raise ValueError("private and reserved addresses are not allowed")
+    return parsed, port, resolved
+
+
+def _validate_public_url(url: str) -> None:
+    """Compatibility helper for callers that only need URL validation."""
+    _public_target(url)
+
+
+class _PinnedHTTPConnection(http.client.HTTPConnection):
+    """HTTP connection that cannot re-resolve the validated hostname."""
+
+    def __init__(self, host: str, *, port: int, pinned_ip: str) -> None:
+        super().__init__(host, port=port, timeout=_TIMEOUT_S)
+        self._pinned_ip = pinned_ip
+
+    def connect(self) -> None:
+        self.sock = socket.create_connection((self._pinned_ip, self.port), self.timeout, None)
+
+
+class _PinnedHTTPSConnection(http.client.HTTPSConnection):
+    """HTTPS to a pinned IP, retaining the hostname for SNI/certificates."""
+
+    def __init__(self, host: str, *, port: int, pinned_ip: str) -> None:
+        super().__init__(host, port=port, timeout=_TIMEOUT_S)
+        self._pinned_ip = pinned_ip
+        self._tls_context = ssl.create_default_context()
+
+    def connect(self) -> None:
+        sock = socket.create_connection((self._pinned_ip, self.port), self.timeout, None)
+        self.sock = self._tls_context.wrap_socket(sock, server_hostname=self.host)
 
 
 def _read_title(url: str) -> str:
-    _validate_public_url(url)
-    request = Request(url, headers={"User-Agent": "agent-chat/0.1 (+template)"})  # noqa: S310
-    try:
-        with urlopen(request, timeout=10) as response:  # noqa: S310 - opt-in tool, capped read
-            _validate_public_url(response.geturl())
+    current_url = url
+    for _ in range(_MAX_REDIRECTS + 1):
+        parsed, port, addresses = _public_target(current_url)
+        host = parsed.hostname
+        if host is None:  # unreachable after _public_target; keeps the type explicit
+            raise ValueError("only http(s) URLs are supported")
+        connection_type = (
+            _PinnedHTTPSConnection if parsed.scheme == "https" else _PinnedHTTPConnection
+        )
+        connection = connection_type(host, port=port, pinned_ip=addresses[0])
+        target = parsed.path or "/"
+        if parsed.query:
+            target += f"?{parsed.query}"
+        try:
+            connection.request("GET", target, headers={"User-Agent": "agent-chat/0.1 (+template)"})
+            response = connection.getresponse()
+            if response.status in _REDIRECT_STATUSES:
+                location = response.getheader("Location")
+                if not location:
+                    raise ValueError(f"redirect from {current_url} has no Location header")
+                current_url = urljoin(current_url, location)
+                continue
+            if not 200 <= response.status < 300:
+                raise ValueError(f"could not fetch {current_url}: HTTP {response.status}")
             raw = response.read(_MAX_BYTES)
-    except URLError as exc:
-        raise ValueError(f"could not fetch {url}: {exc.reason}") from exc
+        except (OSError, http.client.HTTPException) as exc:
+            raise ValueError(f"could not fetch {current_url}: {exc}") from exc
+        finally:
+            connection.close()
+        break
+    else:
+        raise ValueError(f"too many redirects fetching {url}")
+
     match = _TITLE_RE.search(raw.decode("utf-8", errors="replace"))
     if match is None:
-        raise ValueError(f"page {url} has no <title> element")
+        raise ValueError(f"page {current_url} has no <title> element")
     return " ".join(match.group(1).split())
 
 

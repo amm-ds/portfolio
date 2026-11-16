@@ -2,25 +2,43 @@ import type { ApprovalState } from "../../lib/chat/parts";
 
 interface Props {
   approval: ApprovalState;
-  /** True while the run is streaming (only the awaiting phase accepts input). */
+  /** True while another run/selection owns the UI or a decision is in flight. */
   locked: boolean;
   onRespond: (id: string, approved: boolean) => void;
 }
 
-/** Consequential-tool prompt: approve/reject, disabled once decided. */
+function outcome(approval: ApprovalState): string {
+  switch (approval.status) {
+    case "submitting":
+      return "submitting decision…";
+    case "approved":
+      return approval.execution === "completed" ? "approved — executed" : "approved — executing";
+    case "rejected":
+      return "rejected — skipped";
+    case "failed":
+      return "decision failed — retry";
+    case "pending":
+      return "";
+  }
+}
+
+/** Consequential-tool prompt: exact payload, explicit submission and execution state. */
 export function ApprovalCard({ approval, locked, onRespond }: Props) {
-  const pending = approval.status === "pending";
+  const canRespond = approval.status === "pending" || approval.status === "failed";
+  const glyph = approval.status === "approved" ? "✓" : canRespond || approval.status === "submitting" ? "?" : "✗";
   return (
     <div className={`approval-card approval-card--${approval.status}`} role="group" aria-label={`approval: ${approval.tool}`}>
       <div className="approval-head">
-        <span className="approval-glyph" aria-hidden="true">
-          {pending ? "?" : approval.status === "approved" ? "✓" : "✗"}
-        </span>
+        <span className="approval-glyph" aria-hidden="true">{glyph}</span>
         <span className="approval-tool">{approval.tool}</span>
         <span className="approval-state">{approval.status}</span>
       </div>
       {approval.summary && <p className="approval-reason">{approval.summary}</p>}
-      {pending ? (
+      <details className="approval-args">
+        <summary>action payload</summary>
+        <pre><code>{JSON.stringify(approval.payload, null, 2)}</code></pre>
+      </details>
+      {canRespond ? (
         <div className="approval-actions">
           <button type="button" className="btn btn-approve" disabled={locked} onClick={() => onRespond(approval.id, true)}>
             approve
@@ -30,9 +48,7 @@ export function ApprovalCard({ approval, locked, onRespond }: Props) {
           </button>
         </div>
       ) : (
-        <p className="approval-outcome">
-          {approval.status === "approved" ? "approved — executed" : "rejected — skipped"}
-        </p>
+        <p className="approval-outcome">{outcome(approval)}</p>
       )}
     </div>
   );

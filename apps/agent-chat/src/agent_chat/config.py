@@ -7,9 +7,9 @@ touching the environment.
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -63,13 +63,20 @@ class Settings(BaseSettings):
 
     # --- api ---------------------------------------------------------------
     api_key: str = ""
-    approval_timeout_s: float = 120.0
-    run_timeout_s: float = Field(default=90.0, gt=0)
+    approval_timeout_s: float = Field(default=120.0, gt=0)
+    run_timeout_s: float = Field(default=180.0, gt=0)
     ingest_roots: list[Path] = Field(default_factory=lambda: [Path("docs")])
     fetch_url_enabled: bool = False
 
     # --- skills ------------------------------------------------------------
     skills_dir: Path = Path(__file__).resolve().parent / "skills"
+
+    @model_validator(mode="after")
+    def approval_fits_within_run(self) -> Self:
+        """Leave time to deny an approval and finish before the run deadline."""
+        if self.run_timeout_s <= self.approval_timeout_s:
+            raise ValueError("run_timeout_s must be greater than approval_timeout_s")
+        return self
 
 
 @lru_cache

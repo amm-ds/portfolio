@@ -17,6 +17,7 @@ class ApprovalRequest:
     approval_id: str
     tool: str
     summary: str
+    payload: dict[str, object]
 
 
 class ApprovalGate(Protocol):
@@ -26,14 +27,14 @@ class ApprovalGate(Protocol):
     must never raise for a missing answer — default-deny is the contract.
     """
 
-    async def request(self, tool: str, summary: str) -> bool: ...
+    async def request(self, tool: str, summary: str, payload: dict[str, object]) -> bool: ...
 
 
 @dataclass
 class AutoApproval:
     """Approve everything. Default outside the API (evals, REPL, scripts)."""
 
-    async def request(self, tool: str, summary: str) -> bool:
+    async def request(self, tool: str, summary: str, payload: dict[str, object]) -> bool:
         return True
 
 
@@ -41,5 +42,5 @@ class AutoApproval:
 class DenyAll:
     """Deny everything. For refusal/audit paths that must never act."""
 
-    async def request(self, tool: str, summary: str) -> bool:
+    async def request(self, tool: str, summary: str, payload: dict[str, object]) -> bool:
         return False

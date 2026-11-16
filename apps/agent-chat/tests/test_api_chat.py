@@ -3,9 +3,11 @@
 import json
 import queue as thread_queue
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
 
 from agent_chat.config import Settings
@@ -127,7 +129,10 @@ class TestChatStream:
 
         history = client.get(f"/conversations/{done1['conversation_id']}")
         assert history.status_code == 200
-        assert len(history.json()["conversation"]["messages"]) >= 4
+        conversation = history.json()["conversation"]
+        assert len(conversation["messages"]) >= 4
+        for key in ("input_tokens", "output_tokens", "requests"):
+            assert done2["usage"][key] == conversation["usage"][key] - done1["usage"][key]
 
     def test_unknown_conversation_is_404(self, client: TestClient) -> None:
         response = client.post("/chat", json={"message": "hi", "conversation_id": "missing"})
@@ -164,6 +169,7 @@ class TestApprovals:
         request = _next_event(sink, "approval_request")
         assert request["tool"] == "send_message"
         assert "Deploy done" in request["summary"]
+        assert request["payload"] == {"channel": "ops", "text": "Deploy done."}
 
         # a second client (same app) answers from another thread/loop
         other = TestClient(client.app)
@@ -228,6 +234,65 @@ class TestApprovals:
             end = _next_event(sink, "tool_call_end")
             assert "NOT sent" in end["result"]
             thread.join(timeout=10)
+
+    def test_incompatible_approval_and_run_timeouts_fail_fast(self) -> None:
+        with pytest.raises(ValueError, match="run_timeout_s must be greater"):
+            Settings(approval_timeout_s=1.0, run_timeout_s=0.5)
+
+    def test_run_deadline_emits_error_while_approval_is_pending(self, tmp_path: Path) -> None:
+        from agent_chat.api.app import create_app
+        from agent_chat.rag.embeddings import HashingEmbedder
+
+        settings = Settings(
+            database_url=f"sqlite:///{tmp_path}/run-timeout.db",
+            embedder="hashing",
+            approval_timeout_s=0.05,
+            run_timeout_s=0.1,
+        )
+        app = create_app(settings=settings, model=fakes.app_model(), embedder=HashingEmbedder())
+        # Keep the gate parked past the run deadline to exercise the terminal SSE error.
+        app.state.agent_chat.approval_hub.timeout_s = 1.0
+        with TestClient(app) as client:
+            client.headers.update(SESSION_HEADERS)
+            fakes.queue.append(
+                FakeStep(tool_call=("send_message", {"channel": "ops", "text": "hi"}))
+            )
+            sink: thread_queue.Queue[dict[str, Any]] = thread_queue.Queue()
+            thread = _stream_chat(client, sink, "announce")
+            _next_event(sink, "approval_request")
+            error = _next_event(sink, "error", timeout=5.0)
+            assert error["code"] == "run_timeout"
+            assert "time limit" in error["message"]
+            thread.join(timeout=10)
+            assert not thread.is_alive()
+
+    def test_concurrent_decisions_resolve_only_once(self, client: TestClient) -> None:
+        fakes.queue.append(FakeStep(tool_call=("send_message", {"channel": "ops", "text": "hi"})))
+        fakes.queue.append(_final("Approval handled once."))
+        sink: thread_queue.Queue[dict[str, Any]] = thread_queue.Queue()
+        thread = _stream_chat(client, sink, "announce")
+        request = _next_event(sink, "approval_request")
+        first = TestClient(client.app)
+        second = TestClient(client.app)
+        first.headers.update(SESSION_HEADERS)
+        second.headers.update(SESSION_HEADERS)
+        try:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                responses = [
+                    pool.submit(
+                        client.post,
+                        f"/approvals/{request['approval_id']}",
+                        json={"approved": approved},
+                    )
+                    for client, approved in ((first, True), (second, False))
+                ]
+                statuses = [future.result(timeout=5).status_code for future in responses]
+            assert sorted(statuses) == [200, 404]
+            thread.join(timeout=10)
+            assert not thread.is_alive()
+        finally:
+            first.close()
+            second.close()
 
     def test_unknown_approval_is_404(self, client: TestClient) -> None:
         response = client.post("/approvals/does-not-exist", json={"approved": True})

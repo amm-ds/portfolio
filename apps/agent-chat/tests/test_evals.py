@@ -129,10 +129,44 @@ def test_refusal_still_fails_when_it_leaks_forbidden_instructions() -> None:
 def test_citation_quote_must_appear_in_tool_evidence() -> None:
     case = _case(expect_citations=True)
     citation = Citation(source="handbook", quote="first response within 1 hour")
-    absent = _record(citations=[citation], evidence=["unrelated handbook excerpt"])
-    present = _record(citations=[citation], evidence=["Severity-1: first response\nwithin 1 hour."])
+    absent = _record(citations=[citation], evidence=["handbook — unrelated excerpt"])
+    present = _record(
+        citations=[citation], evidence=["handbook — Severity-1: first response\nwithin 1 hour."]
+    )
     assert not _assertion(case, absent, "CitationsWhenGrounded")
     assert _assertion(case, present, "CitationsWhenGrounded")
+
+
+def test_citation_must_match_its_own_source_and_chunk() -> None:
+    case = _case(expect_citations=True)
+    evidence = [
+        "sla.md#0 (score 0.90): first response within 1 hour",
+        "refunds.md#3 (score 0.80): refunds within 30 days",
+    ]
+    wrong_source = _record(
+        citations=[Citation(source="refunds.md", quote="within 1 hour")], evidence=evidence
+    )
+    wrong_chunk = _record(
+        citations=[Citation(source="sla.md#1", quote="within 1 hour")], evidence=evidence
+    )
+    exact = _record(
+        citations=[Citation(source="sla.md#0", quote="within 1 hour")], evidence=evidence
+    )
+    assert not _assertion(case, wrong_source, "CitationsWhenGrounded")
+    assert not _assertion(case, wrong_chunk, "CitationsWhenGrounded")
+    assert _assertion(case, exact, "CitationsWhenGrounded")
+
+
+def test_one_valid_citation_does_not_hide_an_invalid_one() -> None:
+    case = _case(expect_citations=True)
+    record = _record(
+        citations=[
+            Citation(source="handbook", quote="within 1 hour"),
+            Citation(source="handbook", quote="invented"),
+        ],
+        evidence=["handbook — first response within 1 hour"],
+    )
+    assert not _assertion(case, record, "CitationsWhenGrounded")
 
 
 def test_citation_grader_is_not_attached_without_expectation() -> None:

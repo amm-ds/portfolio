@@ -8,7 +8,6 @@ per-run ``UsageLimits``, and bounded model retries. Swap the model via
 via ``toolsets.TOOLSETS`` and skill folders — nothing else in the file moves.
 """
 
-import ast
 import re
 from concurrent.futures import ThreadPoolExecutor
 
@@ -22,6 +21,7 @@ from pydantic_ai.usage import UsageLimits
 from agent_chat.capabilities import load_skills
 from agent_chat.config import Settings
 from agent_chat.deps import ChatDeps
+from agent_chat.grounding import citation_supported, parse_evidence
 from agent_chat.memory.history import build_history_capability
 from agent_chat.rag.embeddings import Embedder
 from agent_chat.rag.store import VectorStore
@@ -83,41 +83,29 @@ def _grounding_evidence(ctx: RunContext[ChatDeps]) -> list[str]:
                 "search_handbook",
             }:
                 continue
-            text = str(part.content).strip()
+            content = part.content
+            if isinstance(content, list) and all(isinstance(item, str) for item in content):
+                evidence.extend(item for item in content if item.strip())
+                continue
+            text = str(content).strip()
             if text and text not in {"[]", "No relevant stored notes found."}:
                 evidence.append(text)
     return evidence
 
 
 def _evidence_citation(answer: str, evidence: list[str]) -> Citation | None:
-    """Attach the best-matching verbatim paragraph when the model omits a citation.
-
-    Retrieval returns either a document string or a serialized list of
-    ``source — excerpt`` strings. Selecting from those exact strings keeps the
-    fallback auditable: it can never synthesize a quote or a source.
-    """
+    """Attach the best-matching paragraph with its exact source/chunk."""
     answer_words = set(re.findall(r"[a-z0-9]+", answer.casefold()))
     best: tuple[int, str, str] = (0, "", "")
-    for raw in evidence:
-        try:
-            parsed = ast.literal_eval(raw)
-        except (SyntaxError, ValueError):
-            parsed = raw
-        documents = parsed if isinstance(parsed, list) else [raw]
-        for document in documents:
-            if not isinstance(document, str):
+    for document in parse_evidence(evidence):
+        for paragraph in re.split(r"\n\s*\n", document.content):
+            quote = paragraph.strip()
+            if not quote:
                 continue
-            source, separator, excerpt = document.partition(" — ")
-            if not separator:
-                source, excerpt = "retrieval", document
-            for paragraph in re.split(r"\n\s*\n", excerpt):
-                quote = paragraph.strip()
-                if not quote:
-                    continue
-                quote_words = set(re.findall(r"[a-z0-9]+", quote.casefold()))
-                score = len(answer_words & quote_words)
-                if score > best[0]:
-                    best = (score, source.strip(), quote)
+            quote_words = set(re.findall(r"[a-z0-9]+", quote.casefold()))
+            score = len(answer_words & quote_words)
+            if score > best[0]:
+                best = (score, document.citation_source, quote)
     if best[0] == 0:
         return None
     return Citation(source=best[1], quote=best[2])
@@ -185,9 +173,14 @@ def build_agent(
         evidence = _grounding_evidence(ctx)
         if not evidence:
             return output
-        evidence_text = " ".join(evidence).casefold()
-        if any(citation.quote.casefold() in evidence_text for citation in output.citations):
+        documents = parse_evidence(evidence)
+        valid = [
+            citation for citation in output.citations if citation_supported(citation, documents)
+        ]
+        if len(valid) == len(output.citations) and valid:
             return output
+        if valid:
+            return output.model_copy(update={"citations": valid})
         citation = _evidence_citation(output.text, evidence)
         if citation is not None:
             return output.model_copy(update={"citations": [citation]})

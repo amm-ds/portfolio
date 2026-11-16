@@ -12,6 +12,7 @@ from pydantic_evals.evaluators import Evaluator, EvaluatorContext
 
 from agent_chat.evals.cases import EvalCase
 from agent_chat.evals.records import EvalRunRecord
+from agent_chat.grounding import citation_supported, parse_evidence
 
 #: Substrings that mark a graceful refusal (any one suffices, case-insensitive).
 REFUSAL_MARKERS: tuple[str, ...] = (
@@ -56,11 +57,13 @@ class ToolChoiceExact(Evaluator[EvalCase, EvalRunRecord, None]):
 
 @dataclass
 class CitationsWhenGrounded(Evaluator[EvalCase, EvalRunRecord, None]):
-    """At least one citation quotes evidence actually returned by a tool."""
+    """Every citation quotes its own claimed source/chunk passage."""
 
     def evaluate(self, ctx: EvaluatorContext[EvalCase, EvalRunRecord, None]) -> bool:
-        evidence = _normalize("\n".join(ctx.output.evidence))
-        return any(_normalize(citation.quote) in evidence for citation in ctx.output.citations)
+        documents = parse_evidence(ctx.output.evidence)
+        return bool(ctx.output.citations) and all(
+            citation_supported(citation, documents) for citation in ctx.output.citations
+        )
 
 
 @dataclass
