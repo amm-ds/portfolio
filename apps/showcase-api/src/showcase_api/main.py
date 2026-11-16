@@ -349,7 +349,7 @@ def projects(request: Request) -> Response:
     if "text/html" in accept:
         return (
             HTMLResponse(_route_index_html("/projects"), headers={"Cache-Control": "no-cache"})
-            if WEB_DIST.exists()
+            if _spa_module.WEB_DIST.exists()
             else JSONResponse({"error": "web build not found"}, status_code=503)
         )
     etag, body = _cached_payload(
