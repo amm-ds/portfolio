@@ -341,7 +341,6 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "hpo_importance",
       "nab_alert_budget",
       "nab_score_distribution",
-      "nab_timeline_nyc_taxi",
       "nab_timelines",
       "nab_tune_surface",
       "pr_curves",
@@ -375,7 +374,6 @@ export const STATIC_STORIES: StaticStorySummary[] = [
     "figure_names": [
       "confusion_matrix_selected",
       "eda_class_balance",
-      "epochs_probe",
       "hpo_history",
       "llm_cascade_comparison",
       "per_class_f1_comparison",
