@@ -219,12 +219,16 @@ report's `page_failure_rate` and `analysis_miss_rate` replaced the review-era
 correction rate; classification metrics no longer exist.
 
 The committed `reports/live-metrics.json` records the last measured live run:
-2026-11-08, `kimi:kimi-for-coding`, corpus revision 2026-11-08.1, 7 cases,
-0 provider errors, page failure rate 0.0. Headline numbers: chat answer
-accuracy 1.00, chat reference citation rate 1.00, evidence resolvability 1.00,
-summary coverage 0.82, entity F1 0.68, topic F1 0.50, unsupported citation
-rate 0.00, median case latency 38.5s. Remaining misses are over-extraction
-and run-to-run model variance, not citation failures.
+2026-11-08, `kimi:kimi-for-coding`, corpus revision 2026-11-08.1, 7 cases and
+8 reference pages, 0 provider errors, page failure rate 0.0. Headline numbers:
+chat answer accuracy 1.00, chat reference citation rate 1.00, evidence
+resolvability 1.00, summary coverage and citation support 0.82, entity F1 0.68,
+topic F1 0.50, unsupported citation rate 0.00, median case latency 38.5s.
+Remaining misses are dominated by entity/topic over-extraction against compact
+references. The strict any-miss rule puts analysis miss rate at 1.00: zero page
+failures does not mean zero quality misses. This single run provides no
+repeated-run variance estimate; its usage and cost are character-based estimates,
+not provider metering.
 
 Committed fixtures are synthetic and born-digital. Before a real rollout, add a
 representative approved corpus, define acceptance thresholds, test prompt

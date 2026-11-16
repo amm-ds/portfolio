@@ -17,9 +17,12 @@ worker, Postgres migration, React workbench, synthetic fixtures, and
 evaluation harness ship together.
 
 **TL;DR:** one strict page-analysis contract connects the model, worker,
-database, API, UI, exports, and evaluation. Every factual output can be
-traced to a parser-resolved source passage, and completed pages are visible
-while the worker keeps going. The default offline adapters are functional
+database, API, UI, exports, and evaluation. Deterministic code checks every
+quote against a contiguous parser-owned passage, and completed pages are visible
+while the worker keeps going. The committed Kimi run covers seven synthetic
+documents and eight reference pages: summary citation support 0.818, entity F1
+0.677, topic F1 0.500, and analysis miss rate 1.00. Perfect chat and citation
+cells do not outweigh those misses. The default offline adapters are functional
 fixtures, not AI-quality claims.
 
 ![Per-page cited summary, entities, and topics beside the source PDF](../assets/apps/document-intelligence-summary.png){ width="100%" }
@@ -63,20 +66,22 @@ version of the architecture diagram.
   exact citations. Entity types use a shared controlled taxonomy.
 - **Topics:** open, concise labels for the page with rationale and evidence.
 - **Page chat:** page-scoped conversation over the selected page with bounded
-  history. Citations resolve after a unicode compatibility fold over the
-  page's text spans, extracted table lines, and image placeholders; a quote
+  history. Citations resolve after a unicode compatibility fold within one
+  parser-declared text span, extracted table line, or image placeholder; a quote
   matching several passages resolves to the first whole-passage match and is
-  flagged with a warning; only a quote matching nothing fails the answer.
+  flagged with a warning. Unmatched quotes and synthetic joins across disjoint
+  regions fail validation.
 
 ## Trust boundaries
 
 - **Parser-owned evidence.** Models propose quotes, never trusted coordinates.
   Deterministic code resolves each quote on one page — after a unicode
-  compatibility fold — against the page's text spans, extracted table lines,
-  and image placeholders, and derives its page and bounding box from matching
-  PyMuPDF geometry. A quote matching several passages resolves to the first
-  whole-passage match with a warning; only a quote matching nothing fails
-  validation.
+  compatibility fold — within one parser-declared passage and derives its page
+  and bounding box from matching PyMuPDF geometry. It never joins disjoint text,
+  table, or image regions. A quote matching several passages resolves to the
+  first whole-passage match with a warning; only a quote matching nothing fails
+  validation. Source matching alone does not prove semantic support or complete
+  analysis.
 - **Entity support.** The literal entity mention must also occur in its cited
   quote. Missing, ambiguous, or fabricated citations create validation issues.
 - **Page-scoped chat.** Chat receives only the selected page's parsed text and
@@ -144,11 +149,16 @@ output verifies the application path and is labeled separately from live
 model quality. The small synthetic corpus is a regression suite, not evidence
 of universal document accuracy. Live numbers are re-measured on each explicit
 provider opt-in run; the latest committed live run (2026-11-08,
-`kimi:kimi-for-coding`, corpus revision 2026-11-08.1, 7 synthetic cases)
-measured chat answer accuracy 1.00 with reference citations 1.00, evidence
-resolvability 1.00, summary key-point coverage 0.82, entity F1 0.68, topic
-F1 0.50, and zero page failures, with per-page misses reported in the JSON
-and dominated by entity/topic over-extraction against compact references.
+`kimi:kimi-for-coding`, corpus revision 2026-11-08.1, 7 synthetic documents and
+8 reference pages) measured chat answer accuracy 1.00 with reference citations
+1.00, evidence resolvability 1.00, summary key-point coverage and citation
+support 0.818, entity F1 0.677, topic F1 0.500, and zero page failures. The
+strict any-miss rule puts **analysis miss rate at 1.00**: every reference page
+had at least one quality miss, dominated by entity/topic over-extraction against
+compact references. Zero page failures therefore does not mean zero quality
+misses. This single run has no repeated-run variance estimate; lexical and
+exact-match scores do not establish semantic correctness on other documents.
+Its usage and cost are character-based estimates, not provider metering.
 
 ```bash
 cd apps/document-intelligence

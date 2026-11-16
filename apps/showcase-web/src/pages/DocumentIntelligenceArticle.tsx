@@ -29,7 +29,8 @@ return result.output
 \`\`\``;
 
 const EVIDENCE_SNIPPET = `\`\`\`python
-resolved = resolve_quote(quote, page)  # unicode-folded match over spans + table lines + image placeholders
+# Unicode-folded match inside one parser passage; disjoint regions never join.
+resolved = resolve_quote(quote, page)
 if not resolved.resolved:
     issues.append(ValidationIssue(
         code="unresolved_evidence",  # severity "error": the quote matched nothing
@@ -102,10 +103,11 @@ export function DocumentIntelligenceArticle() {
         <p className="kicker">&gt; apps / document-intelligence</p>
         <h1>AI Document Intelligence Workbench</h1>
         <p className="detail-lead">
-          <strong>AI analyzes page by page, deterministic code verifies every citation,
-          and partial results stay visible while the worker continues.</strong> One
-          analysis call per page produces a summary, typed entities, and topics; a
-          fourth mode adds page-scoped conversation with bounded history.
+          One AI call per PDF page produces a summary, entities, and topics; deterministic code
+          checks their quotes against parser-owned passages. On seven synthetic documents and
+          eight reference pages, the committed Kimi run scored entity F1 0.677, topic F1 0.500,
+          summary citation support 0.818, and analysis miss rate 1.00. Perfect chat and citation
+          cells do not make this small, single-run evaluation a production accuracy claim.
         </p>
         <div className="chips" aria-label="Technology stack">
           {["Document AI", "page-level analysis", "cited chat", "FastAPI", "Postgres", "React + TypeScript"].map((tech) => (
@@ -137,16 +139,21 @@ export function DocumentIntelligenceArticle() {
             id="background"
             index={1}
             title="Background"
-            subtitle="a document workbench built around verifiable per-page answers, not opaque JSON"
-            takeaway="One AI call per page produces the summary, entities, and topics; deterministic code verifies every quote against PyMuPDF-owned text, and partial results stay visible while the worker continues."
+            subtitle="a document workbench built around inspectable per-page answers, not opaque JSON"
+            takeaway="One AI call per page produces the summary, entities, and topics; deterministic code checks every quote against PyMuPDF-owned passages, and partial results stay visible while the worker continues."
           >
             <LazyFlowDiagram specId="app-document-intelligence-architecture" />
             <div className="prose">
               <p>
-                This standalone application turns a born-digital PDF into per-page,
-                citation-backed analysis: the engineering that makes model output
-                usable lives in strict contracts, exact citations, tenant isolation,
-                leased background jobs, and page-by-page progress.
+                The <strong>architecture diagram</strong> above traces a PDF through the API,
+                leased worker, parser, model, evidence resolver, and React workbench. Compare the
+                ownership boundaries: the model proposes content, while parser and application code
+                own source geometry and persistence. The diagram is not an accuracy result.
+              </p>
+              <p>
+                This standalone application turns a born-digital PDF into per-page analysis with
+                inspectable citations. Strict contracts, tenant isolation, leased background jobs,
+                and page-by-page progress make the model output usable in an application.
               </p>
               <ul>
                 <li>One Pydantic AI call per page produces that page's summary, entities, and topics.</li>
@@ -188,23 +195,29 @@ export function DocumentIntelligenceArticle() {
             index={3}
             title="Four modes"
             subtitle="three analysis lenses per page plus one page-scoped conversation"
-            takeaway="Summary, Entities, and Topics are three views over the same per-page record; Chat answers only about the page in view, with bounded history and exact citations."
+            takeaway="Summary, Entities, and Topics are three views over the same per-page record; Chat answers only about the page in view, with bounded history and source-checked citations."
           >
             <div className="prose">
               <ul>
-                <li><strong>Summary:</strong> a page summary plus evidence-backed key points.</li>
+                <li><strong>Summary:</strong> a page summary plus key points with supporting quotes.</li>
                 <li><strong>Entities:</strong> literal mentions, normalized names, types, and citations.</li>
                 <li><strong>Topics:</strong> open, concise labels for the page with supporting passages.</li>
-                <li><strong>Chat:</strong> page-scoped conversation over the selected page with bounded history and exact citations.</li>
+                <li><strong>Chat:</strong> page-scoped conversation over the selected page with bounded history and source-checked citations.</li>
               </ul>
               <p>
-                Because all three analysis views come from one call, they stay coherent
-                with each other. Chat is deliberately scoped to the page in view: it
-                receives that page's parsed text and a bounded history window, and it can
-                discuss nothing else.
+                Because all three analysis views come from one call, they share one page record.
+                Chat is deliberately scoped to the page in view: it receives that page's parsed
+                text and a bounded history window, and it can discuss nothing else.
               </p>
             </div>
             <LazyFlowDiagram specId="auto-app-document-intelligence-1" />
+            <div className="prose">
+              <p>
+                The <strong>page-analysis sequence</strong> above shows where structured output,
+                validation, persistence, and partial progress occur. Use it to follow one page's
+                lifecycle; it does not show that the model's content is complete or correct.
+              </p>
+            </div>
           </AppArticleSection>
 
           <AppArticleSection
@@ -212,19 +225,23 @@ export function DocumentIntelligenceArticle() {
             index={4}
             title="Evidence & performance"
             subtitle="parser-resolved citations with page-by-page progress"
-            takeaway="Model-supplied coordinates are discarded: quotes re-match after a unicode fold across spans, table lines, and image placeholders — a quote matching nothing stays a visible error, never a silent guess."
+            takeaway="Model-supplied coordinates are discarded: each quote must match one contiguous parser passage after a unicode fold. Unmatched or synthetically joined quotes remain errors, never silent guesses."
           >
             <div className="prose">
               <p>
                 Every summary key point, entity, and topic carries verbatim quotes.
                 Model-supplied coordinates are discarded: each quote is matched after a
-                unicode compatibility fold (ligatures, curly quotes, dashes) across the
-                page's text spans, extracted table lines, and image placeholders. A quote
-                occurring on several passages resolves to the first whole-passage match
-                and surfaces a warning; a quote matching nothing stays a visible error
-                on that page. The literal entity mention must occur in its cited quote,
-                and only matching PyMuPDF-owned geometry contributes page and
+                unicode compatibility fold (ligatures, curly quotes, dashes) within one
+                parser-declared text span, extracted table line, or image placeholder.
+                Matching never joins disjoint regions. A quote occurring in several passages
+                resolves to the first whole-passage match and surfaces a warning; a quote matching
+                nothing stays a visible error on that page. The literal entity mention must occur
+                in its cited quote, and only matching PyMuPDF-owned geometry contributes page and
                 bounding-box coordinates.
+              </p>
+              <p>
+                This checks whether a quote exists in the source; it does not prove that the quote
+                supports the model's interpretation or that the analysis is complete.
               </p>
             </div>
             {renderMarkdown(EVIDENCE_SNIPPET)}
@@ -258,6 +275,12 @@ export function DocumentIntelligenceArticle() {
               />
             </div>
             <div className="prose">
+              <p>
+                Compare the <strong>summary and chat screenshots</strong>: both keep the source PDF
+                beside the model output, while chat narrows the question to the selected page.
+                Selecting a resolved citation highlights its source passage. The screenshots show
+                the interaction contract; the evaluation below supplies the quality evidence.
+              </p>
               <p>
                 The React client renders the PDF with <code>pdfjs-dist</code> and overlays only
                 backend-resolved coordinates. Summary, Entities, Topics, and Chat are the
@@ -297,38 +320,44 @@ export function DocumentIntelligenceArticle() {
             id="evaluation"
             index={7}
             title="Evaluation"
-            subtitle="page-level scorecards with evidence, latency, usage, and cost"
-            takeaway="Offline fixtures verify the application path without credentials; the executed kimi-for-coding run measured chat accuracy 1.00, citation support 1.00, evidence resolvability 1.00, entity F1 0.68, topic F1 0.50, zero page failures."
+            subtitle="page-level scorecards keep quality, evidence, and failure separate"
+            takeaway="The committed kimi-for-coding run covers seven synthetic documents and eight reference pages: summary support 0.818, entity F1 0.677, topic F1 0.500, and analysis miss rate 1.00. Zero page failures does not mean zero quality misses."
           >
             <div className="prose">
               <p>
-                The mixed-document harness scores analysis at page level against committed
-                non-sensitive references and retains per-page misses. Its report records
-                provider/model, prompt and schema versions, dataset revision, run errors,
-                and the exact evaluation method. There is no review step in the product, so
-                the harness reports no human correction rate; classification metrics are
-                gone with the retired document-level classifier.
+                The harness compares page output with committed references and retains every miss.
+                Offline fixtures verify the application path without credentials; only the explicit
+                live path measures a provider. The report records model, prompt/schema versions,
+                dataset revision, run errors, and evaluation methods.
               </p>
+              <p><strong>Acceptance rules</strong></p>
               <ul>
-                <li>Summary key-point coverage and citation support, per page.</li>
-                <li>Entity precision, recall, F1, and type accuracy, per page.</li>
-                <li>Topic label quality against page-level references.</li>
-                <li>Chat answer correctness and citation support; unresolved evidence, latency, usage, and cost.</li>
+                <li>Summary key-point coverage uses best-match normalized token F1 with a 0.55 threshold; citation support is scored separately.</li>
+                <li>Entities use exact normalized text/name/type matches; topics use exact canonical labels or declared aliases.</li>
+                <li>Chat correctness uses normalized token F1 with the same 0.55 threshold, separate from citation support.</li>
+                <li>Any uncovered or unsupported key point, entity/topic F1 below 1.0, wrong or unsupported answer, citation or validation error, page failure, or table/image count mismatch makes that reference page an analysis miss.</li>
               </ul>
-              <p>
-                The small synthetic corpus is a regression suite, not a universal accuracy
-                claim. Deterministic offline output proves the fixture-to-analysis-to-evidence
-                path without credentials. Live reports are generated only after an explicit
-                provider opt-in, and live numbers are re-measured on each run.
-              </p>
             </div>
             {renderMarkdown(EVAL_SNIPPET)}
             <div className="prose">
+              <p><strong>Committed live result — 2026-11-08, <code>kimi:kimi-for-coding</code></strong></p>
+              <table>
+                <thead><tr><th>measure</th><th>result</th><th>interpretation</th></tr></thead>
+                <tbody>
+                  <tr><td>corpus</td><td>7 documents / 8 reference pages</td><td>synthetic, born-digital regression fixtures</td></tr>
+                  <tr><td>summary coverage / citation support</td><td>0.818 / 0.818</td><td>both leave unsupported or uncovered reference points</td></tr>
+                  <tr><td>entity F1 / topic F1</td><td>0.677 / 0.500</td><td>compact references expose entity/topic over-extraction</td></tr>
+                  <tr><td>chat correctness / reference citations</td><td>1.00 / 1.00</td><td>perfect on these scripted questions, not general chat quality</td></tr>
+                  <tr><td>evidence resolvability / unsupported citations</td><td>1.00 / 0.00</td><td>source matching succeeds; semantic support remains separate</td></tr>
+                  <tr><td>page failure rate / analysis miss rate</td><td>0.00 / 1.00</td><td>no page crashed, but every reference page had at least one strict miss</td></tr>
+                  <tr><td>median case latency</td><td>38.5 s</td><td>31.9 s analysis plus 6.6 s chat medians, not an SLO</td></tr>
+                </tbody>
+              </table>
               <p>
-                <strong>Measured with <code>kimi-for-coding</code> on the committed synthetic corpus
-                (2026-11-08): chat answer accuracy 1.00 with reference citations 1.00, evidence
-                resolvability 1.00, entity F1 0.68, topic F1 0.50, zero page failures; per-page
-                misses are reported in the JSON.</strong>
+                This is one small provider run with no repeated-run variance estimate. Lexical and
+                exact-match metrics do not establish semantic correctness on other documents. Usage
+                and cost in this report are character-based estimates, not provider metering. There
+                is no human review step, correction-rate metric, or document-level classifier.
               </p>
               <p>
                 <a href={`${REPO}/reports/live-metrics.json`} target="_blank" rel="noopener noreferrer">inspect the current live report →</a>{" · "}

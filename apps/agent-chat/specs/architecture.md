@@ -116,8 +116,10 @@ flowchart LR
 
 ### 2. The approval leg (human-in-the-loop)
 
-`send_message` is the template's one consequential tool; any tool you add that
-acts on the world goes through the same gate:
+`send_message` is the template's one consequential-tool example. Its approved
+action only appends a `SentMessage` to in-memory run state; no external messaging
+provider is called. A real adapter must keep the external side effect after the
+same gate:
 
 1. The tool calls `ctx.deps.approvals.request(tool, summary)` before acting.
 2. In the API that gate (`_SseApprovalGate`) mints a 12-hex approval id,

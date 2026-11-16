@@ -261,9 +261,10 @@ by design (see the collection guard in `conftest.py`).
 - The SQLite stores are for local dev/tests; production uses Postgres
   (`database_url` switches). The SQLite vector store scans in Python — fine at
   template scale, not for large corpora.
-- `send_message` is the template's one consequential, approval-gated tool —
-  replace it with your own side-effecting tools behind the same
-  `ApprovalGate` protocol.
+- `send_message` is an in-memory HITL simulation: after approval it appends a
+  `SentMessage` to run state and no external messaging provider is called.
+  Replace it with a real adapter behind the same `ApprovalGate` protocol, keeping
+  the external side effect after the approval decision.
 - HNSW indexing is created by `PgVectorStore.init()`; embedding quality with
   the hashing embedder is lexical, not semantic — switch to MiniLM for real
   retrieval.

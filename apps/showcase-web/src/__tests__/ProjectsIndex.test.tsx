@@ -761,9 +761,9 @@ describe("ProjectsIndex", () => {
     expect(css.match(/\.app-card__title--link::after \{[\s\S]*?\n\}/)![0]).toContain("position: absolute;");
     expect(card.textContent).toContain("pydantic-ai");
     expect(card.textContent).toContain("pgvector");
-    expect(card.querySelector(".study-result-chip")!.textContent).toBe("108/108 Kimi eval ×3");
+    expect(card.querySelector(".study-result-chip")!.textContent).toBe("16 cases ×3 · 108/108 assertions");
     expect(cards[1].querySelector("img")!.getAttribute("src")).toBe("/apps/document-intelligence-summary.png");
-    expect(cards[1].querySelector(".study-result-chip")!.textContent).toBe("page-level · 4 AI modes");
+    expect(cards[1].querySelector(".study-result-chip")!.textContent).toBe("7 PDFs · 8 pages · miss rate 1.00");
   });
 
   it("links the glossary from the experiments section description", async () => {

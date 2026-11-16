@@ -30,7 +30,7 @@ export const APPS: AppEntry[] = [
     does: "pydantic-ai v2 agent (Kimi, local Ollama or hosted, with fallback), FastAPI streaming SSE, Postgres + pgvector memory and retrieval, React chat surface in the terminal design language",
     achieves: "swap the tools, keep the chassis — skills load from folders, providers switch by env, one command stands up the stack",
     stack: ["pydantic-ai", "FastAPI", "Postgres + pgvector", "React + TS", "docker compose"],
-    result: "108/108 Kimi eval ×3",
+    result: "16 cases ×3 · 108/108 assertions",
     screenshot: "/apps/agent-chat-approval-v3.png",
     links: [
       { label: "[code]", href: "https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat" },
@@ -42,11 +42,11 @@ export const APPS: AppEntry[] = [
     title: "AI Document Intelligence Workbench",
     href: "/apps/document-intelligence",
     summary:
-      "A page-level PDF analysis workbench: one AI call per page produces a cited summary, typed entities, and topics, with a fourth page-scoped chat mode — every claim parser-resolved to its exact source.",
+      "A page-level PDF analysis workbench: one AI call per page produces a summary, typed entities, and topics, with a fourth page-scoped chat mode — quotes are checked against parser-owned source passages.",
     does: "FastAPI + separate leased worker, per-page Pydantic AI structured output, PyMuPDF evidence coordinates, page-by-page progress with partial pages visible, and a React workbench with JSON/Markdown reports",
-    achieves: "read a PDF page by page with AI — verify every citation deterministically, watch pages complete, and download full or selected-page reports",
+    achieves: "read a PDF page by page with AI — check citations deterministically, watch pages complete, and download full or selected-page reports",
     stack: ["pydantic-ai", "FastAPI", "Postgres", "React + TS", "PyMuPDF"],
-    result: "page-level · 4 AI modes",
+    result: "7 PDFs · 8 pages · miss rate 1.00",
     screenshot: "/apps/document-intelligence-summary.png",
     links: [
       { label: "[code]", href: "https://github.com/amm-ds/portfolio/tree/main/apps/document-intelligence" },

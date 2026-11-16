@@ -9,13 +9,17 @@ import { usePageMeta } from "../seo";
 const REPO = "https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat";
 
 const TOOL_SNIPPET = `\`\`\`python
-async def send_message(ctx: RunContext[ChatDeps], subject: str, body: str) -> str:
-    """Send a team message. CONSEQUENTIAL: requires human approval."""
-    summary = f"{subject}: {body[:160]}"
-    if not await ctx.deps.approvals.request("send_message", summary):
-        return "Message NOT sent: denied by operator."
-    # Provider call happens only after explicit approval.
-    ...
+async def send_message(ctx: RunContext[ChatDeps], channel: str, text: str) -> str:
+    """Demonstrate an approval-gated action. No external provider is called."""
+    summary = f"post to #{channel}: {text[:120]}"
+    approved = await ctx.deps.approvals.request(
+        "send_message", summary, {"channel": channel, "text": text}
+    )
+    if not approved:
+        return f"Message to #{channel} NOT sent: denied by operator."
+    # In-memory HITL simulation: record the approved message in run state.
+    ctx.deps.sent.append(SentMessage(channel=channel, text=text))
+    return f"Message sent to #{channel}."
 \`\`\``;
 
 const PROVIDER_SNIPPET = `\`\`\`bash
@@ -106,9 +110,10 @@ export function AgentChatArticle() {
         <p className="kicker">&gt; apps / agent-chat</p>
         <h1>Chatbot agent — production template</h1>
         <p className="detail-lead">
-          A modular agent you can lift out and adapt: typed tools and toolsets, disk-loaded
-          skills, pgvector retrieval, durable memory, human approval for consequential actions,
-          and a streaming chat UI.
+          A lift-out agent chassis with typed tools, retrieval, durable memory, human approvals,
+          and a streaming UI. The committed Kimi evaluation repeats one 16-case suite three times:
+          all 108 grader assertions pass in total. The messaging action is an in-memory simulation,
+          and this provider-specific suite is not a deployment gate.
         </p>
         <div className="chips" aria-label="Technology stack">
           {["Agentic AI", "FastAPI", "Postgres + pgvector", "React + TypeScript"].map((tech) => (
@@ -169,17 +174,23 @@ export function AgentChatArticle() {
             id="objectives"
             index={2}
             subtitle="typed tools, bounded runs, and explicit side effects"
-            takeaway="The model proposes actions; the runtime decides. Typed tools own their schema, per-run budgets stop loops, and a consequential tool cannot fire before the human approval gate resolves."
+            takeaway="The model proposes actions; the runtime gates them. The shipped send_message tool demonstrates that gate by recording an approved message in memory — it never contacts a messaging provider."
           >
             <div className="prose">
               <p>
-                Tools own their model-facing schema through typed functions and docstrings.
-                Consequential tools use the same approval protocol as the demo <code>send_message</code>
-                tool: no provider call or external side effect occurs before the gate resolves.
+                Typed functions and docstrings define what arguments a tool accepts. A consequential
+                tool must wait for the approval gate before acting. In the shipped
+                <code>send_message</code> example, approval appends a <code>SentMessage</code> to
+                in-memory run state; denial or timeout records nothing.
               </p>
             </div>
             {renderMarkdown(TOOL_SNIPPET)}
             <div className="prose">
+              <p>
+                <strong>No external message is sent.</strong> The confirmation text describes the
+                simulated record, not delivery. An adopter must supply a real messaging adapter and
+                place its external call after the same approval decision.
+              </p>
               <p>
                 The agent finishes with a validated <code>Answer</code> containing text, citations,
                 and uncertainty. Request and token budgets stop runaway loops; output-validation
@@ -203,6 +214,11 @@ export function AgentChatArticle() {
             <LazyFlowDiagram specId="app-agent-chat-architecture" />
             <div className="prose">
               <p>
+                The <strong>architecture diagram</strong> above separates the browser, FastAPI,
+                agent, provider, retrieval, and stores. Use it to compare the replaceable seams;
+                it describes component boundaries, not measured quality or scale.
+              </p>
+              <p>
                 Retrieval returns source-addressed passages. The model sees only relevant tools
                 and deferred skill descriptions, then produces the structured output. Provider
                 selection lives in one factory and supports Kimi, local Ollama, generic
@@ -218,12 +234,16 @@ export function AgentChatArticle() {
             <LazyFlowDiagram specId="auto-app-agent-chat-1" />
             <div className="prose">
               <p>
+                The <strong>approval sequence diagram</strong> above follows the request and decision
+                on one SSE stream. It does not imply durable execution: pending approvals live in
+                the API process, not a workflow store.
+              </p>
+              <p>
                 Pydantic AI also provides <a href="https://ai.pydantic.dev/deferred-tools/" target="_blank" rel="noopener noreferrer">native deferred tools</a>:
                 a run can return <code>DeferredToolRequests</code> and later resume from saved history
                 with <code>DeferredToolResults</code>. That model is a better fit for long-running or
                 cross-process work. This template keeps its explicit gate because the interactive UI
-                needs approval events on the same continuous SSE stream while the current run waits;
-                the trade-off is that pending approvals live in the API process, not a durable workflow store.
+                needs approval events on the same continuous SSE stream while the current run waits.
               </p>
             </div>
           </ArticleSection>
@@ -246,6 +266,14 @@ export function AgentChatArticle() {
                 caption="The run pauses for an explicit approve/deny decision."
               />
             </div>
+            <div className="prose">
+              <p>
+                Compare the <strong>workspace and approval screenshots</strong>: the first exposes
+                tool evidence beside the answer; the second holds the simulated messaging action for
+                an operator decision. They demonstrate interaction and state, not external delivery
+                or answer correctness.
+              </p>
+            </div>
             <div className="app-video">
               <video controls preload="metadata" playsInline poster="/apps/agent-chat-ui-v3.png">
                 <source src="/apps/agent-chat-demo.webm" type="video/webm" />
@@ -266,11 +294,9 @@ export function AgentChatArticle() {
                   stored fact. The clip uses the same public UI and typed SSE contract shown below.
                 </p>
                 <p>
-                  The WebM and MP4 come from the same clean 44.8-second browser recording against
-                  <code>kimi-for-coding</code>, with fresh conversations rather than mock transport.
-                  The recorder now waits for a new run's final usage and validates the complete memory
-                  acknowledgement and recall before publishing. Versioned screenshots and matching
-                  scene captions keep the evidence reproducible and prevent stale cached results.
+                  The 44.8-second recording uses <code>kimi-for-coding</code> and fresh conversations
+                  rather than mock transport. It is a UI walkthrough, not an independent evaluation;
+                  the approval scene still uses the in-memory messaging simulation.
                 </p>
               </div>
             </div>
@@ -325,40 +351,47 @@ export function AgentChatArticle() {
                 caption="One complete fact is recalled in a new conversation within the same browser session."
               />
             </div>
+            <div className="prose">
+              <p>
+                The <strong>memory screenshot</strong> above shows one selective recall in a new
+                conversation. It demonstrates namespace reuse, not semantic memory quality or
+                secure multi-tenant identity.
+              </p>
+            </div>
           </ArticleSection>
 
           <ArticleSection
             id="evaluation"
             index={6}
-            subtitle="deterministic graders offline, the same suite against a real provider"
-            takeaway="Sixteen scripted cases, exact graders, no judges — 108/108 assertions passed in each of three kimi-for-coding runs, with denials, verbatim citations, and cross-conversation memory graded separately."
+            subtitle="deterministic graders offline, the same 16 cases against a real provider"
+            takeaway="One 16-case suite was repeated three times with kimi-for-coding: all 108 grader assertions across those repetitions passed. This is a provider-specific regression snapshot, not 108 independent cases or a deployment gate."
           >
             <div className="prose">
               <p>
-                A 16-case suite uses scripted fake models for deterministic CI. Exact tool-set
-                assertions replace subjective judging; refusal probes cover prompt leaks,
-                unsupported requests, and financial actions. A complete memory acknowledgement is
-                graded separately from recall in a fresh conversation.
+                Scripted fake models make the suite deterministic in CI; the real-model path applies
+                the same cases and exact graders to the configured provider. No LLM judges the answers.
               </p>
+              <p><strong>Acceptance checks</strong></p>
+              <ul>
+                <li><strong>Tools and refusals:</strong> exact tool sets, expected answer keywords, no unnecessary tool call, and graceful refusal of prompt leaks, unsupported requests, and financial actions.</li>
+                <li><strong>Approval:</strong> approved and denied messaging paths, including the expected in-memory message records.</li>
+                <li><strong>Grounding and memory:</strong> citations when retrieval grounded the answer, complete memory acknowledgement, and recall in a fresh conversation.</li>
+              </ul>
             </div>
             {renderMarkdown(EVAL_SNIPPET)}
             <div className="prose">
               <p>
-                The real-model path runs the same cases and graders against the configured provider.
-                The runner writes a Markdown report with model identity, per-case verdicts, and failure diagnostics.
+                <strong>Committed result with <code>kimi-for-coding</code>: 108/108 assertions passed
+                across three repetitions of the same 16 cases.</strong> That is 48 case executions,
+                not 108 independent tasks. The report lists model identity, per-case verdicts, and
+                failure diagnostics.
               </p>
               <p>
-                <strong>Measured result with <code>kimi-for-coding</code>: 108/108 assertions passed in each of three repetitions.</strong>{" "}
-                The release gate covers exact tools and message text, denied side effects, verbatim
-                evidence citations, cross-conversation memory, graceful refusals, and zero unnecessary
-                tool calls. Grounded citation repair selects only exact retrieved text; it cannot invent
-                a source or quote.
+                Repeating a fixed suite does not measure fresh-task generalization, prose quality,
+                real messaging delivery, or acceptance for another provider. Treat it as regression
+                evidence only. Run provider-specific checks after model, prompt, tool, or retrieval
+                changes, review failures, and define a separate production acceptance gate.
               </p>
-              <ul>
-                <li>Run provider-specific regression gates after model, prompt, tool, or retrieval changes.</li>
-                <li>Review the failed answers before deciding whether to fix the system or refine an incorrect expectation.</li>
-                <li>Keep consequential actions supervised until the deployed provider meets an explicit acceptance threshold.</li>
-              </ul>
               <p>
                 <a href={`${REPO}/reports/evals-kimi-for-coding.md`} target="_blank" rel="noopener noreferrer">
                   read the measured report →

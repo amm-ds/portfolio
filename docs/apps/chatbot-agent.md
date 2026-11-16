@@ -18,8 +18,10 @@ gate for consequential actions, and per-run budgets, all behind one FastAPI
 surface that streams every step as typed SSE events. The first edit is a
 string; the seams (provider, store, embedder, approvals) are protocols with
 documented swap points. The offline suite and a 16-case eval suite run fully
-offline; the same graders score your real deployment. The measured Kimi
-release gate passes **108/108 assertions in each of three repetitions**; see the
+offline; the same graders can score a configured provider. The committed Kimi
+report repeats those 16 cases three times and passes **108/108 grader assertions
+in total**. This provider-specific regression snapshot is not 108 independent
+cases or a deployment gate; see the
 [committed report](https://github.com/amm-ds/portfolio/blob/main/apps/agent-chat/reports/evals-kimi-for-coding.md).
 
 [App source, specs, and adaptation guide on GitHub →](https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat)
@@ -94,9 +96,11 @@ without crashing.
 
 ## The human-in-the-loop flow
 
-`send_message` — post to a team channel — is the template's one consequential
-tool, and it is the pattern every side-effecting tool you add is expected to
-follow. The decision rides the same SSE stream as the conversation:
+`send_message` demonstrates the template's consequential-tool pattern. It is an
+**in-memory HITL simulation**: approval records a `SentMessage` in run state, but
+no external messaging provider is called and no message leaves the process. A
+real adapter belongs behind the same gate, with its external call after approval.
+The decision rides the same SSE stream as the conversation:
 
 1. Before acting, the tool calls `ctx.deps.approvals.request(tool, summary)`.
 2. The API's approval hub mints an id, emits `approval_request` on the run's
