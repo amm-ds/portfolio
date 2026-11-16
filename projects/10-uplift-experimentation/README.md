@@ -22,9 +22,9 @@ prepare   fetch Hillstrom (sha256-pinned) → DQ gates → two-arm frame (+ thre
           frame for the multi-arm read) + EDA
 train     5-fold cross-fitting → out-of-fold scores per policy:
           response model | T-learner | X-learner | per-arm T-learners
-          (uplift_mens, uplift_womens vs the shared control)
-evaluate  Qini coefficients, profit frontier, CUPED, power analysis, policy
-          + multi-arm best-arm policy (model-estimated), per-arm Qini
+          + Mens/Womens/control outcome nuisances for DR/IPW
+evaluate  Qini coefficients, profit frontier, CUPED, power analysis, per-arm
+          AUUC + observed-outcome multi-arm DR/IPW + separate planning curves
 ```
 
 ```bash
@@ -107,60 +107,59 @@ Qini area and profit-at-budget disagree for the response model (highest
 area, lowest budget profit): the policy is chosen on the money, the curve
 explains why.
 
-## Multi-arm read (three-arm frame, model-estimated — new capability)
+## Multi-arm read (observed policy value + separate planning)
 
-The experiment is upgraded to a multi-treatment read while the two-arm results
-above stay the primary, committed comparison. Each arm is scored against the
-shared No E-Mail control with a cross-fitted T-learner (`uplift_mens`,
-`uplift_womens`; the Mens-arm fit reuses the binary run's seed stream, so its
-per-arm scores reproduce the committed T-learner exactly). A **best-arm
-policy** then recommends, per customer, the arm with the highest estimated
-uplift — no send when both scores are ≤ 0 or tied.
+The two-arm results above stay primary. Each three-arm row has out-of-fold
+Mens/Womens/control outcome predictions, plus per-arm cross-fitted T-learner
+uplift scores. A **best-arm policy** recommends the highest estimated uplift,
+with no send when both scores are ≤0 or tied. The observed-outcome and planning
+evaluations below are deliberately separate.
 
-Because no randomized assignment realizes the recommended arm mix, every
-policy-level number here is **model-estimated** (incremental conversions =
-summed predicted uplift over the targeted set — planning numbers, not
-counterfactual claims; predicted magnitudes run ~2× hot per the decile check,
-so use the levels to rank policies, not to forecast revenue). Only the
-per-arm Qini contrasts below are empirical causal reads.
+**Per-arm AUUC** (the unnormalized Qini coefficient on randomized
+arm-vs-control pairs; paired-bootstrap 95% CIs, n=1000):
 
-**Per-arm Qini** (randomized arm-vs-control pairs; 95% CIs from the paired
-bootstrap, n=1000, seeded):
-
-| arm | Qini [95% CI] | incremental conversions @ full send |
+| arm | AUUC [95% CI] | incremental conversions @ full send |
 |---|---|---|
-| Mens (per-arm = committed binary T-learner) | 12.03 [−0.47, 24.21] | 145.0 |
+| Mens (same score as the primary binary T-learner) | 12.03 [−0.47, 24.21] | 145.0 |
 | Womens | 3.37 [−6.78, 13.75] — spans zero, not established | 66.5 |
-| binary T-learner (two-arm, committed) | 12.03 | 145.0 |
 
-The Womens arm's conversion lift is small and its ranking signal is not
-established — consistent with the EDA read (0.88% vs 0.57% conversions).
+**Observed-outcome policy value.** Five-fold outcome nuisances and known 1/3
+assignment probabilities support cross-fitted doubly robust (DR) and IPW reads.
+Best-arm and single-arm mail exactly 25%; random is stochastic, with 25% offered
+the recommended arm and `none` offers reassigned to control (24.1% mailed).
+Profit uses $114 revenue per incremental conversion and $0.01 per email.
 
-**Recommended-arm distribution** (argmax per customer): Mens 76.0% /
-Womens 20.2% / none 3.8%.
-
-**Policy ladder** (model-estimated profit, $114 revenue / $0.01 per email;
-95% CIs from a paired row bootstrap of the per-arm scores, n=1000,
-seed 2041):
-
-| policy | Qini (model-est.) | profit @ 25% budget [95% CI] |
+| policy | DR profit [95% CI] | IPW profit [95% CI] |
 |---|---|---|
-| **best-arm** | 121.20 | **$35,514 [$35,060, $35,973]** |
+| best-arm @25% | $17,967 [$10,881, $25,459] | $18,650 [$11,468, $26,174] |
+| single-arm Mens @25% | $20,869 [$13,853, $28,247] | $20,702 [$13,862, $27,893] |
+| random, stochastic | $10,977 [$8,089, $14,202] | $10,363 [$7,370, $13,526] |
+| mail-everyone-Mens | $48,684 [$36,051, $62,016] | $48,950 [$35,612, $62,288] |
+| mail-everyone-Womens | $21,953 [$10,680, $33,971] | $22,274 [$11,330, $33,911] |
+
+Paired DR differences show best-arm beating random by **$6,990
+[$1,107, $13,282]**, but not beating single-arm Mens: **−$2,902
+[−$7,702, $1,965]** spans zero. Full Mens mailing beats best-arm by $30,718
+[$19,787, $42,306] at this send cost. Thus the data support useful targeting
+over random, not superiority of per-customer channel choice. Bootstrap intervals
+hold the cross-fitted models and rules fixed and omit model-refit uncertainty.
+
+**Model-estimated planning.** The original summed-predicted-uplift layer remains
+available for cost/fraction simulation; it is not observed profit. Predicted
+magnitudes run ~2× hot per the decile check. Recommended-arm shares are Mens
+76.0% / Womens 20.2% / none 3.8%.
+
+| policy | Qini (model-est.) | planning profit @25% [95% CI] |
+|---|---|---|
+| best-arm | 121.20 | $35,514 [$35,060, $35,973] |
 | single-arm (Mens only) | 131.73 | $29,487 [$29,158, $29,800] |
 | random | 0.0 | $16,563 [$16,429, $16,699] |
 | mail-everyone-mens | 0.0 | — (full-mail $49,819) |
 | mail-everyone-womens | 0.0 | — (full-mail $21,287) |
 
-Paired differences (best-arm minus comparator) exclude zero across the board:
-vs single-arm **[+$5,742, +$6,347]**, vs random **[+$18,619, +$19,269]**.
-Break-even vs mail-everyone-mens: the best-arm policy overtakes full mailing
-above **≈$0.31/email** — essentially the same fatigue threshold as the
-two-arm read (≈$0.30). The model-estimated Qini area ranks single-arm above
-best-arm (paired diff [−12.48, −8.63]) while the budget profit ranks
-best-arm higher — same lesson as the two-arm ladder: Qini explains, profit
-decides. Caveat: these intervals resample rows, not models; within-model
-precision only (the two-arm ranking verdict shows how wide Qini gets across
-refits). Full numbers in `reports/metrics.json` under `multi_arm`.
+Planning-only paired differences and the ≈$0.31 best-arm break-even must not be
+read as randomized outcomes. Full numbers live under `multi_arm.policy_value`
+(observed DR/IPW) and `multi_arm.policies` (planning) in `reports/metrics.json`.
 
 **The honest caveat:** predicting conversions ≠ changing them — same lesson
 as Project 05's fairness finding on the retention side. The decile check
@@ -178,11 +177,12 @@ is noisy, and the X-learner's second stage adds variance without signal here
   `recommended_arm_distribution`
 - Metrics: `reports/metrics.json` (policy ladder + `_meta.cuped/power/deciles`
   + `_meta.ci` bootstrap intervals and `_meta.cost_sensitivity` sweep +
-  `_meta.cuped_multivariate`; the multi-arm read lives in the top-level
-  `multi_arm` block)
+  `_meta.cuped_multivariate`; `multi_arm.policy_value` holds observed DR/IPW and
+  `multi_arm.policies` holds model-estimated planning; unavailable values are null)
 - Report: `reports/report.html` · Segment summary: `reports/segment_summary.json`
 - Scores: `data/scores.parquet` (two-arm + per-arm uplift columns) ·
-  `data/scores_multi.parquet` (three-arm scored frame)
+  `data/scores_multi.parquet` (three-arm scores + out-of-fold outcome nuisances)
+- Demo: `reports/demo_payload.json` (planning grids + observed DR/IPW scalars)
 - Dataset identity: `data/dataset_contract.json` ·
   [dataset card](../../docs/data-registry/hillstrom.md)
 
@@ -190,8 +190,10 @@ is noisy, and the X-learner's second stage adds variance without signal here
 
 At $0.01 per email, mailing everyone beats uplift targeting (paired CI below
 zero) — targeting pays only when sending is costly (break-even ≈ $0.30). The
-multi-arm read is model-estimated, not a randomized three-arm fact, and the
-Qini-curve-area ranking is not established (spans zero).
+response-versus-T and per-arm AUUC rankings are not established. Multi-arm
+best-arm beats random on observed DR/IPW, but its advantage over single-arm Mens
+is inconclusive. Planning dollars remain model-estimated, and every row bootstrap
+omits model-refit uncertainty. One 2008 campaign still needs prospective validation.
 
 ## Reproduce
 

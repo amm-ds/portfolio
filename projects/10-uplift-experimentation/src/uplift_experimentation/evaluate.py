@@ -4,9 +4,9 @@ Reads the cross-fitted scores from the train stage and produces every artifact
 the report needs: per-policy Qini coefficients with paired-bootstrap CIs,
 decile checks, profit under the campaign cost model (frontier + cost
 sensitivity), the CUPED variance-reduction panel (univariate + multivariate),
-the analytic power analysis, and the secondary multi-arm read (per-arm Qini,
-best-arm policy, recommended-arm distribution) — plus the eight themed
-figures (HTML + JSON).
+the analytic power analysis, and the secondary multi-arm read (per-arm AUUC,
+observed-outcome DR/IPW policy values, model-estimated planning, and recommended
+arms) — plus the eight themed figures (HTML + JSON).
 """
 
 import json
@@ -48,6 +48,7 @@ from uplift_experimentation.multiarm import (
     per_arm_qini_read,
     recommend_arm,
 )
+from uplift_experimentation.policy_value import policy_value_read
 from uplift_experimentation.power import power_read
 from uplift_experimentation.qini import (
     bootstrap_policy_stats,
@@ -438,7 +439,7 @@ def cuped_multivariate_read(cfg: UpliftConfig, df: pd.DataFrame) -> dict[str, An
 
 
 # ---------------------------------------------------------------------------
-# Multi-arm read (secondary, model-estimated — see multiarm.py for conventions)
+# Multi-arm read (observed DR/IPW policy value + separate model-estimated planning)
 # ---------------------------------------------------------------------------
 
 
@@ -450,9 +451,9 @@ def multi_arm_read(
     """Assemble the ``multi_arm`` metrics block from the three-arm scored frame.
 
     Combines: the recommended-arm distribution, per-arm EMPIRICAL Qini reads on
-    the randomized pairs, the MODEL-ESTIMATED policy comparison (best-arm vs
-    single-arm/random/mail-everyone) with paired-bootstrap CIs, and the best-arm
-    break-even send cost vs mail-everyone-mens. The committed two-arm numbers
+    the randomized pairs, OBSERVED-OUTCOME cross-fitted DR/IPW policy values,
+    the separate MODEL-ESTIMATED planning comparison with paired-bootstrap CIs,
+    and the best-arm break-even send cost vs mail-everyone-mens. The committed two-arm numbers
     are embedded unchanged under each policy's ``two_arm_reference`` where
     applicable. Returns (json-serializable block, per-arm figure curves).
     """
@@ -595,6 +596,15 @@ def multi_arm_read(
             "womens": float(u_w.sum()),
         },
         "per_arm": per_arm,
+        "policy_value": policy_value_read(
+            df_multi,
+            budget=cfg.policy_budget,
+            revenue_per_conversion=cfg.revenue_per_conversion,
+            cost_per_email=cfg.cost_per_email,
+            n_boot=cfg.bootstrap_reps,
+            seed=cfg.seed + 2999,
+            cv_folds=cfg.cv_folds,
+        ),
         "policies": policies,
         "ci": {
             "method": "paired row bootstrap of per-arm uplift scores, percentile interval; "
@@ -610,10 +620,10 @@ def multi_arm_read(
             "formula": "c* = revenue * (inc_mens(1) - inc_best(budget)) / (N * (1 - budget)); "
             "incremental conversions are model-estimated (summed predicted uplift)",
         },
-        "note": "Multi-arm read is MODEL-ESTIMATED at the policy level: incremental "
-        "conversions are summed predicted uplift over the targeted set, not observed "
-        "counterfactuals. Only the per-arm Qini/A-B contrasts on the randomized "
-        "arm-vs-control pairs are empirical causal reads.",
+        "note": "The policies block is MODEL-ESTIMATED planning: incremental conversions "
+        "are summed predicted uplift, not observed counterfactuals. The separate "
+        "policy_value block evaluates the same policy rules with cross-fitted DR/IPW on "
+        "observed randomized outcomes; per-arm Qini/A-B contrasts remain empirical reads.",
     }
     return block, arm_curves
 
@@ -877,39 +887,37 @@ def cuped_figure(reads: dict[str, dict[str, float]]) -> go.Figure:
 # ---------------------------------------------------------------------------
 
 
-def qini_per_arm_figure(
-    arm_curves: dict[str, tuple[np.ndarray, np.ndarray]],
-    binary_curve: tuple[np.ndarray, np.ndarray],
-) -> go.Figure:
-    """Empirical Qini curves per arm on the randomized pairs (+ committed binary read)."""
+def qini_per_arm_figure(per_arm: dict[str, Any]) -> go.Figure:
+    """Per-arm AUUC with paired-bootstrap intervals on randomized arm/control pairs."""
     fig = go.Figure()
-    arm_curves = {arm: _fig_curve(fr, inc) for arm, (fr, inc) in arm_curves.items()}
-    fr_b, inc_b = _fig_curve(*binary_curve)
-    arm_style = {"mens": {"color": "#fbbf24"}, "womens": {"color": "#f472b6"}}
-    for arm in ("mens", "womens"):
-        fr, inc = arm_curves[arm]
-        fig.add_scatter(x=fr, y=inc, mode="lines", name=f"uplift_{arm}")
-    fig.add_scatter(
-        x=fr_b,
-        y=inc_b,
-        mode="lines",
-        name="binary t_learner (two-arm, committed)",
-        line={"color": "#2dd4bf", "dash": "dash"},
+    arms = ("mens", "womens")
+    points = [float(per_arm[arm]["qini_coefficient"]) for arm in arms]
+    cis = [per_arm[arm]["qini_ci"] for arm in arms]
+    fig.add_bar(
+        x=list(arms),
+        y=points,
+        marker_color=["#fbbf24", "#f472b6"],
+        error_y={
+            "type": "data",
+            "symmetric": False,
+            "array": [max(0.0, ci[1] - point) for ci, point in zip(cis, points, strict=True)],
+            "arrayminus": [max(0.0, point - ci[0]) for ci, point in zip(cis, points, strict=True)],
+        },
+        text=[f"{point:.2f}" for point in points],
+        textposition="outside",
+        name="AUUC [95% CI]",
     )
     apply_theme(fig)
-    style_runs(fig)
-    for trace in fig.data:
-        style = arm_style.get(str(getattr(trace, "name", "") or "").replace("uplift_", ""))
-        if style is not None:
-            trace.update(line=style)
     fig.update_layout(
-        title="Per-arm Qini curves (randomized arm vs control pairs)",
-        xaxis_title="fraction of pair rows targeted (top scores first)",
-        yaxis_title="incremental conversions (empirical arm contrast)",
+        title="Per-arm AUUC on randomized arm vs control pairs",
+        xaxis_title="email arm (each compared with shared control)",
+        yaxis_title="area under Qini curve minus random (conversions)",
+        showlegend=False,
     )
     add_takeaway(
         fig,
-        "each arm scored by its own cross-fitted T-learner; dashed = committed two-arm T-learner",
+        "cross-fitted T-learner ranking per arm; error bars = paired row-bootstrap 95% CIs; "
+        "Mens duplicates the primary two-arm score and is not overlaid again",
     )
     return fig
 
@@ -1002,6 +1010,22 @@ def recommended_arm_figure(shares: dict[str, float]) -> go.Figure:
 # ---------------------------------------------------------------------------
 
 
+def _json_safe(value: Any) -> Any:
+    """Convert non-finite floats to JSON null and reject other invalid JSON values."""
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, (float, np.floating)) and not math.isfinite(float(value)):
+        return None
+    return value
+
+
+def write_metrics_json(metrics: dict[str, Any], path: Path) -> None:
+    """Write standard JSON: unavailable values are null, never NaN/Infinity."""
+    path.write_text(json.dumps(_json_safe(metrics), indent=2, allow_nan=False))
+
+
 def _money(x: float) -> str:
     return f"${x:,.0f}"
 
@@ -1017,7 +1041,28 @@ def _ci_str(ci: list[float]) -> str:
 def _add_multi_arm_section(
     report: EvalReport, cfg: UpliftConfig, multi_arm: dict[str, Any]
 ) -> None:
-    """Report the multi-arm read: policy ladder, per-arm Qini, arm shares, verdict."""
+    """Report observed-outcome policy values, planning reads, and per-arm evidence."""
+    value = multi_arm["policy_value"]
+    value_rows = [
+        "| policy | DR incremental conversions [95% CI] | DR profit [95% CI] "
+        "| IPW profit [95% CI] |",
+        "|---|---|---|---|",
+    ]
+    for policy in MULTI_ARM_POLICIES:
+        read = value["policies"][policy]
+        dr = read["dr"]
+        ipw = read["ipw"]
+        value_rows.append(
+            f"| {policy} | {dr['incremental_conversions_vs_no_email']:.1f} "
+            f"{_ci_str(dr['incremental_conversions_vs_no_email_ci'])} "
+            f"| {_money(dr['profit'])} {_ci_str(dr['profit_ci'])} "
+            f"| {_money(ipw['profit'])} {_ci_str(ipw['profit_ci'])} |"
+        )
+    report.add_markdown_table(
+        "Multi-arm policy value (observed outcomes, cross-fitted DR/IPW)",
+        "\n".join(value_rows),
+    )
+
     ma_rows = [
         f"| policy | Qini [95% CI] | profit @ {cfg.policy_budget * 100:.0f}% budget "
         "[95% CI] | Δ vs random |",
@@ -1081,17 +1126,22 @@ def _add_multi_arm_section(
         )
     ba = multi_arm["policies"]["best_arm"]
     be = multi_arm["best_arm_break_even"]
+    value_pair = value["pairs"]["best_arm - single_arm"]["dr"]
     report.add_html(
         "Multi-arm read, honestly stated",
         "<p>This block upgrades the experiment to a multi-treatment read: each arm "
         "is scored against the shared control with a cross-fitted T-learner, and a "
         "<b>best-arm policy</b> recommends the arm with the highest estimated uplift "
-        "per customer (no send when both scores are ≤ 0 or tied). Because no "
-        "randomized assignment realizes the recommended arm mix, every policy-level "
-        "number here is <b>model-estimated</b> — incremental conversions are the "
+        "per customer (no send when both scores are ≤ 0 or tied). The policy-value "
+        "table evaluates fixed policy rules on observed randomized outcomes using "
+        "cross-fitted DR/IPW. Its paired DR best-arm-minus-single-arm profit interval "
+        f"is [{_money_signed(value_pair['profit_diff_ci'][0])}, "
+        f"{_money_signed(value_pair['profit_diff_ci'][1])}] "
+        f"({'spans zero' if value_pair['spans_zero'] else 'excludes zero'}). The separate "
+        "planning ladder remains <b>model-estimated</b>: incremental conversions are "
         "summed predicted uplift over the targeted set, not observed counterfactuals. "
-        "Only the per-arm Qini/A-B contrasts above are empirical causal reads. Two "
-        "caveats travel with every figure: predicted magnitudes run hot (the decile "
+        "Per-arm Qini/A-B contrasts are also empirical causal reads. Two "
+        "caveats travel with the planning figures: predicted magnitudes run hot (the decile "
         "check shows ~2x inflation, and the full-base sums include deployment-style "
         "scores for the other arm's customers), so the dollar LEVELS are optimistic "
         "planning numbers — use them to RANK policies, not to forecast revenue; and "
@@ -1355,7 +1405,7 @@ def evaluate_core(cfg: UpliftConfig) -> Path:
     deciles = decile_table(cfg, df, best)
     ci_meta, bands, band_grid = bootstrap_ci_read(cfg, df)
     cost_sens = cost_sensitivity_read(cfg, curves, best, len(df))
-    multi_arm, arm_curves = multi_arm_read(cfg, df_multi, policy_metrics)
+    multi_arm, _arm_curves = multi_arm_read(cfg, df_multi, policy_metrics)
     curves_multi = multi_arm_policy_curves(
         df_multi["uplift_mens"].to_numpy(dtype=float),
         df_multi["uplift_womens"].to_numpy(dtype=float),
@@ -1367,7 +1417,7 @@ def evaluate_core(cfg: UpliftConfig) -> Path:
         "profit_frontier": profit_figure(cfg, curves, len(df)),
         "cuped_variance": cuped_figure(cuped),
         "cost_sensitivity": cost_sensitivity_figure(cost_sens, cfg),
-        "qini_per_arm": qini_per_arm_figure(arm_curves, curves["t_learner"]),
+        "qini_per_arm": qini_per_arm_figure(multi_arm["per_arm"]),
         "profit_frontier_multi_arm": profit_frontier_multi_arm_figure(
             cfg, curves_multi, len(df_multi)
         ),
@@ -1405,7 +1455,7 @@ def evaluate_core(cfg: UpliftConfig) -> Path:
         },
         "deciles": deciles,
     }
-    (cfg.reports_dir / "metrics.json").write_text(json.dumps(metrics, indent=2))
+    write_metrics_json(metrics, cfg.reports_dir / "metrics.json")
 
     log.info(
         "evaluate: best=%s qini=%.4f profit@%.0f%%=%.0f (random %.0f) | CUPED var "

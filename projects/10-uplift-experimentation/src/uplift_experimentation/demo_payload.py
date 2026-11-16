@@ -11,7 +11,7 @@ serving model inference:
 - mail-everyone profits per arm over the same cost grid (exact formula, no
   bootstrap);
 - the empirical per-arm Qini curves on the randomized arm-vs-control pairs
-  (downsampled) and the experiment-segment rates;
+  (downsampled), observed-outcome DR/IPW policy values, and segment rates;
 - the cumulative recommended-arm mix along the best-uplift ranking at every
   targeted fraction (top-k composition of mens/womens/none recommendations);
 - the committed scalars: revenue/cost model, full-send incrementals, arm
@@ -25,9 +25,9 @@ numbers are recomputed with the same functions that wrote
 ``reports/metrics.json`` (and verified against it), and the grid bootstrap
 reuses ``multiarm``'s paired row-bootstrap machinery (one shared resample per
 replication; the random baseline stays the straight line to the resample's
-best-arm full-send total). Policy-level numbers are MODEL-ESTIMATED planning
-figures throughout (see ``multiarm``); only the per-arm Qini contrasts are
-empirical causal reads.
+best-arm full-send total). Profit grids remain MODEL-ESTIMATED planning figures
+(see ``multiarm``); ``policy_value_observed_outcome`` separately carries the
+cross-fitted DR/IPW estimates from observed randomized conversions.
 """
 
 import json
@@ -308,6 +308,7 @@ def build_demo_payload(cfg: UpliftConfig) -> dict[str, Any]:
             },
         },
         "mail_everyone_profit": mail_everyone,
+        "policy_value_observed_outcome": multi_arm["policy_value"],
         "model_estimated_note": multi_arm["note"],
     }
 
@@ -355,7 +356,7 @@ def write_demo_payload(cfg: UpliftConfig) -> Path:
     """Build the payload and persist it to ``reports/demo_payload.json``."""
     payload = build_demo_payload(cfg)
     out = cfg.reports_dir / DEMO_PAYLOAD_NAME
-    out.write_text(json.dumps(payload, indent=2))
+    out.write_text(json.dumps(payload, indent=2, allow_nan=False))
     logger.info(
         "demo payload: %d customers, %d costs x %d fractions, %d boot reps -> %s",
         payload["n_customers"],

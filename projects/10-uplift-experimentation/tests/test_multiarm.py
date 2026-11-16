@@ -10,7 +10,11 @@ import numpy as np
 import pandas as pd
 import pytest
 from uplift_experimentation.config import UpliftConfig
-from uplift_experimentation.evaluate import evaluate_policies, multi_arm_read
+from uplift_experimentation.evaluate import (
+    evaluate_policies,
+    multi_arm_read,
+    qini_per_arm_figure,
+)
 from uplift_experimentation.models import cross_fit_arm_uplift, fit_arm_uplift
 from uplift_experimentation.multiarm import (
     arm_shares,
@@ -198,7 +202,15 @@ def _multi_frame(n: int = 3_000, seed: int = 11) -> pd.DataFrame:
     p = 0.006 + (seg == "Mens E-Mail") * 0.02 + (seg == "Womens E-Mail") * 0.012
     conversion = rng.binomial(1, np.clip(p, 0, 1))
     return pd.DataFrame(
-        {"segment": seg, "conversion": conversion, "uplift_mens": u_m, "uplift_womens": u_w}
+        {
+            "segment": seg,
+            "conversion": conversion,
+            "uplift_mens": u_m,
+            "uplift_womens": u_w,
+            "mu_mens": np.full(n, 0.026),
+            "mu_womens": np.full(n, 0.018),
+            "mu_control": np.full(n, 0.006),
+        }
     )
 
 
@@ -278,6 +290,18 @@ def test_multi_arm_read_block_shape_references_and_bounds() -> None:
         assert entry["model_estimated"] is True
     assert "best_arm - mail_everyone_mens" in block["ci"]["pairs"]
     assert block["best_arm_break_even"]["cost_per_email"] > 0.0
+    # Observed-outcome DR/IPW evaluation is a separate block, not planning money.
+    value = block["policy_value"]
+    assert value["seed"] == cfg.seed + 2999
+    assert value["policies"]["best_arm"]["mailed_fraction"] == pytest.approx(0.25)
+    assert value["policies"]["no_email"]["dr"]["profit"] == 0.0
+    assert "best_arm - single_arm" in value["pairs"]
+    assert "separate" in block["note"] and "summed predicted uplift" in block["note"]
+    figure = qini_per_arm_figure(block["per_arm"])
+    assert len(figure.data) == 1
+    assert figure.data[0].type == "bar"
+    assert list(figure.data[0].x) == ["mens", "womens"]
+    assert figure.data[0].error_y.array is not None
 
 
 def test_two_arm_policy_metrics_unchanged_golden() -> None:

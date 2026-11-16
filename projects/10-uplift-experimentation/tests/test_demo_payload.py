@@ -65,6 +65,10 @@ def demo_context(tmp_path: Path) -> tuple[UpliftConfig, pd.DataFrame]:
         },
         "multi_arm": {
             "note": "fixture model-estimated note",
+            "policy_value": {
+                "method": "fixture cross-fitted DR/IPW",
+                "policies": {"best_arm": {"dr": {"profit": 123.0, "profit_ci": [100.0, 140.0]}}},
+            },
             "recommended_arm_shares": arm_shares(recommend_arm(u_m, u_w)),
             "per_arm": {
                 arm: {
@@ -122,6 +126,8 @@ def test_payload_shape(payload: dict) -> None:
     assert payload["schema_version"] == 1
     assert payload["demo"] == "uplift-simulator"
     assert payload["project"] == "10-uplift-experimentation"
+    observed = payload["scalars"]["policy_value_observed_outcome"]
+    assert observed["policies"]["best_arm"]["dr"]["profit"] == 123.0
     assert set(payload) == {
         "schema_version",
         "demo",

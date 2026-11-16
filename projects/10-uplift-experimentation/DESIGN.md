@@ -18,8 +18,8 @@
 | causallib / causalml for T/X-learners | Rejected | Extra deps (causallib pulls statsmodels) for ~80 lines of code; hand-rolling on sklearn keeps the platform dependency-light and the method auditable line-by-line. |
 | Causal forests (grf / econml DML) | Deferred | Stronger non-parametrics, but heavyweight deps and weaker interpretability for a showcase; noted in roadmap as forward work. |
 | In-sample uplift scores | Rejected | Meta-learners overfit; Qini on training rows flatters every model. 5-fold cross-fitting gives honest out-of-fold scores. |
-| Multi-arm (Mens + Womens vs control) | Rejected for the primary read | A two-arm treatment keeps every estimand unambiguous; the Womens arm is retained in EDA and could back a per-customer channel choice later. **Delivered 2026-10-22 as a secondary read** (`multiarm.py`): per-arm cross-fitted T-learners + a best-arm policy, evaluated model-estimated; the two-arm read stays primary and unchanged. |
-| Qini vs AUUC (uplift ROC) | Qini | Qini counts incremental conversions directly (money-relevant units); AUUC is rate-based and needs careful tie handling at this base rate (~0.9%). |
+| Multi-arm (Mens + Womens vs control) | Rejected for the primary read | A two-arm treatment keeps every estimand unambiguous. The secondary read now separates observed-outcome DR/IPW policy value (`policy_value.py`) from model-estimated planning (`multiarm.py`); the two-arm read stays primary and unchanged. |
+| Qini vs AUUC (uplift ROC) | Unnormalized Qini/AUUC | The committed coefficient is the area under the Qini curve minus the random line, in conversions × fraction. The per-arm summary labels this AUUC and keeps the existing tie handling and conversion-relevant units. |
 | Normalized Qini (Radcliffe Q) | Rejected for the headline | Requires a "perfect model" curve definition that is unstable at rare-binary outcomes; the unnormalized coefficient (conversions × fraction) plus the profit frontier is the decision-relevant read. |
 | scipy for power analysis | Rejected | `statistics.NormalDist.inv_cdf` gives z-quantiles in the stdlib; one less dependency for a closed-form formula. |
 
@@ -62,18 +62,23 @@
    recommended policy is recomputed against the mail-everyone profit, plus the
    analytic break-even send cost at the policy budget,
    `c* = revenue·(inc(1) − inc(budget)) / (N·(1 − budget))`.
-10. **Multi-treatment uplift is a secondary, model-estimated read**
-    (2026-10-22). Each arm is scored against the shared control with a
-    cross-fitted T-learner; the arm matching `treatment_segment` reuses the
-    binary run's seed stream, so its scores reproduce the committed T-learner
-    exactly (continuity by construction). The best-arm policy recommends
+10. **Multi-treatment uplift is secondary and has two separate layers.** Each
+    arm is scored against the shared control with a cross-fitted T-learner; the
+    arm matching `treatment_segment` reuses the binary seed stream and reproduces
+    the committed T-learner exactly. The best-arm policy recommends
     argmax(uplift_mens, uplift_womens, 0) per customer ("none" on ties or
-    non-positive scores). Because no randomized assignment realizes the
-    recommended arm mix, all policy-level multi-arm numbers are
-    model-estimated (summed predicted uplift); only per-arm Qini/A-B contrasts
-    on the randomized pairs are empirical. Predicted magnitudes run hot
-    (~2×, see the decile check), so multi-arm dollar levels are planning
-    numbers for ranking policies; the bootstrap resamples rows, not models.
+    non-positive scores). The `multi_arm.policies` curves remain model-estimated
+    planning (summed predicted uplift), with hot magnitudes (~2× in the decile
+    check); per-arm Qini/A-B contrasts use the randomized pairs.
+11. **Observed multi-arm policy value uses cross-fitted DR/IPW.** Arm-specific
+    outcome models produce five-fold out-of-fold `mu_mens`, `mu_womens`, and
+    `mu_control`; known randomization supplies propensity 1/3 per arm. DR adds
+    the observed-arm residual correction to the policy-weighted outcome mean;
+    IPW uses the weighted observed outcome alone. Best-arm and single-arm are
+    deterministic top-25% rules, while random targeting is a stochastic policy
+    with 25% assignment probability. One shared row bootstrap (seed + 2999)
+    gives paired percentile CIs for every policy difference. Models and policy
+    rules stay fixed during resampling, so these intervals omit refit variance.
 
 ## Cost model rationale
 
@@ -91,6 +96,12 @@ revenue/cost pair is a first-class config surface, swept by `cost_grid`.
 
 ## Changelog
 
+- 2026-11-16 — added five-fold out-of-fold arm outcome models and observed-
+  outcome multi-arm DR/IPW policy values with paired 1,000-row-bootstrap CIs
+  (seed + 2999). Best-arm beats stochastic random on DR profit by $6,990
+  [$1,107, $13,282], but its difference from single-arm Mens spans zero
+  [−$7,702, $1,965]. Replaced the duplicated per-arm/binary curve overlay with
+  per-arm AUUC bars and intervals; non-finite metrics now serialize as JSON null.
 - 2026-10-22 — multi-treatment upgrade (secondary read): three-arm frame
   (`hillstrom_multi.parquet`) with per-arm assignment indicators; per-arm
   cross-fitted T-learner scores (`uplift_mens`, `uplift_womens`) persisted to

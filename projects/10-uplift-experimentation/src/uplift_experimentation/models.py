@@ -11,6 +11,8 @@
 - Per-arm T-learners (multi-treatment read, ``multiarm``): each campaign arm
   vs the shared control via ``cross_fit_arm_uplift``; the configured treatment
   arm reuses the binary seed stream and reproduces the committed T-learner.
+- Mens/Womens/control outcome models (``policy_value``): separate out-of-fold
+  conversion predictions for observed-outcome multi-arm DR/IPW evaluation.
 
 All scores are out-of-fold (cross-fitted): Qini/profit reads never see
 in-sample predictions, so model-vs-model comparisons are not confounded by
@@ -227,3 +229,28 @@ def cross_fit_arm_uplift(
     if np.isnan(scores).any():
         raise ValueError("cross-fitting left un-scored rows")
     return scores
+
+
+def cross_fit_outcome_models(
+    X: pd.DataFrame, assignment: np.ndarray, y: np.ndarray, folds: int, seed: int
+) -> pd.DataFrame:
+    """Out-of-fold conversion predictions for Mens, Womens, and no email.
+
+    These nuisance scores support multi-arm DR/IPW policy-value evaluation.
+    Every arm model is trained only on that arm's training-fold rows and scores
+    the complete held-out fold. Randomization supplies the assignment
+    probabilities separately, so no estimated propensity model is needed.
+    """
+    kfold = KFold(n_splits=folds, shuffle=True, random_state=seed)
+    scores = {name: np.full(len(y), np.nan) for name in ("mens", "womens", "control")}
+    for fold, (train_idx, test_idx) in enumerate(kfold.split(X)):
+        for arm, (name, label) in enumerate(zip(scores, (0, 1, 2), strict=True)):
+            arm_train = train_idx[assignment[train_idx] == label]
+            model = make_classifier(seed + 10 * fold + arm)
+            model.fit(X.iloc[arm_train], y[arm_train])
+            scores[name][test_idx] = model.predict_proba(X.iloc[test_idx])[:, 1]
+        log.info("cross-fit outcomes: fold %d/%d scored", fold + 1, folds)
+    out = pd.DataFrame({f"mu_{name}": values for name, values in scores.items()})
+    if out.isnull().any().any():
+        raise ValueError("cross-fitting left un-scored outcome rows")
+    return out

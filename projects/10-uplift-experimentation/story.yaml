@@ -34,9 +34,10 @@ figure_captions:
     0.08% of conversion variance versus 0.52% for visit. Adding recency gives
     0.12% / 0.95%. Prior spend has little signal for the rare conversion.
   qini_per_arm: >-
-    Read measured per-arm Qini curves on randomized arm-versus-control pairs.
-    Mens Qini is 12.03 with CI [−0.47, 24.21] spanning zero. Womens is 3.37
-    [−6.78, 13.75], also not established.
+    Compare per-arm AUUC, the area under each Qini curve minus random, with 95%
+    paired-bootstrap intervals on randomized arm-versus-control pairs. Mens is
+    12.03 [−0.47, 24.21] and Womens 3.37 [−6.78, 13.75]; both span zero. The
+    duplicated binary T-learner overlay is removed because Mens is the same score.
   profit_frontier_multi_arm: >-
     This is a model-estimated multi-arm profit frontier, not observed outcomes
     under alternative assignments. At 25% budget, best-arm estimates $35.5k
@@ -266,8 +267,8 @@ sections:
   - id: results
     text_md: |
       **The figures establish the small Mens effect and the budgeted T-learner
-      win over random. They do not establish the response-versus-T Qini
-      ranking or either per-arm Qini.**
+      win over random. They do not establish the response-versus-T Qini ranking,
+      either per-arm AUUC, or best-arm superiority over single-arm Mens.**
 
       Read the Qini-curves figure as a race down the mailing list. The
       horizontal axis is the targeted fraction. The vertical axis is
@@ -285,22 +286,32 @@ sections:
       [+$718, +$4,767] entirely above zero. Against unconstrained full mail,
       the paired T-learner difference is −$9,265 [−$13,125, −$5,808].
 
-      The per-arm Qini figure keeps the email effects separate. Mens is 12.03
-      [−0.47, 24.21]. Womens is 3.37 [−6.78, 13.75]. Both intervals span zero,
-      so neither per-arm ranking is established.
+      The per-arm AUUC figure keeps the email effects separate without repeating
+      the identical Mens/binary curve. Mens is 12.03 [−0.47, 24.21]. Womens is
+      3.37 [−6.78, 13.75]. Both intervals span zero, so neither per-arm ranking
+      is established.
+
+      A separate observed-outcome read evaluates fixed three-arm policies with
+      cross-fitted doubly robust (DR) and inverse-propensity-weighted (IPW)
+      estimates. At a 25% best-arm budget, DR profit is $17,967
+      [$10,881, $25,459]; IPW gives $18,650 [$11,468, $26,174]. The paired DR
+      gain over stochastic random is +$6,990 [+$1,107, +$13,282], but best-arm
+      minus single-arm Mens is −$2,902 [−$7,702, +$1,965], spanning zero. IPW
+      agrees: +$8,288 [+$2,388, +$14,533] versus random and −$2,052
+      [−$6,840, +$2,736] versus single-arm. Channel choice is therefore unproven.
 
       The figures do not include COGS, margin, or contact fatigue. Contact
       fatigue means customers respond less after repeated messages. One March
-      2008 campaign cannot guarantee the next campaign's result. All multi-arm
-      money is model-estimated, not a randomized outcome. The X-learner trails
-      in this dataset's strong-overlap, near-constant-propensity setting.
-      Strong overlap means similar customers appear in different arms.
-      Near-constant propensity means they had similar assignment chances. This
-      is not a general verdict on the X-learner.
+      2008 campaign cannot guarantee the next campaign's result. Multi-arm
+      planning money remains model-estimated, distinct from observed DR/IPW.
+      The X-learner trails in this dataset's strong-overlap,
+      near-constant-propensity setting. Strong overlap means similar customers
+      appear in different arms. Near-constant propensity means they had similar
+      assignment chances. This is not a general verdict on the X-learner.
 
-      **Business summary:** The solid findings are the Mens effect and the
-      +69% budgeted win over random. Model rankings and per-arm effects remain
-      unproven. All multi-arm money remains model-estimated.
+      **Business summary:** The solid findings are the Mens effect, the +69%
+      budgeted win over random, and multi-arm best-arm beating random. Per-arm
+      rankings and best-arm superiority over single-arm Mens remain unproven.
     figures:
       [qini_curves, profit_frontier, qini_per_arm]
     metrics_keys: [response, t_learner, x_learner, random, treat-everyone]
@@ -335,11 +346,11 @@ sections:
 
       ## Exact numbers
 
-      A seed is a number that makes random splitting repeatable. Seed 42 covers
-      the global split and cross-fitting. Policy intervals use 1,000 paired row
-      bootstraps of out-of-fold scores, with seed 1041 for two-arm and seed
-      2041 for multi-arm reads. Profit = incremental conversions × $114 −
-      mailed × send cost.
+      A seed is a number that makes random splitting repeatable. Seed 42 anchors
+      the original cross-fitting; arm outcome nuisances use seed 1042. Policy
+      intervals use 1,000 paired row bootstraps with seed 1041 for two-arm, 2041
+      for multi-arm planning, and 3041 for observed DR/IPW. Profit = incremental
+      conversions × $114 − mailed × send cost.
 
       | policy | Qini [95% CI] | profit @25% [95% CI] | Δ vs random |
       |---|---|---|---|
@@ -384,14 +395,18 @@ sections:
       variance by −0.52%, with ATE unchanged. Adding recency gives −0.12% and
       −0.95%.
 
-      Per-arm reads use randomized arm-versus-control pairs: Mens Qini 12.03
+      Per-arm reads use randomized arm-versus-control pairs: Mens AUUC 12.03
       [−0.47, 24.21], incremental conversions at full send 145.0 [107.97,
-      181.88]; Womens Qini 3.37 [−6.78, 13.75], incremental 66.5 [33.10,
-      104.69]. Multi-arm reads are model-estimated: best-arm $35,514 [35.1k,
-      36.0k] at the 25% budget versus single-arm-Mens $29,487 and random
-      $16,563; recommended shares Mens 76.0% / Womens 20.2% / none 3.8%;
-      unconstrained mail-everyone-Mens leads at $49,819 until sends cost
-      ≈$0.31. Predicted deciles run about 2× hot against measured uplift.
+      181.88]; Womens AUUC 3.37 [−6.78, 13.75], incremental 66.5 [33.10,
+      104.69]. Observed-outcome DR estimates are 159.0 [96.85, 224.73]
+      incremental conversions and $17,967 [$10,881, $25,459] profit for best-arm,
+      versus 184.5 [122.92, 249.18] and $20,869 [$13,853, $28,247] for
+      single-arm Mens. IPW best-arm profit is $18,650 [$11,468, $26,174].
+      Planning remains separate and model-estimated: best-arm $35,514 [35.1k,
+      36.0k] versus single-arm-Mens $29,487 and random $16,563; recommended
+      shares Mens 76.0% / Womens 20.2% / none 3.8%; unconstrained
+      mail-everyone-Mens leads at $49,819 until sends cost ≈$0.31. Predicted
+      deciles run about 2× hot against measured uplift.
 
       The cost model uses $114 revenue per conversion, the mean spend among
       converters rather than margin, a $0.01 send cost, a 25% policy budget,
@@ -403,10 +418,15 @@ sections:
         The primary read keeps Mens and control, 42,613 customers, for one
         clear contrast. The three-arm frame supports per-arm reads.
       - **Scores:** five-fold cross-fitting and gradient boosting on
-        pre-treatment features only.
-      - **Metrics:** Qini is the area between a ranking curve and random
+        pre-treatment features only, including arm-specific outcome nuisances.
+      - **Metrics:** Qini/AUUC is the area between a ranking curve and random
         targeting. Profit is incremental conversions × $114 minus mailed ×
         send cost. Paired differences reuse the same 1,000 row bootstraps.
+      - **Observed multi-arm policy value:** DR combines policy-weighted outcome
+        predictions with an observed-arm residual correction; IPW weights the
+        observed conversion by policy probability over known assignment
+        probability. Randomization gives each arm probability 1/3. The paired
+        bootstrap uses seed 3041 and holds models and policy rules fixed.
       - **Power:** a two-proportion test at 5% significance and 80% power.
       - **CUPED:** variance reduction with log prior-year spend. The
         multivariate version, meaning several covariates together, adds
@@ -422,9 +442,10 @@ sections:
       - One March 2008 campaign cannot guarantee future results. The next
         spend needs a fresh randomized no-email holdout, meaning a group still
         assigned by chance not to receive email.
-      - Per-arm Qini intervals span zero. The response-versus-T ranking is
-        unsettled. Multi-arm money is model-estimated, and predicted
-        magnitudes run about 2× hot.
+      - Per-arm AUUC and response-versus-T intervals span zero. Best-arm versus
+        single-arm Mens is also inconclusive under DR and IPW. Those intervals
+        omit model-refit uncertainty. Planning money is model-estimated, and
+        predicted magnitudes run about 2× hot.
       - The X-learner's weak result is specific to strong overlap and
         near-constant propensity, not a general ranking of learners.
       - Prospective validation means testing the policy in a new live
@@ -446,7 +467,8 @@ key_concepts:
   - "**Uplift versus response modeling:** Uplift scores the extra purchase an email causes. A response model predicts purchases, including those that would happen anyway."
   - "**T-learner and X-learner:** T fits one model per arm and subtracts no-email from email predictions. X estimates unobserved effects and combines them using assignment propensity."
   - "**Paired bootstrap policy intervals:** The same resampled customers score every policy, producing comparable confidence intervals for profit gaps."
-  - "**Qini coefficient:** The area between a ranking curve and random targeting, showing how well a list captures incremental purchases."
+  - "**Qini coefficient / AUUC:** The area between a ranking curve and random targeting, showing how well a list captures incremental purchases."
+  - "**Cross-fitted DR/IPW policy value:** Observed-outcome evaluation using out-of-fold arm predictions and known randomization probabilities, kept separate from summed-uplift planning."
   - "**CUPED:** A method that uses pre-campaign information to reduce noise. Here it left the estimate unchanged and removed almost no conversion variance."
   - "**Cost-sweep break-even:** The send cost, ≈$0.30, above which targeted sending beats mailing everyone."
 roadmap:
@@ -459,4 +481,4 @@ roadmap:
   - status: delivered
     text: "Ran the send-cost sweep and found the ≈$0.30 targeting break-even."
   - status: delivered
-    text: "Added the multi-arm channel-planning layer, labelled model-estimated throughout."
+    text: "Separated observed multi-arm DR/IPW policy value from model-estimated channel planning; best-arm beats random but not established over single-arm Mens."

@@ -6,12 +6,11 @@ scored against the shared ``No E-Mail`` control with a cross-fitted T-learner
 customer, the arm with the highest estimated uplift — or no send when both arm
 scores are <= 0 (ties also resolve to no send: no strict winner, no email).
 
-Honesty convention: no randomized assignment realizes the recommended arm mix,
-so the policy-level multi-arm evaluation is **model-estimated** throughout —
-the incremental conversions of a targeted set are the summed predicted uplift
-of the arm each customer is assigned. These are planning numbers, not
-counterfactual claims. The only arm-level *causal* reads stay empirical: the
-per-arm Qini/A-B contrasts computed on the randomized arm-vs-control pairs.
+Honesty convention: this module's policy curves are **model-estimated** planning
+numbers — summed predicted uplift, not observed counterfactuals. The separate
+``policy_value`` module evaluates the fixed rules on observed randomized outcomes
+with cross-fitted DR/IPW. Per-arm Qini/A-B contrasts on randomized arm-vs-control
+pairs remain empirical as well.
 """
 
 from typing import Any

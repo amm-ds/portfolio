@@ -27,6 +27,7 @@ from uplift_experimentation.eda import eda_segment_profile_figure
 from uplift_experimentation.evaluate import evaluate_core
 from uplift_experimentation.models import (
     cross_fit_arm_uplift,
+    cross_fit_outcome_models,
     cross_fit_scores,
     fit_arm_uplift,
 )
@@ -123,8 +124,8 @@ def train_core(cfg: UpliftConfig) -> Path:
     """Cross-fit out-of-fold uplift scores for every policy; persist scores.
 
     Fits the binary two-arm policies (response / T-learner / X-learner,
-    unchanged) plus per-arm T-learner scores (``uplift_mens`` /
-    ``uplift_womens``) for the multi-treatment read.
+    unchanged), per-arm T-learner scores (``uplift_mens`` / ``uplift_womens``),
+    and out-of-fold arm outcome predictions for multi-arm DR/IPW evaluation.
     """
     frame_path = cfg.data_dir / "hillstrom.parquet"
     multi_path = cfg.data_dir / "hillstrom_multi.parquet"
@@ -141,9 +142,21 @@ def train_core(cfg: UpliftConfig) -> Path:
     y = df["conversion"].to_numpy(dtype=int)
 
     # Single-threaded fits: OpenMP oversubscription slows HistGB substantially.
+    assignment = np.where(
+        multi["treated_mens"].to_numpy() == 1,
+        0,
+        np.where(multi["treated_womens"].to_numpy() == 1, 1, 2),
+    )
     with threadpool_limits(limits=1):
         scores = cross_fit_scores(X, treatment, y, folds=cfg.cv_folds, seed=cfg.seed)
         arm_scores = fit_per_arm_scores(cfg, multi, feature_cols)
+        outcome_scores = cross_fit_outcome_models(
+            multi[feature_cols],
+            assignment,
+            multi["conversion"].to_numpy(dtype=int),
+            folds=cfg.cv_folds,
+            seed=cfg.seed + 1000,
+        )
 
     # The two-arm frame is the Mens/control subset of the multi frame (same raw
     # row order); verify before joining per-arm scores positionally.
@@ -187,12 +200,13 @@ def train_core(cfg: UpliftConfig) -> Path:
                     "uplift_womens": arm_scores["uplift_womens"],
                 }
             ),
+            outcome_scores,
         ],
         axis=1,
     )
     multi_out.to_parquet(cfg.data_dir / "scores_multi.parquet")
     log.info(
-        "train: %d rows cross-fitted (%d folds) + per-arm scores; scores -> %s",
+        "train: %d rows cross-fitted (%d folds) + per-arm uplift/outcome scores -> %s",
         len(out_df),
         cfg.cv_folds,
         out,

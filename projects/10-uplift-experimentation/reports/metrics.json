@@ -1,8 +1,8 @@
 {
   "_meta": {
-    "created_at": "2026-11-14T19:53:18+01:00",
+    "created_at": "2026-11-14T19:53:43+01:00",
     "data_contract_sha256": null,
-    "git_sha": "36aeb69da80b4f2cd7b3d15cd420c4686bd628d5",
+    "git_sha": "c3b7b212c172398a75348a0d099ebe05234b394e",
     "params_sha256": "588fab46abf78ed601f9e87741e542ec590e4c698928c646ba42a70a84702922",
     "schema_version": 1,
     "seed": 42,
@@ -68,7 +68,7 @@
       "n_rows": 64000,
       "n_womens": 21387
     },
-    "note": "Multi-arm read is MODEL-ESTIMATED at the policy level: incremental conversions are summed predicted uplift over the targeted set, not observed counterfactuals. Only the per-arm Qini/A-B contrasts on the randomized arm-vs-control pairs are empirical causal reads.",
+    "note": "The policies block is MODEL-ESTIMATED planning: incremental conversions are summed predicted uplift, not observed counterfactuals. The separate policy_value block evaluates the same policy rules with cross-fitted DR/IPW on observed randomized outcomes; per-arm Qini/A-B contrasts remain empirical reads.",
     "per_arm": {
       "binary_t_learner": {
         "incremental_conversions_full": 144.99427391345162,
@@ -322,6 +322,314 @@
         }
       }
     },
+    "policy_value": {
+      "alpha": 0.05,
+      "method": "cross-fitted augmented-IPW (doubly robust) and IPW on observed outcomes",
+      "n_boot": 1000,
+      "note": "Observed-outcome policy-value estimates, separate from summed-uplift planning. The paired row bootstrap holds the cross-fitted models and policy rules fixed; intervals omit model-refitting uncertainty.",
+      "outcome_models": "5-fold out-of-fold arm-specific conversion classifiers",
+      "pairs": {
+        "best_arm - mail_everyone_mens": {
+          "dr": {
+            "profit_diff": -30717.586847297054,
+            "profit_diff_ci": [
+              -42306.36980493114,
+              -19786.89441044831
+            ],
+            "spans_zero": false
+          },
+          "ipw": {
+            "profit_diff": -30300.000000000004,
+            "profit_diff_ci": [
+              -41585.99999999999,
+              -19347.45
+            ],
+            "spans_zero": false
+          }
+        },
+        "best_arm - mail_everyone_womens": {
+          "dr": {
+            "profit_diff": -3986.554286347571,
+            "profit_diff_ci": [
+              -15539.514525515733,
+              8183.205017006725
+            ],
+            "spans_zero": true
+          },
+          "ipw": {
+            "profit_diff": -3623.999999999991,
+            "profit_diff_ci": [
+              -15260.550000000001,
+              8345.999999999995
+            ],
+            "spans_zero": true
+          }
+        },
+        "best_arm - random": {
+          "dr": {
+            "profit_diff": 6990.174869247434,
+            "profit_diff_ci": [
+              1107.488541676126,
+              13281.989336884073
+            ],
+            "spans_zero": false
+          },
+          "ipw": {
+            "profit_diff": 8287.452500000003,
+            "profit_diff_ci": [
+              2387.952500000002,
+              14533.22749999999
+            ],
+            "spans_zero": false
+          }
+        },
+        "best_arm - single_arm": {
+          "dr": {
+            "profit_diff": -2901.9434669015636,
+            "profit_diff_ci": [
+              -7701.930586981031,
+              1965.1776435613294
+            ],
+            "spans_zero": true
+          },
+          "ipw": {
+            "profit_diff": -2052.000000000002,
+            "profit_diff_ci": [
+              -6840.000000000006,
+              2736.0000000000023
+            ],
+            "spans_zero": true
+          }
+        }
+      },
+      "policies": {
+        "best_arm": {
+          "dr": {
+            "conversion_rate": 0.008212086080274034,
+            "conversion_rate_ci": [
+              0.007141381885117038,
+              0.00947054333567854
+            ],
+            "incremental_conversions_vs_no_email": 159.00677846367378,
+            "incremental_conversions_vs_no_email_ci": [
+              96.85288116912017,
+              224.73137235676384
+            ],
+            "profit": 17966.772744858812,
+            "profit_ci": [
+              10881.228453279698,
+              25459.37644867108
+            ]
+          },
+          "ipw": {
+            "conversion_rate": 0.008296875,
+            "conversion_rate_ci": [
+              0.00721875,
+              0.0095625
+            ],
+            "incremental_conversions_vs_no_email": 165.00000000000003,
+            "incremental_conversions_vs_no_email_ci": [
+              102.00000000000003,
+              230.99999999999997
+            ],
+            "profit": 18650.000000000004,
+            "profit_ci": [
+              11468.000000000004,
+              26173.999999999996
+            ]
+          },
+          "mailed_fraction": 0.25
+        },
+        "mail_everyone_mens": {
+          "dr": {
+            "conversion_rate": 0.012488071119651372,
+            "conversion_rate_ci": [
+              0.011077904353264318,
+              0.014082308807928698
+            ],
+            "incremental_conversions_vs_no_email": 432.6698209838234,
+            "incremental_conversions_vs_no_email_ci": [
+              321.8510898326245,
+              549.6170760142872
+            ],
+            "profit": 48684.359592155866,
+            "profit_ci": [
+              36051.02424091919,
+              62016.34666562875
+            ]
+          },
+          "ipw": {
+            "conversion_rate": 0.012515625,
+            "conversion_rate_ci": [
+              0.0110625,
+              0.014109375
+            ],
+            "incremental_conversions_vs_no_email": 435.00000000000006,
+            "incremental_conversions_vs_no_email_ci": [
+              318.0,
+              552.0
+            ],
+            "profit": 48950.00000000001,
+            "profit_ci": [
+              35612.0,
+              62288.0
+            ]
+          },
+          "mailed_fraction": 1.0
+        },
+        "mail_everyone_womens": {
+          "dr": {
+            "conversion_rate": 0.008824278279608954,
+            "conversion_rate_ci": [
+              0.0075392976575305625,
+              0.010030678156267746
+            ],
+            "incremental_conversions_vs_no_email": 198.18707922110863,
+            "incremental_conversions_vs_no_email_ci": [
+              99.29833564026457,
+              303.60640806348727
+            ],
+            "profit": 21953.327031206383,
+            "profit_ci": [
+              10680.010262990161,
+              33971.13051923755
+            ]
+          },
+          "ipw": {
+            "conversion_rate": 0.008859375,
+            "conversion_rate_ci": [
+              0.007592578125,
+              0.010079296875
+            ],
+            "incremental_conversions_vs_no_email": 200.99999999999994,
+            "incremental_conversions_vs_no_email_ci": [
+              104.99999999999999,
+              303.07499999999993
+            ],
+            "profit": 22273.999999999993,
+            "profit_ci": [
+              11329.999999999998,
+              33910.549999999996
+            ]
+          },
+          "mailed_fraction": 1.0
+        },
+        "no_email": {
+          "dr": {
+            "conversion_rate": 0.0057276051667791315,
+            "conversion_rate_ci": [
+              0.004752878615062097,
+              0.0067191468706097575
+            ],
+            "incremental_conversions_vs_no_email": 0.0,
+            "incremental_conversions_vs_no_email_ci": [
+              0.0,
+              0.0
+            ],
+            "profit": 0.0,
+            "profit_ci": [
+              0.0,
+              0.0
+            ]
+          },
+          "ipw": {
+            "conversion_rate": 0.00571875,
+            "conversion_rate_ci": [
+              0.004734375,
+              0.006703125
+            ],
+            "incremental_conversions_vs_no_email": 0.0,
+            "incremental_conversions_vs_no_email_ci": [
+              0.0,
+              0.0
+            ],
+            "profit": 0.0,
+            "profit_ci": [
+              0.0,
+              0.0
+            ]
+          },
+          "mailed_fraction": 0.0
+        },
+        "random": {
+          "dr": {
+            "conversion_rate": 0.0072531740230855155,
+            "conversion_rate_ci": [
+              0.006496187953039517,
+              0.008136413424535253
+            ],
+            "incremental_conversions_vs_no_email": 97.63640680360858,
+            "incremental_conversions_vs_no_email_ci": [
+              72.30266635173545,
+              125.92956286367266
+            ],
+            "profit": 10976.597875611378,
+            "profit_ci": [
+              8088.551464097843,
+              14202.017666458683
+            ]
+          },
+          "ipw": {
+            "conversion_rate": 0.00716015625,
+            "conversion_rate_ci": [
+              0.006375,
+              0.008039355468749999
+            ],
+            "incremental_conversions_vs_no_email": 92.25,
+            "incremental_conversions_vs_no_email_ci": [
+              66.0,
+              120.0
+            ],
+            "profit": 10362.5475,
+            "profit_ci": [
+              7370.0475,
+              13526.0475
+            ]
+          },
+          "mailed_fraction": 0.24055078124999996
+        },
+        "single_arm": {
+          "dr": {
+            "conversion_rate": 0.008609830524750674,
+            "conversion_rate_ci": [
+              0.007448549197966578,
+              0.00990406803814201
+            ],
+            "incremental_conversions_vs_no_email": 184.46242291017873,
+            "incremental_conversions_vs_no_email_ci": [
+              122.91707385371114,
+              249.1802687520776
+            ],
+            "profit": 20868.716211760377,
+            "profit_ci": [
+              13852.546419323071,
+              28246.550637736847
+            ]
+          },
+          "ipw": {
+            "conversion_rate": 0.008578125,
+            "conversion_rate_ci": [
+              0.007453125,
+              0.009890625
+            ],
+            "incremental_conversions_vs_no_email": 183.00000000000006,
+            "incremental_conversions_vs_no_email_ci": [
+              123.0,
+              246.075
+            ],
+            "profit": 20702.000000000007,
+            "profit_ci": [
+              13862.0,
+              27892.55
+            ]
+          },
+          "mailed_fraction": 0.25
+        }
+      },
+      "policy_budget": 0.25,
+      "propensity": "known randomized assignment: 1/3 per arm",
+      "seed": 3041
+    },
     "recommended_arm_shares": {
       "mens": 0.76040625,
       "none": 0.037796875,
@@ -354,8 +662,8 @@
   },
   "treat-everyone": {
     "incremental_conversions_full": 144.99427391345162,
-    "profit_at_budget": NaN,
-    "profit_delta_vs_random": NaN,
+    "profit_at_budget": null,
+    "profit_delta_vs_random": null,
     "profit_full": 16103.217226133487,
     "profit_random_at_budget": 4025.804306533372,
     "qini_coefficient": 0.0

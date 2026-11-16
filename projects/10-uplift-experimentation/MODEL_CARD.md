@@ -28,7 +28,8 @@ and, since the multi-arm upgrade, scored for the best-arm channel-choice read.
 - **X-learner**: imputed effects + propensity-weighted combination
   (g·tau0 + (1−g)·tau1), logistic propensity clipped to [0.05, 0.95].
 - All scores are 5-fold **cross-fitted** (out-of-fold); evaluation never sees
-  in-sample predictions.
+  in-sample predictions. Separate Mens/Womens/control outcome classifiers provide
+  the `mu_*` nuisances for observed-outcome DR/IPW policy value.
 - **Per-arm T-learners** (multi-arm read): each campaign arm vs the shared
   control, same cross-fitting; the configured treatment arm's scores
   reproduce the binary T-learner exactly (shared seed stream). The best-arm
@@ -41,11 +42,15 @@ incremental conversions, and profit at budget under revenue $114 per
 conversion / $0.01 per email ($114 is mean spend among converters — revenue,
 not margin; COGS is not in the snapshot). Headline: T-learner Qini 12.0,
 +$2,812 profit delta vs random at 25% budget; both carry 95% paired-bootstrap
-CIs in `reports/metrics.json` (`_meta.ci`). Multi-arm policy-level numbers
-(`multi_arm` block) are MODEL-ESTIMATED — summed predicted uplift over the
-targeted set, not observed counterfactuals; predicted magnitudes run ~2× hot
-(decile check), so they rank policies rather than forecast dollars. Per-arm
-Qini contrasts stay empirical (randomized pairs).
+CIs in `reports/metrics.json` (`_meta.ci`). The separate
+`multi_arm.policy_value` block uses five-fold out-of-fold arm outcome models,
+known 1/3 randomization probabilities, and observed conversions for DR/IPW
+policy values with paired bootstrap CIs. Best-arm beats stochastic random on DR
+profit by $6,990 [$1,107, $13,282], but best-arm minus single-arm Mens is
+−$2,902 [−$7,702, $1,965], so channel-choice superiority is not established.
+The `multi_arm.policies` block remains MODEL-ESTIMATED planning — summed
+predicted uplift, with magnitudes ~2× hot — rather than observed profit. Per-arm
+Qini/AUUC contrasts stay empirical (randomized pairs).
 
 ## Limits
 
@@ -53,11 +58,10 @@ Qini contrasts stay empirical (randomized pairs).
   quality is "real but modest", stated plainly in the decile figure. Qini
   point estimates are additionally unstable across model refits — the paired
   bootstrap resamples rows, not models, so CIs are within-model precision.
-- The multi-arm block's policy-level numbers are model-estimated planning
-  values (no randomized assignment realizes the recommended arm mix); only
-  the per-arm Qini/A-B contrasts on the randomized pairs are causal reads.
-  The Womens arm's conversion uplift (Qini 3.37, CI spanning zero) is not
-  established.
+- Multi-arm DR/IPW intervals resample rows with nuisances and policy rules fixed,
+  omitting model-refit uncertainty; best-arm superiority over single-arm Mens is
+  inconclusive. The separate planning values are model-estimated, not observed
+  counterfactuals. Womens AUUC 3.37 has a CI spanning zero and is not established.
 - The X-learner underperforms the T-learner here (near-constant propensity,
   strong overlap — its second stage adds variance); that is a property of
   this regime, not a general verdict.
