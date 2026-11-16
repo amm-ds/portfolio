@@ -219,14 +219,15 @@ describe("PlotlyFigure", () => {
     expect(mocks.react).not.toHaveBeenCalled();
   });
 
-  it("falls back to the iframe when Plotly.react rejects", async () => {
+  it("keeps parsed data available when Plotly fails and uses its authored frame ratio", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
     mocks.react.mockRejectedValue(new Error("renderer failed"));
     const onPayload = vi.fn();
     render(<PlotlyFigure pid="p" name="render_failure" onPayload={onPayload} />);
 
     await waitFor(() => expect(screen.getByTitle("Figure: render_failure")).toBeInTheDocument());
-    expect(onPayload).toHaveBeenLastCalledWith(null);
+    expect(onPayload).toHaveBeenLastCalledWith(PAYLOAD);
+    expect(document.querySelector(".frame-wrap")).toHaveStyle({ aspectRatio: "1.7857142857142858" });
   });
 
   it("purges the plot on unmount", async () => {
@@ -255,6 +256,17 @@ describe("scaledHeight", () => {
     expect(scaledHeight(undefined, 1000)).toBe(560);
     expect(scaledHeight("560", 1000)).toBe(560);
     expect(scaledHeight(Number.NaN, 1000)).toBe(560);
+  });
+
+  it("reserves readable mobile height for every authored panel row", () => {
+    expect(scaledHeight(900, 390, { grid: { rows: 2 } })).toBe(720);
+    expect(
+      scaledHeight(900, 390, {
+        yaxis: { domain: [0.55, 1] },
+        yaxis2: { domain: [0, 0.45] },
+      }),
+    ).toBe(720);
+    expect(scaledHeight(900, 390, { grid: { rows: 1, columns: 2 } })).toBe(360);
   });
 });
 

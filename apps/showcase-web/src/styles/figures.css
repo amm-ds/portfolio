@@ -156,6 +156,60 @@ a.figure-caption:hover {
   color: var(--muted);
 }
 
+.figure-data .table-scroll {
+  max-height: 30rem;
+  overflow: auto;
+  margin-top: 0.6rem;
+}
+
+.figure-data .table-scroll .data-table {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.figure-data .table-scroll thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.figure-data-download {
+  margin-top: 0.7rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.figure-data-download:hover {
+  color: var(--accent-bright);
+  border-color: var(--secondary);
+}
+
+.frame-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 2rem;
+  text-align: center;
+  color: var(--muted);
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+
+.frame-error strong {
+  color: var(--text);
+}
+
 .figure-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -52,6 +52,23 @@ function loadECharts() {
   return echartsLoader;
 }
 
+function chartAccessibleName(
+  name: string,
+  payload: PlotlyPayload | null,
+  requested?: string,
+): string {
+  if (requested) return requested;
+  const rawTitle = payload?.layout.title;
+  const title =
+    typeof rawTitle === "object" && rawTitle !== null
+      ? (rawTitle as Record<string, unknown>).text
+      : rawTitle;
+  if (typeof title === "string" && title) {
+    return title.replaceAll(/<br\s*\/?>/gi, " ").replaceAll(/<[^>]+>/g, "");
+  }
+  return `Figure: ${name}`;
+}
+
 /**
  * ECharts pilot renderer: same contract as PlotlyFigure (viewport-gated JSON
  * fetch, themed chrome, labeled skeleton, iframe-grade failure handling) but
@@ -65,6 +82,7 @@ export function EChartsFigure({
   name,
   caption,
   sectionId,
+  accessibleName,
   onPayload,
 }: {
   pid: string;
@@ -72,6 +90,8 @@ export function EChartsFigure({
   caption?: string;
   /** Story section id; when given, the caption links back to `#sec-{sectionId}`. */
   sectionId?: string;
+  /** Accessible chart name when no visible caption is rendered by this component. */
+  accessibleName?: string;
   /** Notified with the parsed figure JSON (null when unavailable) so hosts
    * can offer a non-visual fallback such as a data table. */
   onPayload?: (payload: PlotlyPayload | null) => void;
@@ -104,12 +124,11 @@ export function EChartsFigure({
       })
       .then((p: PlotlyPayload | null) => {
         if (cancelled) return;
-        if (p && Array.isArray(p.data) && p.layout && supportsECharts(p)) {
+        if (p && Array.isArray(p.data) && p.layout) {
           setPayload(p);
           onPayloadRef.current?.(p);
-        } else if (p && Array.isArray(p.data) && p.layout) {
-          // parseable but outside the pilot subset → plotly renderer
-          setFallback(true);
+          // Parseable but outside the pilot subset → Plotly reuses `p`.
+          if (!supportsECharts(p)) setFallback(true);
         } else {
           setFallback(true);
           onPayloadRef.current?.(null);
@@ -159,7 +178,7 @@ export function EChartsFigure({
       try {
         const { init } = await loadECharts();
         if (disposed) return;
-        const height = scaledHeight(payload.layout.height, el.clientWidth);
+        const height = scaledHeight(payload.layout.height, el.clientWidth, payload.layout);
         el.style.height = `${height}px`;
         chartRef.current ??= init(el, undefined, { renderer: "svg", height });
         const option: EChartsOption = plotlyToECharts(payload, theme, el.clientWidth);
@@ -192,7 +211,17 @@ export function EChartsFigure({
   }, [payload, inView, theme]);
 
   if (fallback) {
-    return <PlotlyFigure pid={pid} name={name} caption={caption} sectionId={sectionId} onPayload={onPayload} />;
+    return (
+      <PlotlyFigure
+        pid={pid}
+        name={name}
+        caption={caption}
+        sectionId={sectionId}
+        accessibleName={accessibleName}
+        initialPayload={payload}
+        onPayload={onPayload}
+      />
+    );
   }
 
   const captionEl = caption ? (
@@ -214,7 +243,13 @@ export function EChartsFigure({
             <span className="frame-skeleton-status">rendering figure…</span>
           </div>
         )}
-        <div ref={elRef} className="plotly-host echarts-host" data-testid={`echarts-${name}`} />
+        <div
+          ref={elRef}
+          className="plotly-host echarts-host"
+          data-testid={`echarts-${name}`}
+          role="img"
+          aria-label={chartAccessibleName(name, payload, accessibleName ?? caption)}
+        />
       </div>
       {captionEl}
     </figure>

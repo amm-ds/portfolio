@@ -102,22 +102,35 @@ describe("EChartsFigure", () => {
     expect(onPayload).toHaveBeenCalledWith(SUPPORTED);
   });
 
-  it("falls back to the plotly renderer for unsupported payloads", async () => {
-    // fresh Response per call: the fallback path fetches the same URL twice
+  it("uses the authored title as the chart's accessible name", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockImplementation(() =>
-        Promise.resolve(
-          jsonResponse({ data: [{ type: "pie", values: [1, 2] }], layout: { height: 560 } }),
-        ),
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          data: SUPPORTED.data,
+          layout: { title: { text: "Observed<br>accuracy by fold" } },
+        }),
       ),
     );
+    render(<EChartsFigure pid="p" name="accessible_fig" />);
+    await waitFor(() => expect(mocks.init).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("img", { name: "Observed accuracy by fold" })).toBeInTheDocument();
+  });
+
+  it("reuses the parsed payload when unsupported figures fall back to Plotly", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ data: [{ type: "pie", values: [1, 2] }], layout: { height: 560 } }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
     const onPayload = vi.fn();
     render(<EChartsFigure pid="05-ml-pipeline-churn" name="pie_fig" onPayload={onPayload} />);
-    // plotly takes over: its own fetch + react, no echarts init
     await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
     expect(mocks.init).not.toHaveBeenCalled();
-    expect(onPayload).toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(onPayload).toHaveBeenCalledWith({
+      data: [{ type: "pie", values: [1, 2] }],
+      layout: { height: 560 },
+    });
   });
 
   it("falls back to the plotly renderer when the echarts init fails", async () => {

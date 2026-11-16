@@ -51,4 +51,19 @@ describe("FigureFrame", () => {
     render(<FigureFrame projectId="01-rag-agent" name="fold_stability" />);
     expect(document.querySelector(".figure-caption")).toBeNull();
   });
+
+  it("uses the authored aspect ratio and ignores invalid ratios", () => {
+    const { rerender } = render(<FigureFrame projectId="p" name="wide" aspectRatio={2} />);
+    expect(document.querySelector(".frame-wrap")).toHaveStyle({ aspectRatio: "2" });
+    rerender(<FigureFrame projectId="p" name="wide" aspectRatio={Number.NaN} />);
+    expect((document.querySelector(".frame-wrap") as HTMLElement).style.aspectRatio).toBe("");
+  });
+
+  it("replaces a failed iframe with an explicit error", () => {
+    render(<FigureFrame projectId="p" name="broken" />);
+    fireEvent(screen.getByTitle("Figure: broken"), new Event("error", { bubbles: true }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Unable to load figure broken");
+    expect(screen.queryByTitle("Figure: broken")).toBeNull();
+    expect(document.querySelector(".frame-skeleton")).toBeNull();
+  });
 });

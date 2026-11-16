@@ -12,7 +12,7 @@ afterEach(() => {
 });
 
 describe("PlotlyFigure import failure", () => {
-  it("uses the existing HTML fallback and clears the native payload", async () => {
+  it("uses the HTML fallback and retains parsed data for non-visual alternatives", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -26,6 +26,6 @@ describe("PlotlyFigure import failure", () => {
     render(<PlotlyFigure pid="p" name="chunk_failure" onPayload={onPayload} />);
 
     await waitFor(() => expect(screen.getByTitle("Figure: chunk_failure")).toBeInTheDocument());
-    expect(onPayload).toHaveBeenLastCalledWith(null);
+    expect(onPayload).toHaveBeenLastCalledWith({ data: [], layout: {} });
   });
 });

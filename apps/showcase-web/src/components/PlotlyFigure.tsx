@@ -43,14 +43,59 @@ export const PLOTLY_THEME_PALETTES: Record<Theme, PlotlyThemePalette> = {
   },
 };
 
-/** Scale the authored layout height to the measured container width (1000px design width). */
-export function scaledHeight(layoutHeight: unknown, containerWidth: number): number {
+function panelRows(layout: Record<string, unknown> | undefined): number {
+  if (!layout) return 1;
+  const gridRows = asRecord(layout.grid).rows;
+  if (typeof gridRows === "number" && Number.isFinite(gridRows) && gridRows >= 1) {
+    return Math.floor(gridRows);
+  }
+  // Subplot exports do not all include layout.grid. Distinct y-axis domains
+  // still identify stacked panels without mistaking columns for extra rows.
+  const domains = new Set<string>();
+  for (const [key, value] of Object.entries(layout)) {
+    if (!/^yaxis\d*$/.test(key)) continue;
+    const domain = asRecord(value).domain;
+    if (Array.isArray(domain) && domain.length === 2) domains.add(domain.join(":"));
+  }
+  return Math.max(1, domains.size);
+}
+
+/** Scale authored height to width, reserving one readable minimum per panel row. */
+export function scaledHeight(
+  layoutHeight: unknown,
+  containerWidth: number,
+  layout?: Record<string, unknown>,
+): number {
   const h =
     typeof layoutHeight === "number" && Number.isFinite(layoutHeight)
       ? layoutHeight
       : DEFAULT_HEIGHT;
+  const rows = panelRows(layout);
   const scaled = (h * containerWidth) / 1000;
-  return Math.min(MAX_SCALED_HEIGHT, Math.max(MIN_SCALED_HEIGHT, scaled));
+  return Math.min(MAX_SCALED_HEIGHT * rows, Math.max(MIN_SCALED_HEIGHT * rows, scaled));
+}
+
+/** Preserve the exported figure's proportions when its HTML iframe is used. */
+export function authoredAspectRatio(layout: Record<string, unknown> | null): number | undefined {
+  if (!layout) return undefined;
+  const width = typeof layout.width === "number" && layout.width > 0 ? layout.width : 1000;
+  const height =
+    typeof layout.height === "number" && layout.height > 0 ? layout.height : DEFAULT_HEIGHT;
+  return width / height;
+}
+
+function accessibleName(
+  name: string,
+  layout: Record<string, unknown> | undefined,
+  requested?: string,
+): string {
+  if (requested) return requested;
+  const title = asRecord(layout?.title).text;
+  if (typeof title === "string" && title) {
+    return title.replaceAll(/<br\s*\/?>/gi, " ").replaceAll(/<[^>]+>/g, "");
+  }
+  if (typeof layout?.title === "string" && layout.title) return layout.title;
+  return `Figure: ${name}`;
 }
 
 /** Chrome color precedence across themes. Committed figures bake dark-surface
@@ -180,7 +225,7 @@ export function buildLayout(
     autosize: true,
     paper_bgcolor: TRANSPARENT,
     plot_bgcolor: TRANSPARENT,
-    height: scaledHeight(height, containerWidth),
+    height: scaledHeight(height, containerWidth, raw),
     font: { ...rawFont, color: chromeColor(rawFont.color, palette.textColor, theme) },
     legend: {
       ...legendRest,
@@ -247,6 +292,8 @@ export function PlotlyFigure({
   name,
   caption,
   sectionId,
+  accessibleName: requestedAccessibleName,
+  initialPayload = null,
   onPayload,
 }: {
   pid: string;
@@ -254,11 +301,15 @@ export function PlotlyFigure({
   caption?: string;
   /** Story section id; when given, the caption links back to `#sec-{sectionId}`. */
   sectionId?: string;
+  /** Accessible chart name when no visible caption is rendered by this component. */
+  accessibleName?: string;
+  /** A previously fetched payload (used by ECharts fallback) avoids a second request. */
+  initialPayload?: PlotlyPayload | null;
   /** Notified with the parsed figure JSON (null when unavailable) so hosts
    * can offer a non-visual fallback such as a data table. */
   onPayload?: (payload: PlotlyPayload | null) => void;
 }) {
-  const [payload, setPayload] = useState<PlotlyPayload | null>(null);
+  const [payload, setPayload] = useState<PlotlyPayload | null>(initialPayload);
   const [failed, setFailed] = useState(false);
   const [inView, setInView] = useState(false);
   const { theme } = useTheme();
@@ -271,13 +322,18 @@ export function PlotlyFigure({
   const onPayloadRef = useRef(onPayload);
   onPayloadRef.current = onPayload;
 
-  // Figure data and the Plotly chunk share the same viewport gate.
+  // Figure data and the Plotly chunk share the same viewport gate. ECharts
+  // hands its parsed payload to this renderer when conversion is unsupported.
   useEffect(() => {
     let cancelled = false;
-    setPayload(null);
+    setPayload(initialPayload);
     setFailed(false);
     setRendered(false);
     if (!inView) return;
+    if (initialPayload) {
+      onPayloadRef.current?.(initialPayload);
+      return;
+    }
     fetch(`/projects/${pid}/figures/${name}.json`)
       .then((res) => {
         if (res.status === 404) return null;
@@ -303,7 +359,7 @@ export function PlotlyFigure({
     return () => {
       cancelled = true;
     };
-  }, [pid, name, inView]);
+  }, [pid, name, inView, initialPayload]);
 
   // Gate the (heavy) plotly chunk on viewport proximity; load immediately
   // when IntersectionObserver is unavailable.
@@ -349,11 +405,9 @@ export function PlotlyFigure({
         // a resize re-render may finish after unmount).
         if (!disposed) setRendered(true);
       } catch {
-        // Import and renderer failures use the same HTML fallback as missing JSON.
-        if (!disposed) {
-          setFailed(true);
-          onPayloadRef.current?.(null);
-        }
+        // Keep the parsed payload available for the table/CSV even when the
+        // visual renderer fails and the HTML iframe takes over.
+        if (!disposed) setFailed(true);
       }
     };
     void render();
@@ -376,7 +430,14 @@ export function PlotlyFigure({
   }, [payload, inView, theme]);
 
   if (failed) {
-    return <FigureFrame projectId={pid} name={name} caption={caption} />;
+    return (
+      <FigureFrame
+        projectId={pid}
+        name={name}
+        caption={caption}
+        aspectRatio={authoredAspectRatio(payload?.layout ?? null)}
+      />
+    );
   }
 
   const captionEl = caption ? (
@@ -398,7 +459,13 @@ export function PlotlyFigure({
             <span className="frame-skeleton-status">rendering figure…</span>
           </div>
         )}
-        <div ref={elRef} className="plotly-host" data-testid={`plotly-${name}`} />
+        <div
+          ref={elRef}
+          className="plotly-host"
+          data-testid={`plotly-${name}`}
+          role="img"
+          aria-label={accessibleName(name, payload?.layout, requestedAccessibleName ?? caption)}
+        />
       </div>
       {captionEl}
     </figure>
