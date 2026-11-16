@@ -42,9 +42,11 @@ describe("App routing", () => {
           "AI Document Intelligence Workbench",
         ),
       );
-      expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute(
-        "href",
-        "https://alejandromerida.dev/apps/document-intelligence",
+      await waitFor(() =>
+        expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute(
+          "href",
+          "https://alejandromerida.dev/apps/document-intelligence",
+        ),
       );
     }
   });

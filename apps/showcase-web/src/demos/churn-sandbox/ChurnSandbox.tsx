@@ -386,18 +386,17 @@ export default function ChurnSandbox() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    getDemoManifest("churn-sandbox")
-      .then((m) => !cancelled && setManifest(m))
+    const controller = new AbortController();
+    getDemoManifest("churn-sandbox", controller.signal)
+      .then((m) => !controller.signal.aborted && setManifest(m))
       .catch(() => {
         /* payload fetch below reports the real error */
       });
-    fetchChurnPayload("churn-sandbox")
-      .then((p) => !cancelled && setPayload(p))
-      .catch(() => !cancelled && setError("could not load the demo payload — is the API running?"));
-    return () => {
-      cancelled = true;
-    };
+    fetchChurnPayload("churn-sandbox", controller.signal)
+      .then((p) => !controller.signal.aborted && setPayload(p))
+      .catch(() => !controller.signal.aborted &&
+        setError("could not load the demo payload — is the API running?"));
+    return () => controller.abort();
   }, []);
 
   if (error) {

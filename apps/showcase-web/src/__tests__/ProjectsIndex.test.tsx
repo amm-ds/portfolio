@@ -424,9 +424,9 @@ describe("ProjectsIndex", () => {
     expect(demoCards[1].getAttribute("href")).toBe("/demos/forecast-workbench");
     // both static fallback cards carry the same structure: the labeled
     // "description" block only, plus the results chip with the headline
-    // metric (churn hero "$601 vs $1,035 naive", forecast hero
+    // metric (churn hero "$601 vs $1,035 contact-everyone", forecast hero
     // "0.6161 vs 0.8929")
-    const metrics = ["$601 vs $1,035 naive", "0.6161 vs 0.8929"];
+    const metrics = ["$601 vs $1,035 contact-everyone", "0.6161 vs 0.8929"];
     demoCards.forEach((card, i) => {
       const blockLabels = [...card.querySelectorAll(".study-block-label")].map(
         (el) => el.textContent,
@@ -607,7 +607,7 @@ describe("ProjectsIndex", () => {
     );
     await waitFor(() =>
       expect(
-        screen.getByText(/the live registry is unreachable — showing the last published snapshot/i),
+        screen.getByText(/the live project index is unreachable — showing its last published snapshot/i),
       ).toBeInTheDocument(),
     );
     // heading outline: apps first, then live demos and experiment rows
@@ -627,7 +627,7 @@ describe("ProjectsIndex", () => {
     );
   });
 
-  it("keeps the plain error state when only /projects fails", async () => {
+  it("uses the project snapshot when /projects fails even while /demos is healthy", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.endsWith("/projects")) return Promise.reject(new Error("down"));
@@ -640,9 +640,14 @@ describe("ProjectsIndex", () => {
         <ProjectsIndex />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(screen.getByText(/could not load/i)).toBeInTheDocument());
-    expect(document.querySelector(".experiments-block")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+
+    await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(13));
+    expect(screen.getByText(/live project index is unreachable/i)).toBeInTheDocument();
+    expect(screen.getByText(/no demos published yet/i)).toBeInTheDocument();
+    expect(screen.queryByText(/live demo registry is unreachable/i)).toBeNull();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    // Only DemosSection fetches /demos; project recovery does not probe it again.
+    expect(fetchMock.mock.calls.filter(([input]) => String(input).endsWith("/demos"))).toHaveLength(1);
   });
 
   it("renders demo and experiment cards with the SAME shared study-card structure", async () => {

@@ -625,6 +625,15 @@ def demo_payload(demo_id: str, request: Request) -> Response:
             detail=f"payload for {demo_id} is missing required keys: {', '.join(missing)}",
         )
     payload_sv = data.get("schema_version")
+    # Churn's committed v1 artifact predates the field. Nonlegacy versions and
+    # manifests that explicitly list schema_version require it; declared values
+    # must always match.
+    version_required = m.payload.schema_version != 1 or "schema_version" in m.payload.required_keys
+    if payload_sv is None and version_required:
+        raise HTTPException(
+            status_code=409,
+            detail=f"payload for {demo_id} is missing required key: schema_version",
+        )
     if payload_sv is not None and payload_sv != m.payload.schema_version:
         raise HTTPException(
             status_code=409,

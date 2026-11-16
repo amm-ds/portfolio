@@ -12,9 +12,14 @@ export interface VitalSample {
   value: number;
 }
 
-let clsTotal = 0;
-let inpMax = 0;
-let lcpLast = 0;
+interface RouteMeasurements {
+  cls: number;
+  lcp: number;
+  /** Longest event duration for each browser interaction id. */
+  interactions: Map<number, number>;
+}
+
+const measurements = new Map<string, RouteMeasurements>();
 let installed = false;
 
 export function deviceClass(): "mobile" | "tablet" | "desktop" {
@@ -29,24 +34,48 @@ export function routeKey(pathname: string = window.location.pathname): string {
   return "/" + parts.join("/");
 }
 
+function forCurrentRoute(): RouteMeasurements {
+  const route = routeKey();
+  let current = measurements.get(route);
+  if (!current) {
+    current = { cls: 0, lcp: 0, interactions: new Map() };
+    measurements.set(route, current);
+  }
+  return current;
+}
+
 function buildSha(): string {
   return document.querySelector('meta[name="build-sha"]')?.getAttribute("content") ?? "dev";
 }
 
-/** Push the final values and beacon them; no-op when nothing was measured. */
+/** INP's high-percentile value: worst interaction below 50 interactions, then
+ * approximately one slower interaction excluded per 50 (p98). */
+function interactionToNextPaint(interactions: Map<number, number>): number {
+  const durations = [...interactions.values()].sort((a, b) => a - b);
+  if (durations.length === 0) return 0;
+  const index = durations.length - 1 - Math.floor(durations.length / 50);
+  return durations[index];
+}
+
+/** Push final values per originating route; no-op when nothing was measured. */
 export function flush(): void {
-  const vitals: VitalSample[] = [];
-  if (lcpLast > 0) vitals.push({ metric: "LCP", value: Math.round(lcpLast) });
-  if (inpMax > 0) vitals.push({ metric: "INP", value: Math.round(inpMax) });
-  if (clsTotal > 0) vitals.push({ metric: "CLS", value: Number(clsTotal.toFixed(4)) });
+  const vitals: (VitalSample & { route: string; device: string; sha: string })[] = [];
+  for (const [route, current] of measurements) {
+    const samples: VitalSample[] = [];
+    if (current.lcp > 0) samples.push({ metric: "LCP", value: Math.round(current.lcp) });
+    const inp = interactionToNextPaint(current.interactions);
+    if (inp > 0) samples.push({ metric: "INP", value: Math.round(inp) });
+    if (current.cls > 0) samples.push({ metric: "CLS", value: Number(current.cls.toFixed(4)) });
+    vitals.push(...samples.map((sample) => ({
+      ...sample,
+      route,
+      device: deviceClass(),
+      sha: buildSha(),
+    })));
+  }
+  measurements.clear(); // a later pagehide cannot double-send consumed values
   if (vitals.length === 0) return;
-  // consume the accumulators so a later pagehide cannot double-send
-  lcpLast = 0;
-  inpMax = 0;
-  clsTotal = 0;
-  const payload = JSON.stringify({
-    vitals: vitals.map((v) => ({ ...v, route: routeKey(), device: deviceClass(), sha: buildSha() })),
-  });
+  const payload = JSON.stringify({ vitals });
   const blob = new Blob([payload], { type: "application/json" });
   if (!navigator.sendBeacon("/vitals", blob)) {
     void fetch("/vitals", {
@@ -68,7 +97,7 @@ export function installVitals(): void {
   try {
     const lcp = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      if (entries.length > 0) lcpLast = entries[entries.length - 1].startTime;
+      if (entries.length > 0) forCurrentRoute().lcp = entries[entries.length - 1].startTime;
     });
     lcp.observe({ type: "largest-contentful-paint", buffered: true });
   } catch {
@@ -79,7 +108,7 @@ export function installVitals(): void {
     const cls = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         const shift = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
-        if (!shift.hadRecentInput) clsTotal += shift.value ?? 0;
+        if (!shift.hadRecentInput) forCurrentRoute().cls += shift.value ?? 0;
       }
     });
     cls.observe({ type: "layout-shift", buffered: true });
@@ -89,10 +118,12 @@ export function installVitals(): void {
 
   try {
     const inp = new PerformanceObserver((list) => {
+      const current = forCurrentRoute();
       for (const entry of list.getEntries()) {
         const timing = entry as PerformanceEntry & { interactionId?: number };
         if (timing.interactionId && timing.interactionId > 0) {
-          inpMax = Math.max(inpMax, timing.duration);
+          const previous = current.interactions.get(timing.interactionId) ?? 0;
+          current.interactions.set(timing.interactionId, Math.max(previous, timing.duration));
         }
       }
     });

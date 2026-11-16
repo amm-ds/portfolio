@@ -86,6 +86,8 @@ export interface CustomerPreset {
 }
 
 export interface ChurnPayload {
+  /** Legacy v1 artifacts omitted this field; declared versions must match. */
+  schema_version?: 1;
   demo: string;
   project: string;
   holdout_n: number;

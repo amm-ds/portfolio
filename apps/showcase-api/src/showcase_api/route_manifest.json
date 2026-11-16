@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-15T17:29:25+00:00",
+  "generated_at": "2026-11-16T02:36:48+00:00",
   "sources": [
     "apps/showcase-web/src/App.tsx",
     "projects/*/portfolio.yaml",
@@ -12,7 +12,6 @@
     "/apps/agent-chat",
     "/apps/document-intelligence",
     "/apps/document-review",
-    "/apps/eval-workbench",
     "/contact",
     "/demos/churn-sandbox",
     "/demos/forecast-workbench",

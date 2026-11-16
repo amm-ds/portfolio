@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ChurnPayload } from "../types";
+import { fetchChurnPayload } from "./payload";
 
 /** The REAL committed payload (built by `churn-pipeline demo-payload`) — the
  * contract test fails if the artifact drifts from what the UI reads. Vitest
@@ -46,7 +47,7 @@ describe("churn-sandbox payload contract (real committed JSON)", () => {
     expect(payload.cost_model).toEqual({
       fp_cost: 1,
       fn_cost: 5,
-      note: "cost = fp_cost·FP + fn_cost·FN per 1,000-customer holdout",
+      note: "cost = fp_cost·FP + fn_cost·FN across the 1,409-row holdout",
     });
     expect(payload.holdout_n).toBe(1409);
   });
@@ -56,12 +57,12 @@ describe("churn-sandbox payload contract (real committed JSON)", () => {
     expect(headline.cost_naive).toBe(1035);
     expect(headline.cost_selected).toBe(601);
     expect(headline.delta_ci).toEqual({
-      point: -416,
-      lo: -485,
-      hi: -343,
+      point: -434,
+      lo: -508,
+      hi: -353,
       significant_95: true,
     });
-    // the hero renders these as "$601 vs $1,035 naive" + "CI [−485, −343]"
+    // the hero renders these as "$601 vs $1,035 contact-everyone" + the paired CI
     expect(Math.round(headline.cost_selected)).toBe(601);
     expect(Math.round(headline.cost_naive)).toBe(1035);
     // …and the committed threshold grid reproduces the headline cost at the
@@ -105,5 +106,37 @@ describe("churn-sandbox payload contract (real committed JSON)", () => {
       expect(bin.observed).toBeGreaterThanOrEqual(0);
       expect(bin.observed).toBeLessThanOrEqual(1);
     }
+  });
+});
+
+
+describe("churn-sandbox runtime payload validation", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function serve(value: unknown): void {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(value))));
+  }
+
+  it("accepts the committed legacy-v1 payload and forwards cancellation", async () => {
+    serve(payload);
+    const controller = new AbortController();
+    await expect(fetchChurnPayload("churn-sandbox", controller.signal)).resolves.toEqual(payload);
+    expect(fetch).toHaveBeenCalledWith("/demos/churn-sandbox/payload", {
+      signal: controller.signal,
+    });
+  });
+
+  it("rejects a declared wrong schema version", async () => {
+    const wrongVersion = structuredClone(payload);
+    Object.assign(wrongVersion, { schema_version: 2 });
+    serve(wrongVersion);
+    await expect(fetchChurnPayload("churn-sandbox")).rejects.toThrow("schema_version");
+  });
+
+  it("rejects malformed nested model data", async () => {
+    const malformed = structuredClone(payload);
+    Object.assign(malformed.model, { threshold_selected: "not-a-number" });
+    serve(malformed);
+    await expect(fetchChurnPayload("churn-sandbox")).rejects.toThrow("invalid churn demo payload");
   });
 });

@@ -23,6 +23,7 @@ describe("vitals collector", () => {
   beforeEach(() => {
     vi.resetModules();
     observerCallbacks.clear();
+    window.history.replaceState({}, "", "/");
     vi.stubGlobal("PerformanceObserver", FakePerformanceObserver);
   });
 
@@ -98,5 +99,64 @@ describe("vitals collector", () => {
     mod.installVitals();
     mod.flush();
     expect(sendBeacon).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("vitals route and INP semantics", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    observerCallbacks.clear();
+    window.history.replaceState({}, "", "/");
+    vi.stubGlobal("PerformanceObserver", FakePerformanceObserver);
+  });
+
+  it("attributes each measurement to the route where it was observed", async () => {
+    const sendBeacon = vi.fn().mockReturnValue(true);
+    Object.defineProperty(navigator, "sendBeacon", { value: sendBeacon, configurable: true });
+    const mod = await import("../lib/vitals");
+    mod.installVitals();
+
+    emit("largest-contentful-paint", [{ startTime: 100 }]);
+    window.history.pushState({}, "", "/projects/01-rag-agent/report");
+    emit("layout-shift", [{ value: 0.03, hadRecentInput: false }]);
+    emit("event", [{ duration: 45, interactionId: 9 }]);
+    mod.flush();
+
+    const [, blob] = sendBeacon.mock.calls[0] as [string, Blob];
+    const parsed = JSON.parse(await blob.text()) as {
+      vitals: { metric: string; route: string }[];
+    };
+    expect(parsed.vitals.find((v) => v.metric === "LCP")?.route).toBe("/");
+    expect(parsed.vitals.find((v) => v.metric === "CLS")?.route).toBe(
+      "/projects/01-rag-agent",
+    );
+    expect(parsed.vitals.find((v) => v.metric === "INP")?.route).toBe(
+      "/projects/01-rag-agent",
+    );
+  });
+
+  it("uses the approximate p98 interaction duration instead of the outlier maximum", async () => {
+    const sendBeacon = vi.fn().mockReturnValue(true);
+    Object.defineProperty(navigator, "sendBeacon", { value: sendBeacon, configurable: true });
+    const mod = await import("../lib/vitals");
+    mod.installVitals();
+
+    emit("event", [
+      ...Array.from({ length: 50 }, (_, index) => ({
+        duration: index + 20,
+        interactionId: index + 1,
+      })),
+      { duration: 5, interactionId: 1 }, // same interaction never becomes a second sample
+    ]);
+    mod.flush();
+
+    const [, blob] = sendBeacon.mock.calls[0] as [string, Blob];
+    const parsed = JSON.parse(await blob.text()) as {
+      vitals: { metric: string; value: number }[];
+    };
+    expect(parsed.vitals).toEqual([
+      expect.objectContaining({ metric: "INP", value: 68 }),
+    ]);
   });
 });

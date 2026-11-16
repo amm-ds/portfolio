@@ -419,6 +419,9 @@ describe("ChurnSandbox", () => {
       expect(strip.textContent).toContain("64.0%");
       expect(strip.textContent).toContain("Alarm at t = 0.30 — this customer gets contacted");
       expect(strip.textContent).toContain("score result · at-risk fiber");
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Live score ready: churn probability 64.0%.",
+      );
     });
     const scorerBox = document.querySelector(".wb-scorer")!;
     expect(scorerBox.querySelector(".demo-score-result")).toBeNull();
@@ -445,6 +448,9 @@ describe("ChurnSandbox", () => {
       expect(
         screen.getByText("Live scoring unavailable — showing precomputed presets only"),
       ).toBeInTheDocument(),
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Live scoring unavailable — showing precomputed presets only.",
     );
   });
 
@@ -617,7 +623,16 @@ describe("churn sandbox routing & links", () => {
     mockFetch((path) => {
       if (path.endsWith("/projects"))
         return jsonResponse([
-          { id: "99-no-demo", title: "No Demo", domain: "testing", techniques: ["synthetic"] },
+          {
+            id: "99-no-demo",
+            title: "No Demo",
+            domain: "testing",
+            topic: "Testing",
+            techniques: ["synthetic"],
+            data: "synthetic",
+            status: "working",
+            order: 99,
+          },
         ]);
       if (path.endsWith("/demos")) return jsonResponse([]);
       return jsonResponse({ detail: "no story" }, 404);

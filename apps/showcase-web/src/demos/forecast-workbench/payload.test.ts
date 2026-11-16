@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ForecastWorkbenchPayload } from "../types";
+import { fetchForecastPayload } from "./payload";
 
 /** The REAL committed payload (built by `cli demo-payload-m5-full`) — the
  * contract test fails if the artifact drifts from what the UI reads. Vitest
@@ -139,5 +140,44 @@ describe("forecast-workbench payload contract (real committed JSON)", () => {
         expect(wape).toBeCloseTo(err / vol, 3);
       }
     }
+  });
+});
+
+
+describe("forecast-workbench runtime payload validation", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function serve(value: unknown): void {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(value))));
+  }
+
+  it("accepts the committed schema-v4 payload and forwards cancellation", async () => {
+    serve(payload);
+    const controller = new AbortController();
+    await expect(fetchForecastPayload("forecast-workbench", controller.signal)).resolves.toEqual(payload);
+    expect(fetch).toHaveBeenCalledWith("/demos/forecast-workbench/payload", {
+      signal: controller.signal,
+    });
+  });
+
+  it("rejects a wrong or missing schema version", async () => {
+    const wrongVersion = structuredClone(payload);
+    wrongVersion.schema_version = 3;
+    serve(wrongVersion);
+    await expect(fetchForecastPayload("forecast-workbench")).rejects.toThrow("schema_version");
+
+    const missingVersion = structuredClone(payload) as Partial<ForecastWorkbenchPayload>;
+    delete missingVersion.schema_version;
+    serve(missingVersion);
+    await expect(fetchForecastPayload("forecast-workbench")).rejects.toThrow("schema_version");
+  });
+
+  it("rejects malformed nested forecast windows", async () => {
+    const malformed = structuredClone(payload);
+    malformed.catalog[0].windows.actual = [];
+    serve(malformed);
+    await expect(fetchForecastPayload("forecast-workbench")).rejects.toThrow(
+      "invalid forecast demo payload",
+    );
   });
 });

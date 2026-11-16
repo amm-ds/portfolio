@@ -234,6 +234,9 @@ def test_vitals_rejects_bad_payloads(monkeypatch, tmp_path: Path) -> None:  # ty
     assert one(device="tv") == 422
     assert one(sha="ab") == 422  # below the 3-char floor
     assert one(route="x" * 200) == 422
+    assert one(route="https://example.com/projects") == 422  # full URLs never leave the browser
+    assert one(route="/projects/01-rag-agent/report") == 422  # at most two segments
+    assert one(route="/Projects/01-rag-agent") == 422
     assert client.post("/vitals", json={"vitals": []}).status_code == 422
     assert client.post("/vitals", json={"nope": 1}).status_code == 422
 
@@ -687,6 +690,28 @@ def test_demo_payload_409_on_missing_required_key(
     assert "overall" in r.json()["error"]
 
 
+def test_demo_payload_409_on_wrong_schema_version(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    _write_demo_project(tmp_path)
+    payload_file = tmp_path / "05-ml-pipeline-churn" / "reports" / "demo_payload.json"
+    payload_file.write_text(json.dumps({**_DEMO_PAYLOAD, "schema_version": 2}))
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    r = client.get("/demos/churn-sandbox/payload")
+    assert r.status_code == 409
+    assert "schema_version 2" in r.json()["error"]
+
+
+def test_demo_payload_409_when_nonlegacy_version_is_missing(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    _write_demo_project(tmp_path)
+    project = tmp_path / "05-ml-pipeline-churn"
+    (project / "demo.yaml").write_text(_DEMO_YAML.replace("schema_version: 1", "schema_version: 4"))
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    r = client.get("/demos/churn-sandbox/payload")
+    assert r.status_code == 409
+    assert "missing required key: schema_version" in r.json()["error"]
+
+
 def test_forecast_503_without_artifacts(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     from showcase_api import main
 
@@ -969,6 +994,13 @@ def test_churn_score_happy_path_and_guards(tmp_path: Path, monkeypatch) -> None:
     r = client.post(
         "/projects/05-ml-pipeline-churn/score",
         json={"features": {"tenure_months": 1.0, "monthly_charges": 90.0}},
+    )
+    assert r.status_code == 422
+
+    # malformed nested input is rejected rather than reaching model serving
+    r = client.post(
+        "/projects/05-ml-pipeline-churn/score",
+        json={"features": {"tenure_months": {"months": 1}, "monthly_charges": 90.0}},
     )
     assert r.status_code == 422
 

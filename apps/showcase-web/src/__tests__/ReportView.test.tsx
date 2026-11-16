@@ -187,6 +187,18 @@ describe("ReportView", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("aborts an in-flight report request on unmount", async () => {
+    let signal: AbortSignal | undefined;
+    vi.stubGlobal("fetch", vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      signal = init?.signal ?? undefined;
+      return new Promise<Response>(() => undefined);
+    }));
+    const view = renderReport();
+    await waitFor(() => expect(signal).toBeDefined());
+    view.unmount();
+    expect(signal?.aborted).toBe(true);
+  });
+
   it("is routed inside the App shell at /projects/:id/report, full width with the footer kept", async () => {
     vi.stubGlobal(
       "fetch",

@@ -60,25 +60,24 @@ export function ReportView() {
   });
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     setSourceHtml(null);
     setStatus("loading");
-    fetch(`/projects/${id}/report`)
+    fetch(`/projects/${id}/report`, { signal: controller.signal })
       .then(async (res) => {
+        if (controller.signal.aborted) return null;
         if (res.status === 404) {
-          if (!cancelled) setStatus("missing");
+          setStatus("missing");
           return null;
         }
         if (!res.ok) throw new Error(`report request failed: ${res.status}`);
         return res.text();
       })
       .then((text) => {
-        if (!cancelled && text !== null) setSourceHtml(text);
+        if (!controller.signal.aborted && text !== null) setSourceHtml(text);
       })
-      .catch(() => !cancelled && setStatus("error"));
-    return () => {
-      cancelled = true;
-    };
+      .catch(() => !controller.signal.aborted && setStatus("error"));
+    return () => controller.abort();
   }, [id, attempt]);
 
   if (status === "missing") {

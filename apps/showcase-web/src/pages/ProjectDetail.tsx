@@ -97,34 +97,32 @@ export function ProjectDetail() {
   // Manifest description: prefer the demo manifest's hook, fall back to the
   // live registry entry's hook; the baked line above stays otherwise.
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     setLiveDemo(null);
-    getDemoRegistry()
+    getDemoRegistry(controller.signal)
       .then(async (entries) => {
         const entry = entries.find((e) => e.project === id);
         if (!entry) return;
         let line = entry.hook || GENERIC_DEMO_LINE;
         try {
-          const manifest = await getDemoManifest(entry.id);
+          const manifest = await getDemoManifest(entry.id, controller.signal);
           line = manifest.hook || line;
         } catch {
           /* registry hook stays */
         }
-        if (!cancelled) setLiveDemo({ href: entry.href, line });
+        if (!controller.signal.aborted) setLiveDemo({ href: entry.href, line });
       })
       .catch(() => {
         /* baked values remain */
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [id]);
 
   const demoHref = liveDemo?.href ?? bakedDemo?.href ?? null;
   const demoLine = liveDemo?.line ?? bakedDemo?.line ?? GENERIC_DEMO_LINE;
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     setProjects([]);
     setDetail(null);
     setNotFound(false);
@@ -136,9 +134,9 @@ export function ProjectDetail() {
     setFiguresStatus("loading");
     setError(null);
 
-    getProjects()
+    getProjects(controller.signal)
       .then((list) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         setProjects(list);
         const project = list.find((p) => p.id === id);
         if (!project) {
@@ -151,46 +149,45 @@ export function ProjectDetail() {
           techniques: project.techniques,
         });
       })
-      .catch(() => !cancelled && setError("could not load project metadata from the API."));
+      .catch(() => !controller.signal.aborted &&
+        setError("could not load project metadata from the API."));
 
-    getStory(id)
+    getStory(id, controller.signal)
       .then((s) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         setStory(s);
         setStoryStatus(s === null ? "missing" : "ready");
       })
       .catch(() => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         setStory(null);
         setStoryStatus("error");
       });
 
-    getMetrics(id)
+    getMetrics(id, controller.signal)
       .then((m) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         setMetrics(m);
         setMetricsStatus(m === null ? "missing" : "ready");
       })
-      .catch(() => !cancelled && setMetricsStatus("error"));
+      .catch(() => !controller.signal.aborted && setMetricsStatus("error"));
 
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [id, attempt]);
 
   // Figures list only feeds the raw-artifacts fallback (stories reference figures directly).
   useEffect(() => {
     if (storyStatus !== "missing") return;
-    let cancelled = false;
+    const controller = new AbortController();
     setFiguresStatus("loading");
-    getFigures(id)
+    getFigures(id, controller.signal)
       .then((f) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         setFigures(f);
         setFiguresStatus("ready");
       })
       .catch((e: unknown) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         if (e instanceof ApiError && e.status === 404) {
           setFigures([]);
           setFiguresStatus("ready");
@@ -198,9 +195,7 @@ export function ProjectDetail() {
           setFiguresStatus("error");
         }
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [id, storyStatus]);
 
   if (notFound) {
@@ -224,22 +219,15 @@ export function ProjectDetail() {
     </button>
   );
 
-  if (error) {
-    return (
-      <div className="state-box error" role="alert">
-        <h1>Project could not be loaded</h1>
-        <p>{error}</p>
-        <p>
-          {retryButton} <Link to="/projects">← all experiments</Link>
-        </p>
-      </div>
-    );
-  }
-
   return (
     <>
       <ExperimentCrumbs projectId={id} projects={projects} />
-      {detail === null && bakedDetail === null ? (
+      {error && (
+        <div className="state-box error" role="alert">
+          Project metadata could not be loaded; available results remain below. {retryButton}
+        </div>
+      )}
+      {detail === null && bakedDetail === null && !error ? (
         <p className="loading">loading project…</p>
       ) : headerDetail ? (
         <header className="detail-header">

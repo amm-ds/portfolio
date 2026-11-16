@@ -9,6 +9,7 @@ const PROJECT = {
   id: "01-rag-agent",
   title: "RAG Agent",
   domain: "NLP",
+  topic: "Agentic AI & LLM",
   techniques: ["RAG", "FastAPI"],
   data: "docs",
   status: "flagship",
@@ -202,12 +203,30 @@ describe("ProjectDetail story handling", () => {
     await waitFor(() => expect(screen.getByText(/unknown project/i)).toBeInTheDocument());
   });
 
-  it("shows a retryable metadata error instead of an unknown project on API failure", async () => {
-    mockFetch(() => jsonResponse({ detail: "server error" }, 500));
+  it("keeps independently available story and metrics when project metadata fails", async () => {
+    mockFetch((path) => {
+      if (path.endsWith("/projects")) return jsonResponse({ detail: "server error" }, 500);
+      if (path.endsWith("/story")) return jsonResponse({
+        project_id: "01-rag-agent",
+        sections: [{
+          id: "background",
+          title: "Background",
+          text_md: "Story remains available.",
+          figures: [],
+          metrics_keys: ["tuned"],
+        }],
+      });
+      if (path.endsWith("/metrics")) return jsonResponse({ tuned: { faithfulness: 0.75 } });
+      return jsonResponse({ detail: "not found" }, 404);
+    });
 
     renderDetail();
-    await screen.findByText(/project could not be loaded/i);
+    await screen.findByText("Background");
+    expect(screen.getByText(/project metadata could not be loaded/i)).toBeInTheDocument();
+    expect(screen.getByText("Story remains available.")).toBeInTheDocument();
+    expect(screen.getByText("tuned")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Unknown project" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Project could not be loaded" })).toBeNull();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 

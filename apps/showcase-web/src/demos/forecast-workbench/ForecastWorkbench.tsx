@@ -110,18 +110,17 @@ export default function ForecastWorkbench() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    getDemoManifest("forecast-workbench")
-      .then((m) => !cancelled && setManifest(m))
+    const controller = new AbortController();
+    getDemoManifest("forecast-workbench", controller.signal)
+      .then((m) => !controller.signal.aborted && setManifest(m))
       .catch(() => {
         /* payload fetch below reports the real error */
       });
-    fetchForecastPayload("forecast-workbench")
-      .then((p) => !cancelled && setPayload(p))
-      .catch(() => !cancelled && setError("could not load the demo payload — is the API running?"));
-    return () => {
-      cancelled = true;
-    };
+    fetchForecastPayload("forecast-workbench", controller.signal)
+      .then((p) => !controller.signal.aborted && setPayload(p))
+      .catch(() => !controller.signal.aborted &&
+        setError("could not load the demo payload — is the API running?"));
+    return () => controller.abort();
   }, []);
 
   if (error) {

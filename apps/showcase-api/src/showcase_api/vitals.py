@@ -1,9 +1,9 @@
 """Privacy-preserving field Web Vitals collection (external evaluation P1-5).
 
-The SPA reports p75-bound measurements (LCP, INP, CLS) with the route, the
-device class and the release build SHA. Nothing else: no cookies, no client
-identifiers, no message content, no full URLs — the route is reduced to its
-first two path segments before it leaves the browser. The endpoint validates
+The SPA reports field measurements (LCP, INP, CLS) with their originating
+route, the device class and the release build SHA. Nothing else: no cookies, no
+client identifiers, no message content, no full URLs — the route is reduced to
+its first two path segments before it leaves the browser. The endpoint validates
 with pydantic, appends to a JSONL file (retention: last 50k entries / 30 days,
 whichever is smaller), and answers 204. Same-origin only, so the strict CSP's
 connect-src 'self' covers it with no policy change.
@@ -31,7 +31,12 @@ _RETENTION_DAYS = 30
 class Vital(BaseModel):
     metric: str = Field(pattern="^(LCP|INP|CLS)$")
     value: float = Field(ge=0, le=1_000_000)
-    route: str = Field(min_length=1, max_length=120)
+    # Reduced route keys only: root or one/two lowercase URL path segments.
+    route: str = Field(
+        min_length=1,
+        max_length=120,
+        pattern=r"^/(?:[a-z0-9-]+(?:/[a-z0-9-]+)?)?$",
+    )
     device: str = Field(pattern="^(mobile|tablet|desktop)$")
     sha: str = Field(min_length=3, max_length=64)
 

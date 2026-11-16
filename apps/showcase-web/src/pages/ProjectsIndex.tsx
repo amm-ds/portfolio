@@ -235,19 +235,17 @@ function DemosSection({ projects }: { projects: Project[] | null }) {
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     setEntries(null);
     setStatus("loading");
-    getDemoRegistry()
+    getDemoRegistry(controller.signal)
       .then((list) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         setEntries(list);
         setStatus("ready");
       })
-      .catch(() => !cancelled && setStatus("error"));
-    return () => {
-      cancelled = true;
-    };
+      .catch(() => !controller.signal.aborted && setStatus("error"));
+    return () => controller.abort();
   }, [attempt]);
 
   const domainOf = (projectId: string | undefined) =>
@@ -302,11 +300,9 @@ function DemosSection({ projects }: { projects: Project[] | null }) {
  * labels with their cards in a responsive 2-column grid. Both blocks live
  * inside /projects (`/experiments` is an alias).
  *
- * Resilience: if GET /projects fails we probe GET /demos — only when both are
- * unreachable do we conclude the registry is down and render the last
- * published snapshot (STATIC_PROJECTS, baked at build time), with a Retry
- * button that re-fetches. A /projects failure with a live /demos endpoint
- * keeps the plain error state. */
+ * Resilience is section-scoped: a GET /projects failure renders the committed
+ * project snapshot immediately; the demos section independently decides whether
+ * its own snapshot is needed. */
 export function ProjectsIndex() {
   usePageMeta({
     title: "Demos & Experiments",
@@ -315,38 +311,26 @@ export function ProjectsIndex() {
   });
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [headlines, setHeadlines] = useState<Record<string, ProjectHeadline>>({});
-  const [error, setError] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     setProjects(null);
     setHeadlines({});
-    setError(null);
     setSnapshot(false);
-    getProjectHeadlines()
-      .then((index) => !cancelled && setHeadlines(index))
+    getProjectHeadlines(controller.signal)
+      .then((index) => !controller.signal.aborted && setHeadlines(index))
       .catch(() => undefined);
-    getProjects()
-      .then((list) => !cancelled && setProjects([...list].sort((a, b) => a.order - b.order)))
+    getProjects(controller.signal)
+      .then((list) => !controller.signal.aborted &&
+        setProjects([...list].sort((a, b) => a.order - b.order)))
       .catch(() => {
-        if (cancelled) return;
-        getDemoRegistry()
-          .then(
-            () =>
-              !cancelled &&
-              setError("could not load the project index — is the API running?"),
-          )
-          .catch(() => {
-            if (cancelled) return;
-            setSnapshot(true);
-            setProjects([...STATIC_PROJECTS].sort((a, b) => a.order - b.order));
-          });
+        if (controller.signal.aborted) return;
+        setSnapshot(true);
+        setProjects([...STATIC_PROJECTS].sort((a, b) => a.order - b.order));
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [attempt]);
 
   const rows = projects !== null ? groupByRow(projects) : [];
@@ -371,14 +355,13 @@ export function ProjectsIndex() {
       />
       {snapshot && (
         <div className="state-box error" role="alert">
-          The live registry is unreachable — showing the last published snapshot.{" "}
+          The live project index is unreachable — showing its last published snapshot.{" "}
           <button type="button" onClick={() => setAttempt((n) => n + 1)}>
             Retry
           </button>
         </div>
       )}
-      {error && <div className="state-box error">{error}</div>}
-      {!error && !snapshot && projects === null && <p className="loading">loading projects…</p>}
+      {!snapshot && projects === null && <p className="loading">loading projects…</p>}
       {projects !== null && projects.length === 0 && (
         <div className="state-box">No projects published yet — check back soon.</div>
       )}

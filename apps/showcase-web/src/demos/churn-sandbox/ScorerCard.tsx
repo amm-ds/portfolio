@@ -5,9 +5,24 @@ import type { ChurnPayload } from "../types";
 type ScoreState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "ok" }
+  | { status: "ok"; probability: number }
   | { status: "unavailable" }
   | { status: "error" };
+
+function scoreAnnouncement(score: ScoreState): string {
+  switch (score.status) {
+    case "loading":
+      return "Scoring customer…";
+    case "ok":
+      return `Live score ready: churn probability ${(score.probability * 100).toFixed(1)}%.`;
+    case "unavailable":
+      return "Live scoring unavailable — showing precomputed presets only.";
+    case "error":
+      return "Scoring request failed — try again.";
+    default:
+      return "";
+  }
+}
 
 /**
  * Score-a-customer card: lives in the workbench controls column (churn
@@ -40,7 +55,7 @@ export function ScorerCard({
     scoreChurn(payload.project, form)
       .then((r) => {
         if (seq !== requestSeq.current) return; // stale response
-        setScore({ status: "ok" });
+        setScore({ status: "ok", probability: r.churn_probability });
         onScore(r.churn_probability);
       })
       .catch((e) => {
@@ -114,6 +129,9 @@ export function ScorerCard({
           </button>
         </div>
       </form>
+      <p className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">
+        {scoreAnnouncement(score)}
+      </p>
       {score.status === "unavailable" && (
         <p className="state-box demo-score-note">
           Live scoring unavailable — showing precomputed presets only
