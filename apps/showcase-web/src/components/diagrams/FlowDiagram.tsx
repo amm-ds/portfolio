@@ -441,12 +441,12 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
     if (!canvas) return;
     let previousWidth = Math.round(canvas.clientWidth);
     let resizeFrame = 0;
-    const observer = new ResizeObserver(([entry]) => {
-      const width = Math.round(entry.contentRect.width);
+    const onResize = () => {
+      const width = Math.round(canvas.clientWidth);
       if (!width || width === previousWidth) return;
       previousWidth = width;
-      // WebKit reports a ResizeObserver loop when height is written directly
-      // from its callback. Defer frame/viewport writes to the next paint.
+      // Listen to the window, not the resized canvas: writing canvas height
+      // inside a ResizeObserver can trigger WebKit's loop-detection error.
       cancelAnimationFrame(resizeFrame);
       resizeFrame = requestAnimationFrame(() => {
         // Preserve both frame and viewport after deliberate interaction. This
@@ -468,11 +468,11 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
           { duration: 0 },
         );
       });
-    });
-    observer.observe(canvas);
+    };
+    window.addEventListener("resize", onResize);
     return () => {
       cancelAnimationFrame(resizeFrame);
-      observer.disconnect();
+      window.removeEventListener("resize", onResize);
     };
   }, [edges, getNodesBounds, nodes, ready, setViewport, spec]);
 
