@@ -183,3 +183,27 @@ Alternative if even that is unwanted: no analytics (status quo).
   `spa.WEB_DIST` at request time (`20407c8`); Docker then exposed the missing
   `apps/eval-workbench` source, fixed in `f712426`. Pruned unused rollback
   image `80de095` before the build, leaving 11GB free; no disk failure occurred.
+
+## Deploy log — 2026-11-17 (full portfolio refinement release)
+
+- SHA `aa73924` (CI green, run 43812761848 after rerunning only the Docker job
+  that first hit a transient `net::ERR_NETWORK_CHANGED`) deployed via the
+  established pattern. `/health` reports the exact SHA and ready.
+- Live verification: `/`, `/projects`, `/apps/agent-chat`,
+  `/apps/document-intelligence`, and `/projects/06-routing-optimization` all
+  returned 200. The removed Eval Workbench routes — `/apps/eval-workbench`,
+  its screenshot, `/datasets`, `/runs`, and `/runs/run-routing-a` — all returned
+  real 404s.
+- Release content: Eval Workbench archived locally; app correctness and
+  evaluation work in Agent Chat/Document Intelligence; validation- and
+  training-side experiment protocols; React Flow mobile/keyboard fixes; ECharts
+  conversion fixes; accessible real-data figure alternatives; refined plots
+  and stories across all 13 projects.
+- Validation: full repository suite passed with 97.90% coverage, 732 web
+  tests passed, all story/artifact/docs gates passed, and the Chromium/WebKit
+  diagram browser gate passed across 24 state/route checks.
+- Operational note: Caddy was restarted after the API rollout so it loaded the
+  new canonical trailing-slash redirects. The smoke suite then verified those
+  redirects plus live Plotly report and figure CSP paths. Its optional direct
+  API-docs section is CI-only: production intentionally disables docs and does
+  not publish the API port.
