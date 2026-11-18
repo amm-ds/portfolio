@@ -1,5 +1,29 @@
 # Deployment Report — alejandromerida.dev
 
+**2026-11-19 — overnight review-queue release.**
+
+- SHA `e9a770b` (2 commits: queue implementation + collaboration records)
+  deployed via the established pattern. `/health` reports the exact SHA and
+  ready.
+- Release content: showcase metrics guard fix (02/08/11 "Metrics could not be
+  loaded" resolved — verified in a real browser against prod), mobile figure
+  legend relocation below 600px, diagram fit-to-screen by default, pareto
+  label collision fix, provenance-stamped regenerated artifacts, intervals and
+  isolation tests across 11 projects, judge/RAGAS metadata on the RAG card,
+  and the 09 held-out live confirmation ($0.094112 of $5 cap; 13/13 answers,
+  6/6 refusals, 19/19 budgets) recorded under `collaboration/`.
+- Live verification: full DEPLOY.md smoke suite green, 5 security headers
+  present, `/projects/02-demand-forecasting/metrics` serves the full-panel
+  payload, and the 02/08/01 pages render with no metrics error box.
+- Pre-existing disk incident: the box was at **100%** before the build
+  (recurring; the scheduled prune had not run). Freed 14.8GB of Docker build
+  cache (`docker builder prune -af`) and removed image `7f7f4c9` (7.13GB,
+  older than current+previous). Build then succeeded; disk settled at 89%
+  after rollout — install the 85% alert + weekly prune from MAINTENANCE.md.
+- Memory: api 69.6MiB/1GiB, caddy 18.4MiB/256MiB — co-tenant headroom fine.
+
+---
+
 **2026-11-08 — CUTOVER COMPLETE.** The supported single-origin topology
 (DEPLOY.md) is live: `https://alejandromerida.dev` serves tag `191a4ce`
 (full SHA `191a4ce5470f88401637652e0d23ff1a4c8dd911`) from the Hetzner CX23
