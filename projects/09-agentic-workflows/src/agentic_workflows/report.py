@@ -9,6 +9,7 @@ decomposition behind ``detail.tooling``, and the report builder that writes
 from __future__ import annotations
 
 import json
+import math
 import statistics
 from pathlib import Path
 from typing import Any
@@ -45,6 +46,39 @@ def _case_score(
         return None
     value = result.value
     return float(value) if isinstance(value, int | float) else None
+
+
+def wilson_interval(k: int, n: int, z: float = 1.959964) -> dict[str, float]:
+    """Wilson score interval for a binomial pass rate.
+
+    Closed form, no resampling: (p + z^2/2n +/- z*sqrt(p(1-p)/n + z^2/4n^2)) /
+    (1 + z^2/n), z = 1.96 for 95%. Handles the k = n boundary (upper = 1),
+    which a plain normal interval cannot.
+    """
+    if n <= 0:
+        return {"lo": 0.0, "hi": 0.0}
+    p = k / n
+    denom = 1.0 + z * z / n
+    centre = p + z * z / (2.0 * n)
+    half = z * math.sqrt(p * (1.0 - p) / n + z * z / (4.0 * n * n))
+    return {
+        "lo": max(0.0, (centre - half) / denom),
+        "hi": min(1.0, (centre + half) / denom),
+    }
+
+
+def _pass_rate_intervals(counts: dict[str, tuple[int, int]]) -> dict[str, Any]:
+    """Wilson intervals for each pass count: {"name": (passed, n)}."""
+    out: dict[str, Any] = {}
+    for name, (k, n) in counts.items():
+        out[name] = {
+            "passed": k,
+            "n": n,
+            "rate": round(k / n, 3) if n else 0.0,
+            "wilson95": {kk: round(vv, 4) for kk, vv in wilson_interval(k, n).items()},
+            "method": "Wilson score interval (z = 1.96)",
+        }
+    return out
 
 
 def suite_averages(report: EvaluationReport[EvalTask, TaskRunRecord, None]) -> dict[str, float]:
@@ -170,7 +204,7 @@ def build_report(
     ]
 
     builder = ReportBuilder(
-        title="09-agentic-workflows — evaluation report",
+        title="09-agentic-workflows — evaluation report (legacy recorded run)",
         figures_dir=config.reports_dir / "figures",
     )
     builder.add_run(
@@ -242,6 +276,27 @@ def build_report(
     tooling = decompose_tooling([(case.inputs, case.output) for case in cases])
     detail = {
         "grader": "deterministic keyword + tool-set graders (pydantic-evals Evaluator subclasses)",
+        "run_label": "legacy recorded run — each task executed once",
+        "pass_rate_intervals": _pass_rate_intervals(
+            {
+                "answer_success": (
+                    sum(1 for s in success if s == 1.0),
+                    len(success),
+                ),
+                "tool_selection": (
+                    sum(1 for s in tool_sel if s == 1.0),
+                    len(tool_sel),
+                ),
+                "step_budget": (
+                    sum(1 for name in names if _score(report, name, "StepBudget") == 1.0),
+                    len(names),
+                ),
+                "latency_budget": (
+                    sum(1 for name in names if _score(report, name, "LatencyBudget") == 1.0),
+                    len(names),
+                ),
+            }
+        ),
         "n_tasks": len(cases),
         "tooling": tooling,
         "per_task": {
@@ -353,10 +408,27 @@ def heldout_detail(report: EvaluationReport[EvalTask, TaskRunRecord, None]) -> d
         present = [s for s in scores if s is not None]
         return round(sum(present) / len(present), 3) if present else 0.0
 
+    def _count(selected: list[Any], grader: str) -> tuple[int, int]:
+        scores = [_case_score(report, c.name, grader) for c in selected]
+        present = [s for s in scores if s is not None]
+        return sum(1 for s in present if s == 1.0), len(present)
+
+    intervals = _pass_rate_intervals(
+        {
+            "answer_success": _count(answer_cases, "AnswerSuccess"),
+            "tool_selection": _count(answer_cases, "ToolSelection"),
+            "step_budget": _count(cases, "StepBudget"),
+            "latency_budget": _count(cases, "LatencyBudget"),
+            "should_fail_pass_rate": _count(refuse_cases, "RefusalSuccess"),
+        }
+    )
+
     return {
         "n_tasks": len(cases),
         "n_answer": len(answer_cases),
         "n_should_fail": len(refuse_cases),
+        "run_label": "legacy recorded run — each task executed once",
+        "pass_rate_intervals": intervals,
         # What the tuning set cannot measure: unseen prompts (prompt-overfit
         # check) and graceful-failure behavior on impossible requests.
         "answer_success": _avg(answer_cases, "AnswerSuccess"),

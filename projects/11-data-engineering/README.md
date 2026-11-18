@@ -88,6 +88,13 @@ the ladder total). Full record in `reports/metrics.json` and
 | partitioned_read | 0.048 | 0.004 | 0.006 | 5.190 | 13.3 | 7.9 |
 | **total / geomean** | **2.99** | **0.16** | **0.22** | **40.55** | **×19.2** | **×14.9** |
 
+Ladder total: **×19.2 / ×14.9 is the geometric mean of the per-task median
+speedups vs pandas** across the ten tasks (polars 19.157, duckdb 14.886 in
+`metrics.json:summary.by_engine`); the totals row is the plain sum of the
+per-task medians (2.99 s pandas vs 0.16 s polars). Per-cell spread across the
+five recorded warm repeats (`time_min_s` / `time_max_s` in `metrics.json`)
+is drawn as whiskers on `task_times_dotplot`.
+
 sqlite's per-task numbers are the honest cost of doing analytics with the
 classical engine on file-shaped data: it cannot read parquet or CSV itself,
 so every task first loads the file into its in-memory database (timed, by

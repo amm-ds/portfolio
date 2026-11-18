@@ -201,6 +201,39 @@ describe("FigureCard", () => {
     expect(figureCsv(payload).split("\r\n")).toHaveLength(206);
     click.mockRestore();
   });
+
+  it("uses the plotly table header for the accessible data table", async () => {
+    const payload = {
+      data: [
+        {
+          type: "table",
+          header: { values: ["quantization arm", "schema", "keywords", "requests", "failures"] },
+          cells: {
+            values: [
+              ["gemma4:31b-it-qat (llamacpp)"],
+              ["PASS"],
+              ["PASS"],
+              [40],
+              [0],
+            ],
+          },
+        },
+      ],
+      layout: {},
+    };
+    mocks.init.mockReturnValue({ setOption: mocks.setOption, resize: vi.fn(), dispose: mocks.dispose });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(payload)));
+    render(<FigureCard pid="08-inference-serving" name="quality_quant" caption="Quality guardrail." />);
+
+    await waitFor(() => expect(document.querySelector(".figure-data tbody tr")).not.toBeNull());
+    const headers = [...document.querySelectorAll(".figure-data thead th")].map((el) => el.textContent);
+    expect(headers).toEqual(["series", "schema", "keywords", "requests", "failures"]);
+    expect(document.querySelector(".figure-data tbody tr")).toHaveTextContent("gemma4:31b-it-qat (llamacpp)");
+    expect(document.querySelector(".figure-data tbody tr")).toHaveTextContent("PASS");
+    expect(figureCsv(payload)).toBe(
+      "series,schema,keywords,requests,failures\r\ngemma4:31b-it-qat (llamacpp),PASS,PASS,40,0",
+    );
+  });
 });
 
 describe("figureCsv", () => {

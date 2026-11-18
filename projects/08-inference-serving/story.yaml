@@ -6,10 +6,10 @@ short_version: >-
 figure_captions:
   quality_quant: >-
     A compact pass/fail table for the bounded quality guardrail at concurrency
-    1. PASS means all 40 responses in that cell follow the Answer schema or
-    contain the required keywords, respectively. The 4-bit, QAT-int4, and Q8_0
-    arms pass both checks with zero failures. This saturated smoke check does
-    not establish broader model quality.
+    1 — a saturated smoke check: every arm ties at 1.00, so it does not
+    establish quality. PASS means all 40 responses in that cell follow the
+    Answer schema or contain the required keywords, respectively. The 4-bit,
+    QAT-int4, and Q8_0 arms pass both checks with zero failures.
   latency_concurrency: >-
     Latency is the time a request takes. The points show p95, the time within
     which 95% of responses finish, at concurrency 1/2/4/8. Error bars span the

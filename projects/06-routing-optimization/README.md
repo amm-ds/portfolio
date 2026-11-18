@@ -88,6 +88,10 @@ Artifacts in `reports/` (see `reports/results.md`, `reports/report.html`,
 `reports/metrics.json`).
 
 Mean over all 56 instances (`reports/metrics.json`) — the solver ladder.
+**ALNS wins 52 of 56 instances on distance** (fleet-first `alns_fleet` takes the
+other 4; the vehicle-first convention is reported below) at a mean distance gap
+of **4.23 %** to the published best-known solutions, 95 % bootstrap CI over the
+56 instances **[3.22 %, 5.28 %]** (2,000 seeded resamples, `metrics.json:intervals`).
 **Two gaps are reported**: distance gap % and vehicle-count delta (veh Δ) vs
 the published best-known solutions. Solomon's benchmark convention ranks
 **vehicles first, distance second** — the references optimize that
@@ -108,7 +112,10 @@ hierarchical objective, so both numbers matter.
 Runtimes are wall-clock on a shared machine (the heuristics are normally
 sub-10 ms; ALNS here ran on a quieter machine than the committed run — the
 load-insensitive statement is the ordering, not the seconds). Distances and
-gaps are seeded and deterministic. The unhinted arm's verdict is a status,
+gaps are seeded and deterministic. The `ortools_cp` arm is **ALNS-hinted; not
+independent of ALNS** — it starts from the ALNS plan and returns it unchanged
+on timeout, so it cannot rank ALNS against a from-scratch solver (the unhinted
+arm below is that test). The unhinted arm's verdict is a status,
 not a gap: `UNKNOWN` on all 56 instances means CP-SAT produced no feasible
 plan within the budget, so there is no distance to report.
 

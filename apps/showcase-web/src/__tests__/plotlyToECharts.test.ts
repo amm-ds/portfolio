@@ -197,6 +197,7 @@ describe("plotlyToECharts over the committed churn figures", () => {
         y: ["c", "d"],
         z: [[1, 2], [3, 4]],
         colorscale: [[0, "rgb(0,0,0)"], [1, "rgb(255,255,255)"]],
+        colorbar: { title: { text: "value" } },
       }],
       layout: { height: 560 },
     };
@@ -208,6 +209,7 @@ describe("plotlyToECharts over the committed churn figures", () => {
     expect(option.visualMap.type).toBe("continuous");
     expect(option.visualMap.seriesIndex).toContain(heatmapIdx);
     expect(option.visualMap.min).toBeLessThan(option.visualMap.max);
+    expect(option.visualMap.text).toEqual(["value", "4", "1"]);
     expect(option.visualMap.inRange.color[0]).toContain("rgb(");
   });
 
@@ -399,6 +401,45 @@ describe("plotlyToECharts over the committed churn figures", () => {
     expect(texts).toContain("Tenure distribution");
   });
 
+  it("keeps stacked subplot headers attached to their own panels", () => {
+    const payload: PlotlyPayload = {
+      data: [
+        { type: "bar", x: ["a"], y: [1] },
+        { type: "bar", x: ["a"], y: [2], xaxis: "x2", yaxis: "y2" },
+      ],
+      layout: {
+        height: 700,
+        yaxis: { domain: [0.52, 1] },
+        yaxis2: { domain: [0, 0.48] },
+        annotations: [
+          { text: "top panel", xref: "paper", yref: "paper", x: 0.5, y: 1, showarrow: false },
+          { text: "bottom panel", xref: "paper", yref: "paper", x: 0.5, y: 0.5, showarrow: false },
+        ],
+      },
+    };
+    const option = asOpt(plotlyToECharts(payload, "dark", 1000));
+    expect(option.title.map((title) => title.text)).toEqual(["top panel", "bottom panel"]);
+    const top = option.title.find((title) => title.text === "top panel")!;
+    const bottom = option.title.find((title) => title.text === "bottom panel")!;
+    expect(top.top).toBeLessThan(bottom.top);
+  });
+
+  it("does not let an in-plot paper label overwrite a subplot header", () => {
+    const payload: PlotlyPayload = {
+      data: [{ type: "bar", x: ["a", "b"], y: [1, 2] }],
+      layout: {
+        height: 560,
+        annotations: [
+          { text: "real panel", xref: "paper", yref: "paper", x: 0.5, y: 1, showarrow: false },
+          { text: "curve label", xref: "paper", yref: "paper", x: 0.98, y: 0.5, showarrow: false, xanchor: "left" },
+        ],
+      },
+    };
+    const option = asOpt(plotlyToECharts(payload, "dark", 1000));
+    expect(option.title.map((title) => title.text)).toContain("real panel");
+    expect(option.title.map((title) => title.text)).not.toContain("curve label");
+  });
+
   it("scales grids and bar widths down with the container (px bands clamp the shrink)", () => {
     const full = asOpt(plotlyToECharts(loadFigure("bootstrap_ci"), "dark", 1440));
     const small = asOpt(plotlyToECharts(loadFigure("bootstrap_ci"), "dark", 500));
@@ -425,11 +466,40 @@ describe("plotlyToECharts over the committed churn figures", () => {
     expect(Math.abs(main.left - 500)).toBeLessThanOrEqual(2);
   });
 
-  it("keeps the legend inside the reserved right band at mobile widths", () => {
+  it("relocates the theme-default legend below the plot at mobile widths", () => {
     const opt = asOpt(plotlyToECharts(loadFigure("calibration_curve"), "dark", 390));
-    // legend starts inside the clamped right band and has room for its text
-    expect(opt.legend.left).toBeGreaterThan(390 - 190);
-    expect(opt.legend.left).toBeLessThan(390);
+    // mobile figure-layout handoff: below 600 px the theme-default right
+    // legend becomes a horizontal legend on its own row under the plot, and
+    // the freed right band goes back to the grid
+    expect(opt.legend.orient).toBe("horizontal");
+    expect(opt.legend.bottom).toBeDefined();
+    expect(opt.legend.top).toBeUndefined();
+    const grid = opt.grid[0];
+    expect(grid.left + grid.width).toBeGreaterThan(390 * 0.8);
+  });
+
+  it("does not reserve bottom label depth for hidden category axes", () => {
+    const payload: PlotlyPayload = {
+      data: [
+        {
+          type: "bar",
+          x: Array.from({ length: 8 }, (_, index) => `hidden category label ${index}`),
+          y: Array.from({ length: 8 }, (_, index) => index + 1),
+        },
+      ],
+      layout: {
+        width: 1000,
+        height: 600,
+        margin: { l: 70, r: 30, t: 60, b: 70 },
+        xaxis: { showticklabels: false },
+      },
+    };
+    const option = asOpt(plotlyToECharts(payload, "dark", 1000));
+    const lowestGridBottom = Math.max(...option.grid.map((grid) => grid.top + grid.height));
+    // The long hidden labels must not push the plot upward: the plot keeps the
+    // authored bottom margin rather than reserving label depth it will not use.
+    expect(lowestGridBottom).toBeGreaterThan(600 - 80);
+    expect(lowestGridBottom).toBeLessThanOrEqual(600 - 55);
   });
 
   it("encodes the axis-label polish invariants on every figure", () => {
@@ -505,6 +575,51 @@ describe("Phase 5 conversion semantics", () => {
       expect(supportsECharts(payload), figure).toBe(true);
       expect(asOpt(plotlyToECharts(payload, "dark")).series.length, figure).toBeGreaterThan(0);
     }
+  });
+
+  it("handles log annotations, reversed axes, opacity, and string marker colors", () => {
+    const logPayload: PlotlyPayload = {
+      data: [{ type: "scatter", mode: "markers", x: [0.1, 10], y: [1, 2] }],
+      layout: {
+        xaxis: { type: "log" },
+        annotations: [{ text: "ten seconds", x: 1, y: 2, showarrow: false }],
+      },
+    };
+    const logOption = asOpt(plotlyToECharts(logPayload, "dark"));
+    const logAnnotation = logOption.series
+      .find((series) => series.silent && series.data.some((d: { label?: { formatter?: string } }) => d.label?.formatter === "ten seconds"));
+    expect(logAnnotation).toBeDefined();
+    expect(logAnnotation!.data.find((d: { label?: { formatter?: string } }) => d.label?.formatter === "ten seconds").value[0]).toBe(10);
+
+    const reversed = asOpt(
+      plotlyToECharts(
+        {
+          data: [{ type: "bar", x: ["a"], y: [1] }],
+          layout: { yaxis: { autorange: "reversed" } },
+        },
+        "dark",
+      ),
+    );
+    expect(reversed.yAxis[0].inverse).toBe(true);
+
+    const styled = asOpt(
+      plotlyToECharts(
+        {
+          data: [{
+            type: "scatter",
+            mode: "markers",
+            x: [1, 2],
+            y: [1, 2],
+            opacity: 0.45,
+            marker: { color: ["#ff0000", "#00ff00"] },
+          }],
+          layout: {},
+        },
+        "dark",
+      ),
+    );
+    expect(styled.series[0].itemStyle.opacity).toBe(0.45);
+    expect(styled.series[0].data[1].itemStyle.color).toBe("#00ff00");
   });
 
   it("stacks vertical bars and autoranges to positive and negative cumulative totals", () => {
@@ -967,5 +1082,51 @@ describe("supportsECharts", () => {
 
   it("accepts an empty data array", () => {
     expect(supportsECharts({ data: [], layout: { height: 560 } })).toBe(true);
+  });
+});
+
+
+describe("narrow-width legend (mobile figure-layout handoff)", () => {
+  const THEME_LEGEND = {
+    orientation: "v",
+    x: 1.02,
+    xanchor: "left",
+    y: 1,
+    yanchor: "top",
+    bgcolor: "rgba(0,0,0,0)",
+  };
+
+  function twoSeriesPayload(legend: Record<string, unknown>): PlotlyPayload {
+    return {
+      data: [
+        { type: "bar", name: "alpha", x: [1, 2], y: [3, 4] },
+        { type: "bar", name: "beta", x: [1, 2], y: [2, 5] },
+      ],
+      layout: { width: 1000, height: 560, legend, margin: { l: 70, r: 140, t: 110, b: 70 } },
+    } as unknown as PlotlyPayload;
+  }
+
+  it("moves a theme-default right legend below the plot below 600 px", () => {
+    const option = asOpt(plotlyToECharts(twoSeriesPayload(THEME_LEGEND), "dark", 375));
+    expect(option.legend.orient).toBe("horizontal");
+    expect(option.legend.bottom).toBeDefined();
+    expect(option.legend.top).toBeUndefined();
+    // the freed right band goes back to the plot: grid uses nearly full width
+    const grid = option.grid[0];
+    expect(grid.width).toBeGreaterThan(375 * 0.6);
+  });
+
+  it("keeps the legend on the right at 1024 px", () => {
+    const option = asOpt(plotlyToECharts(twoSeriesPayload(THEME_LEGEND), "dark", 1024));
+    expect(option.legend.orient).toBe("vertical");
+    expect(option.legend.left).toBeGreaterThan(800);
+    expect(option.legend.bottom).toBeUndefined();
+  });
+
+  it("keeps a generator-positioned legend at narrow widths", () => {
+    const authored = { ...THEME_LEGEND, x: 0.3, xanchor: "center", y: 1.15 };
+    const option = asOpt(plotlyToECharts(twoSeriesPayload(authored), "dark", 375));
+    expect(option.legend.orient).toBe("vertical");
+    expect(option.legend.bottom).toBeUndefined();
   });
 });

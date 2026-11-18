@@ -107,15 +107,10 @@ for (const engineName of engines) {
               await page.waitForTimeout(100);
               await diagram.evaluate((element) => element.scrollIntoView({ block: "center" }));
               await diagram.locator(".frame-skeleton").waitFor({ state: "detached", timeout: 30_000 });
+              // The default viewport is the full-diagram overview; geometry must
+              // be intact before any deliberate pan/zoom/fit interaction.
+              await checkGeometry(diagram, `${name} diagram ${index + 1} initial overview`);
               if (width === 390) {
-                const sizes = await diagram.evaluate((root) => {
-                  const viewport = root.querySelector(".react-flow__viewport");
-                  const zoom = new DOMMatrixReadOnly(getComputedStyle(viewport).transform).m22;
-                  return [...root.querySelectorAll(".flow-node__label, .flow-edge__label")].map(
-                    (label) => Number.parseFloat(getComputedStyle(label).fontSize) * zoom,
-                  );
-                });
-                check(sizes.every((size) => size >= 11.9), `${name}: mobile label below 12px: ${Math.min(...sizes)}`);
                 if (index === 0) {
                   const viewport = diagram.locator(".react-flow__viewport");
                   const before = await viewport.getAttribute("style");

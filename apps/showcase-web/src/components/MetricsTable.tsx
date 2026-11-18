@@ -6,23 +6,32 @@ function isNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 /** Render the nested metrics object: one row per run, one column per metric.
- *  Runs are the top-level keys; runs prefixed with "_" (e.g. "_meta") are
- *  shown as a footnote, not table rows. Non-numeric cells render as "—". */
+ *  Runs are the top-level keys whose value is a record; runs prefixed with
+ *  "_" (e.g. "_meta") are shown as a footnote, not table rows. Top-level
+ *  non-record values (lists, strings — e.g. 02's `candidates`) are metadata
+ *  and are skipped. Non-numeric cells render as "—". */
 export function MetricsTable({ metrics }: { metrics: Metrics }) {
-  const runs = Object.keys(metrics).filter((run) => !run.startsWith("_"));
+  const runEntries = Object.entries(metrics).filter(
+    (entry): entry is [string, Record<string, unknown>] =>
+      !entry[0].startsWith("_") && isRecord(entry[1]),
+  );
   const meta = metrics["_meta"];
-  if (runs.length === 0) return null;
+  if (runEntries.length === 0) return null;
   const metricNames = [
     ...new Set(
-      runs.flatMap((run) =>
-        Object.entries(metrics[run])
+      runEntries.flatMap(([, run]) =>
+        Object.entries(run)
           .filter(([, value]) => isNumber(value))
           .map(([name]) => name),
       ),
     ),
   ];
-  const metaEntries = meta
+  const metaEntries = isRecord(meta)
     ? Object.entries(meta).filter(([, value]) => isNumber(value) || typeof value === "string")
     : [];
   return (
@@ -39,11 +48,11 @@ export function MetricsTable({ metrics }: { metrics: Metrics }) {
           </tr>
         </thead>
         <tbody>
-          {runs.map((run) => (
+          {runEntries.map(([run, values]) => (
             <tr key={run}>
               <td>{run}</td>
               {metricNames.map((name) => {
-                const value = metrics[run][name];
+                const value = values[name];
                 return <td key={name}>{isNumber(value) ? formatMetricValue(value) : "—"}</td>;
               })}
             </tr>

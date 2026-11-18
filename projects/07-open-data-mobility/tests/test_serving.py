@@ -220,3 +220,38 @@ def test_build_service_bundle_rejects_unknown_service(cfg: MobilityConfig) -> No
     _fixture_context(cfg)
     with pytest.raises(ValueError, match="no per-service fit"):
         build_service_bundle(cfg, "fhv")
+
+
+def test_serving_arm_selection_ignores_test_mae(cfg: MobilityConfig) -> None:
+    """Holdout isolation: swapping test MAE to favor a challenger must not move
+    the served arm — selection reads validation HPO MAE only (review 2026-11-17)."""
+    import json as _json
+
+    from mobility.serving import select_serving_arm
+
+    _fixture_context(cfg)
+    gbm, p90 = _tiny_models()
+    joblib.dump(gbm, cfg.models_dir / "gbm_xgb_tuned.joblib")
+    joblib.dump(p90, cfg.models_dir / "gbm_p90_xgb_tuned.joblib")
+
+    def _hpo(kind: str, val_mae: float, test_mae: float) -> None:
+        # test_mae is poison: it favors the challenger by a wide margin.
+        (cfg.models_dir / f"hpo_{kind}.json").write_text(
+            _json.dumps(
+                {
+                    "kind": kind,
+                    "best_params": {},
+                    "best_val_mae": val_mae,
+                    "test_mae": test_mae,
+                }
+            )
+        )
+
+    _hpo("gbm", 3.0, 99.0)  # incumbent: great val, poisoned terrible test
+    _hpo("xgb", 3.5, 0.01)  # challenger: worse val, impossibly good test
+    assert select_serving_arm(cfg)[0] == "gbm_tuned"
+
+    # Not vacuous: validation still drives the pick when the challenger is
+    # strictly better there.
+    _hpo("xgb", 2.5, 99.0)
+    assert select_serving_arm(cfg)[0] == "gbm_xgb_tuned"

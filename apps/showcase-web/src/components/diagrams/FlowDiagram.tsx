@@ -296,18 +296,26 @@ function touchesNode(edges: FlowEdge[], nodeId: string, focusId: string): boolea
 const MIN_CANVAS_HEIGHT = 240;
 const MAX_CANVAS_HEIGHT = 560;
 const MIN_ZOOM = 0.05;
-const INITIAL_ZOOM = 1;
 const FIT_PADDING = 0.12;
+/** Below this canvas width the diagram opens at zoom 1 with panning instead
+ *  of fitting — dense graphs are unreadable when squeezed onto a phone. */
+const PHONE_BREAKPOINT = 480;
+const MOBILE_BREAKPOINT = 720;
+const MOBILE_VERTICAL_HEIGHT_CAP = 2000;
 
-function canvasHeightCap(spec: DiagramSpec): number {
-  return Math.min(spec.canvasHeight ?? MAX_CANVAS_HEIGHT, MAX_CANVAS_HEIGHT);
+function canvasHeightCap(spec: DiagramSpec, expanded = false): number {
+  const cap = expanded ? MOBILE_VERTICAL_HEIGHT_CAP : MAX_CANVAS_HEIGHT;
+  return Math.min(spec.canvasHeight ?? cap, cap);
 }
 
-function autoCanvasHeight(boundsHeight: number, fittedZoom: number, spec: DiagramSpec): number {
-  return Math.min(
-    canvasHeightCap(spec),
-    Math.max(MIN_CANVAS_HEIGHT, Math.min(MAX_CANVAS_HEIGHT, boundsHeight * fittedZoom + 64)),
-  );
+function autoCanvasHeight(
+  boundsHeight: number,
+  fittedZoom: number,
+  spec: DiagramSpec,
+  expanded = false,
+): number {
+  const cap = canvasHeightCap(spec, expanded);
+  return Math.min(cap, Math.max(MIN_CANVAS_HEIGHT, boundsHeight * fittedZoom + 64));
 }
 
 function FlowCanvas({ spec }: FlowDiagramProps) {
@@ -316,6 +324,7 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
   const [edges] = useEdgesState<FlowEdge>(initial.edges);
   const [laidOut, setLaidOut] = useState(false);
   const [ready, setReady] = useState(false);
+  const [layoutSpec, setLayoutSpec] = useState(spec);
   const [canvasHeight, setCanvasHeight] = useState(() => canvasHeightCap(spec));
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [pinnedEdgeId, setPinnedEdgeId] = useState<string | null>(null);
@@ -393,7 +402,17 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
   useEffect(() => {
     if (laidOut || nodes.length === 0) return;
     if (!nodes.every((node) => node.measured?.width && node.measured?.height)) return;
-    setNodes((current) => layoutMeasuredNodes(current, spec));
+    const narrow = (canvasRef.current?.clientWidth ?? 0) < MOBILE_BREAKPOINT;
+    const nextLayoutSpec =
+      narrow && spec.direction === "LR"
+        ? {
+            ...spec,
+            direction: "TB" as const,
+            canvasHeight: MOBILE_VERTICAL_HEIGHT_CAP,
+          }
+        : spec;
+    setLayoutSpec(nextLayoutSpec);
+    setNodes((current) => layoutMeasuredNodes(current, nextLayoutSpec));
     setLaidOut(true);
   }, [laidOut, nodes, setNodes, spec]);
 
@@ -405,24 +424,37 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
       const canvas = canvasRef.current;
       if (cancelled || !canvas || canvas.clientWidth === 0 || canvas.clientHeight === 0) return;
 
-      const bounds = getFlowBounds(nodes, spec, edges, getNodesBounds(nodes));
-      // Every diagram opens at 100% for readable labels. Users can pan, focus
-      // a node, or explicitly choose the fit control for a scaled overview.
+      const bounds = getFlowBounds(nodes, layoutSpec, edges, getNodesBounds(nodes));
+      const narrow = canvas.clientWidth < MOBILE_BREAKPOINT;
+      const phone = canvas.clientWidth < PHONE_BREAKPOINT;
+      const expanded = narrow && layoutSpec.direction === "TB";
+      if (phone) {
+        // Dense feedback graphs cannot fit a 390px width without unreadable
+        // labels and collisions. Phones get a readable vertical layout with
+        // full-size labels and panning; every wider canvas — including the
+        // ~600-700px story column on desktop — opens fitted to the screen,
+        // exactly like the "fit view" control.
+        const nextHeight = autoCanvasHeight(bounds.height, 1, layoutSpec, true);
+        setCanvasHeight(nextHeight);
+        void setViewport({ x: 0, y: 0, zoom: 1 }, { duration: 0 });
+        setReady(true);
+        return;
+      }
       const firstViewport = getViewportForBounds(
         bounds,
         canvas.clientWidth,
         canvas.clientHeight,
-        INITIAL_ZOOM,
-        INITIAL_ZOOM,
+        MIN_ZOOM,
+        1,
         FIT_PADDING,
       );
-      const nextHeight = autoCanvasHeight(bounds.height, firstViewport.zoom, spec);
+      const nextHeight = autoCanvasHeight(bounds.height, firstViewport.zoom, layoutSpec, expanded);
       const viewport = getViewportForBounds(
         bounds,
         canvas.clientWidth,
         nextHeight,
-        INITIAL_ZOOM,
-        INITIAL_ZOOM,
+        MIN_ZOOM,
+        1,
         FIT_PADDING,
       );
       setCanvasHeight(nextHeight);
@@ -433,7 +465,7 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
       cancelled = true;
       cancelAnimationFrame(raf);
     };
-  }, [edges, getNodesBounds, laidOut, nodes, ready, setViewport, spec]);
+  }, [edges, getNodesBounds, laidOut, layoutSpec, nodes, ready, setViewport]);
 
   useEffect(() => {
     if (!ready) return;
@@ -452,19 +484,26 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
         // Preserve both frame and viewport after deliberate interaction. This
         // also avoids resize feedback while the reader is exploring a detail.
         if (viewportAdjustedRef.current) return;
-        const bounds = getFlowBounds(nodes, spec, edges, getNodesBounds(nodes));
+        const bounds = getFlowBounds(nodes, layoutSpec, edges, getNodesBounds(nodes));
+        const narrow = width < PHONE_BREAKPOINT;
+        if (narrow) {
+          const nextHeight = autoCanvasHeight(bounds.height, 1, layoutSpec, true);
+          setCanvasHeight(nextHeight);
+          void setViewport({ x: 0, y: 0, zoom: 1 }, { duration: 0 });
+          return;
+        }
         const firstViewport = getViewportForBounds(
           bounds,
           width,
           canvas.clientHeight,
-          INITIAL_ZOOM,
-          INITIAL_ZOOM,
+          MIN_ZOOM,
+          1,
           FIT_PADDING,
         );
-        const nextHeight = autoCanvasHeight(bounds.height, firstViewport.zoom, spec);
+        const nextHeight = autoCanvasHeight(bounds.height, firstViewport.zoom, layoutSpec, false);
         setCanvasHeight(nextHeight);
         void setViewport(
-          getViewportForBounds(bounds, width, nextHeight, INITIAL_ZOOM, INITIAL_ZOOM, FIT_PADDING),
+          getViewportForBounds(bounds, width, nextHeight, MIN_ZOOM, 1, FIT_PADDING),
           { duration: 0 },
         );
       });
@@ -474,14 +513,14 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
       cancelAnimationFrame(resizeFrame);
       window.removeEventListener("resize", onResize);
     };
-  }, [edges, getNodesBounds, nodes, ready, setViewport, spec]);
+  }, [edges, getNodesBounds, layoutSpec, nodes, ready, setViewport]);
 
   return (
     <section className="flow-diagram" aria-label={spec.title}>
       <div className="flow-diagram__heading">
         <span className="flow-diagram__title">{spec.title}</span>
         <span className="flow-diagram__zoom-hint" id={instructionsId}>
-          Pinch or use controls to zoom · drag to pan · Fit for overview
+          Full diagram shown · drag to pan · use controls to zoom
         </span>
       </div>
       <div className={`flow-diagram__body${selectedNode ? " has-inspector" : ""}`}>
@@ -546,7 +585,7 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
               }}
               onFitView={() => {
                 viewportAdjustedRef.current = true;
-                void fitBounds(getFlowBounds(nodes, spec, edges, getNodesBounds(nodes)), {
+                void fitBounds(getFlowBounds(nodes, layoutSpec, edges, getNodesBounds(nodes)), {
                   padding: FIT_PADDING,
                   duration: 0,
                 });

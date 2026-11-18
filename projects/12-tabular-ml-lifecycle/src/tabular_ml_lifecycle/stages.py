@@ -58,6 +58,18 @@ from tabular_ml_lifecycle.models import (
 log = get_logger(__name__)
 
 CANDIDATE_MODELS = ["ridge", "random_forest", "lightgbm_hpo", "mlp"]
+
+
+def select_by_validation(val_scores: dict[str, float]) -> str:
+    """Freeze the served model by validation MAE alone.
+
+    Test predictions never enter this function: the signature accepts only the
+    validation score mapping, so a sentinel/poisoned test artifact cannot
+    influence the selection (selection-isolation test, review 2026-11-17).
+    """
+    return min(CANDIDATE_MODELS, key=lambda n: val_scores.get(n, float("inf")))
+
+
 TEST_LIMITS = [
     "Model selection, early stopping and the shipped ablation configuration used "
     "validation only. Test scores for all ablation variants are post-freeze "
@@ -364,7 +376,7 @@ def evaluate_core(cfg: LifecycleConfig) -> Path:
         }
 
     val_scores = {name: train_runs["val"][name]["mae"] for name in train_runs["val"]}
-    champion = min(CANDIDATE_MODELS, key=lambda n: val_scores.get(n, float("inf")))
+    champion = select_by_validation(val_scores)
     ci, boot_deltas = paired_bootstrap_deltas(
         y_test, preds[champion], preds["seasonal_naive"], cfg.bootstrap_resamples, cfg.seed
     )
@@ -412,6 +424,18 @@ def evaluate_core(cfg: LifecycleConfig) -> Path:
         for r in diagnostic_rows
     ]
 
+    # Paired validation interval for the two top candidates (MLP vs LightGBM),
+    # both predicted from committed artifacts on the frozen validation window.
+    # delta = MAE_mlp - MAE_lightgbm (negative favors the MLP).
+    y_val = val_df[TARGET_COL].astype(float).to_numpy()
+    with (models_dir / "lightgbm.pkl").open("rb") as fh:
+        lgbm_val_model = pickle.load(fh)  # noqa: S301 - pipeline artifact persisted by this stage
+    val_lgbm = np.asarray(lgbm_val_model.predict(val_df[selected]), dtype=float)
+    val_mlp = np.asarray(mlp_loaded.predict(val_df[["hour", *selected]]), dtype=float)
+    val_tie_ci, _val_tie_deltas = paired_bootstrap_deltas(
+        y_val, val_lgbm, val_mlp, cfg.bootstrap_resamples, cfg.seed + 3
+    )
+
     comparison_fig = figures.model_comparison_figure(runs)
     save_html(comparison_fig, cfg.reports_dir / "figures" / "model_comparison.html")
     save_json(comparison_fig, cfg.reports_dir / "figures" / "model_comparison.json")
@@ -445,6 +469,19 @@ def evaluate_core(cfg: LifecycleConfig) -> Path:
         metrics_path,
         {
             **runs,
+            # Top-level (not inside _meta) so the provenance stamp convention
+            # keeps it: metrics.json carries the tie interval permanently.
+            "validation_tie_interval": {
+                "metric": "val_mae_mlp_minus_lightgbm",
+                **val_tie_ci.to_dict(),
+                "seed": cfg.seed + 3,
+                "interpretation": (
+                    "Negative favors the MLP. The interval prices paired "
+                    "validation-hour noise; per owner decision 8 the two "
+                    "top candidates are reported as tied on validation and "
+                    "the MLP is the served artifact, not a proven champion."
+                ),
+            },
             "_meta": {
                 "split": "test window: final test_weeks; one score per candidate",
                 "champion": champion,

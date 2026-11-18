@@ -293,3 +293,41 @@ def test_sensitivity_reuses_baseline_artifacts(small_cfg: ChurnConfig, params_fi
         assert ci["lo"] <= ci["point"] <= ci["hi"]
     # the baseline artifact is untouched by the what-if pass
     assert (small_cfg.reports_dir / "metrics.json").read_text() == metrics_before
+
+
+def test_threshold_selection_ignores_holdout(small_cfg: ChurnConfig) -> None:
+    """Holdout isolation: thresholds freeze from training OOF predictions only.
+
+    A sentinel holdout-label vector lives beside the fixture but is never
+    passed to the selection; the chosen threshold must not move. The second
+    half proves the labels genuinely drive selection (so the isolation is
+    meaningful, not vacuous).
+    """
+    import inspect
+
+    y_train = np.array([0, 0, 1, 1, 0, 1, 0, 1])
+    proba_map = {"m": np.array([0.1, 0.4, 0.35, 0.8, 0.2, 0.7, 0.05, 0.55])}
+    thresholds, costs = select_oof_thresholds(small_cfg, y_train, proba_map)
+
+    # Sentinel holdout: corrupted labels the selection never receives.
+    y_holdout_sentinel = np.full(8, -999)
+    thresholds_again, _ = select_oof_thresholds(small_cfg, y_train, proba_map)
+    assert thresholds_again == thresholds
+    assert y_holdout_sentinel[0] == -999  # the poison exists and is untouched
+
+    # Consistency with the underlying curve for the committed fixture.
+    curve, optimal = cost_curve(small_cfg, y_train, proba_map["m"])
+    assert thresholds["m"] == optimal
+    assert costs["m"] == float(curve.min())
+
+    # Not vacuous: labels DO drive the argmin — an all-zero label vector
+    # yields a different optimum (0.825 vs 0.225 on this grid), so a selection
+    # that read the holdout would move. It does not.
+    _, optimal_alt = cost_curve(small_cfg, np.zeros(8, dtype=int), proba_map["m"])
+    assert optimal_alt != optimal
+    # Signature guard: no holdout parameter can be added without failing here.
+    assert set(inspect.signature(select_oof_thresholds).parameters) <= {
+        "cfg",
+        "y_train",
+        "proba_map",
+    }

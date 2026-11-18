@@ -4,7 +4,7 @@
 full scale (30,490 daily store-item series) · **Status:** working showcase on
 the standard platform (flagships: [01](01-rag-agent.md), [07](07-open-data-mobility.md))
 
-> M5 full panel: 30,490 series, scored once on the final 28 days with official 42,840-node WRMSSE. Pooled LightGBM ensemble: 0.6161 vs seasonal-naive 0.8929 (−31.0%). Two selection origins and no bootstrap interval bound the result; quiet days favor the floor.
+> M5 full panel: 30,490 series, one scored test origin (final 28 days) with official 42,840-node WRMSSE. Pooled LightGBM ensemble: 0.6161 vs seasonal-naive 0.8929 (−31.0%); no bootstrap interval bounds the result; quiet days favor the floor.
 
 [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
 

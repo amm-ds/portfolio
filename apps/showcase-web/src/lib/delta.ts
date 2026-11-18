@@ -25,8 +25,15 @@ function numericEntries(run: Record<string, unknown>): [string, number][] {
   return Object.entries(run).filter((e): e is [string, number] => typeof e[1] === "number");
 }
 
-function headline(run: Record<string, unknown>): { metric: string; value: number } | null {
-  const entries = numericEntries(run);
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** First numeric metric of a run; null when the value is not a run record
+ *  (top-level lists/strings such as 02's `candidates` never headline). */
+function headline(value: unknown): { metric: string; value: number } | null {
+  if (!isRecord(value)) return null;
+  const entries = numericEntries(value);
   return entries.length > 0 ? { metric: entries[0][0], value: entries[0][1] } : null;
 }
 
@@ -48,10 +55,10 @@ export function formatMetricValue(value: number): string {
 export function pickHeadlineMetric(
   metrics: Metrics,
 ): { run: string; metric: string; value: number } | null {
-  const meta = metrics["_meta"] as Record<string, unknown> | undefined;
-  const champion = meta?.champion;
+  const meta = metrics["_meta"];
+  const champion = isRecord(meta) ? meta.champion : undefined;
   if (typeof champion === "string") {
-    const h = headline(metrics[champion] ?? {});
+    const h = headline(metrics[champion]);
     if (h) return { run: champion, metric: h.metric, value: h.value };
   }
   const runs = Object.keys(metrics).filter((r) => !r.startsWith("_"));
@@ -64,7 +71,7 @@ export function pickHeadlineMetric(
 }
 
 export function computeCallouts(metrics: Metrics, referencedRuns: string[]): MetricCallout[] {
-  const present = referencedRuns.filter((r) => headline(metrics[r] ?? {}) !== null);
+  const present = referencedRuns.filter((r) => headline(metrics[r]) !== null);
   const callouts: MetricCallout[] = present.map((run) => {
     const h = headline(metrics[run])!;
     return {
@@ -92,7 +99,7 @@ export function computeCallouts(metrics: Metrics, referencedRuns: string[]): Met
   // show no delta.
   for (const c of callouts) {
     if (c.run === baselineRun) continue;
-    const baselineValue = baselineMetrics[c.metric];
+    const baselineValue = isRecord(baselineMetrics) ? baselineMetrics[c.metric] : undefined;
     if (typeof baselineValue !== "number" || baselineValue === 0) continue;
 
     const deltaPct = ((c.value - baselineValue) / Math.abs(baselineValue)) * 100;

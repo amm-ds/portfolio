@@ -36361,7 +36361,7 @@
     "seed": 2041,
     "alpha": 0.05,
     "model_estimated": true,
-    "note": "profit(f, c) = inc(f) * revenue_per_conversion - f * N * c; inc(f) is summed predicted uplift (model-estimated), CIs are paired row bootstrap (one shared resample per replication), percentile 95%"
+    "note": "revenue_minus_send_cost(f, c) = inc(f) * revenue_per_conversion - f * N * c; inc(f) is summed predicted uplift (model-estimated), CIs are paired row bootstrap (one shared resample per replication), percentile 95%"
   },
   "qini_points": {
     "mens": {

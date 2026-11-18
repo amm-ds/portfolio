@@ -609,3 +609,54 @@ class TestSuiteHonesty:
         # h19: the AST-locked calculator rejects exponents beyond the bound
         with pytest.raises(ValueError, match="exponent too large"):
             calculator("2**500")
+
+
+class TestPassRateIntervals:
+    """Wilson intervals for the legacy pass rates + legacy labels (review 2026-11-17)."""
+
+    def test_wilson_15_of_15_matches_hand_computation(self) -> None:
+        from agentic_workflows.report import wilson_interval
+
+        interval = wilson_interval(15, 15)
+        # Hand computation: p=1, z=1.959964, n=15
+        #   denom = 1 + z²/15 = 1.2560973
+        #   centre = 1 + z^2/30 = 1.1280487
+        #   half = z*sqrt(z^2/(4*225)) = 0.1280502
+        #   lo = (centre - half)/denom = 0.79619, hi capped at 1.0
+        assert interval["lo"] == pytest.approx(0.7962, abs=1e-3)
+        assert interval["hi"] == pytest.approx(1.0, abs=1e-9)
+
+    def test_wilson_midrange_count(self) -> None:
+        from agentic_workflows.report import wilson_interval
+
+        interval = wilson_interval(12, 19)
+        assert interval["lo"] < 12 / 19 < interval["hi"]
+        # Hand computation: p=12/19, z=1.959964, n=19
+        #   lo = 0.41040, hi = 0.80850
+        assert interval["lo"] == pytest.approx(0.4104, abs=1e-3)
+        assert interval["hi"] == pytest.approx(0.8085, abs=1e-3)
+
+    def test_zero_count_degenerates_safely(self) -> None:
+        from agentic_workflows.report import wilson_interval
+
+        assert wilson_interval(0, 0) == {"lo": 0.0, "hi": 0.0}
+        zero = wilson_interval(0, 6)
+        assert zero["lo"] == 0.0
+        assert 0.0 < zero["hi"] < 1.0
+
+    def test_legacy_labels_present_in_generated_report(self, tmp_path: Path) -> None:
+        from agentic_workflows.report import build_report
+
+        cfg = EvalConfig(reports_dir=tmp_path / "reports")
+        records = [
+            _record(task.id, answer="answer with " + " and ".join(task.expected_keywords))
+            for task in evals.TASK_SUITE
+        ]
+        report = evals.evaluate_records(records)
+        build_report(report, cfg)
+        html = (tmp_path / "reports" / "report.html").read_text(encoding="utf-8")
+        assert "legacy recorded run" in html
+        metrics = json.loads((tmp_path / "reports" / "metrics.json").read_text(encoding="utf-8"))
+        intervals = metrics["detail"]["pass_rate_intervals"]
+        assert intervals["answer_success"]["n"] == len(evals.TASK_SUITE)
+        assert "wilson95" in intervals["answer_success"]

@@ -1583,6 +1583,17 @@ def run_heldout(
     else:
         metrics = {"detail": {}}
     metrics.setdefault("detail", {})["heldout"] = payload
+    # Provenance metadata for the judged arms: the hosted provider model behind
+    # generation/verify-judge/RAGAS (traceable to the committed challenger
+    # comparison) and the locked RAGAS version used for the evaluator scores.
+    comparison_path = config.reports_dir / "kimi_comparison.json"
+    if comparison_path.exists():
+        metrics["judge_model"] = json.loads(comparison_path.read_text(encoding="utf-8"))[
+            "challenger_model"
+        ]
+    from importlib.metadata import version as _pkg_version
+
+    metrics["ragas_version"] = _pkg_version("ragas")
     metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
     meter = payload["meter"]
     logger.info(

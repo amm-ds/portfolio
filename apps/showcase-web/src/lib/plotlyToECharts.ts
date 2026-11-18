@@ -72,6 +72,13 @@ const AXIS_KEY_RE = /^([xy])axis(\d*)$/;
 const BR_RE = /<br\s*\/?\s*>/gi;
 const TAG_RE = /<[^>]*>/g;
 const INLINE_COLOR_RE = /color\s*:\s*#([0-9a-fA-F]{3,8})/;
+/**
+ * Below this container width a theme-default right-side legend relocates to a
+ * horizontal legend below the plot (mobile figure-layout handoff). The
+ * 1000px-designed right margin and legend band would otherwise leave narrow
+ * panels squeezed to half the card width.
+ */
+export const NARROW_LEGEND_BREAKPOINT = 600;
 const SCATTER_MODE_RE = /^(lines|markers|text)(\+(lines|markers|text))*$/;
 
 const DASH_MAP: Record<string, string> = {
@@ -598,7 +605,7 @@ export function plotlyToECharts(
   const designW = num(layout.width) ?? DESIGN_WIDTH;
   const width = containerWidth > 0 ? containerWidth : DESIGN_WIDTH;
   const scale = width / designW;
-  const height = scaledHeight(layout.height, width);
+  const height = scaledHeight(layout.height, width, layout);
 
   // --- discover the axes declared in the layout ---------------------------
   const axisByKey = new Map<string, AxisInfo>();
@@ -806,6 +813,11 @@ export function plotlyToECharts(
       const mcScale = Array.isArray(marker.colorscale) ? marker.colorscale : null;
       const numericMc =
         mcArr !== null && mcScale !== null && mcArr.length > 0 && mcArr.every((c) => typeof c === "number" || c === null);
+      const stringMcColors =
+        mcArr !== null && !numericMc && mcArr.every((c) => typeof c === "string")
+          ? (mcArr as string[]).map((color) => remapColor(color, theme))
+          : null;
+      const pointOpacity = num(marker.opacity) ?? num(t.opacity);
       let mcMin = Infinity;
       let mcMax = -Infinity;
       if (numericMc) {
@@ -856,6 +868,11 @@ export function plotlyToECharts(
             const sampled = colorFromScale(mcScale as unknown[], t);
             if (sampled) item.itemStyle = { color: remapColor(sampled, theme) };
           }
+        } else if (stringMcColors) {
+          item.itemStyle = {
+            color: stringMcColors[k % stringMcColors.length],
+            ...(pointOpacity !== undefined ? { opacity: pointOpacity } : {}),
+          };
         }
         if (hasText && Array.isArray(t.text) && typeof t.text[k] === "string") {
           item.label = {
@@ -874,6 +891,7 @@ export function plotlyToECharts(
           color: lineColor,
           width: num(line.width) ?? 2,
           type: DASH_MAP[String(line.dash)] ?? "solid",
+          ...(pointOpacity !== undefined ? { opacity: pointOpacity } : {}),
         };
         draft.showSymbol = hasMarkers;
         draft.smooth = false;
@@ -895,9 +913,12 @@ export function plotlyToECharts(
           draft.symbolSize = num(marker.size) ?? 6;
         }
         // "x-open"-style hollow markers draw as an outlined symbol
-        draft.itemStyle = hollow
-          ? { color: "rgba(0,0,0,0)", borderColor: markerColor, borderWidth: 2 }
-          : { color: markerColor };
+        draft.itemStyle = {
+          ...(hollow
+            ? { color: "rgba(0,0,0,0)", borderColor: markerColor, borderWidth: 2 }
+            : { color: markerColor }),
+          ...(pointOpacity !== undefined ? { opacity: pointOpacity } : {}),
+        };
         // markers on the data edge stay fully painted (plotly parity)
         draft.clip = false;
       } else if (hasText) {
@@ -1418,39 +1439,39 @@ export function plotlyToECharts(
     const yref = typeof a.yref === "string" ? a.yref : "y";
     const xanchor = typeof a.xanchor === "string" ? a.xanchor : "center";
     if (xref === "paper" && yref === "paper" && a.showarrow === false) {
-      // subplot header: map the paper point onto the grid whose domain
-      // rect contains it (stacked subplots share x domains, so the y
-      // coordinate is the discriminator)
+      // Subplot headers sit just above their panel top. Paper y and axis
+      // domains are both bottom-origin fractions, so do not flip ay.
       const ax = num(a.x) ?? 0.5;
       const ay = num(a.y) ?? 1;
-      let bestGrid = 0;
+      let bestGrid: number | null = null;
       let bestDist = Infinity;
       for (let g = 0; g < grids.length; g++) {
         const gd = grids[g];
-        const cx = (gd.xDomain[0] + gd.xDomain[1]) / 2;
-        const cy = (gd.yDomain[0] + gd.yDomain[1]) / 2;
-        const inside =
-          ax >= gd.xDomain[0] - 0.02 &&
-          ax <= gd.xDomain[1] + 0.02 &&
-          1 - ay >= gd.yDomain[0] - 0.05 &&
-          1 - ay <= gd.yDomain[1] + 0.05;
-        const d = Math.abs(cx - ax) + Math.abs(cy - (1 - ay));
-        if (inside) {
-          bestGrid = g;
-          bestDist = -1;
-          break;
+        if (
+          ax < gd.xDomain[0] - 0.02 ||
+          ax > gd.xDomain[1] + 0.02 ||
+          ay < gd.yDomain[1] - 0.12 ||
+          ay > gd.yDomain[1] + 0.08
+        ) {
+          continue;
         }
+        const d = Math.abs((gd.xDomain[0] + gd.xDomain[1]) / 2 - ax) +
+          Math.abs(gd.yDomain[1] - ay);
         if (d < bestDist) {
           bestDist = d;
           bestGrid = g;
         }
       }
-      void bestDist;
-      subTitleByGrid.set(bestGrid, {
-        text,
-        color: chromeColor(font.color, palette.textColor, theme),
-        fontSize,
-      });
+      if (bestGrid !== null && !subTitleByGrid.has(bestGrid)) {
+        subTitleByGrid.set(bestGrid, {
+          text,
+          color: chromeColor(font.color, palette.textColor, theme),
+          fontSize,
+        });
+      }
+      // Paper labels in the plot body are not subplot headers. The generic
+      // annotation path cannot place them without an x axis, so skip rather
+      // than overwrite the real panel title.
       continue;
     }
     const xIdx = xref.startsWith("x") && xref !== "paper" ? axisRefIndex(xref, "x") : null;
@@ -1459,11 +1480,26 @@ export function plotlyToECharts(
     const yIsFraction = yref.endsWith(" domain") || yref === "paper";
     const xIsFraction = xref.endsWith(" domain");
     let xVal = num(a.x);
-    if (typeof a.x === "string" && xIdx !== null && axisAt(true, xIdx).type === "time") {
+    if (xIdx === null) continue;
+    const xAxisInfo = axisAt(true, xIdx);
+    if (xAxisInfo.type === "log" && xVal !== undefined) {
+      // plotly log-axis annotations carry log10 coordinates
+      xVal = Math.pow(10, xVal);
+      if (!Number.isFinite(xVal) || xVal <= 0) continue;
+    }
+    if (typeof a.x === "string" && xAxisInfo.type === "time") {
       xVal = parsePlotlyDate(a.x);
     }
-    if (xIdx === null) continue;
-    const xAxisIsTime = axisAt(true, xIdx).type === "time";
+    const xAxisIsTime = xAxisInfo.type === "time";
+    const annotationYValue = (raw: unknown): number | undefined => {
+      const info = yIdx !== null ? axisAt(false, yIdx) : null;
+      let value = num(raw);
+      if (value !== undefined && info?.type === "log") {
+        value = Math.pow(10, value);
+        return Number.isFinite(value) && value > 0 ? value : undefined;
+      }
+      return value;
+    };
     if (xIsFraction) {
       // a fraction of the x domain — resolved once the extents are final;
       // fractions are safe on any axis (they map onto the data extent)
@@ -1487,7 +1523,7 @@ export function plotlyToECharts(
           log: yIdx !== null && axisAt(false, yIdx).type === "log",
         };
       } else {
-        const yVal = num(a.y);
+        const yVal = annotationYValue(a.y);
         if (yVal !== undefined && yIdx !== null) yAdd(yIdx, yVal);
         fracPoint.y = yVal ?? 0;
       }
@@ -1517,7 +1553,7 @@ export function plotlyToECharts(
         log: yIdx !== null && axisAt(false, yIdx).type === "log",
       };
     } else {
-      const yVal = num(a.y);
+      const yVal = annotationYValue(a.y);
       if (yVal !== undefined && yIdx !== null) yAdd(yIdx, yVal);
       point.y = yVal ?? 0;
     }
@@ -1772,6 +1808,12 @@ export function plotlyToECharts(
   const rawLegend = asRecord(layout.legend);
   const showLegend = (layout.showlegend ?? tpl.showlegend ?? true) !== false && namedSeries.length > 0;
   const legendOrient = rawLegend.orientation === "h" ? "horizontal" : "vertical";
+  // A legend the figure generator positioned deliberately (anything that is
+  // not the shared theme's right-legend signature) keeps its authored
+  // position at every width; only the theme default relocates below 600 px.
+  const themeDefaultRightLegend =
+    rawLegend.orientation !== "h" && num(rawLegend.x) === 1.02 && rawLegend.xanchor === "left";
+  const narrowLegend = width < NARROW_LEGEND_BREAKPOINT && showLegend && themeDefaultRightLegend;
   const hasMainTitle = titleParts !== null;
   const mainTitleBlock = hasMainTitle
     ? titleParts.size + (titleParts.subtext ? (titleParts.subLines * (titleParts.subSize + 3)) : 0) + 8
@@ -1788,14 +1830,14 @@ export function plotlyToECharts(
     : 0;
   const leftBand = Math.max(margin.l * scale, 40 + (anyYName ? 16 : 0), yCatBand);
   // the right band must actually fit the longest legend entry, capped so
-  // mobile keeps plot room
+  // mobile keeps plot room; a relocated narrow legend frees the whole band
   const longestName = namedSeries.reduce((m, n) => Math.max(m, n.length), 0);
   const legendBand =
-    showLegend && legendOrient === "vertical"
+    showLegend && !narrowLegend && legendOrient === "vertical"
       ? Math.min(Math.max(122, longestName * 7.8 + 46), Math.round(width * 0.46))
       : 0;
   const rightBand = Math.max(
-    margin.r * scale,
+    narrowLegend ? 0 : margin.r * scale,
     legendBand,
     heatmapVisuals.some((visual) => visual.show) ? 60 : 0,
   );
@@ -1826,14 +1868,26 @@ export function plotlyToECharts(
     let band = Math.max(margin.b * scale, 26);
     for (const info of xInfos) {
       if (info.type !== "category") continue;
+      const labelsVisible = info.raw.showticklabels !== false;
+      const hasTitle = axisTitleText(info) !== null;
+      // Hidden upper-panel axes must not reserve the long rotated-label depth
+      // of the visible bottom axis (m5_full_sample_series regression).
+      if (!labelsVisible && !hasTitle) continue;
       const grid = grids.find((g) => g.xIndex === info.index);
       const span = grid ? grid.xDomain[1] - grid.xDomain[0] : 1;
       const n = Math.max(1, info.categories.length);
       const longest = info.categories.reduce((m, c) => Math.max(m, c.length), 0);
       const slot = (innerWpx * span) / n;
       const rotated = slot < longest * 6.2 + 8;
-      const depth = rotated ? longest * 6.2 * 0.55 + 20 : 16;
-      band = Math.max(band, Math.round(depth + (axisTitleText(info) !== null ? 30 : 8)));
+      const depth = !labelsVisible ? 8 : rotated ? longest * 6.2 * 0.55 + 20 : 16;
+      band = Math.max(band, Math.round(depth + (hasTitle ? 30 : 8)));
+    }
+    // a horizontal legend relocated below the plot needs its own row(s):
+    // estimate wrapped rows from the total name width and the plot width
+    if (narrowLegend) {
+      const nameWidth = namedSeries.reduce((sum, n) => sum + n.length * 7.2 + 34, 0);
+      const rows = Math.max(1, Math.ceil(nameWidth / Math.max(120, innerWpx)));
+      band += rows * 20 + 10;
     }
     return band;
   })();
@@ -1894,6 +1948,7 @@ export function plotlyToECharts(
       },
       axisLabel,
     };
+    if (info.raw.autorange === "reversed") opt.inverse = true;
     if (info.type === "value") {
       // trim raw-float ticks (authored ranges and extents can land on
       // 0.9560236…; integers still get thousands separators)
@@ -2163,25 +2218,42 @@ export function plotlyToECharts(
   const legendFont = asRecord(rawLegend.font);
   let legend: Record<string, unknown> | undefined;
   if (showLegend) {
-    const ly = num(rawLegend.y) ?? 1;
-    const yanchor = typeof rawLegend.yanchor === "string" ? rawLegend.yanchor : "top";
-    const legendH = namedSeries.length * 21 + 8;
-    const top =
-      topBand + (1 - ly) * innerHpx - (yanchor === "middle" ? legendH / 2 : yanchor === "bottom" ? legendH : 0);
-    legend = {
-      show: true,
-      orient: legendOrient,
-      data: namedSeries,
-      left: Math.round(width - rightBand + 6),
-      top: Math.round(Math.max(topBand, top)),
-      textStyle: {
-        color: chromeColor(legendFont.color, palette.textColor, theme),
-        fontSize: num(legendFont.size) ?? 12,
-      },
-      borderWidth: 0,
-      backgroundColor: "transparent",
-      inactiveColor: palette.gridColor,
+    const legendTextStyle = {
+      color: chromeColor(legendFont.color, palette.textColor, theme),
+      fontSize: num(legendFont.size) ?? 12,
     };
+    if (narrowLegend) {
+      // horizontal legend on its own row below the plot (mobile breakpoint)
+      legend = {
+        show: true,
+        orient: "horizontal",
+        data: namedSeries,
+        left: Math.round(leftBand * 0.4),
+        bottom: 4,
+        itemGap: 16,
+        textStyle: legendTextStyle,
+        borderWidth: 0,
+        backgroundColor: "transparent",
+        inactiveColor: palette.gridColor,
+      };
+    } else {
+      const ly = num(rawLegend.y) ?? 1;
+      const yanchor = typeof rawLegend.yanchor === "string" ? rawLegend.yanchor : "top";
+      const legendH = namedSeries.length * 21 + 8;
+      const top =
+        topBand + (1 - ly) * innerHpx - (yanchor === "middle" ? legendH / 2 : yanchor === "bottom" ? legendH : 0);
+      legend = {
+        show: true,
+        orient: legendOrient,
+        data: namedSeries,
+        left: Math.round(width - rightBand + 6),
+        top: Math.round(Math.max(topBand, top)),
+        textStyle: legendTextStyle,
+        borderWidth: 0,
+        backgroundColor: "transparent",
+        inactiveColor: palette.gridColor,
+      };
+    }
   }
 
   // --- series axis indices + assemble ------------------------------------------------------
@@ -2268,8 +2340,10 @@ export function plotlyToECharts(
         calculable: false,
         inRange: { color: visual.colors },
         textStyle: { color: palette.textColor, fontSize: 11 },
-        // the plotly colorbar title becomes the legend's top-end label
-        ...(visual.title ? { text: [visual.title, formatTick(visual.min)] } : {}),
+        // colorbar labels carry title, scale maximum, and scale minimum
+        ...(visual.title
+          ? { text: [visual.title, formatTick(visual.max), formatTick(visual.min)] }
+          : {}),
       };
     });
     option.visualMap = visualMaps.length === 1 ? visualMaps[0] : visualMaps;

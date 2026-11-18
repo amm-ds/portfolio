@@ -1,5 +1,5 @@
 project_id: 01-rag-agent
-short_version: "Grounding-hardened cited QA over 593 Wikipedia articles. Frozen 30-question stress re-run: 0.733 correct (CI [0.567, 0.867]); unsupported outcomes fell 11 → 5. Independent set B: 0.633 correct, but 9/30 unsupported outcomes missed the ≤6/30 gate. Not unattended-ready."
+short_version: "Grounding-hardened cited QA over 593 Wikipedia articles. Frozen 30-question stress re-run: 0.733 correct (CI [0.567, 0.867]); unsupported outcomes 5 of 30 (was 11; not a demonstrated gain). Independent set B: 0.633, 9/30 unsupported over the ≤6/30 gate. Not unattended-ready."
 sections:
 - id: background
   text_md: |
@@ -309,11 +309,12 @@ sections:
     The current champion is the grounding-hardening configuration with hosted
     generation and dense MiniLM retrieval plus cross-encoder reranking. On the
     frozen 30-question stress re-run it reaches 0.733 correct (CI [0.567,
-    0.867]) and reduces unsupported-claim outcomes from 11 to 5. Independent
-    set B reaches 0.633 correct (CI [0.467, 0.80]) but misses the unsupported
-    claim gate at 9/30 and answer-expected correctness at 0.550. Earlier tuning
-    and gated sealed results remain separate evidence, not inputs to these
-    denominators. See the
+    0.867]) and reduces unsupported-claim outcomes to 5 of 30 (was 11 of 30;
+    the CI width exceeds the change, so this is not a demonstrated gain).
+    Independent set B reaches 0.633 correct (CI [0.467, 0.80]) but misses the
+    unsupported claim gate at 9/30 and answer-expected correctness at 0.550.
+    Earlier tuning and gated sealed results remain separate evidence, not
+    inputs to these denominators. See the
     [full evaluation report](https://amm-ds.github.io/portfolio/projects/01-rag-agent/).
 
     ## What the experiment taught
@@ -350,6 +351,10 @@ sections:
     | RAGAS faithfulness | — | **0.7337 [0.6562, 0.8131]** |
     | RAGAS answer relevancy | 0.8775 | **0.8602** |
     | RAGAS context precision / recall | — | 0.7609 / 0.9826 |
+
+    Judge and evaluator metadata: the entailment judge and the RAGAS evaluator
+    run on the hosted `kimi-for-coding` provider (committed comparison
+    artifact), RAGAS library version 0.3.1 from the locked environment.
 
     - Selected tuning taxonomy: 46 correct / 17 unsupported / 2 retrieval-miss /
       0 format failures. Refusal accuracy 1.0, false-abstention 0.0545,

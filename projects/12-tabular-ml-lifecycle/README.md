@@ -67,15 +67,15 @@ Full rationale and rejected alternatives: [DESIGN.md](DESIGN.md).
 | ridge | 68.9 | 51.1 | 77.8 | 86.4 |
 | random forest | 39.5 | 26.3 | 45.7 | 25.7 |
 | LightGBM (Optuna HPO, 50 trials) | 34.4 | 25.4 | 40.2 | 27.4 |
-| tabular MLP (PyTorch) ← champion | 34.2 | 25.4 | 39.3 | 33.7 |
+| tabular MLP (PyTorch) ← validation pick, tied | 34.2 | 25.4 | 39.3 | 33.7 |
 
 Key findings:
 
 - **Every candidate and its one test score:** see `reports/metrics.json` and
-  the `model_comparison` figure; the champion was chosen by validation MAE,
-  never by test.
+  the `model_comparison` figure; the served model was chosen by validation
+  MAE, never by test.
 - **The floor is real:** the seasonal-naive comparator (same hour last week)
-  posts 83.2 test MAE; the champion improves on it by 57.8
+  posts 83.2 test MAE; the served MLP improves on it by 57.8
   rentals/hour on average. The hourly paired-bootstrap 95% CI is [52.5, 63.1];
   day-block and week-block sensitivity intervals are wider at [44.2, 71.8] and
   [38.8, 73.4], respectively (2,000 resamples each). All exclude zero.
@@ -88,11 +88,16 @@ Key findings:
   validation); the validation argmin is a dropout-off row about 2 rentals below
   the shipped configuration. The pre-registered configuration stands. Variant
   test scores are post-freeze diagnostics, never selectors.
-- **The MLP-trees race is a dead heat:** validation picks the MLP (34.2 vs
-  34.4); on the single test pass LightGBM's MAE is 0.06 rentals lower while
+- **The MLP-trees race is a tie, not a champion:** validation MAE 34.2 (MLP)
+  vs 34.4 (LightGBM); the paired bootstrap on the validation difference
+  (MLP − LightGBM) is −0.18 with 95% CI [−1.7, +1.2] (2,000 seeded
+  resamples, `metrics.json:validation_tie_interval`) — the interval spans
+  zero, so per the stated protocol the two are tied on validation and the MLP
+  stays the served artifact without a champion label. On the single test pass
+  LightGBM's MAE is 0.06 rentals lower while
   the MLP holds the better RMSE (39.3 vs 40.2). Both crush the floor's 83.2.
 - **The residual slices name the next feature:** `residual_heatmap` and
-  `residual_vs_fitted` for the champion show where the model still
+  `residual_vs_fitted` for the served model show where the model still
   under-forecasts (rush-hour peaks and bad weather).
 - **Limits, labeled:** validation made every choice; ablation test scores are
   post-freeze diagnostics. Day/week intervals expose serial-dependence
@@ -102,7 +107,7 @@ Key findings:
 ## Limits
 
 The remaining error concentrates at rush hour and in bad weather (residual
-slices), the champion is not refit on train+validation before serving, and
+slices), the served model is not refit on train+validation before serving, and
 transfer to another city's system is unverified — both listed under Roadmap
 below. Probabilistic forecasts and calendar-event features are deferred.
 

@@ -100,7 +100,13 @@ def pa_k(
     top = np.sort(np.argsort(-scores, kind="stable")[:k])
     detected, in_window = match_events(alert_times[top], windows, lead_steps, step_ns)
     rf = range_f1(detected, int((~in_window).sum()))
-    return {"k_pct": float(k_pct), "alerts": int(k), **rf}
+    return {
+        "k_pct": float(k_pct),
+        "alerts": int(k),
+        "tp": int(sum(detected)),
+        "fp": int((~in_window).sum()),
+        **rf,
+    }
 
 
 def band(

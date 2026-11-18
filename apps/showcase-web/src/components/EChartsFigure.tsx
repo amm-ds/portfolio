@@ -181,6 +181,10 @@ export function EChartsFigure({
         const height = scaledHeight(payload.layout.height, el.clientWidth, payload.layout);
         el.style.height = `${height}px`;
         chartRef.current ??= init(el, undefined, { renderer: "svg", height });
+        // The instance was initialized at a possibly older pixel size; resize
+        // it before replacing the option so window/orientation changes do not
+        // leave grids and legends targeting a stale canvas.
+        chartRef.current.resize();
         const option: EChartsOption = plotlyToECharts(payload, theme, el.clientWidth);
         chartRef.current.setOption(option as never, { notMerge: true });
         // The chart is painted — swap the skeleton out (only if still mounted:

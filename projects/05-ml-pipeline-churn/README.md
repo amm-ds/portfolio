@@ -90,7 +90,8 @@ same search picked a logistic - the winner tracks the data.
 Key findings:
 
 - **The frozen calibrated policy cuts business cost 1,035 -> 601 (-41.9%) at
-  t=0.175 versus contact everyone.** The paired delta is **-434, 95% CI
+  t=0.175 versus contact everyone** (cost weights: $5 per missed churner,
+  $1 per contact, from `params.yaml`). The paired delta is **-434, 95% CI
   [-508, -353]**. Against logistic-at-0.5, the exact same policy's delta is
   **-90, 95% CI [-159, -26]**. Both intervals use 2,000 paired row resamples.
 - **The winner changes on real data.** XGBoost beats the logistic family on

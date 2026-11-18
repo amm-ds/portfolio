@@ -3,12 +3,14 @@
 **Domain:** Deep learning NLP · **Data:** AG News (real, HuggingFace `fancyzhx/ag_news`) ·
 **Status:** Working showcase
 
-> AG News sorter: the selected transformer + selective LLM cascade lifts fresh macro-F1 from 0.9529432 to 0.9539265 and accuracy from 0.953 to 0.954, reviewing 22 of 1,000 fresh items. Full evaluation: $0.023671 cloud-equivalent. License unknown.
+> AG News sorter: the selected transformer + selective LLM cascade shows no measurable change in fresh macro-F1 (0.953 → 0.954, +0.001) and accuracy (0.953 → 0.954), reviewing 22 of 1,000 fresh items. Full evaluation: $0.023671 cloud-equivalent. License: research purposes.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/04-nlp-classification)
 
-The cascade gain is a small measured trade-off, not established superiority: no
-paired cascade interval is persisted, and the dollar figure is a rate-card
+The cascade delta is +0.001 macro-F1 — no measurable change, not established
+superiority: no paired cascade interval can be computed from committed
+artifacts (the per-row review decisions are not persisted), and the dollar
+figure is a rate-card
 estimate rather than an observed cloud bill.
 
 The task is to sort English headline-plus-description items into four topics.

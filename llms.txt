@@ -29,6 +29,7 @@
 - [docs/engineering/repo-conventions.md](docs/engineering/repo-conventions.md) — the rules every change follows.
 - [docs/engineering/code-quality-guidelines.md](docs/engineering/code-quality-guidelines.md) — review bar (ponytail, thermo-nuclear, pstack).
 - [README.md](README.md) — project table with pinned results, stack, live endpoints.
+- [collaboration/README.md](collaboration/README.md) — Claude Code design/review and Kimi Code execution workflow; `make collab` launches both side by side.
 
 ## Docs surface (published at https://amm-ds.github.io/portfolio/)
 

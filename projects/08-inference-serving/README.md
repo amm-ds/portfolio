@@ -54,7 +54,9 @@ re-aggregated with `report` without re-running hours of local inference.
 Author run, one laptop (Apple Silicon): 19 cells / 760 requests / 0 failures.
 **MLX ≈ 2.9× GGUF tok/s** on the same models; a 4-bit mixture-of-experts model
 records 0.81 s p95 latency (0.63 s median) at about $0.12 per 1M output tokens
-(electricity only). Aggregates in `reports/metrics.json`; the re-aggregable
+(electricity only: measured 67.7 aggregate output tok/s on that cell, declared
+100 W system draw at $0.30/kWh — the
+assumptions behind the figure, not a metered bill). Aggregates in `reports/metrics.json`; the re-aggregable
 record in `data/bench_run.json`.
 
 ## Limits
@@ -90,10 +92,17 @@ hypothetical cloud rate card per 1M output tokens.
 
 ## Figures
 
+Headline set:
+
 | figure | file |
 |---|---|
 | engine panel | [reports/figures/engine_panel.html](reports/figures/engine_panel.html) |
 | latency concurrency | [reports/figures/latency_concurrency.html](reports/figures/latency_concurrency.html) |
-| quality quant | [reports/figures/quality_quant.html](reports/figures/quality_quant.html) |
 | toks per s | [reports/figures/toks_per_s.html](reports/figures/toks_per_s.html) |
+
+Detail — quality (saturated smoke check; ties at 1.00; does not establish quality):
+
+| figure | file |
+|---|---|
+| quality quant | [reports/figures/quality_quant.html](reports/figures/quality_quant.html) |
 

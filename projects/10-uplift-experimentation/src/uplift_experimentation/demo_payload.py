@@ -342,7 +342,7 @@ def build_demo_payload(cfg: UpliftConfig) -> dict[str, Any]:
             "seed": boot_seed,
             "alpha": 0.05,
             "model_estimated": True,
-            "note": "profit(f, c) = inc(f) * revenue_per_conversion - f * N * c; "
+            "note": "revenue_minus_send_cost(f, c) = inc(f) * revenue_per_conversion - f * N * c; "
             "inc(f) is summed predicted uplift (model-estimated), CIs are paired "
             "row bootstrap (one shared resample per replication), percentile 95%",
         },

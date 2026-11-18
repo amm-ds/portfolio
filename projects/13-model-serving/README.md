@@ -79,7 +79,8 @@ and records its readiness/prediction smoke in `reports/docker_slim.json`.
 
 Author run, one laptop (no GPU, one uvicorn worker): the reproduction gate is
 exact (**25.4316 vs 25.4316**) and the ONNX parity max-abs is **7.15e-07** on
-512 seeded probe rows (tolerance 1e-4). Single-request **p50 1.6 ms** with a
+512 seeded probe rows (tolerance 1e-4). Single-request **p50 1.6 ms** (p95
+**2.0 ms**, p99 **2.2 ms**; n = **300** requests per cell, nearest-rank) with a
 **~950 req/s** knee near concurrency 4 and zero errors in every measured
 cell; the explicit batch endpoint reaches **~56k rows/s** at size 128. The
 full image measures **6.47 GB**; the smoke-passed ONNX-only slim image is

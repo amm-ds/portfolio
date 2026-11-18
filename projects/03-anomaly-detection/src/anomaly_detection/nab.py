@@ -412,6 +412,41 @@ def _no_skill_band(
     return {"seeds": n_seeds, "series": len(evaluable), **stats}
 
 
+BOOTSTRAP_SEED = 42
+
+
+def _pa_k_bootstrap(
+    results: dict[str, dict[str, Any]], k_key: str = "pa_k_2", n_boot: int = 2000
+) -> dict[str, Any]:
+    """Series-level bootstrap CI for range precision at a frozen budget.
+
+    The headline precision is the macro average over evaluable series (same
+    reduction as the committed headline numbers); this resamples the series
+    with replacement and recomputes that mean per draw (same convention as
+    the rest of the queue: fixed seed, 2,000 resamples, percentile 95%). The
+    operating point itself is untouched.
+    """
+    rows = [r[k_key] for r in results.values() if r.get(k_key)]
+    per_series = np.array([r["range_precision"] for r in rows], dtype=float)
+    n = len(rows)
+    rng = np.random.default_rng(BOOTSTRAP_SEED)
+    means = np.empty(n_boot)
+    for i in range(n_boot):
+        take = rng.integers(0, n, size=n)
+        means[i] = float(np.mean(per_series[take]))
+    lo, hi = np.percentile(means, [2.5, 97.5])
+    return {
+        "metric": f"range_precision at {k_key} budget (macro mean over series)",
+        "point": float(np.mean(per_series)),
+        "lo": float(lo),
+        "hi": float(hi),
+        "n_boot": n_boot,
+        "seed": BOOTSTRAP_SEED,
+        "n_series": n,
+        "method": "resample series with replacement, recompute the macro mean",
+    }
+
+
 def range_pr_figure(results: dict[str, dict[str, Any]], no_skill: dict[str, Any]) -> go.Figure:
     """Range-PR under the project's window matching: champion mean curve vs the
     seeded random band, with the 2% alert-budget operating point marked."""
@@ -634,6 +669,7 @@ def run_nab(config: AnomalyConfig) -> dict[str, Any]:
         "by_family": {fam: _aggregate(rs) for fam, rs in by_family.items()},
         "overall": _aggregate(list(results.values())),
         "no_skill": no_skill,
+        "pa_k_2_precision_interval": _pa_k_bootstrap(results),
         "lead_steps": LEAD_STEPS,
         "event_rule": (
             "window detected if >=1 alert inside; range precision over alerts outside windows"

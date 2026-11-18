@@ -27,6 +27,16 @@ app (`apps/showcase-web`), shared libraries (`libs/`), and an mkdocs site
 - `scripts/` — repo gates and generators (registry, story short copy, route
   manifest, demo contract, story language lint, README figures).
 - `registry/` + `docs/data-registry/` — dataset manifests and cards.
+- `collaboration/` — dual-agent workspace: Claude Code owns design and review,
+  Kimi Code owns execution. Use `make collab` to launch both side by side.
+
+## Claude ↔ Kimi role split
+
+Claude Code produces design briefs, architecture proposals, implementation
+handoffs, and review responses under `collaboration/`. Kimi Code implements only
+from an approved handoff, runs the touched gates, and reports exact files and
+verification results. Agents do not mutate git unless the session owner
+explicitly asks.
 
 ## Gates (run what your change touches)
 

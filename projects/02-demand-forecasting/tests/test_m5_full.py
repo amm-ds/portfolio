@@ -44,6 +44,7 @@ from demand_forecasting.m5_full import (  # noqa: E402
     official_wrmsse,
     revenue_weights,
     run_m5_full,
+    screened_ensemble,
     wrmsse_nodes,
 )
 from demand_forecasting.multistep_models import peak_sample_weights  # noqa: E402
@@ -1013,3 +1014,48 @@ def test_real_full_panel_structure():
     first = pd.Timestamp(dates[origins[0]])
     min_hist = (first - y.groupby("unique_id")["ds"].min().max()).days
     assert min_hist >= m5_full.MIN_SERIES_HISTORY_DAYS
+
+
+def test_screened_ensemble_never_reads_test_origin() -> None:
+    """Selection isolation: the screen and the weight fit must evaluate only
+    the selection origins; the test origin receives the same convex blend,
+    never a refit. A guarded wrmsse_fn on the test origin raises on any read,
+    so a regression that scores the test origin during selection fails loudly.
+    """
+    rng = np.random.default_rng(0)
+    origins = [0, 1, 2]
+    selection = [0, 1]  # origin 2 is the held-out test origin
+    pool = ("cand_a", "cand_b", "cand_c")
+    actuals = {o: rng.normal(10.0, 3.0, 6) for o in origins}
+    forecasts = {c: {o: actuals[o] + rng.normal(0.0, 1.0, 6) for o in origins} for c in pool}
+    forecasts["convex_ensemble"] = {}  # caller contract: the output slot pre-exists
+
+    def ctx_for(acts: dict[int, np.ndarray]) -> dict:
+        return {
+            o: {"wrmsse_fn": lambda pred, a=a: float(np.mean(np.abs(pred - a)))}
+            for o, a in acts.items()
+        }
+
+    def guarded(_pred: np.ndarray) -> float:
+        raise AssertionError("selection path read the test origin")
+
+    reference = {c: {o: p.copy() for o, p in per.items()} for c, per in forecasts.items()}
+    members_ref, weights_ref, _ = screened_ensemble(
+        reference, selection, ctx_for(actuals), pool=pool
+    )
+
+    guarded_ctx = ctx_for(actuals)
+    guarded_ctx[2] = {"wrmsse_fn": guarded}
+    guarded_run = {c: {o: p.copy() for o, p in per.items()} for c, per in forecasts.items()}
+    members, weights, _ = screened_ensemble(guarded_run, selection, guarded_ctx, pool=pool)
+
+    assert members == members_ref
+    np.testing.assert_allclose(weights, weights_ref)
+    # The test origin receives the identical convex blend in both runs.
+    np.testing.assert_allclose(guarded_run["convex_ensemble"][2], reference["convex_ensemble"][2])
+
+    # Injected-read discrimination: scoring the test origin (a leak) trips the
+    # sentinel, proving this fixture detects the read it guards against.
+    leaked = {c: {o: p.copy() for o, p in per.items()} for c, per in forecasts.items()}
+    with pytest.raises(AssertionError, match="test origin"):
+        screened_ensemble(leaked, [0, 1, 2], guarded_ctx, pool=pool)

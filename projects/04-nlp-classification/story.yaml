@@ -1,16 +1,17 @@
 project_id: 04-nlp-classification
 short_version: |
-  AG News sorter: the selected transformer + selective LLM cascade lifts fresh macro-F1 from 0.9529432 to 0.9539265 and accuracy from 0.953 to 0.954, reviewing 22 of 1,000 fresh items. Full evaluation: $0.023671 cloud-equivalent. License unknown.
+  AG News sorter: the selected transformer + selective LLM cascade shows no measurable change in fresh macro-F1 (0.953 → 0.954, +0.001) and accuracy (0.953 → 0.954), reviewing 22 of 1,000 fresh items. Full evaluation: $0.023671 cloud-equivalent. License: research purposes.
 sections:
   - id: background
     text_md: |
-      **The system sorts news into four topics. It scores 0.9539265 fresh
+      **The system sorts news into four topics. It scores 0.954 fresh
       macro-F1 and reviews 22 of 1,000 fresh items.** Macro-F1 averages
       topic-level F1, which balances finding and correctly labeling topics. A
       transformer learns text patterns and predicts every item. An LLM, or large
       language model, reviews only items below confidence cutoff τ=0.6.
 
-      AG News has 127,600 items, 120k for training, and an unknown license.
+      AG News has 127,600 items, 120k for training, and a research-purposes
+      license.
       Before review, the full-data transformer scores 0.9529432. The keyword
       model scores 0.8785 fresh, runs about 40× faster, and avoids token cost.
       Tokens are text pieces used for billing.
@@ -74,8 +75,9 @@ sections:
   - id: data
     text_md: |
       AG News holds 127,600 headline-plus-description items across four topics.
-      The standard training portion has 120k rows. Its license is recorded as
-      `unknown` in [the dataset card](https://amm-ds.github.io/portfolio/data-registry/ag-news/).
+      The standard training portion has 120k rows. Its license is limited to
+      research purposes per
+      [the dataset card](https://amm-ds.github.io/portfolio/data-registry/ag-news/).
       The data-lineage diagram shows how four fixed views make the model ladder
       a fair comparison.
 
@@ -225,11 +227,13 @@ sections:
       labels or examples tune the router.
 
       Across validation, test, and fresh, the figure reflects **44 total
-      reviews** and small positive macro-F1 point deltas. Measured review latency,
+      reviews** and macro-F1 point deltas of at most +0.001 — no measurable
+      change. Measured review latency,
       the time spent waiting for those reviews, is **96.933 s** in total. The
       **$0.023671 cloud-equivalent** cost is an estimate from a rate card, not
-      an observed cloud bill. No paired cascade interval is persisted, so these
-      deltas do not establish superiority.
+      an observed cloud bill. No paired cascade interval can be computed from
+      committed artifacts — the per-row review decisions are not persisted —
+      so these deltas do not establish superiority.
 
       The figure also keeps the cheaper baseline in view. Keyword-first routing
       reaches 0.9061 fresh macro-F1 while 75.4% of items run at keyword speed.
@@ -242,7 +246,8 @@ sections:
       **Business summary:** The diagram and comparison figure show the τ=0.6
       cascade's observed trade-off: 0.9539265 fresh macro-F1 and 0.954 accuracy
       with 22 reviews. Keep the keyword router as the cheaper, lower-quality
-      option; the small cascade gain lacks a paired uncertainty interval.
+      option; the cascade delta of +0.001 macro-F1 is no measurable change and
+      lacks a paired uncertainty interval.
     figures: [llm_cascade_comparison]
   - id: results
     text_md: |
@@ -273,7 +278,8 @@ sections:
       - **Production breadth:** they cover English-only items with four clean
         topics. Overlapping or multi-label topics, where one item can have
         several labels, need a different contract.
-      - **Measurement limits:** the small cascade gain covers 44 reviews on
+      - **Measurement limits:** the cascade delta (+0.001 macro-F1) covers 44
+        reviews on
         fixed splits and has no persisted paired interval. Quantization stores
         model numbers at lower precision to reduce cost. Quantized quality uses
         a training sample, not test data. Transformer speeds use one machine at
@@ -284,8 +290,9 @@ sections:
       The exact tables and run identities in Conclusions preserve the full
       evidence behind these visual summaries.
 
-      **Business summary:** The figures show a small observed fresh cascade gain
-      over the full-data transformer, without established superiority.
+      **Business summary:** The figures show no measurable fresh cascade change
+      over the full-data transformer (Δ macro-F1 +0.001), without established
+      superiority.
       Business/Sci-Tech ambiguity and bounded evaluation remain limits.
     figures: [confusion_matrix_selected, per_class_f1_comparison, scale_ladder]
   - id: conclusions
@@ -294,14 +301,15 @@ sections:
 
       The final diagram shows the selected path: full-data transformer,
       confidence gate, and selective LLM review. Read it with the exact tables
-      below. On the fresh 1,000-article holdout, this path lifts macro-F1 from
-      **0.9529432 to 0.9539265** and accuracy from **0.953 to 0.954**. It reviews
+      below. On the fresh 1,000-article holdout, this path moves macro-F1 from
+      **0.9529432 to 0.9539265** (+0.001 — no measurable change) and accuracy
+      from **0.953 to 0.954**. It reviews
       22 rows below τ=0.6. Bounded test improves from 0.9460236 to 0.9490153
       macro-F1 and 0.946 to 0.949 accuracy with 16 reviews. All 44 reviews across
       validation, test, and fresh take 96.933 s. Their $0.023671
       cloud-equivalent cost is estimated. TF-IDF + logistic regression remains
       the 0.8785-fresh-macro-F1 baseline. The keyword-first router reaches
-      0.9061 with 75.4% of items at keyword speed. The cascade point gains have
+      0.9061 with 75.4% of items at keyword speed. The cascade point deltas have
       no persisted paired interval and do not establish superiority.
       [Full evaluation report](https://amm-ds.github.io/portfolio/projects/04-nlp-classification/).
 
@@ -317,9 +325,10 @@ sections:
       - Tuning was inconclusive. Validation selected HPO by +0.0073 macro-F1,
         but its paired 95% CI [−0.0048, +0.0204] crosses zero. Three seeds
         averaged 0.8910 ± 0.0042, inside noise.
-      - Selective LLM review had small positive macro-F1 point deltas over the
+      - Selective LLM review moved macro-F1 by at most +0.001 over the
         full-data transformer without sending every item to the LLM. No paired
-        cascade interval is persisted, so superiority is unproven.
+        cascade interval can be computed from committed artifacts — the
+        per-row review decisions are not persisted — so superiority is unproven.
       - Data leakage means evaluation information influencing model choices.
         Validation-only model and threshold fitting keep test/fresh labels out
         of those choices; fresh candidate scores are diagnostics only.
@@ -448,7 +457,8 @@ sections:
         The fresh candidate comparison is also inconclusive and never reselects.
       - The reading is per-item, English-only, on four clean topics. Multi-label
         Business/Sci-Tech routing needs a different label and metric contract.
-      - The cascade gains are small, lack paired intervals, and are bounded to
+      - The cascade deltas (at most +0.001 macro-F1) lack paired intervals and
+        are bounded to
         these fixed splits. They do not justify sending every item to an LLM or
         establish production breadth or superiority.
       - Quantized-model quality is measured on a training sample, not test data.
@@ -489,7 +499,7 @@ figure_captions:
   eda_class_balance: Each bounded split has 25% per class, and training texts cluster at 20–50 words. Topic frequencies and the 128-token cap do not explain the bounded differences.
   training_curve: Two distinct full-120k histories in separate panels. Solid lines are the shipped two-epoch headline run; dotted lines are the four-epoch probe, whose learning-rate schedule is not a continuation of the headline run. The star marks the headline's final validation macro-F1 (0.9464) beside, not within, the probe history. The probe peaks at 0.9477 in epoch 3, then declines while validation loss rises.
   hpo_history: Seeded 12-trial Optuna validation macro-F1 and running best. The paired HPO/default validation CI crosses zero and sits inside seed noise.
-  llm_cascade_comparison: Full-data transformer versus the selected τ=0.6 selective LLM cascade on validation, bounded test, and disjoint fresh holdout. Fresh macro-F1 rises from 0.9529432 to 0.9539265 with 22 reviews; no paired cascade interval is persisted.
+  llm_cascade_comparison: Full-data transformer versus the selected τ=0.6 selective LLM cascade on validation, bounded test, and disjoint fresh holdout. Fresh macro-F1 moves from 0.9529432 to 0.9539265 (+0.001, no measurable change) with 22 reviews; no paired cascade interval is persisted.
   confusion_matrix_selected: Actual versus predicted topics for the validation-selected bounded model on the 1,000-row test sample. Business → Sci/Tech remains the dominant off-diagonal pair.
   per_class_f1_comparison: Topic-level F1 for the validation-selected bounded model and TF-IDF baseline. The residual gap concentrates in Business/Sci-Tech.
   scale_ladder: Controlled data-scale ladder on the bounded 1,000-row test split. The MPS rungs (3.6k/10.8k/36k/108k train rows, identical hyperparameters) rise by +1.3–1.6 points per 3× step. The lone CPU marker is the bounded model, whose same-rows MPS twin sits 0.0002 F1 away. Device is not the confound.

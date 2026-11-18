@@ -120,6 +120,23 @@ def _legend_is_positioned(layout: Any) -> bool:
     return orient is not None or y is not None or x is not None
 
 
+def _apply_table_theme(fig: go.Figure) -> None:
+    """Plotly tables default to a white card even inside the dark theme."""
+    for trace in fig.data:
+        if not isinstance(trace, go.Table):
+            continue
+        if trace.header.fill.color is None:
+            trace.header.fill.color = "#1e293b"
+        if trace.header.font.color is None:
+            trace.header.font.color = "#f1f5f9"
+        if trace.cells.fill.color is None:
+            trace.cells.fill.color = "#0f172a"
+        if trace.cells.font.color is None:
+            trace.cells.font.color = "#e2e8f0"
+        if trace.cells.line.color is None:
+            trace.cells.line.color = "#334155"
+
+
 def apply_theme(
     fig: go.Figure, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
 ) -> go.Figure:
@@ -175,6 +192,7 @@ def apply_theme(
             patch.setdefault("title", {})["font"] = {"color": "#e2e8f0"}
         if patch:
             fig.update_layout({ax_name: patch})
+    _apply_table_theme(fig)
     return fig
 
 

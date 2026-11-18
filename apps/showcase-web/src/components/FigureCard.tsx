@@ -12,6 +12,8 @@ interface FigureData {
   columns: string[];
   rows: FigureRow[];
   total: number;
+  /** Display labels for dynamic table columns, keyed by the column id. */
+  labels?: Record<string, string>;
 }
 
 const COLUMN_LABELS: Record<string, string> = {
@@ -27,6 +29,10 @@ const COLUMN_LABELS: Record<string, string> = {
   value: "value",
 };
 const COLUMN_ORDER = Object.keys(COLUMN_LABELS);
+
+function columnLabel(data: FigureData, column: string): string {
+  return data.labels?.[column] ?? COLUMN_LABELS[column] ?? column;
+}
 
 /** Axis title text: plotly allows `{title: {text}}` or the shorthand `{title: "..."}`. */
 function axisTitle(axis: unknown): string | null {
@@ -104,6 +110,7 @@ function heatmapGrid(trace: Record<string, unknown>): unknown[][] {
 function figureData(payload: PlotlyPayload, limit = Number.MAX_SAFE_INTEGER): FigureData {
   const rows: FigureRow[] = [];
   let total = 0;
+  let dynamicLabels: Record<string, string> | undefined;
   const add = (row: FigureRow) => {
     total += 1;
     if (rows.length < limit) rows.push(row);
@@ -116,6 +123,29 @@ function figureData(payload: PlotlyPayload, limit = Number.MAX_SAFE_INTEGER): Fi
       typeof trace.name === "string" && trace.name !== "" ? trace.name : `trace ${traceIndex + 1}`;
     const x = values(trace.x);
     const y = values(trace.y);
+
+    if (type === "table") {
+      const header = values(asRecord(trace.header).values).map((value, index) =>
+        cell(value) === null ? `column ${index + 1}` : String(cell(value)),
+      );
+      const cellColumns = values(asRecord(trace.cells).values).map((column) => values(column));
+      const rowCount = Math.max(
+        cellColumns[0]?.length ?? 0,
+        ...cellColumns.map((column) => column.length),
+      );
+      const keys = header.map((_, index) => `table_${index}`);
+      dynamicLabels = Object.fromEntries(keys.map((key, index) => [key, header[index]]));
+      for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+        const row: FigureRow = {
+          series: String(cell(cellColumns[0]?.[rowIndex]) ?? `row ${rowIndex + 1}`),
+        };
+        for (let columnIndex = 1; columnIndex < cellColumns.length; columnIndex += 1) {
+          row[keys[columnIndex]] = cell(cellColumns[columnIndex]?.[rowIndex]);
+        }
+        add(row);
+      }
+      return;
+    }
 
     if (type === "heatmap") {
       const grid = heatmapGrid(trace);
@@ -204,11 +234,13 @@ function figureData(payload: PlotlyPayload, limit = Number.MAX_SAFE_INTEGER): Fi
     }
   });
 
-  const columns = COLUMN_ORDER.filter(
-    (column) =>
-      column === "series" || rows.some((row) => row[column] !== null && row[column] !== undefined),
-  );
-  return { columns, rows, total };
+  const hasValues = (column: string) =>
+    rows.some((row) => row[column] !== null && row[column] !== undefined);
+  const columns = [
+    ...COLUMN_ORDER.filter((column) => column === "series" || hasValues(column)),
+    ...Object.keys(dynamicLabels ?? {}).filter((column) => !COLUMN_ORDER.includes(column) && hasValues(column)),
+  ];
+  return { columns, rows, total, labels: dynamicLabels };
 }
 
 function csvCell(value: Cell | undefined): string {
@@ -218,8 +250,8 @@ function csvCell(value: Cell | undefined): string {
 }
 
 export function figureCsv(payload: PlotlyPayload): string {
-  const { columns, rows } = figureData(payload);
-  const header = columns.map((column) => COLUMN_LABELS[column]).join(",");
+  const { columns, rows, labels } = figureData(payload);
+  const header = columns.map((column) => labels?.[column] ?? COLUMN_LABELS[column] ?? column).join(",");
   const body = rows.map((row) => columns.map((column) => csvCell(row[column])).join(","));
   return [header, ...body].join("\r\n");
 }
@@ -286,7 +318,7 @@ export function FigureCard({
                     <tr>
                       {table.columns.map((column) => (
                         <th scope="col" key={column}>
-                          {COLUMN_LABELS[column]}
+                          {columnLabel(table, column)}
                         </th>
                       ))}
                     </tr>

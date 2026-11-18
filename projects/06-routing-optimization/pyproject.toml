@@ -11,6 +11,7 @@ dependencies = [
     "ortools>=9.9",
     "portfolio-core",
     "portfolio-eval",
+    "pyvrp>=0.14.1",
 ]
 
 [project.scripts]

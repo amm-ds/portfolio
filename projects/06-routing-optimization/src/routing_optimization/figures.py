@@ -353,17 +353,34 @@ def pareto_figure(rows: pl.DataFrame) -> go.Figure:
     )
     for trace in fig.data:
         trace.update(marker_size=12)
-    for row in rows.iter_rows(named=True):
+    # Vehicle-delta labels, placed in DATA space so they cannot collide: the
+    # fast heuristics share the leftmost log-decades and the ALNS arms sit on
+    # nearly identical points, so a pixel yshift stacked them. Process bottom-up
+    # (ascending gap) and force each label at least one clear step above every
+    # already-placed label in its x-window. The legend carries solver names.
+    placed: list[tuple[float, float]] = []
+    y_step = max(
+        (rows["mean_gap_pct"].max() - rows["mean_gap_pct"].min()) * 0.07,
+        1.0,
+    )
+    for row in rows.sort("mean_gap_pct").iter_rows(named=True):
         delta = row["mean_veh_delta"]
         delta_txt = f"{delta:+.2f}" if delta is not None else "n/a"
+        # On a log axis plotly interprets annotation x as log10(position)
+        # — pass log10(runtime) so the label lands on its marker.
+        lx = math.log10(row["mean_runtime_s"])
+        y = row["mean_gap_pct"]
+        eff = y
+        for prev_x, prev_eff in placed:
+            if abs(lx - prev_x) < 0.5:
+                eff = max(eff, prev_eff + y_step)
+        placed.append((lx, eff))
         fig.add_annotation(
-            # On a log axis plotly interprets annotation x as log10(position)
-            # — pass log10(runtime) so the label lands on its marker.
-            x=math.log10(row["mean_runtime_s"]),
-            y=row["mean_gap_pct"],
-            text=f"{row['solver']} (veh Δ {delta_txt})",
+            x=lx,
+            y=eff,
+            text=f"veh Δ {delta_txt}",
             showarrow=False,
-            yshift=18,
+            yshift=10,
             font_size=11,
         )
     style_runs(fig, best="alns")

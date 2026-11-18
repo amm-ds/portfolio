@@ -295,14 +295,15 @@ def cost_sensitivity_read(
         "policy_budget": cfg.policy_budget,
         "rows": rows,
         "breakeven_cost_per_email": float(breakeven),
-        "note": "profit = revenue - email cost; revenue_per_conversion is mean spend "
+        "note": "revenue minus send cost = revenue - email cost; "
+        "revenue_per_conversion is mean spend "
         "among converters (no COGS in the snapshot), so break-even costs are optimistic "
         "if true margin is lower than revenue.",
     }
 
 
 def cost_sensitivity_figure(read: dict[str, Any], cfg: UpliftConfig) -> go.Figure:
-    """Profit vs send cost: mail-everyone vs the recommended top-k policy."""
+    """Revenue minus send cost vs send cost: mail-everyone vs the recommended top-k policy."""
     fig = go.Figure()
     costs = [r["cost_per_email"] for r in read["rows"]]
     fig.add_scatter(
@@ -348,10 +349,11 @@ def cost_sensitivity_figure(read: dict[str, Any], cfg: UpliftConfig) -> go.Figur
     style_runs(fig, best=read["best_policy"])
     fig.update_layout(
         title=(
-            f"Profit vs send cost: all vs top-{read['policy_budget']:.0%} ({read['best_policy']})"
+            f"Revenue minus send cost vs cost per email: all vs "
+            f"top-{read['policy_budget']:.0%} ({read['best_policy']})"
         ),
         xaxis_title="cost per email (USD, log scale)",
-        yaxis_title="profit (USD)",
+        yaxis_title="revenue minus send cost (USD)",
         xaxis_type="log",
     )
     add_takeaway(
@@ -771,12 +773,26 @@ def decile_figure(table: dict[str, list[float]], policy: str) -> go.Figure:
     return fig
 
 
+def select_recommended_policy(budget_profits: dict[str, float]) -> str:
+    """The recommended policy: the ranking policy with the highest revenue
+    minus send cost at the configured budget — NOT the highest Qini. Random
+    and treat-everyone are reference curves, not budgetable targeting
+    strategies (treat-everyone realizes full incremental conversions at any
+    fraction, so it would otherwise always "win" the max)."""
+    candidates = {
+        policy: profit
+        for policy, profit in budget_profits.items()
+        if not is_baseline_run(policy) and policy != "treat-everyone"
+    }
+    return max(candidates, key=lambda policy: candidates[policy])
+
+
 def profit_figure(
     cfg: UpliftConfig,
     curves: dict[str, tuple[np.ndarray, np.ndarray]],
     n_total: int,
 ) -> go.Figure:
-    """Incremental profit vs budget fraction for every policy."""
+    """Incremental revenue minus send cost vs budget fraction for every policy."""
     fig = go.Figure()
     curves = {policy: _fig_curve(fr, inc) for policy, (fr, inc) in curves.items()}
     for policy, (fr, inc) in curves.items():
@@ -791,9 +807,9 @@ def profit_figure(
     fig.add_hline(y=0.0, line_dash="dot", line_color="#64748b", name="no campaign")
     apply_theme(fig)
     style_runs(fig, best="t_learner")
-    # The recommended operating point is whichever policy maximizes profit at
-    # the configured budget — mark it prominently (audit: the 25% recommendation
-    # was not visible on the frontier).
+    # The recommended operating point is whichever policy maximizes revenue
+    # minus send cost at the configured budget — mark it prominently (audit:
+    # the 25% recommendation was not visible on the frontier).
     budget_profits = {
         policy: float(
             profit_curve(
@@ -806,16 +822,7 @@ def profit_figure(
         )
         for policy, (fr, inc) in curves.items()
     }
-    # The recommendation is among the ranking policies only: random and
-    # treat-everyone are reference curves, not budgetable targeting strategies
-    # (treat-everyone realizes full incremental conversions at any fraction,
-    # so it would otherwise always "win" the max).
-    candidates = {
-        policy: profit
-        for policy, profit in budget_profits.items()
-        if not is_baseline_run(policy) and policy != "treat-everyone"
-    }
-    recommended = max(candidates, key=lambda policy: candidates[policy])
+    recommended = select_recommended_policy(budget_profits)
     recommended_profit = budget_profits[recommended]
     fig.add_scatter(
         x=[cfg.policy_budget],
@@ -843,10 +850,12 @@ def profit_figure(
         font={"size": 13, "color": "#fbbf24"},
     )
     fig.update_layout(
-        title="Incremental profit vs budget fraction",
+        title="Incremental revenue minus send cost vs budget fraction",
         xaxis_title="budget fraction (share of customers emailed)",
-        yaxis_title=f"profit (revenue {cfg.revenue_per_conversion:.0f} USD/conversion, "
-        f"{cfg.cost_per_email:.2f} USD/email)",
+        yaxis_title=(
+            f"revenue minus send cost (revenue {cfg.revenue_per_conversion:.0f} "
+            f"USD/conversion, {cfg.cost_per_email:.2f} USD/email)"
+        ),
     )
     add_takeaway(
         fig,
@@ -967,10 +976,15 @@ def profit_frontier_multi_arm_figure(
         },
     )
     fig.update_layout(
-        title="Multi-arm profit frontier (model-estimated incremental conversions)",
+        title=(
+            "Multi-arm frontier of revenue minus send cost "
+            "(model-estimated incremental conversions)"
+        ),
         xaxis_title="budget fraction (share of customers emailed)",
-        yaxis_title=f"profit (revenue {cfg.revenue_per_conversion:.0f} USD/conversion, "
-        f"{cfg.cost_per_email:.2f} USD/email)",
+        yaxis_title=(
+            f"revenue minus send cost (revenue {cfg.revenue_per_conversion:.0f} "
+            f"USD/conversion, {cfg.cost_per_email:.2f} USD/email)"
+        ),
     )
     add_takeaway(
         fig,

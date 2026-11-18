@@ -268,7 +268,7 @@ def retrieval_funnel_figure(
     fig.update_layout(
         title=f"Questions with a relevant article in the reranked top-{chosen.top_k}",
         xaxis_title="top-k outcome",
-        yaxis={"title": "questions", "range": [0, n * 1.15], "dtick": 10},
+        yaxis={"title": f"questions (n = {n})", "range": [0, n * 1.15], "dtick": 10},
     )
     return _finish_themed(
         fig,
@@ -339,7 +339,7 @@ def taxonomy_figure(traces: list[QuestionTrace]) -> go.Figure:
     fig.update_layout(
         title="Answer verdicts by category",
         xaxis_title="verdict",
-        yaxis_title="questions",
+        yaxis_title=f"questions (n = {len(traces)})",
     )
     return _finish_themed(
         fig,

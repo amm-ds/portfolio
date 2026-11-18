@@ -10,7 +10,13 @@ from tabular_ml_lifecycle import figures
 from tabular_ml_lifecycle.config import LifecycleConfig
 from tabular_ml_lifecycle.data import split_windows
 from tabular_ml_lifecycle.report import build_report
-from tabular_ml_lifecycle.stages import evaluate_core, features_core, prepare_core, train_core
+from tabular_ml_lifecycle.stages import (
+    evaluate_core,
+    features_core,
+    prepare_core,
+    select_by_validation,
+    train_core,
+)
 
 
 def test_prepare_core_synthetic(small_cfg: LifecycleConfig) -> None:
@@ -130,3 +136,29 @@ def test_report_assembly_smoke(small_cfg: LifecycleConfig) -> None:
     assert "smoke protocol" in results
     assert "tabular MLP (PyTorch)" in results
     assert "smoke limit" in results
+
+
+def test_selection_reads_validation_scores_only() -> None:
+    """Sentinel isolation: test-window predictions can be poisoned arbitrarily
+    without moving the selection, because select_by_validation receives only
+    the validation score mapping."""
+    val_scores = {
+        "ridge": 68.87,
+        "random_forest": 39.5,
+        "lightgbm_hpo": 34.4,
+        "mlp": 34.22,
+    }
+    assert select_by_validation(val_scores) == "mlp"
+    # Deliberately broken input: swapped validation order must flip the pick —
+    # the test fails if the function ever stops reading the values.
+    swapped = {**val_scores, "lightgbm_hpo": 34.0, "mlp": 35.0}
+    assert select_by_validation(swapped) == "lightgbm_hpo"
+    # A poisoned test artifact carries no channel into the selection: extra
+    # keys and sentinels cannot change the outcome.
+    poisoned = {
+        **val_scores,
+        "test_mlp": -1e9,
+        "test_lightgbm_hpo": -1e9,
+        "sentinel": float("nan"),
+    }
+    assert select_by_validation(poisoned) == "mlp"

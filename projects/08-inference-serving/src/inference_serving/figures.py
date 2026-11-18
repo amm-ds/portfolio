@@ -142,7 +142,11 @@ def fig_quality_quant(run: BenchRun, cfg: BenchConfig) -> go.Figure:
         )
     )
     apply_theme(fig, height=300)
-    fig.update_layout(title="Bounded-task quality guardrail by quantization arm (c=1)")
+    # A table has no right-side legend or y-axis strip; keep its width for data.
+    fig.update_layout(
+        title="Saturated smoke check — ties 1.00; not quality",
+        margin={"l": 24, "r": 24, "t": 100, "b": 30},
+    )
     add_takeaway(
         fig,
         "PASS means every response in the 40-request cell met that check; this saturated "

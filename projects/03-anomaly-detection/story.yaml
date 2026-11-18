@@ -1,5 +1,5 @@
 project_id: 03-anomaly-detection
-short_version: "NAB, nine evaluable series: IsolationForest touches 16/17 incidents with 1,609 raw alerts; daily budgeting cuts that cell to 80. Like-for-like, the rolling-feature ensemble cuts 66 budgeted pages to 35 at equal recall 0.604. Precision 0.553 rules out unattended paging."
+short_version: "NAB, 9 evaluable series: IsolationForest touches 16/17 incidents but fires 1,609 raw alerts. Daily budgeting cuts that to 80 pages; like-for-like, the rolling-feature ensemble halves 66 budgeted pages to 35 at equal recall 0.604, range-F1 0.533. NAB official score not reported."
 sections:
 - id: background
   text_md: |
@@ -348,8 +348,14 @@ sections:
       cheapest measured load cut.
     - **Keep precision in the decision.** Range precision is 0.107 at fixed
       budget, 0.306 for headline IsolationForest, and 0.553 for the champion
-      ensemble on the rolling cell. The result is an alert-budget dial, not
-      proof of unattended paging.
+      ensemble on the rolling cell. The headline 2%-budget precision is
+      0.527 with a series-level bootstrap 95% CI [0.231, 0.811] (2,000
+      resamples, seed 42, `nab_metrics.json:pa_k_2_precision_interval`) —
+      the interval spans the no-skill band's upper edge, so read it as an
+      alert-budget dial, not proof of unattended paging. The NAB official
+      score is not reported (owner decision 2026-11-18): it needs the
+      official scorer with application profiles; these numbers use the
+      project's own window semantics.
 
     ## Exact numbers
 

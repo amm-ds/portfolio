@@ -8,6 +8,11 @@ import pytest
 from routing_optimization.cli import download_instances
 from routing_optimization.config import VRPConfig
 from routing_optimization.evaluate import (
+    InstanceEvaluation,
+    SolverRun,
+    _family_rows,
+    _intervals_block,
+    _mean_gap_interval,
     canonical_instance_name,
     convergence_figure,
     eda_instance_map_figure,
@@ -20,6 +25,12 @@ from routing_optimization.evaluate import (
     runtime_figure,
     solve_with_timing,
     solver_profile_figure,
+)
+from routing_optimization.reporting import (
+    family_markdown,
+    results_markdown,
+    solver_display_name,
+    summary_markdown,
 )
 from routing_optimization.schemas import Problem
 from routing_optimization.solver import two_opt
@@ -36,6 +47,32 @@ def test_gap_pct_math() -> None:
     assert gap_pct(1100.0, 1000.0) == pytest.approx(10.0)
     assert gap_pct(1000.0, 1000.0) == pytest.approx(0.0)
     assert gap_pct(828.94, 828.94) == pytest.approx(0.0)
+
+
+def test_family_rows_aggregate_instances_to_family_solver_means() -> None:
+    evaluations = [
+        InstanceEvaluation(
+            instance="C101",
+            n_customers=100,
+            vehicle_capacity=200.0,
+            best_known=1000.0,
+            best_known_vehicles=10,
+            runs=[SolverRun("alns", 1010.0, 11, 1.0), SolverRun("two_opt", 1100.0, 12, 0.1)],
+        ),
+        InstanceEvaluation(
+            instance="C102",
+            n_customers=100,
+            vehicle_capacity=200.0,
+            best_known=1000.0,
+            best_known_vehicles=10,
+            runs=[SolverRun("alns", 1030.0, 11, 1.0), SolverRun("two_opt", 1200.0, 13, 0.1)],
+        ),
+    ]
+    rows = _family_rows(evaluations).sort(["solver", "family"])
+    assert rows.to_dicts() == [
+        {"family": "C1", "solver": "alns", "gap_pct": pytest.approx(2.0), "veh_delta": 1.0},
+        {"family": "C1", "solver": "two_opt", "gap_pct": pytest.approx(15.0), "veh_delta": 2.5},
+    ]
 
 
 def test_load_best_known_skips_comments(tmp_path: Path) -> None:
@@ -239,3 +276,61 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
         "figures/alns_convergence_TINY.json",
     ):
         assert (cfg.reports_dir / artifact).exists(), artifact
+
+
+def _gap_evaluations() -> list[InstanceEvaluation]:
+    return [
+        InstanceEvaluation(
+            instance=f"C1{i:02d}",
+            n_customers=100,
+            vehicle_capacity=200.0,
+            best_known=1000.0,
+            best_known_vehicles=10,
+            runs=[
+                SolverRun("alns", 1000.0 + 10.0 * i, 11, 1.0),
+                SolverRun("ortools_cp", 1000.0 + 10.0 * i, 11, 12.0),
+            ],
+        )
+        for i in range(1, 57)
+    ]
+
+
+def test_mean_gap_interval_is_seed_deterministic() -> None:
+    evaluations = _gap_evaluations()
+    a = _mean_gap_interval(evaluations)
+    b = _mean_gap_interval(evaluations)
+    assert a == b  # same seed -> identical interval
+    assert a["n_boot"] == 2000 and a["seed"] == 42
+    assert a["lo"] <= a["point"] <= a["hi"]
+    # A different seed yields a different resample path: the interval is only
+    # reproducible because the seed is fixed (removing it breaks determinism).
+    c = _mean_gap_interval(evaluations, seed=7)
+    assert (c["lo"], c["hi"]) != (a["lo"], a["hi"])
+
+
+def test_mean_gap_interval_covers_the_committed_mean() -> None:
+    evaluations = _gap_evaluations()
+    interval = _mean_gap_interval(evaluations)
+    # per-instance gaps are 1.0..56.0% -> mean 28.5%, well inside the CI
+    assert interval["point"] == pytest.approx(28.5)
+    assert interval["lo"] < 28.5 < interval["hi"]
+
+
+def test_alns_vs_unhinted_interval_is_recorded_not_filled() -> None:
+    block = _intervals_block(_gap_evaluations())
+    alns_vs = block["alns_vs_unhinted_cp_sat"]
+    assert alns_vs["point"] is None and alns_vs["lo"] is None and alns_vs["hi"] is None
+    assert "UNKNOWN on all 56" in alns_vs["reason"]
+
+
+def test_hinted_cp_sat_label_set_whenever_hint_is_used() -> None:
+    # The display label must carry the non-independence note in every table.
+    assert solver_display_name("ortools_cp") == "ortools_cp (ALNS-hinted; not independent of ALNS)"
+    assert solver_display_name("alns") == "alns"  # other keys untouched
+    evaluations = _gap_evaluations()[:1]
+    for table in (
+        summary_markdown(evaluations),
+        family_markdown(evaluations),
+        results_markdown(evaluations),
+    ):
+        assert "ortools_cp (ALNS-hinted; not independent of ALNS)" in table

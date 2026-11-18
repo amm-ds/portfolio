@@ -81,7 +81,8 @@ def latency_concurrency_lines(metrics: dict[str, Any]) -> go.Figure:
         fig,
         f"Single uvicorn worker on one laptop: latency degrades gently to c=16, then queues. "
         f"Fastest single-request backend: {BACKEND_LABELS[best]}. Warm-up excluded; "
-        f"median of {metrics['serving']['native']['concurrency']['c1']['repeats']} repeats.",
+        f"median of {metrics['serving']['native']['concurrency']['c1']['repeats']} repeats; "
+        f"n = {metrics['serving']['native']['concurrency']['c1']['n_requests']} requests per cell.",
     )
     return fig
 

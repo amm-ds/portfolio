@@ -156,7 +156,9 @@ sections:
         8 published references, with RC202 best at −3.85%. The remaining gaps
         include C2 at 6.50%, C203 at 19.48%, and C103 at 11.67%.
       - **Exact-solver role:** the full-scale per-instance record shows ALNS
-        and hinted CP-SAT tie on all 56, with measured mean runtimes of ~1.1 s
+        and hinted CP-SAT tie on all 56 — the CP-SAT arm is ALNS-hinted, not
+        independent of ALNS, so the tie is a consistency check rather than
+        independent confirmation. Measured mean runtimes are ~1.1 s
         and 12.0 s; the solver-profile distributions summarize their distances.
         Without a hint and with the same ten-second budget, CP-SAT finds no
         feasible plan on any instance. These probes establish no general solver
@@ -328,7 +330,7 @@ sections:
       | two_opt_tuned (HPO) | 13.63% | +5.79 | −58.01 points | <10 ms |
       | **alns (HPO-tuned)** | **4.23%** | **+3.73** | **−67.41 points** | **~1.1 s** |
       | **alns_fleet (vehicles-first)** | **4.30%** | **+3.66** | −67.34 points | ~1.1 s |
-      | ortools_cp (hinted, 10 s) | 4.23% | +3.73 | −67.41 points | 12.0 s |
+      | ortools_cp (ALNS-hinted; not independent of ALNS, 10 s) | 4.23% | +3.73 | −67.41 points | 12.0 s |
       | ortools_cp_unhinted (10 s) | no feasible plan on any of 56 | — | — | 13.1 s |
 
       **Record** (per-instance tables in `reports/results.md`; references:

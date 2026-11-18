@@ -178,4 +178,12 @@ describe("EChartsFigure", () => {
     const link = screen.getByRole("link", { name: "fig :: results · 1/1 — Results" });
     expect(link.getAttribute("href")).toBe("#sec-results");
   });
+
+  it("resizes an existing chart before applying a new option", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(SUPPORTED)));
+    render(<EChartsFigure pid="05-ml-pipeline-churn" name="resize_fig" />);
+    await waitFor(() => expect(mocks.init).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.setOption).toHaveBeenCalled());
+    expect(mocks.resize).toHaveBeenCalled();
+  });
 });

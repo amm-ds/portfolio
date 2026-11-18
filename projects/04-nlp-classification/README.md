@@ -80,9 +80,11 @@ fresh labels or examples tune the router.
 
 The earlier keyword-first router remains the cheaper, lower-quality baseline:
 0.9061 fresh macro-F1 with 75.4% of items on the keyword path. The full-data
-transformer reaches 0.9529432 fresh; the selected cascade has a small observed
-gain with 22 reviews. No paired cascade interval is persisted, so these point
-gains are descriptive rather than established superiority.
+transformer reaches 0.9529432 fresh; the selected cascade moves it by +0.001
+macro-F1 with 22 reviews — no measurable change. No paired cascade interval
+can be computed from committed artifacts (the per-row review decisions are not
+persisted), so these point deltas are descriptive rather than established
+superiority.
 
 Macro-F1 ladder vs. the better naive floor (`random_uniform`): TF-IDF **+61.8
 pp.**, encoder_b **+64.5 pp.**, bounded DistilBERT family **+64.9 pp.**, full-data
@@ -102,10 +104,12 @@ rows per variant, p50 per prediction. These are single-machine probe
 figures for a routing decision, not production benchmarks; other hardware
 moves the milliseconds, not the ordering conclusions. Model size: artifact
 bytes for the
-sklearn pipeline, serialized `state_dict` for torch. Accuracy/F1 for the
-first three rows are the committed 1000-row test-split numbers (no
-re-evaluation); the int8 row's quality is measured on a 2000-row train
-sample (fp32 on the same sample: macro-F1 0.9627 → int8 0.9637, Δ +0.0010 —
+sklearn pipeline, serialized `state_dict` for torch. Accuracy/F1 in the
+first table are the committed 1000-row test-split numbers (no
+re-evaluation). The int8 row's quality is measured on a 2,000-row *train*
+sample — a different split — so it is reported separately below rather than
+mixed into the test-split table (fp32 on the same sample: macro-F1 0.9627 →
+int8 0.9637, Δ +0.0010 —
 no drop). Cost is cloud-equivalent at a declared rate card ($1 / 1M input
 tokens, $4 / 1M output tokens) with measured token counts (~51.5 input +
 ~3.5 output tokens per prediction; classification output ≈ the tokenized
@@ -117,6 +121,14 @@ reproduce with `uv run python -m nlp_classification.latency_probe --n 200`.
 | `tfidf_logreg` | 0.5 | 0.2 | 4477.8 | 0.0000 | 0.8720 | 0.8714 |
 | `distilbert_tuned` fp32 (bounded) | 255.5 | 9.0 | 110.7 | 0.0656 | 0.9010 | 0.9011 |
 | `distilbert_full_120k` fp32 | 255.5 | 8.7 | 112.5 | 0.0654 | 0.9460 | 0.9460 |
+
+**Train-sample quality check (int8, separate from the test-split rows
+above).** The int8 quality numbers come from a 2,000-row *train* sample, not
+the committed 1,000-row test split, so they are not comparable with the
+Accuracy/F1 columns above:
+
+| Variant | Size (MB) | p50 latency (ms) | Throughput (pred/s) | Cost ($/1k preds) | Accuracy (2,000-row train sample) | F1 macro (2,000-row train sample) |
+|---|---|---|---|---|---|---|
 | `distilbert_full_120k` int8 (dynamic) | 132.3 | 13.2 | 77.6 | 0.0654 | 0.9635 | 0.9637 |
 
 Read the table as a routing decision: TF-IDF is ~40x faster and free of

@@ -1,10 +1,13 @@
-.PHONY: setup lint lint-ci lint-story typecheck test test-fast demo docs docs-serve docker-build docker-up new-project clean metrics-show registry-update exp-run exp-show release-verify
+.PHONY: setup collab lint lint-ci lint-story typecheck test test-fast demo docs docs-serve docker-build docker-up new-project clean metrics-show registry-update exp-run exp-show release-verify
 
 PYTEST := uv run pytest
 
 setup: ## Install all workspace deps and pre-commit hooks
 	uv sync --all-packages --dev
 	uv run pre-commit install
+
+collab: ## Launch Claude Code and Kimi Code side by side
+	./collaboration/scripts/start-collab.sh
 
 lint: ## Ruff check + format check + import contracts
 	uv run ruff check .

@@ -4,16 +4,16 @@
 (MineThatData, ~64k customers, sha256-pinned from the author's site) ·
 **Status:** working showcase on the standard platform
 
-> On 64,000-customer randomized email data, uplift targeting beat random
-> targeting by +$2,812 (+69%) at a 25% send budget, CI [+$718, +$4,767]; at
-> $0.01 per email, mailing everyone still wins. Targeting pays when sending
-> is costly. Data: Hillstrom MineThatData, March 2008.
+> On 42,613 customers (Men's E-Mail vs No E-Mail) from the 64,000-row
+> Hillstrom dataset, uplift targeting beat random targeting by +$2,812 (+70%)
+> at a 25% send budget, CI [+$718, +$4,767]; at $0.01 per email, mailing
+> everyone still wins. Targeting pays when sending is costly.
 >
 > A campaign owner who mails "most likely to convert" targets sure things —
 > and wastes the budget that persuadables would repay.
 > Headline: on the canonical Hillstrom benchmark, the recommended top-25%
-> T-learner targeting beats random by **+$2,812 (+69%)** at equal budget,
-> with the profit ranking established by paired-bootstrap CIs.
+> T-learner targeting beats random by **+$2,812 (+70%)** at equal budget,
+> with the revenue-minus-send-cost ranking established by paired-bootstrap CIs.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/10-uplift-experimentation)
 
@@ -31,8 +31,8 @@ quality is the whole game); an **analytic power analysis** (3,063 per arm
 required at alpha 0.05 / power 0.8 vs 21,306 available); and three targeting
 policies — the marketing-practice **response model**, a hand-rolled **T-learner**
 and **X-learner** on sklearn (5-fold cross-fitted scores, no causallib) —
-judged by **Qini curves/coefficient** and by **incremental profit under a
-documented campaign cost model** ($114 revenue per conversion =
+judged by **Qini curves/coefficient** and by **incremental revenue minus
+send cost under a documented campaign cost model** ($114 revenue per conversion =
 `revenue_per_conversion`, measured mean converter spend — no COGS in the
 snapshot; $0.01 per email) against random, treat-everyone, and no-campaign
 baselines. Every policy number carries a **paired-bootstrap 95% CI** (paired
@@ -43,12 +43,13 @@ send cost where targeted mail beats mailing everyone.
 ## Key results (out-of-fold, seed 42)
 
 Qini is the curve area above random in conversion units (higher is
-better); profit is expected incremental profit from mailing the top 25% by
+better); the value column is expected revenue minus send cost from mailing
+the top 25% by
 score under the cost model; the Δ columns are at the same 25% budget vs
-random — Δ Qini in incremental conversions, Δ profit in dollars — with 95%
+random — Δ Qini in incremental conversions, Δ value in dollars — with 95%
 CIs from a paired row bootstrap.
 
-| policy | Qini [95% CI] | profit @ 25% budget [95% CI] | Δ Qini vs random | Δ profit vs random |
+| policy | Qini [95% CI] | revenue minus send cost @ 25% budget [95% CI] | Δ Qini vs random | Δ value vs random |
 |---|---|---|---|---|
 | response model | 13.01 [1.83, 24.36] | $4,881 [$2,246, $7,386] | +13.01 | +$856 |
 | **T-learner (recommended) ← best** | **12.03 [0.77, 24.39]** | **$6,838 [$4,430, $9,370]** | **+12.03** | **+$2,812** |
@@ -56,33 +57,35 @@ CIs from a paired row bootstrap.
 | random | 0.0 | $4,026 | — | — |
 | treat-everyone | 0.0 | — (full-mail $16,103) | — | — |
 
-![The response model posts the highest Qini area but the paired difference CI spans zero — the curve-area ranking is not established while T-learner's profit advantage is.](../assets/projects/10-uplift-experimentation/qini_curves.png){ width="100%" }
+![The response model posts the highest Qini area but the paired difference CI spans zero — the curve-area ranking is not established while T-learner's value advantage is.](../assets/projects/10-uplift-experimentation/qini_curves.png){ width="100%" }
 
 The table's Qini intervals are the primary two-arm Mens-versus-control
 analysis. The separate per-arm AUUC read is Mens 12.03 [−0.47, 24.21] and
 Womens 3.37 [−6.78, 13.75]; both intervals span zero, so neither per-arm
 ranking is established. These are different contrasts from the primary
-policy-profit interval below, not interchangeable evidence.
+policy-value interval below, not interchangeable evidence.
 
-- Headline economics: at $0.01/email, **mail-everyone is the profit maximum
-  ($16,103)**. The recommended top-25% T-learner policy's value is
-  **concentration**: **+$2,812 (+69%) vs random at the same budget** (~61 of
+- Headline economics: at $0.01/email, **mail-everyone maximizes revenue
+  minus send cost ($16,103)**. The recommended top-25% T-learner policy's value is
+  **concentration**: **+$2,812 (+70%) vs random at the same budget** (~61 of
   ~145 incremental conversions from 10,653 emails).
 
-![Top-25% T-learner targeting beats random by +$2,812 (+69%) at equal budget while mail-everyone remains the profit maximum at $0.01/email.](../assets/projects/10-uplift-experimentation/profit_frontier.png){ width="100%" }
+![Top-25% T-learner targeting beats random by +$2,812 (+70%) at equal budget while mail-everyone still maximizes revenue minus send cost at $0.01/email.](../assets/projects/10-uplift-experimentation/profit_frontier.png){ width="100%" }
 
 - Ranking verdict, with intervals: the response model posts the highest Qini
-  area but the lowest budget profit; the paired Qini-difference CI
+  area but the lowest budget value; the paired Qini-difference CI
   (response − T) of [−8.18, 9.52] **spans zero — the curve-area ranking is
-  NOT established**, while the paired profit-difference CI [−$3,617, −$48]
-  is entirely below zero — **T-learner's profit advantage IS established**.
+  NOT established**, while the paired revenue-minus-send-cost-difference CI
+  [−$3,617, −$48]
+  is entirely below zero — **T-learner's value advantage IS established**.
   Policy is chosen on the money; the curve explains why.
-- Cost sensitivity: the profit-maximizing fraction drops below full-mail by
+- Cost sensitivity: the value-maximizing fraction drops below full-mail by
   ≈$0.20/email; above ≈$0.30/email (analytic break-even c\* ≈ $0.2999) the
   top-25% policy beats mail-everyone — $1,618 vs −$4,777 at $0.50, the
-  list-wear regime where targeting is the difference between profit and loss.
+  list-wear regime where targeting is the difference between a net gain and
+  a net loss.
 
-![Above ≈$0.30/email the top-25% T-learner policy beats mail-everyone — $1,618 vs −$4,777 at $0.50, the break-even where targeting is the difference between profit and loss.](../assets/projects/10-uplift-experimentation/cost_sensitivity.png){ width="100%" }
+![Above ≈$0.30/email the top-25% T-learner policy beats mail-everyone — $1,618 vs −$4,777 at $0.50, the break-even where targeting is the difference between a net gain and a net loss.](../assets/projects/10-uplift-experimentation/cost_sensitivity.png){ width="100%" }
 
 - CUPED: ATE unchanged (+0.00680 vs +0.00681) — unbiased by construction;
   conversion variance reduction is only 0.08% because prior spend barely

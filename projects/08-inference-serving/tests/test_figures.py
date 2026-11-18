@@ -30,7 +30,7 @@ def test_ttft_and_throughput_use_committed_cells() -> None:
     ]
 
 
-def test_quality_guardrail_is_a_pass_fail_table() -> None:
+def test_quality_guardrail_is_a_dark_pass_fail_table() -> None:
     cfg = load_config(PROJECT_DIR / "params.yaml")
     fig = fig_quality_quant(_run(), cfg)
 
@@ -39,3 +39,9 @@ def test_quality_guardrail_is_a_pass_fail_table() -> None:
     assert list(fig.data[0].cells.values[1]) == ["PASS", "PASS", "PASS"]
     assert list(fig.data[0].cells.values[2]) == ["PASS", "PASS", "PASS"]
     assert list(fig.data[0].cells.values[4]) == [0, 0, 0]
+    assert fig.data[0].header.fill.color == "#1e293b"
+    assert fig.data[0].header.font.color == "#f1f5f9"
+    assert fig.data[0].cells.fill.color == "#0f172a"
+    assert fig.data[0].cells.font.color == "#e2e8f0"
+    assert fig.layout.margin.l == 24
+    assert fig.layout.margin.r == 24

@@ -66,6 +66,25 @@ def test_final_routing_only_reviews_below_frozen_threshold() -> None:
     assert reviewer.calls == [[0, 2]]
 
 
+def test_routing_sends_exactly_the_sub_threshold_rows_once() -> None:
+    # Boundary discipline: a row at confidence exactly τ stays on the
+    # transformer path; only strictly-below rows are reviewed, each exactly
+    # once. A broken `<=` comparison would also send index 1, so this input
+    # fails against that regression.
+    probas = np.asarray(
+        [
+            [0.59, 0.41],  # below τ → reviewed
+            [0.60, 0.40],  # exactly τ → NOT reviewed
+            [0.61, 0.39],  # above τ → NOT reviewed
+        ]
+    )
+    reviewer = StubReviewer()
+    routed = apply_threshold(probas, ["markets", "stocks", "scores"], 0.6, reviewer)
+
+    assert reviewer.calls == [[0]]  # one round-trip, exactly row 0
+    assert routed.tolist() == [1, 0, 0]  # only the reviewed row is replaced
+
+
 def test_kimi_reviewer_batches_eight_rows_and_preserves_order() -> None:
     class FakeAgent:
         def __init__(self) -> None:

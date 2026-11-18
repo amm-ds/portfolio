@@ -8,7 +8,8 @@ sections:
       In the decision diagram, follow one row through a model, a learned rule
       that estimates churn. Serving uses that rule to choose contacts. A
       threshold is the cutoff for action. At 0.175, it separates "call" from
-      "skip". The bill box shows 601 cost units versus 1,035 for contacting
+      "skip". The bill box shows 601 cost units (missed churner $5, contact
+      $1, from `params.yaml`) versus 1,035 for contacting
       everyone, a 41.9% cut.
 
       ```diagram 05-churn-cycle

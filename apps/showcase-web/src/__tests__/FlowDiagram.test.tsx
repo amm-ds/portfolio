@@ -78,14 +78,14 @@ describe("FlowDiagram", () => {
   it("removes fact-selection prompts and hugs a single-rank canvas", async () => {
     render(<FlowDiagram spec={ROUTING_SPEC} />);
     await waitFor(() => expect(document.querySelector(".frame-skeleton")).toBeNull());
-    expect(screen.getByText("Pinch or use controls to zoom · drag to pan · Fit for overview")).toBeInTheDocument();
+    expect(screen.getByText("Full diagram shown · drag to pan · use controls to zoom")).toBeInTheDocument();
     expect(screen.queryByText(/select for/i)).toBeNull();
     expect(document.querySelector(".flow-node__action")).toBeNull();
     expect(document.querySelector(".flow-diagram__hint")).toBeNull();
     expect(document.querySelector(".flow-diagram__canvas")).toHaveStyle({ height: "240px" });
   });
 
-  it("opens narrow canvases at a readable zoom while keeping every node reachable", async () => {
+  it("opens narrow canvases on a readable vertical diagram", async () => {
     Object.defineProperty(HTMLElement.prototype, "clientWidth", {
       configurable: true,
       get(this: HTMLElement) {
@@ -96,7 +96,12 @@ describe("FlowDiagram", () => {
     await waitFor(() => expect(document.querySelector(".frame-skeleton")).toBeNull());
 
     const viewport = document.querySelector<HTMLElement>(".react-flow__viewport")!;
-    expect(viewport.style.transform).toContain("scale(1)");
+    const scale = /scale\(([\d.]+)\)/.exec(viewport.style.transform)?.[1];
+    expect(scale).toBeDefined();
+    // Narrow canvases keep full-size labels (zoom 1) and pan instead of
+    // shrinking dense graphs until labels collide.
+    expect(Number(scale)).toBe(1);
+    expect(document.querySelector<HTMLElement>(".flow-diagram__canvas")!.style.height).not.toBe("240px");
     expect(document.querySelectorAll(".react-flow__node")).toHaveLength(AGENT_LOOP_SPEC.nodes.length);
     for (const node of AGENT_LOOP_SPEC.nodes) {
       expect(screen.getByTestId(`rf__node-${node.id}`)).toHaveAttribute("tabindex", "0");

@@ -35,6 +35,14 @@ def _veh_delta_str(delta: int | None) -> str:
     return f"+{delta}" if delta > 0 else str(delta)
 
 
+def solver_display_name(solver: str) -> str:
+    """User-facing solver label. The hinted CP-SAT arm is seeded from the ALNS
+    plan, so every table mention carries the non-independence label."""
+    if solver == "ortools_cp":
+        return "ortools_cp (ALNS-hinted; not independent of ALNS)"
+    return solver
+
+
 def results_markdown(evaluations: list[InstanceEvaluation]) -> str:
     """Full per-instance markdown results table (distance + vehicle gaps)."""
     lines = [
@@ -62,7 +70,8 @@ def results_markdown(evaluations: list[InstanceEvaluation]) -> str:
             best_marker = " **(best)**" if r == ev.best() else ""
             lines.append(
                 f"| {ev.instance} | {ref} "
-                f"| {r.solver}{best_marker} | {r.total_distance:.2f} | {r.n_vehicles} "
+                f"| {solver_display_name(r.solver)}{best_marker} | {r.total_distance:.2f} "
+                f"| {r.n_vehicles} "
                 f"| {gap} | {_veh_delta_str(delta)} | {r.runtime_s * 1e3:.1f} |"
             )
     return "\n".join(lines)
@@ -96,7 +105,7 @@ def summary_markdown(evaluations: list[InstanceEvaluation]) -> str:
         mean_veh = sum(r.n_vehicles for r in runs) / len(runs)
         mean_rt = sum(r.runtime_s for r in runs) / len(runs) * 1e3
         lines.append(
-            f"| {solver} | {mean_gap} | {mean_dist:.2f} | {mean_veh:.1f} "
+            f"| {solver_display_name(solver)} | {mean_gap} | {mean_dist:.2f} | {mean_veh:.1f} "
             f"| {mean_delta} | {mean_rt:.1f} |"
         )
     return "\n".join(lines)
@@ -159,7 +168,7 @@ def family_markdown(evaluations: list[InstanceEvaluation]) -> str:
             if gaps:
                 mean_delta = f"{sum(deltas) / len(deltas):+.2f}" if deltas else "n/a"
                 lines.append(
-                    f"| {fam} | {len(members)} | {solver} "
+                    f"| {fam} | {len(members)} | {solver_display_name(solver)} "
                     f"| {sum(gaps) / len(gaps):.2f} | {mean_delta} |"
                 )
     return "\n".join(lines)

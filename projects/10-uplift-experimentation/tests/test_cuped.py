@@ -61,3 +61,22 @@ def test_zero_variance_covariate_raises() -> None:
 def test_zero_variance_outcome_raises() -> None:
     with pytest.raises(ValueError, match="zero variance"):
         variance_reduction(np.ones(10), np.ones(10) * 0.5)
+
+
+def test_variance_reduction_matches_closed_form() -> None:
+    # Known construction: y = x + eps with x, eps independent. The population
+    # variance reduction is var(x) / (var(x) + var(eps)) = 4 / (4 + 1) = 0.8,
+    # so the measured reduction must land on 0.8 — not just "somewhere high".
+    rng = np.random.default_rng(21)
+    x = rng.normal(0.0, 2.0, 100_000)
+    eps = rng.normal(0.0, 1.0, 100_000)
+    y = x + eps
+    theta = cuped_theta(y, x)
+    y_adj = cuped_adjust(y, x, theta, float(x.mean()))
+    reduction = variance_reduction(y, y_adj)
+    assert reduction == pytest.approx(0.8, abs=0.01)
+
+    # Deliberately broken input: a no-op adjustment (theta = 0) removes nothing,
+    # so a reduction far from the closed form proves the test discriminates.
+    y_broken = cuped_adjust(y, x, 0.0, float(x.mean()))
+    assert variance_reduction(y, y_broken) == pytest.approx(0.0, abs=1e-12)

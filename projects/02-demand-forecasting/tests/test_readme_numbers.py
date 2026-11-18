@@ -40,8 +40,11 @@ def _meta() -> dict:
 
 
 def _num(value: str) -> float:
-    """README/story number -> float (handles unicode minus, %, thousands, bold)."""
+    """README/story number -> float (handles unicode minus, %, thousands, bold,
+    and superscript footnote markers such as the caveat on the champion WRMSSE)."""
     cleaned = value.replace("**", "").replace("%", "").replace(",", "").replace(MINUS, "-")
+    for marker in "¹²³⁴⁵⁶⁷⁸⁹⁰":
+        cleaned = cleaned.replace(marker, "")
     return float(cleaned.strip())
 
 

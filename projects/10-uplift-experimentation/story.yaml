@@ -1,9 +1,9 @@
 project_id: 10-uplift-experimentation
 short_version: >-
-  On 64,000-customer randomized email data, uplift targeting beat random
-  targeting by +$2,812 (+69%) at a 25% send budget, CI [+$718, +$4,767]; at
-  $0.01 per email, mailing everyone still wins. Targeting pays when sending
-  is costly. Data: Hillstrom MineThatData, March 2008.
+  On 42,613 customers (Men's E-Mail vs No E-Mail) from the 64,000-row
+  Hillstrom dataset, uplift targeting beat random targeting by +$2,812 (+70%)
+  at a 25% send budget, CI [+$718, +$4,767]; at $0.01 per email, mailing
+  everyone still wins. Targeting pays when sending is costly.
 figure_captions:
   eda_segment_profile: >-
     Compare arm sizes, outcomes, and pre-period spend across Mens (21,307),

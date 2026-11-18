@@ -104,6 +104,8 @@ def strip(node: object) -> None:
         for key in (
             "time_median_s",
             "time_all_s",
+            "time_min_s",
+            "time_max_s",
             "cold_s",
             "peak_rss_mb",
             "tracemalloc_peak_mb",
@@ -116,3 +118,26 @@ def strip(node: object) -> None:
     elif isinstance(node, list):
         for value in node:
             strip(value)
+
+
+def test_rows_equal_rejects_a_deliberately_wrong_result() -> None:
+    """Negative parity: one changed row must fail the cross-engine check."""
+    base = [
+        {"zone": 132, "trips": 1000, "fare": 1234.5},
+        {"zone": 138, "trips": 2000, "fare": 2345.6},
+    ]
+    assert rows_equal(base, [dict(r) for r in base])
+    # One row changed: an int off by one.
+    wrong_int = [dict(r) for r in base]
+    wrong_int[1]["trips"] = 2001
+    assert not rows_equal(base, wrong_int)
+    # One row changed: a float far beyond the 1e-5 cliff band.
+    wrong_float = [dict(r) for r in base]
+    wrong_float[0]["fare"] = 9999.0
+    assert not rows_equal(base, wrong_float)
+    # Structural drift: a dropped row.
+    assert not rows_equal(base, base[:1])
+    # A float within the cliff band still passes (documents the tolerance).
+    close = [dict(r) for r in base]
+    close[0]["fare"] = 1234.5 * (1 + 5e-6)
+    assert rows_equal(base, close)

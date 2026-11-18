@@ -98,6 +98,8 @@ judge, without RAGAS.
 
 | metric | sealed held-out result |
 |---|---:|
+| judge model | `kimi-for-coding` (hosted provider; committed `reports/kimi_comparison.json`) |
+| RAGAS version | 0.3.1 (`uv.lock`) |
 | failure taxonomy | 44 correct / 9 unsupported-claim / 1 retrieval-miss / 1 format-failure |
 | correct share (95% CI) | **0.80 [0.69, 0.89]** |
 | operational retrieval recall@5 / recall@10 | 0.745 / 0.764 |
@@ -147,7 +149,8 @@ negation checks run ahead of the entailment judge; repair-and-drop; the
 evidence gate refuses on empty evidence. Normalized comparison (same
 classifier both sides, baseline row 14 reclassified budget-terminated):
 overall 0.500 → 0.733 (CI [0.567, 0.867]); answer-expected 0.450 → 0.700;
-unsupported claims 11 → 5; refusal accuracy 0.600 → 0.800; false abstention
+unsupported-claim outcomes 5 of 30 (was 11 of 30; the CI width exceeds the
+change — not a demonstrated gain); refusal accuracy 0.600 → 0.800; false abstention
 0.050 → 0.050. Claim pipeline: 54 drafted / 8 mech-failed / 9 repaired /
 54 surviving; the mech checker's false-rejection rate is 8.6% on tuning
 diagnostics (≤10% guardrail). Latency layers: end-to-end hosted answer p50

@@ -482,3 +482,50 @@ describe("reskinTraces", () => {
     expect(AUTHORED).toEqual(snapshot);
   });
 });
+
+describe("buildLayout narrow-width legend", () => {
+  const THEME_LEGEND = {
+    orientation: "v",
+    x: 1.02,
+    xanchor: "left",
+    y: 1,
+    yanchor: "top",
+    bgcolor: "rgba(0,0,0,0)",
+  };
+
+  it("relocates a theme-default right legend below the plot below 600 px", () => {
+    const layout = buildLayout(
+      { height: 560, legend: THEME_LEGEND, margin: { l: 70, r: 140, t: 110, b: 70 } },
+      375,
+    );
+    const legend = layout.legend as Record<string, unknown>;
+    expect(legend.orientation).toBe("h");
+    expect(legend.x).toBe(0);
+    expect(legend.y).toBeLessThan(0); // below the x-axis
+    expect((layout.margin as Record<string, unknown>).r).toBe(8);
+    expect(layout.height).toBe(420); // 360 min row + 60 legend row
+  });
+
+  it("keeps the legend on the right at 1024 px", () => {
+    const layout = buildLayout(
+      { height: 560, legend: THEME_LEGEND, margin: { l: 70, r: 140, t: 110, b: 70 } },
+      1024,
+    );
+    const legend = layout.legend as Record<string, unknown>;
+    expect(legend.orientation).toBe("v");
+    expect(legend.x).toBe(1.02);
+    expect((layout.margin as Record<string, unknown>).r).toBe(140);
+    expect(layout.height).toBe(573.44); // width-scaled, no legend row
+  });
+
+  it("keeps a generator-positioned legend at narrow widths", () => {
+    const authored = { ...THEME_LEGEND, x: 0.3, xanchor: "center" };
+    const layout = buildLayout(
+      { height: 560, legend: authored, margin: { l: 70, r: 140, t: 110, b: 70 } },
+      375,
+    );
+    const legend = layout.legend as Record<string, unknown>;
+    expect(legend.orientation).toBe("v");
+    expect(legend.x).toBe(0.3);
+  });
+});

@@ -65,10 +65,29 @@ moving from 0.729 to 0.562.
 A threshold sweep under the project's window matching puts the headline on a
 no-skill footing: the champion's **range-PR area is 0.804** against a 16-seed
 random band at **0.228 [0.081, 0.401]**, and **precision at a 2% alert budget
-is 0.527** (recall 0.944) against a no-skill **0.082 [0.063, 0.105]** — six
-times the no-skill precision while still touching nearly every window. At 0.5%
+is 0.527 [0.231, 0.811]** (recall 0.944) against a no-skill **0.082 [0.063, 0.105]** — six
+times the no-skill precision while still touching nearly every window. The
+precision interval is a series-level bootstrap (resample the nine evaluable
+series with replacement; 2,000 resamples, seed 42) committed at
+`reports/nab_metrics.json → pa_k_2_precision_interval`. At 0.5%
 of the stream precision reads 0.680; at 5%, 0.234 (see `reports/nab_metrics.json
 → no_skill` and the `range_pr` figure).
+
+**Metric definitions** (window matching per `lead_steps` in `nab_metrics.json`;
+"raw" = per-point anomaly scores over the test window, "budgeted" = top-2%
+scores deduplicated with a 24-hour cap):
+
+| metric | definition | configuration used for the headline row |
+|---|---|---|
+| range recall | fraction of labelled incident windows with ≥1 alert inside (lead-tolerant) | IsolationForest + rolling residual, raw stream |
+| precision | alerts inside windows ÷ all alerts (at the frozen 2% budget for the budgeted rows) | headline: macro mean over series at 2% budget |
+| range-F1 | harmonic mean of range precision and range recall, macro-averaged over series | raw (0.157) and budgeted (0.315) IF cells |
+| range-PR area | area under the range precision–recall sweep vs the 16-seed random band | champion mean curve, `range_pr` figure |
+
+The **NAB official score is not reported**: it requires the official scorer
+with application profiles (a new dependency or vendored code), and the project
+scores range metrics under its own window semantics instead (owner decision,
+2026-11-18).
 
 The current rank-average ensemble uses rolling features and the frozen 2%
 budget with a 24-hour cap. Its like-for-like comparison is IsolationForest with

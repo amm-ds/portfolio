@@ -152,14 +152,15 @@ def _fig_suite_summary(
     )
     apply_theme(fig)
     fig.update_layout(
-        title="Graded outcomes by split and grader",
+        title="Graded outcomes by split and grader (legacy recorded run)",
         # Margin exception (house standard l=70): the row labels ("graceful
         # refusals", "exact tool set", ...) need the deeper left margin.
         margin={"l": 135},
     )
     add_takeaway(
         fig,
-        "tuning graded by 4 deterministic graders; held-out answers by 2; probes by refusal grade",
+        "legacy recorded run, each task once — tuning graded by 4 deterministic "
+        "graders; held-out answers by 2; probes by refusal grade",
     )
     return fig
 
@@ -213,7 +214,7 @@ def _fig_tool_usage_matrix(cases: list[Any]) -> go.Figure:
         for tool in SUITE_TOOLS
     }
     fig.update_layout(
-        title="Tool calls per task x tool",
+        title="Tool calls per task x tool (legacy recorded run)",
         # Margin exception (house standard l=70): tool names ("search_handbook")
         # on the y-axis need the deeper left margin.
         margin={"l": 135},
@@ -331,7 +332,7 @@ def _fig_node_waterfall(cases: list[Any]) -> go.Figure:
     )
     apply_theme(fig)
     fig.update_layout(
-        title="Per-task node visits stacked by latency",
+        title="Per-task node visits stacked by latency (legacy recorded run)",
     )
     widest: tuple[str, str, float] | None = None
     for label, per_task in segments.items():
@@ -422,7 +423,7 @@ def _fig_cost_latency_bars(cases: list[Any], config: EvalConfig | None) -> go.Fi
     # "0.12cloud-equivalent" mess. Single-$ strings (title, bar labels) are
     # safe; multi-amount prose uses "USD".
     fig.update_layout(
-        title="Tokens, cloud-equivalent cost, latency per task",
+        title="Tokens, cloud-equivalent cost, latency per task (legacy run)",
         margin={"b": 110},
     )
     add_takeaway(

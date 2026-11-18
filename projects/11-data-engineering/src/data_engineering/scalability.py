@@ -157,6 +157,8 @@ def build_scalability_metrics(runs: list[tuple[int, list[CellResult]]]) -> dict[
                 by_size[key] = {
                     "time_median_s": cell.time_median_s,
                     "time_all_s": cell.times,
+                    "time_min_s": min(cell.times),
+                    "time_max_s": max(cell.times),
                 }
                 medians.append(cell.time_median_s)
             if not by_size:

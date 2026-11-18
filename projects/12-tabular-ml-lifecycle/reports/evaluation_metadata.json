@@ -20,7 +20,7 @@
   },
   "runtime": {
     "train_s": 44.377,
-    "evaluate_s": 14.069
+    "evaluate_s": 12.905
   },
   "seed": 42,
   "limits": [

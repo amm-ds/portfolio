@@ -92,7 +92,7 @@ origins):
 
 | candidate | official WRMSSE | vs floor | bottom WAPE | bias | stability |
 |---|---|---|---|---|---|
-| **convex_ensemble (champion)** | **0.6161** | **−31.0%** | **0.7633** | **+0.0328** | **0.0001** |
+| **convex_ensemble (champion)** | **0.6161**¹ | **−31.0%** | **0.7633** | **+0.0328** | **0.0001** |
 | lgbm_pool_store (best single) | 0.6217 | −30.4% | 0.7641 | +0.0265 | 0.0126 |
 | lgbm_pool_dept | 0.6313 | −29.3% | 0.7608 | +0.0041 | 0.0214 |
 | lgbm_tweedie | 0.6473 | −27.5% | 0.7642 | +0.0122 | 0.0219 |
@@ -100,6 +100,10 @@ origins):
 | lgbm | 0.6601 | −26.1% | 0.7626 | +0.0041 | 0.0210 |
 | auto_ets | 0.7093 | −20.6% | 0.7710 | −0.0063 | 0.0161 |
 | seasonal_naive (floor) | 0.8929 | — | 0.9159 | −0.0120 | 0.0108 |
+
+¹ **One scored test origin; no bootstrap interval** — 0.6161 is a single
+evaluation on the final 28 days, so the ensemble–floor gap carries no
+uncertainty bound.
 
 - **The committed comparison is the seasonal-naive floor** — the convex
   ensemble lands at **0.6161**, a **−31.0%** cut over the floor's 0.8929,

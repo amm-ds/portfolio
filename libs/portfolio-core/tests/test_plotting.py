@@ -1,5 +1,5 @@
 import plotly.graph_objects as go
-from portfolio_core.plotting import add_takeaway, is_baseline_run, style_runs
+from portfolio_core.plotting import add_takeaway, apply_theme, is_baseline_run, style_runs
 
 
 def test_is_baseline_run() -> None:
@@ -50,3 +50,17 @@ def test_style_runs_handles_bar_traces() -> None:
     style_runs(fig, best="hgb_tuned")
     assert fig.data[0].marker.color == "#64748b"  # baseline demoted
     assert fig.data[1].marker.line.color == "#2dd4bf"  # best accented
+
+
+def test_apply_theme_keeps_plotly_tables_dark() -> None:
+    fig = go.Figure(
+        go.Table(
+            header={"values": ["check", "result"]},
+            cells={"values": [["schema", "PASS"]]},
+        )
+    )
+    apply_theme(fig)
+    assert fig.data[0].header.fill.color == "#1e293b"
+    assert fig.data[0].header.font.color == "#f1f5f9"
+    assert fig.data[0].cells.fill.color == "#0f172a"
+    assert fig.data[0].cells.font.color == "#e2e8f0"

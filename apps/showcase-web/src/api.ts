@@ -15,7 +15,14 @@ export interface Project {
   order: number;
 }
 
-export type Metrics = Record<string, Record<string, unknown>>;
+/**
+ * Metrics payloads are heterogeneous: most top-level keys are per-run records,
+ * but some projects carry metadata values too — 02 has a `candidates` list and
+ * `pooled_strategy`/`protocol` strings, 08 has `cells` (list), `full` (boolean)
+ * and strings, 11 has a `protocol` string. Consumers must therefore treat each
+ * value as unknown and guard (see MetricsTable / delta.ts).
+ */
+export type Metrics = Record<string, unknown>;
 type Validator<T> = (value: unknown) => value is T;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -97,7 +104,7 @@ export async function getMetrics(projectId: string, signal?: AbortSignal): Promi
   try {
     return await getJson(
       `/projects/${projectId}/metrics`,
-      (value): value is Metrics => isRecord(value) && Object.values(value).every(isRecord),
+      (value): value is Metrics => isRecord(value),
       signal,
     );
   } catch (e) {

@@ -202,7 +202,7 @@ export function buildLayout(
   theme: Theme = "dark",
 ): Record<string, unknown> {
   const palette = PLOTLY_THEME_PALETTES[theme];
-  const { font, legend, xaxis, yaxis, template, width: _width, height, ...rest } = raw;
+  const { font, legend, margin, xaxis, yaxis, template, width: _width, height, ...rest } = raw;
   // Light mode also themes the subplot axes (xaxis2…, yaxis2…) and the title,
   // which carry the same baked dark chrome; dark passes everything else
   // through untouched to preserve the authored look.
@@ -220,18 +220,40 @@ export function buildLayout(
   const { font: legendFont, ...legendRest } = rawLegend;
   const rawLegendFont = asRecord(legendFont);
   const legendBg = chromeColor(rawLegend.bgcolor, TRANSPARENT, theme);
+  // Narrow widths: a theme-default right-side legend (the shared theme's
+  // _LEGEND_RIGHT signature) relocates below the plot so panels keep the card
+  // width; a generator-positioned legend keeps its authored place. Same
+  // breakpoint and rule as the ECharts converter (NARROW_LEGEND_BREAKPOINT).
+  const themeDefaultRightLegend =
+    rawLegend.orientation !== "h" && rawLegend.x === 1.02 && rawLegend.xanchor === "left";
+  const narrowLegend = containerWidth < 600 && themeDefaultRightLegend;
+  const rawMargin = asRecord(margin);
   return {
     ...rest,
     autosize: true,
     paper_bgcolor: TRANSPARENT,
     plot_bgcolor: TRANSPARENT,
-    height: scaledHeight(height, containerWidth, raw),
+    height: scaledHeight(height, containerWidth, raw) + (narrowLegend ? 60 : 0),
     font: { ...rawFont, color: chromeColor(rawFont.color, palette.textColor, theme) },
-    legend: {
-      ...legendRest,
-      bgcolor: legendBg,
-      font: { ...rawLegendFont, color: chromeColor(rawLegendFont.color, palette.textColor, theme) },
-    },
+    legend: narrowLegend
+      ? {
+          orientation: "h",
+          x: 0,
+          xanchor: "left",
+          y: -0.22,
+          yanchor: "top",
+          bgcolor: legendBg,
+          font: {
+            ...rawLegendFont,
+            color: chromeColor(rawLegendFont.color, palette.textColor, theme),
+          },
+        }
+      : {
+          ...legendRest,
+          bgcolor: legendBg,
+          font: { ...rawLegendFont, color: chromeColor(rawLegendFont.color, palette.textColor, theme) },
+        },
+    margin: narrowLegend ? { ...rawMargin, r: 8 } : margin,
     xaxis: axisLayout(xaxis, palette, theme),
     yaxis: axisLayout(yaxis, palette, theme),
     template: reskinTemplate(template, palette.traceColorMap),

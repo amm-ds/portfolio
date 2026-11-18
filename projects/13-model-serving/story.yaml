@@ -1,5 +1,5 @@
 project_id: 13-model-serving
-headline: "The champion tabular MLP from experiment 12 ships as a small FastAPI service: native torch vs ONNX Runtime measured under the same seeded load — 1.6 ms p50 single-request, a ~950 req/s throughput knee, a measured 6.5 GB image whose venv is mostly torch and unused CUDA libraries, and about $0.000012 electricity per 1k predictions on a laptop."
+headline: "The champion tabular MLP from experiment 12 ships as a small FastAPI service: native torch vs ONNX Runtime measured under the same seeded load — 1.6 ms p50 single-request (p95 2.0 ms, p99 2.2 ms; n = 300 requests/cell), a ~950 req/s throughput knee, a measured 6.5 GB image whose venv is mostly torch and unused CUDA libraries, and about $0.000012 electricity per 1k predictions on a laptop."
 data_note: "Champion MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly, sha256-pinned) — the identical frame hash reproduces the committed 25.4316 test MAE to the last digit before serving begins."
 limits: "Single laptop, no GPU, one uvicorn worker, one model: absolute numbers, paired native-vs-ONNX deltas, and curve shapes are host-specific observations, not demonstrated transfer; localhost latency has no network term; the wattage behind the cost line is a declared assumption, not a measurement."
 short_version: |
@@ -210,7 +210,8 @@ sections:
       on a shared CPU, not a different model.
 
       **Business summary:** The figures show 1.6 ms p50 single-request
-      latency, a ~950 req/s knee, and ~56k rows/s batched throughput under a
+      latency (p95 2.0 ms, p99 2.2 ms; n = 300 requests per cell), a ~950
+      req/s knee, and ~56k rows/s batched throughput under a
       warmed, paired, median-of-3 protocol.
     figures: [latency_concurrency_lines, batch_throughput_curve, backend_comparison_slope]
   - id: results
@@ -221,7 +222,7 @@ sections:
       supplies the visual check for resource use and price.
 
       - Gates: reproduction exact (25.4316 vs 25.4316); parity max-abs 7.2e-07 on 512 probe rows, tolerance 1e-4.
-      - Latency: p50 1.6 ms single-request on both backends; p95 under 6 ms through concurrency 4; p50 about 63 ms at 64 clients where the shared CPU saturates.
+      - Latency: p50 1.6 ms single-request on both backends; p95 under 6 ms through concurrency 4; p99 2.2 ms at c=1; p50 about 63 ms at 64 clients where the shared CPU saturates. n = 300 requests per cell, nearest-rank percentiles, median of 3 repeats.
       - Throughput: peak near 970 req/s at concurrency 4 on both backends
         (median 933 native / 970 ONNX); throughput sags at 16 clients, then
         partially recovers at 64. No dynamic batching is enabled to explain
@@ -252,9 +253,8 @@ sections:
 
       The cost panel shows about $0.000012 per 1k predictions at the committed
       concurrency-16 basis. It uses median-of-repeats throughput on this host
-      with declared assumptions of 65 W (watts) and $0.30 per kWh. A
-      kilowatt-hour (kWh) is one kilowatt used for one hour. The throughput
-      peak instead sits at concurrency 4.
+      with declared assumptions of 65 W (watts) and $0.30 per kWh. The
+      throughput peak sits at concurrency 4.
 
       The compose smoke test also passes: a healthcheck-gated dependency lets
       the one-shot smoke service request a real prediction from the API.
@@ -267,10 +267,11 @@ sections:
       pins six locked dependencies plus portfolio-core `--no-deps`; the parity
       gate supports dropping the framework safely.
 
-      **Business summary:** The figures and ledger support 1.6 ms p50, a
+      **Business summary:** The figures and ledger support 1.6 ms p50 (p95
+      2.0 ms, p99 2.2 ms; n = 300/cell), a
       ~950 req/s knee, ~56k rows/s batched, a 6.5 GB full image with a 291 MB
       ONNX-only alternative, and ~$0.000012 per 1k predictions. Deployment
-      needs, not a noisy ~15% delta, guide the backend choice.
+      needs — not a noisy ~15% delta — guide the backend choice.
     figures: [footprint_cost_bars]
   - id: conclusions
     text_md: |

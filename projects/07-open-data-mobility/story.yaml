@@ -2,8 +2,8 @@ project_id: 07-open-data-mobility
 short_version: >-
   Next-hour NYC taxi demand by zone, built on 41.2M real 2024 yellow-taxi
   trips and public weather: on a strict Oct–Dec test holdout the served
-  GBM cuts error 28.3% below same-hour-yesterday (4.68 vs 6.52 MAE); its 90%
-  band reached 91% coverage (no-borough zones excepted).
+  GBM cuts error 28.3% vs the persistence floor (4.68 vs 6.52 MAE); its
+  90% band reached 91% coverage (no-borough zones excepted).
 figure_captions:
   hour_borough_heatmap: >-
     Full-year mean pickups by hour and borough. Manhattan peaks at 103.7
@@ -177,8 +177,11 @@ sections:
       MAE means mean absolute error, measured here in missed pickups. Read
       the grey same-hour-yesterday bar first, then compare each model bar.
       Lower is better. The served `gbm_tuned` bar reaches 4.676 MAE, 28.3%
-      below the baseline. Its MASE is 0.763. MASE is an error ratio where
-      1.0 means parity with the baseline.
+      below the persistence baseline — the headline comparison is against
+      persistence only. Its MASE is 0.763. MASE is an error ratio where
+      1.0 means parity with the baseline. The 90% band covers 90.8% of
+      holdout zone-hours overall; the no-borough bucket (84.7%) and Staten
+      Island (98.5%) are the coverage outliers.
 
       The ladder also shows two challengers with lower test error. This does
       not change the serving choice. Selection uses the best embargoed

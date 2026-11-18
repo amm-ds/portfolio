@@ -3,9 +3,9 @@
 **Domain:** Agentic AI / LLM · **Data:** Wikipedia (HF, real) · **Status:** Flagship — complete
 
 > Grounding-hardened cited QA over 593 Wikipedia articles. Frozen 30-question
-> stress re-run: 0.733 correct (CI [0.567, 0.867]); unsupported outcomes fell
-> 11 → 5. Independent set B: 0.633 correct, but 9/30 unsupported outcomes
-> missed the ≤6/30 gate. Not unattended-ready.
+> stress re-run: 0.733 correct (CI [0.567, 0.867]); unsupported outcomes 5 of
+> 30 (was 11; not a demonstrated gain). Independent set B: 0.633, 9/30
+> unsupported over the ≤6/30 gate. Not unattended-ready.
 >
 > Teams routing questions at a knowledge base need answers they can audit —
 > every claim traced to a source and residual unsupported outcomes measured.

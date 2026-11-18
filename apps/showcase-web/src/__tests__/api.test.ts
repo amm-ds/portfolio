@@ -82,6 +82,23 @@ describe("getMetrics", () => {
     await expect(getMetrics("01-rag-agent")).resolves.toEqual(metrics);
   });
 
+  it("accepts payloads with non-record top-level values (02 full-panel shape)", async () => {
+    const metrics = {
+      _meta: { source: "reports_m5_full/metrics.json" },
+      candidates: [{ model: "lightgbm", wrmsse: 0.62 }],
+      pooled_strategy: "bottom_up",
+      protocol: "temporal holdout",
+      test: { wrmsse: 0.61 },
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(metrics)));
+    await expect(getMetrics("02-demand-forecasting")).resolves.toEqual(metrics);
+  });
+
+  it("still rejects a non-object payload", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([{ f1: 0.5 }])));
+    await expect(getMetrics("01-rag-agent")).rejects.toThrow("invalid response contract");
+  });
+
   it("returns null on 404 (pipeline not run yet)", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("not found", { status: 404 })));
     await expect(getMetrics("05-ml-pipeline-churn")).resolves.toBeNull();

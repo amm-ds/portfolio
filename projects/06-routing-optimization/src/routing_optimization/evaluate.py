@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import plotly.graph_objects as go
 import polars as pl
 import yaml  # type: ignore[import-untyped]
@@ -609,12 +610,12 @@ def _gap_tables(evaluations: list[InstanceEvaluation]) -> GapTables:
 
 
 def _family_rows(evaluations: list[InstanceEvaluation]) -> pl.DataFrame:
-    """Per (family, solver) gap and vehicle-delta frame for the family figure."""
-    return pl.DataFrame(
+    """Mean gap and vehicle delta per (family, solver) for the family figure."""
+    rows = pl.DataFrame(
         {
             "family": family_of(ev.instance),
             "solver": r.solver,
-            "gap_pct": round(gap_pct(r.total_distance, ev.best_known), 4),
+            "gap_pct": gap_pct(r.total_distance, ev.best_known),
             "veh_delta": (
                 r.n_vehicles - ev.best_known_vehicles
                 if ev.best_known_vehicles is not None
@@ -624,6 +625,10 @@ def _family_rows(evaluations: list[InstanceEvaluation]) -> pl.DataFrame:
         for ev in evaluations
         if ev.best_known is not None
         for r in ev.runs
+    )
+    return rows.group_by(["family", "solver"], maintain_order=True).agg(
+        pl.col("gap_pct").mean().round(4).alias("gap_pct"),
+        pl.col("veh_delta").mean().alias("veh_delta"),
     )
 
 
@@ -942,6 +947,72 @@ def _unhinted_summary(solutions: dict[str, Any], cfg: VRPConfig) -> dict[str, An
     }
 
 
+INTERVAL_SEED = 42
+INTERVAL_N_BOOT = 2000
+
+
+def _mean_gap_interval(
+    evaluations: list[InstanceEvaluation],
+    solver: str = "alns",
+    *,
+    seed: int = INTERVAL_SEED,
+    n_boot: int = INTERVAL_N_BOOT,
+) -> dict[str, Any]:
+    """Percentile bootstrap CI for the mean per-instance distance gap.
+
+    Resamples the 56 per-instance gaps with replacement (seeded, same
+    convention as project 05: fixed seed, 2,000 resamples, percentile 95%).
+    """
+    gaps = [
+        gap_pct(r.total_distance, ev.best_known)
+        for ev in evaluations
+        for r in ev.runs
+        if r.solver == solver and ev.best_known is not None
+    ]
+    arr = np.asarray(gaps, dtype=float)
+    n = len(arr)
+    rng = np.random.default_rng(seed)
+    means = np.empty(n_boot, dtype=float)
+    for i in range(n_boot):
+        means[i] = float(np.mean(arr[rng.integers(0, n, size=n)]))
+    lo, hi = np.percentile(means, [2.5, 97.5])
+    return {
+        "solver": solver,
+        "metric": "mean_gap_pct",
+        "point": round(float(np.mean(arr)), 4),
+        "lo": round(float(lo), 4),
+        "hi": round(float(hi), 4),
+        "n_boot": n_boot,
+        "seed": seed,
+        "n_instances": n,
+    }
+
+
+def _intervals_block(evaluations: list[InstanceEvaluation]) -> dict[str, Any]:
+    """Committed instance-level intervals for the headline numbers.
+
+    The ALNS-vs-unhinted difference has no committed unhinted distances (the
+    arm is UNKNOWN on all 56 instances), so its interval is recorded as null
+    with the reason rather than filled.
+    """
+    return {
+        "mean_gap_pct": _mean_gap_interval(evaluations),
+        "alns_vs_unhinted_cp_sat": {
+            "metric": "mean_gap_pct_difference",
+            "point": None,
+            "lo": None,
+            "hi": None,
+            "n_boot": INTERVAL_N_BOOT,
+            "seed": INTERVAL_SEED,
+            "reason": (
+                "unhinted_cp_sat is committed without distances "
+                "(UNKNOWN on all 56 instances); the interval is not "
+                "computable without re-solving"
+            ),
+        },
+    }
+
+
 def _metrics_payload(
     evaluations: list[InstanceEvaluation],
     solutions: dict[str, Any],
@@ -952,6 +1023,7 @@ def _metrics_payload(
         "summary": _summary_metrics(stats),
         "instances": _instance_metrics(evaluations),
         "ranking": _ranking_metrics(evaluations),
+        "intervals": _intervals_block(evaluations),
         "unhinted_cp_sat": solutions.get("unhinted_cp_sat", {}),
         "tuning": {
             "solver_best": solutions.get("solver_best"),

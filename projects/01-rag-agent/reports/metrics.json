@@ -1,12 +1,12 @@
 {
   "_meta": {
-    "created_at": "2026-11-16T06:08:18+01:00",
+    "created_at": "2026-11-16T06:32:28+01:00",
     "data_contract_sha256": "66e4d9f835d5d1d529baab96a726aef57b7fed77f7b59601d610af93cd30d5bc",
-    "git_sha": "b2b5b22fb5da1e8e9ad831efc9b56d999bb3abc6",
+    "git_sha": "a879fb51c677736431080edadf9cb46ef1d9162c",
     "params_sha256": "746ca43b6c154b264ad58b35feeb5f7092dadf196057e8df33a2a1e0d3d46295",
     "schema_version": 1,
     "seed": 42,
-    "uv_lock_sha256": "d4045b62a2c53ef9cad11a657ebb9fdd52fbda00b4266d6d322b288e60cd352f"
+    "uv_lock_sha256": "a735e76464d1cc9b6d9a0484ad91cc3bba276dceba8ae99c55b315f98a180aed"
   },
   "detail": {
     "heldout": {
@@ -1578,6 +1578,7 @@
       "verify_latency_share_of_answer": 0.5442
     }
   },
+  "judge_model": "kimi-for-coding",
   "rag_agent": {
     "answer_relevance": 0.6458,
     "context_recall": 0.9636,
@@ -1592,6 +1593,7 @@
     "context_recall": 0.9826,
     "faithfulness": 0.7337
   },
+  "ragas_version": "0.3.1",
   "retrieval_chunks_200": {
     "mrr@5": 0.8076923076923077,
     "recall@10": 0.8461538461538461,

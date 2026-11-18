@@ -58,6 +58,8 @@ def build_metrics(
             engines_block[engine] = {
                 "time_median_s": res.time_median_s,
                 "time_all_s": res.times,
+                "time_min_s": min(res.times),
+                "time_max_s": max(res.times),
                 "cold_s": res.cold_s,
                 "peak_rss_mb": res.peak_rss_mb,
                 "tracemalloc_peak_mb": median(res.tracemalloc_peaks_mb)

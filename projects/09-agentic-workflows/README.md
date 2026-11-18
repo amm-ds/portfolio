@@ -55,12 +55,15 @@ grading is deterministic and runs fully offline from
 | t14 | multi_step | ✓ | exact | 24.8s | 3 |
 | t15 | lookup (real corpus) | ✓ | exact | 31.1s | 3 |
 
-Headline numbers (hosted full run): **answer success 15/15**, **tool
-selection 15/15** exact-set, step budget 15/15, latency budget 15/15. All 30
+Headline numbers (legacy recorded run — each task executed once):
+**answer success 15/15** (Wilson 95% CI [0.796, 1.000]), **tool
+selection 15/15** exact-set, step budget 15/15, latency budget 15/15 (same
+interval for each 15/15 rate). All 30
 captured calls were planned (call precision 100%, tool recall 100%). Median
 latency is **18.2 s** per task (p95 31.1 s). Totals are ~85k input + ~12k
 output tokens; suite cost is **$0.13 cloud-equivalent** of the $2.00 suite cap
-(~$0.0088/task).
+(~$0.0088/task). Intervals: Wilson score interval (z = 1.96), committed at
+`metrics.json:detail.pass_rate_intervals`.
 
 ### Held-out set
 
@@ -77,9 +80,13 @@ input tokens, and 32k output tokens.
 
 | split | n | result |
 |---|---|---|
-| answer tasks | 13 | answer success 13/13, exact tool set 13/13 (22 calls, all planned; precision/recall/exact-set 100%) |
-| should-fail probes | 6 | graceful refusal 5/6 — h17/h18 stated grounded refusals; h19 see below |
-| all tasks | 19 | step budget 18/19; latency budget 12/19 |
+| answer tasks | 13 | answer success 13/13 (Wilson 95% CI [0.772, 1.000]), exact tool set 13/13 (22 calls, all planned; precision/recall/exact-set 100%) |
+| should-fail probes | 6 | graceful refusal 5/6 (Wilson 95% CI [0.436, 0.970]) — h17/h18 stated grounded refusals; h19 see below |
+| all tasks | 19 | step budget 18/19 (CI [0.754, 0.991]); latency budget 12/19 (CI [0.410, 0.809]) |
+
+Each task ran once in the legacy recorded run; the intervals price only the
+binomial sampling uncertainty of those single passes
+(`metrics.json:detail.heldout.pass_rate_intervals`).
 
 Measured negatives, kept honest:
 
