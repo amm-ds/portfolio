@@ -1,0 +1,938 @@
+{
+  "detail": {
+    "heldout": {
+      "n_tasks": 19,
+      "n_answer": 13,
+      "n_should_fail": 6,
+      "run_label": "legacy recorded run \u2014 each task executed once",
+      "pass_rate_intervals": {
+        "answer_success": {
+          "passed": 13,
+          "n": 13,
+          "rate": 1.0,
+          "wilson95": {
+            "lo": 0.7719,
+            "hi": 1.0
+          },
+          "method": "Wilson score interval (z = 1.96)"
+        },
+        "tool_selection": {
+          "passed": 13,
+          "n": 13,
+          "rate": 1.0,
+          "wilson95": {
+            "lo": 0.7719,
+            "hi": 1.0
+          },
+          "method": "Wilson score interval (z = 1.96)"
+        },
+        "step_budget": {
+          "passed": 19,
+          "n": 19,
+          "rate": 1.0,
+          "wilson95": {
+            "lo": 0.8318,
+            "hi": 1.0
+          },
+          "method": "Wilson score interval (z = 1.96)"
+        },
+        "latency_budget": {
+          "passed": 19,
+          "n": 19,
+          "rate": 1.0,
+          "wilson95": {
+            "lo": 0.8318,
+            "hi": 1.0
+          },
+          "method": "Wilson score interval (z = 1.96)"
+        },
+        "should_fail_pass_rate": {
+          "passed": 6,
+          "n": 6,
+          "rate": 1.0,
+          "wilson95": {
+            "lo": 0.6097,
+            "hi": 1.0
+          },
+          "method": "Wilson score interval (z = 1.96)"
+        }
+      },
+      "answer_success": 1.0,
+      "tool_selection": 1.0,
+      "step_budget": 1.0,
+      "latency_budget": 1.0,
+      "should_fail_pass_rate": 1.0,
+      "tooling": {
+        "n_tasks": 13,
+        "n_calls": 22,
+        "n_expected_calls": 22,
+        "call_precision": 1.0,
+        "tool_recall": 1.0,
+        "exact_set_rate": 1.0,
+        "per_tool": {
+          "calculator": {
+            "calls": 6,
+            "expected_calls": 6,
+            "extra_calls": 0,
+            "tasks": [
+              "h03",
+              "h04",
+              "h06",
+              "h13",
+              "h15"
+            ]
+          },
+          "note_store": {
+            "calls": 2,
+            "expected_calls": 2,
+            "extra_calls": 0,
+            "tasks": [
+              "h07",
+              "h16"
+            ]
+          },
+          "search_documents": {
+            "calls": 3,
+            "expected_calls": 3,
+            "extra_calls": 0,
+            "tasks": [
+              "h02",
+              "h12"
+            ]
+          },
+          "search_handbook": {
+            "calls": 9,
+            "expected_calls": 9,
+            "extra_calls": 0,
+            "tasks": [
+              "h01",
+              "h03",
+              "h04",
+              "h06",
+              "h07",
+              "h11",
+              "h13",
+              "h15",
+              "h16"
+            ]
+          },
+          "unit_convert": {
+            "calls": 2,
+            "expected_calls": 2,
+            "extra_calls": 0,
+            "tasks": [
+              "h05",
+              "h14"
+            ]
+          }
+        },
+        "extra_calls": {},
+        "unused_expected": {},
+        "per_task": {
+          "h01": {
+            "expected": [
+              "search_handbook"
+            ],
+            "called": [
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h02": {
+            "expected": [
+              "search_documents"
+            ],
+            "called": [
+              "search_documents"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h03": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h04": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h05": {
+            "expected": [
+              "unit_convert"
+            ],
+            "called": [
+              "unit_convert"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h06": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 3,
+            "exact_set": true
+          },
+          "h07": {
+            "expected": [
+              "note_store",
+              "search_handbook"
+            ],
+            "called": [
+              "note_store",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h11": {
+            "expected": [
+              "search_handbook"
+            ],
+            "called": [
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h12": {
+            "expected": [
+              "search_documents"
+            ],
+            "called": [
+              "search_documents"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h13": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h14": {
+            "expected": [
+              "unit_convert"
+            ],
+            "called": [
+              "unit_convert"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h15": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h16": {
+            "expected": [
+              "note_store",
+              "search_handbook"
+            ],
+            "called": [
+              "note_store",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          }
+        }
+      },
+      "per_task": {
+        "h01": {
+          "category": "lookup",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 17.115,
+          "tools_used": [
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='survey drone maximum payload flight time per charge specifications', top\u2026",
+              "latency_s": 0.0,
+              "result_chars": 391,
+              "ok": true,
+              "evidence_count": 2
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The survey drone's maximum payload is 2.5 kg, and its flight time per charge is up to 42 minutes.",
+          "error": null
+        },
+        "h02": {
+          "category": "lookup",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 22.771,
+          "tools_used": [
+            "search_documents"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query='who introduced the name dropout for randomly removing connections in a n\u2026",
+              "latency_s": 7.849,
+              "result_chars": 1758,
+              "ok": true,
+              "evidence_count": 3
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "According to the Wikipedia document corpus (article \"Dilution (neural networks)\"), the technique of randomly removing connections between neurons in a neural network was first introduced with the name \"dropout\" by Geoffrey Hinton and colleagues in 2012.",
+          "error": null
+        },
+        "h03": {
+          "category": "calculation",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 28.416,
+          "tools_used": [
+            "search_handbook",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='generator fuel consumption rate at full load L/h', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 558,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='240 / 1.8'",
+              "latency_s": 0.0,
+              "result_chars": 10,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The generator can run approximately 133.3 hours on a full 240 L tank at full load. Calculation: the prime diesel generator burns 1.8 L/h under full load (handbook doc \"gen-fuel\"), and the onboard tank holds 240 L. Runtime = 240 L \u00f7 1.8 L/h \u2248 133.3 hours (about 133 h 20 min). Note: this is well above the station's 72-hour minimum fuel reserve policy.",
+          "error": null
+        },
+        "h04": {
+          "category": "calculation",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 21.647,
+          "tools_used": [
+            "search_handbook",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='generator diesel fuel consumption rate liters per hour', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 537,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='1.8 * 8 * 30'",
+              "latency_s": 0.0,
+              "result_chars": 5,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The station's prime diesel generator burns 1.8 liters per hour under full load (handbook doc gen-fuel). Running it 8 hours per day for 30 days: 1.8 L/h \u00d7 8 h/day \u00d7 30 days = 432 liters of diesel burned in the month.",
+          "error": null
+        },
+        "h05": {
+          "category": "conversion",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 13.71,
+          "tools_used": [
+            "unit_convert"
+          ],
+          "tool_calls": [
+            {
+              "name": "unit_convert",
+              "node": "execute",
+              "args_brief": "value=8.0, from_unit='km', to_unit='mi'",
+              "latency_s": 0.0,
+              "result_chars": 5,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The drone's rated range of 8 km is approximately 4.97 miles (about 5 miles).",
+          "error": null
+        },
+        "h06": {
+          "category": "multi_step",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 43.418,
+          "tools_used": [
+            "search_handbook",
+            "calculator",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='satellite uplink window schedule windows per day per week transfer capac\u2026",
+              "latency_s": 0.0,
+              "result_chars": 808,
+              "ok": true,
+              "evidence_count": 5
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='2 * 7'",
+              "latency_s": 0.0,
+              "result_chars": 4,
+              "ok": true,
+              "evidence_count": null
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='14 * 250'",
+              "latency_s": 0.0,
+              "result_chars": 6,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "**Satellite uplink windows and weekly transfer capacity**\n\n- **Windows per week: 14.** The handbook (doc: satellite-window) states uplink windows open daily at 06:10\u201306:40 and 18:20\u201318:50 UTC \u2014 that is 2 windows per day \u00d7 7 days = **14 windows per week**.\n- **Total weekly capacity: 3,500 MB.** Each window can transfer at most 250 MB, so 14 windows \u00d7 250 MB = **3,500 MB per week**.",
+          "error": null
+        },
+        "h07": {
+          "category": "note_keeping",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 31.058,
+          "tools_used": [
+            "search_handbook",
+            "note_store"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='weather station calibration interval requirement', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 367,
+              "ok": true,
+              "evidence_count": 2
+            },
+            {
+              "name": "note_store",
+              "node": "execute",
+              "args_brief": "action='append', note='Weather station calibration interval: must be calibrated\u2026",
+              "latency_s": 0.0,
+              "result_chars": 136,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The weather station must be calibrated every 45 days. The accepted temperature drift tolerance between calibrations is +/-0.4 \u00b0C. This calibration interval has been recorded in the ops notebook.",
+          "error": null
+        },
+        "h08": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "status": "refused",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 39.163,
+          "tools_used": [
+            "search_handbook",
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='conversion factor equivalence rule electrical energy kWh to water volume\u2026",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='kWh liters equivalence compare battery to water tank conversion standard\u2026",
+              "latency_s": 0.0,
+              "result_chars": 687,
+              "ok": true,
+              "evidence_count": 4
+            }
+          ],
+          "critique_verdict": null,
+          "answer": "The conversion cannot be completed. The operations handbook does not define any standard conversion factor or equivalence rule between electrical energy (kWh) and water volume (liters). The handbook only confirms the battery bank provides 24 kWh of usable capacity and the water tanks hold 5,000 L (main) and 1,200 L (secondary bladder). Without a documented kWh-to-liters equivalence, 24 kWh cannot be converted into liters, and no physical factor should be invented.",
+          "error": "The conversion cannot be completed. The operations handbook does not define any standard conversion factor or equivalence rule between electrical energy (kWh) and water volume (liters). The handbook only confirms the battery bank provides 24 kWh of usable capacity and the water tanks hold 5,000 L (main) and 1,200 L (secondary bladder). Without a documented kWh-to-liters equivalence, 24 kWh cannot be converted into liters, and no physical factor should be invented."
+        },
+        "h09": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "status": "refused",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 23.419,
+          "tools_used": [
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='current diesel stock levels generator tank remaining liters', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 537,
+              "ok": true,
+              "evidence_count": 3
+            }
+          ],
+          "critique_verdict": null,
+          "answer": "I cannot report the current diesel stock or the generator tank's remaining liters. The task asks for a \"station inventory tool,\" but no such tool exists in the available toolset (calculator, unit_convert, search_handbook, search_documents, note_store). I used search_handbook, the closest match for station facts, and it returned only static specifications: the prime diesel generator burns 1.8 L/h at full load, runs 6 h/day, and its onboard tank holds 240 L; station policy requires a 72-hour fuel reserve (1.8 L/h \u00d7 72 h = 129.6 L minimum) with resupply ordered below that threshold. No document in the handbook provides a live/current inventory reading, so the remaining liters cannot be determined with the available tools.",
+          "error": "I cannot report the current diesel stock or the generator tank's remaining liters. The task asks for a \"station inventory tool,\" but no such tool exists in the available toolset (calculator, unit_convert, search_handbook, search_documents, note_store). I used search_handbook, the closest match for station facts, and it returned only static specifications: the prime diesel generator burns 1.8 L/h at full load, runs 6 h/day, and its onboard tank holds 240 L; station policy requires a 72-hour fuel reserve (1.8 L/h \u00d7 72 h = 129.6 L minimum) with resupply ordered below that threshold. No document in the handbook provides a live/current inventory reading, so the remaining liters cannot be determined with the available tools."
+        },
+        "h10": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "status": "refused",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 27.928,
+          "tools_used": [
+            "search_handbook",
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='ration pack to water conversion factor density for water log kg to liter\u2026",
+              "latency_s": 0.0,
+              "result_chars": 557,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='ration pack density conversion factor kg to liters water log', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 733,
+              "ok": true,
+              "evidence_count": 4
+            }
+          ],
+          "critique_verdict": null,
+          "answer": "The conversion of 40 kg of ration packs to liters cannot be completed with the available sources. Converting a mass (kg) to a volume (liters) requires a density or an explicit mass-to-volume conversion factor, and the station handbook does not provide one for ration packs. Handbook searches returned only: (1) cache contents \u2014 Cache Alpha holds 40 ration packs, Cache Bravo holds 25, each pack weighing 0.6 kg; (2) water storage/budget figures \u2014 5,000 L main tank, 1,200 L secondary bladder, 85 L per person per day for a crew of 6; (3) unrelated drone and weather-calibration data. None of these include a ration-pack density or kg-to-liter factor. The unit conversion tool also cannot bridge mass to volume (cross-dimension conversions are impossible without a density). Note: the 0.6 kg per-pack figure lets you compute a pack count (40 kg \u00f7 0.6 kg \u2248 66.7 packs), but it does not yield a volume. To complete the water-log entry, a ration-pack density (kg/L) or an official conversion factor would need to be supplied.",
+          "error": "The conversion of 40 kg of ration packs to liters cannot be completed with the available sources. Converting a mass (kg) to a volume (liters) requires a density or an explicit mass-to-volume conversion factor, and the station handbook does not provide one for ration packs. Handbook searches returned only: (1) cache contents \u2014 Cache Alpha holds 40 ration packs, Cache Bravo holds 25, each pack weighing 0.6 kg; (2) water storage/budget figures \u2014 5,000 L main tank, 1,200 L secondary bladder, 85 L per person per day for a crew of 6; (3) unrelated drone and weather-calibration data. None of these include a ration-pack density or kg-to-liter factor. The unit conversion tool also cannot bridge mass to volume (cross-dimension conversions are impossible without a density). Note: the 0.6 kg per-pack figure lets you compute a pack count (40 kg \u00f7 0.6 kg \u2248 66.7 packs), but it does not yield a volume. To complete the water-log entry, a ration-pack density (kg/L) or an official conversion factor would need to be supplied."
+        },
+        "h11": {
+          "category": "lookup",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 20.707,
+          "tools_used": [
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='base call sign radio channel reserved for emergencies', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 317,
+              "ok": true,
+              "evidence_count": 2
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The station's base call sign is 'Atlas Base', and Channel 1 is reserved for emergencies (per the radio protocol; hourly check-ins use channel 3 at 146.46 MHz).",
+          "error": null
+        },
+        "h12": {
+          "category": "lookup",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 43.274,
+          "tools_used": [
+            "search_documents",
+            "search_documents"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query='chlorophyll main photosynthetic pigment in plants light absorption wavel\u2026",
+              "latency_s": 0.008,
+              "result_chars": 3218,
+              "ok": true,
+              "evidence_count": 5
+            },
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query='chlorophyll a absorption peaks violet-blue orange-red wavelengths nm', t\u2026",
+              "latency_s": 0.005,
+              "result_chars": 1931,
+              "ok": true,
+              "evidence_count": 3
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "According to the Wikipedia document corpus, **chlorophyll a** is the main photosynthetic pigment in plants. It is essential for photosynthesis in eukaryotes (including plants), cyanobacteria, and prochlorophytes because of its role as the primary electron donor in the electron transport chain.\n\nChlorophyll a absorbs most energy from wavelengths of **violet-blue** and **orange-red** light. It is a poor absorber of green and near-green portions of the spectrum \u2014 which is why chlorophyll-containing plant tissues appear green (green light is diffusively reflected by structures like cell walls rather than absorbed).\n\nBy contrast, other chlorophyll forms serve as accessory pigments with different absorption ranges: chlorophyll b primarily absorbs blue light, chlorophyll c absorbs around 447\u2013452 nm in marine algae, and chlorophyll d absorbs far-red light at 710 nm in certain cyanobacteria.",
+          "error": null
+        },
+        "h13": {
+          "category": "calculation",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 26.135,
+          "tools_used": [
+            "search_handbook",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='battery bank usable capacity kWh base load power draw 8-hour overnight n\u2026",
+              "latency_s": 0.0,
+              "result_chars": 547,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='24 - (1.6 * 8)'",
+              "latency_s": 0.0,
+              "result_chars": 4,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "After the 8-hour base load (assuming no HVAC surge overnight), 11.2 kWh of usable battery capacity remains in the battery bank.\n\nCalculation:\n- Usable capacity: 24 kWh (LiFePO4 battery bank)\n- Base load: 1.6 kW for 8 h \u2192 energy consumed = 1.6 \u00d7 8 = 12.8 kWh\n- Remaining capacity = 24 \u2212 12.8 = 11.2 kWh\n\nThe handbook notes an HVAC surge would add 0.9 kW for about 3 h, but per the assumption of no surge, it is excluded.",
+          "error": null
+        },
+        "h14": {
+          "category": "conversion",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 17.344,
+          "tools_used": [
+            "unit_convert"
+          ],
+          "tool_calls": [
+            {
+              "name": "unit_convert",
+              "node": "execute",
+              "args_brief": "value=400.0, from_unit='ft', to_unit='m'",
+              "latency_s": 0.0,
+              "result_chars": 6,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The new antenna mast is 400 ft tall, which converts to 121.92 meters (using the standard factor 1 ft = 0.3048 m: 400 \u00d7 0.3048 = 121.92 m).",
+          "error": null
+        },
+        "h15": {
+          "category": "multi_step",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 18.162,
+          "tools_used": [
+            "search_handbook",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='survey drone full-endurance flight time per mission', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 391,
+              "ok": true,
+              "evidence_count": 2
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='42 * 7'",
+              "latency_s": 0.0,
+              "result_chars": 5,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The survey drone's full-endurance flight time is 42 minutes per mission (per charge). Flying one full-endurance mission per day for 7 days: 42 min \u00d7 7 = 294 minutes of flight time logged in one week.",
+          "error": null
+        },
+        "h16": {
+          "category": "note_keeping",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 24.624,
+          "tools_used": [
+            "search_handbook",
+            "note_store"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='sample freezer maximum sample-box capacity', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 511,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "note_store",
+              "node": "execute",
+              "args_brief": "action='append', note='Storage audit: sample freezer maximum sample-box capacit\u2026",
+              "latency_s": 0.0,
+              "result_chars": 119,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The sample freezer's maximum sample-box capacity is 180 sample boxes. This has been recorded in the ops notebook for the storage audit. (Handbook cold-storage entry: setpoint -20 \u00b0C, alarm band +/-3 \u00b0C, stores up to 180 sample boxes.)",
+          "error": null
+        },
+        "h17": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "status": "refused",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 18.273,
+          "tools_used": [
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='USD EUR exchange rate currency conversion', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 376,
+              "ok": true,
+              "evidence_count": 2
+            }
+          ],
+          "critique_verdict": null,
+          "answer": "I cannot convert $1,850 USD to euros with the available tools. The unit_convert tool only supports length, mass, volume, and temperature conversions \u2014 it does not handle currency. A search of the Atlas Valley ops handbook for a USD\u2192EUR exchange rate returned no relevant results (only unrelated documents about drone operations and weather station calibration). Without an authoritative current exchange rate, any euro figure would be fabricated. Please provide the current USD\u2192EUR rate or use a financial data source to complete the conversion.",
+          "error": "I cannot convert $1,850 USD to euros with the available tools. The unit_convert tool only supports length, mass, volume, and temperature conversions \u2014 it does not handle currency. A search of the Atlas Valley ops handbook for a USD\u2192EUR exchange rate returned no relevant results (only unrelated documents about drone operations and weather station calibration). Without an authoritative current exchange rate, any euro figure would be fabricated. Please provide the current USD\u2192EUR rate or use a financial data source to complete the conversion."
+        },
+        "h18": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "status": "refused",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 19.835,
+          "tools_used": [
+            "search_handbook",
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='Wi-Fi password for the new field tablet', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 2,
+              "ok": true,
+              "evidence_count": 0
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='Wi-Fi password new field tablet', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 2,
+              "ok": true,
+              "evidence_count": 0
+            }
+          ],
+          "critique_verdict": null,
+          "answer": "The ops handbook does not contain the Wi-Fi password for the new field tablet. A search of the handbook returned no relevant evidence covering this request, so the password cannot be provided from the available sources.",
+          "error": "The ops handbook does not contain the Wi-Fi password for the new field tablet. A search of the handbook returned no relevant evidence covering this request, so the password cannot be provided from the available sources."
+        },
+        "h19": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "status": "refused",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 19.123,
+          "tools_used": [],
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='2**500'",
+              "latency_s": 0.0,
+              "result_chars": 0,
+              "ok": false,
+              "evidence_count": null
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='2**500'",
+              "latency_s": 0.0,
+              "result_chars": 0,
+              "ok": false,
+              "evidence_count": null
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='2**500'",
+              "latency_s": 0.0,
+              "result_chars": 0,
+              "ok": false,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": null,
+          "answer": "I cannot complete the request: execute failed after 2 attempts: exponent too large",
+          "error": "execute failed after 2 attempts: exponent too large"
+        }
+      }
+    }
+  }
+}
