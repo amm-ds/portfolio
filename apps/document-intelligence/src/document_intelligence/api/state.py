@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from document_intelligence.analysis.page_chat import PageChat
 from document_intelligence.analysis.service import AnalysisService
+from document_intelligence.api.rate_limit import RateLimiter
 from document_intelligence.clock import Clock
 from document_intelligence.config import Settings
 from document_intelligence.documents.storage import BlobStore
@@ -20,3 +21,4 @@ class AppState:
     service: AnalysisService
     page_chat: PageChat
     clock: Clock
+    rate_limiter: RateLimiter

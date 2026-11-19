@@ -77,8 +77,11 @@ The Vite UI defaults to `http://localhost:4323` and proxies API requests to port
 gateway shared secret, and the database password are compose env overrides.
 Production startup requires Postgres, gateway identity with a shared secret,
 and the model analyzer with provider credentials; unsigned tenant headers and
-fixture analysis are not production configuration. See `specs/operations.md`
-for identity, web serving, and rate limiting.
+fixture analysis are not production configuration. The model-cost endpoints
+(upload, reanalyze, page chat) are rate-limited in process at 30 requests per
+minute per tenant (`DOCUMENT_INTELLIGENCE_RATE_LIMIT_PER_MINUTE`; 0
+disables); the limit is per process and is not shared across replicas. See
+`specs/operations.md` for identity, web serving, and rate limiting.
 
 ## AI provider
 

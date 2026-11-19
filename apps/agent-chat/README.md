@@ -115,6 +115,10 @@ Never commit `.env` or expose a privileged provider key through `VITE_*`.
 - Every response carries `X-Request-ID`; errors are a structured envelope:
   `{"error": {"code", "message", "request_id"}}`. Set `AGENT_CHAT_API_KEY`
   to require an `X-API-Key` header on chat/mutations.
+- The paid endpoints (`POST /chat`, `POST /ingest`) are rate-limited in
+  process: 30 requests per minute per presented `X-API-Key`
+  (`AGENT_CHAT_RATE_LIMIT_PER_MINUTE`; 0 disables). The limit is per process
+  and is not shared across replicas.
 
 ## Deployment topology
 

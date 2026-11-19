@@ -19,6 +19,7 @@ from pydantic_ai.models import Model
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from agent_chat.agent import build_agent
+from agent_chat.api.rate_limit import RateLimiter
 from agent_chat.api.routes_admin import router as admin_router
 from agent_chat.api.routes_chat import router as chat_router
 from agent_chat.api.routes_conversations import router as conversations_router
@@ -100,6 +101,10 @@ def create_app(
         vector_store=resolved_vector_store,
         embedder=resolved_embedder,
         approval_hub=ApprovalHub(timeout_s=resolved_settings.approval_timeout_s),
+        rate_limiter=RateLimiter(
+            per_minute=resolved_settings.rate_limit_per_minute,
+            window_s=60.0,
+        ),
     )
 
     @asynccontextmanager
@@ -126,6 +131,7 @@ def create_app(
         return JSONResponse(
             status_code=exc.status_code,
             content=_error_body(request, f"http_{exc.status_code}", str(exc.detail)),
+            headers=exc.headers,
         )
 
     @app.exception_handler(RequestValidationError)

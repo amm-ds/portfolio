@@ -16,6 +16,7 @@ from uuid import uuid4
 from pydantic_ai import Agent
 
 from agent_chat.api.events import ApprovalRequestEvent, ApprovalResponseEvent
+from agent_chat.api.rate_limit import RateLimiter
 from agent_chat.approvals import ApprovalGate
 from agent_chat.config import Settings
 from agent_chat.deps import ChatDeps
@@ -36,6 +37,7 @@ class AppState:
     vector_store: VectorStore
     embedder: Embedder
     approval_hub: "ApprovalHub"
+    rate_limiter: "RateLimiter"
 
 
 EventSink = Callable[[ApprovalRequestEvent | ApprovalResponseEvent], None]

@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     model_timeout_seconds: float = Field(default=180.0, gt=0, le=300)
     model_total_tokens_limit: int = Field(default=32_000, ge=1000, le=100_000)
     model_chat_tokens_limit: int = Field(default=8000, ge=500, le=50_000)
+    # In-process per-tenant limit on the model-cost endpoints (upload,
+    # reanalyze, page chat); not shared across replicas. 0 disables.
+    rate_limit_per_minute: int = Field(default=30, ge=0)
 
     lease_seconds: int = Field(default=60, gt=0)
     heartbeat_seconds: int = Field(default=20, gt=0)

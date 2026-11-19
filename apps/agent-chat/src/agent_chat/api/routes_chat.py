@@ -36,6 +36,7 @@ from agent_chat.api.events import (
     UsageSummary,
     encode_sse,
 )
+from agent_chat.api.rate_limit import rate_limit
 from agent_chat.api.security import require_api_key
 from agent_chat.api.session import require_session_id
 from agent_chat.api.state import AppState
@@ -129,6 +130,7 @@ async def chat(
     request: Request,
     body: ChatRequest,
     _: None = Depends(require_api_key),
+    _limit: None = Depends(rate_limit),
     session_id: str = Depends(require_session_id),
 ) -> Response:
     """Run one user message; stream typed events (see ``api.events``)."""
