@@ -89,7 +89,7 @@ def story_summary(project_dir: Path) -> dict[str, object] | None:
     """Structural summary of one project's story.yaml, or None when absent.
 
     Prefers the canonical ``load_story``; when the prose fails full validation
-    (e.g. a roadmap item over the 300-char cap — the API 500s there too), falls
+    (e.g. a roadmap detail over the 90-char cap — the API 500s there too), falls
     back to lenient structural extraction so the snapshot still carries the
     section/figure/metric structure.
     """

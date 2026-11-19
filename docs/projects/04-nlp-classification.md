@@ -91,8 +91,9 @@ rises; extra epochs overfit rather than establish a better champion.
 
 ![Separate full-data histories: the two-epoch headline run and the four-epoch probe, which peaks in epoch 3 and then overfits](../assets/projects/04-nlp-classification/training_curve.png){ width="100%" }
 
-One temperature fitted on validation cuts selected-model test ECE from 0.0360
-to 0.0227 (37%) without changing predictions. In `confusion_matrix_selected`,
+One temperature fitted on validation cuts selected-model test calibration
+error without changing predictions (the before/after pair is recorded in the
+project DESIGN.md). In `confusion_matrix_selected`,
 Business → Sci/Tech is the dominant bounded-test error at 25 of 250 Business
 items. The original default-artifact scaling curve moves 24/250 → 15/250 →
 14/250; more data reduces but does not remove this ambiguity.

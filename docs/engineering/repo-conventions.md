@@ -15,7 +15,13 @@ conclusions`. Renderer behavior depends on the ids — keep them stable.
   `uv run python scripts/gen_story_short.py` to regenerate only `storyShort.ts`;
   `scripts/check_short_copy.py --check` verifies the check-only README/docs
   surfaces without writing them.
-- Roadmaps are finalized: `status: delivered` milestones only, 4–7 items.
+- Roadmaps: 3–4 `shipped` plus 1–2 `next`/`blocked` cards, at most 5 total.
+  Each card is `{status, title, detail}` — title 3–6 words, verb-first, no
+  metric; detail one line ≤90 chars carrying one number or one decision;
+  `next` names the gate, `blocked` names the owner decision. The web roadmap
+  block renders `shipped` cards only (owner decision 2026-11-19: finalized
+  steps visible to visitors); `next`/`blocked` stay authored as maintenance
+  state but are not rendered.
 - `key_concepts` render as a card in Background; `figure_captions` (≤3
   figures per section) render as figure footers.
 - Every `data` section links its dataset card, e.g.
@@ -57,6 +63,10 @@ conclusions`. Renderer behavior depends on the ids — keep them stable.
 - Exceptions: projects 11 and 12 keep their metrics as DVC outs for now —
   checks read those projects' committed `README.md` instead (same printed
   numbers). New projects follow the git-first convention above.
+- **Uncertainty conventions are defined once** in
+  [`statistical-intervals.md`](statistical-intervals.md) — every card names
+  its method from that page; drift between copy and committed metrics is
+  guarded by `scripts/check_headline_numbers.py`.
 
 ## Documentation
 

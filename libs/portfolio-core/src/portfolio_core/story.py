@@ -69,12 +69,15 @@ class StorySection(PortfolioBaseModel):
 
 class RoadmapItem(PortfolioBaseModel):
     """One roadmap entry. Status drives the case-study roadmap visual:
-    delivered (done, with results elsewhere in the story), remaining
-    (genuinely open forward work), or deferred (consciously parked, with
-    the reason in the text)."""
+    shipped (done, with results elsewhere in the story), next (forward work
+    with a named gate), or blocked (parked on an owner decision, named in the
+    detail). The card title states the result or the gate in 3-6 words; the
+    detail is one line (at most 90 characters) carrying one number or one
+    decision — caveats live in the body, next to the number."""
 
-    status: str = Field(pattern="^(delivered|remaining|deferred)$")
-    text: str = Field(min_length=1, max_length=300)
+    status: str = Field(pattern="^(shipped|next|blocked)$")
+    title: str = Field(min_length=1, max_length=60)
+    detail: str = Field(min_length=1, max_length=90)
 
 
 class ProjectStory(PortfolioBaseModel):
@@ -106,7 +109,10 @@ class ProjectStory(PortfolioBaseModel):
     sections: list[StorySection] = Field(min_length=1)
     roadmap: list[RoadmapItem] = Field(
         default_factory=list,
-        description="Finalized roadmap: delivered/deferred/remaining, no history.",
+        description=(
+            "Reader-facing roadmap: 3-4 shipped cards plus 1-2 next/blocked "
+            "cards, at most 5 total, no history."
+        ),
     )
     key_concepts: list[str] = Field(
         default_factory=list,

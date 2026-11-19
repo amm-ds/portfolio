@@ -66,10 +66,12 @@ short_version: >-
   <one short paragraph, ≤ 280 chars: what was built, the headline measured result
   with its uncertainty, and the data used — feeds card/README/docs/SEO/social copy>
 roadmap:
-  - status: remaining
-    text: <first roadmap item>
-  - status: deferred
-    text: <parked item — with its reason>
+  - status: shipped
+    title: <verb-first result, 3-6 words, no metric>
+    detail: <one line, <=90 chars, one number or one decision>
+  - status: next
+    title: <forward work>
+    detail: <the gate that would change the claim>
 sections:
   - id: background
     text_md: |

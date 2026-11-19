@@ -4,10 +4,10 @@
 Benchmark (12 series; seeded synthetic telemetry as the labelled CI fast path;
 NSL-KDD transfer probe) · **Status:** working showcase
 
-> NAB, 9 evaluable series: IsolationForest touches 16/17 incidents but fires
-> 1,609 raw alerts. Daily budgeting cuts that to 80 pages; like-for-like, the
-> rolling-feature ensemble halves 66 budgeted pages to 35 at equal recall
-> 0.604, range-F1 0.533. NAB official score not reported.
+> NAB (9 series): IsolationForest touches 16/17 incidents with 1,609 raw
+> alerts. One fit per series; no-skill = 16 seeded baselines. Budgeting cuts
+> to 80 pages; like-for-like, the ensemble halves 66 budgeted pages to 35 at
+> recall 0.604, range-F1 0.533. NAB score not reported.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/03-anomaly-detection)
 

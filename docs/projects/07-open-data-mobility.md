@@ -35,7 +35,7 @@ embargoed temporal split keep the Q4 test window out of model selection.
 
 The served `gbm_tuned` removes **28.3% of forecast error** vs the same-hour-
 yesterday lag-24 baseline. Tuning moves the default GBM only within noise;
-the xGB challenger wins on Q4 but loses on embargoed validation, so it is not
+the xGB (XGBoost) challenger wins on Q4 but loses on embargoed validation, so it is not
 promoted on test performance. MASE normalises by in-sample lag-24 error
 (1.0 = no better than persistence); ΔMAE is measured against the same floor.
 
