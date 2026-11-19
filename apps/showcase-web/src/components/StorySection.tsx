@@ -122,7 +122,9 @@ export function StorySection({
     <section id={`sec-${section.id}`} className="story-section">
       <h2>
         {index !== undefined && (
-          <span className="sec-num">{String(index).padStart(2, "0")}</span>
+          <>
+            <span className="sec-num">{String(index).padStart(2, "0")}</span>{" "}
+          </>
         )}
         {section.title}
       </h2>

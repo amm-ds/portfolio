@@ -112,7 +112,10 @@ const DiagramNodeView = memo(function DiagramNodeView({
         </NodeToolbar>
       )}
       {shape === "cylinder" && (
-        <svg className="flow-node__cylinder" viewBox="0 0 196 82" preserveAspectRatio="none" aria-hidden="true">
+        // meet (not none): the 196x82 viewBox must keep its aspect ratio —
+        // "none" stretches the cylinder to the node box and smears it on
+        // narrow canvases (H7).
+        <svg className="flow-node__cylinder" viewBox="0 0 196 82" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
           <path
             d="M8 14 C8 6 46 2 98 2 C150 2 188 6 188 14 L188 68 C188 76 150 80 98 80 C46 80 8 76 8 68 Z M8 14 C8 22 46 26 98 26 C150 26 188 22 188 14"
             fill="var(--surface)"
@@ -433,10 +436,12 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
         // labels and collisions. Phones get a readable vertical layout with
         // full-size labels and panning; every wider canvas — including the
         // ~600-700px story column on desktop — opens fitted to the screen,
-        // exactly like the "fit view" control.
+        // exactly like the "fit view" control. The phone view centres the
+        // laid-out bounds instead of left-edge anchoring (H7).
         const nextHeight = autoCanvasHeight(bounds.height, 1, layoutSpec, true);
         setCanvasHeight(nextHeight);
-        void setViewport({ x: 0, y: 0, zoom: 1 }, { duration: 0 });
+        const centredX = Math.round((canvas.clientWidth - bounds.width) / 2);
+        void setViewport({ x: centredX, y: 0, zoom: 1 }, { duration: 0 });
         setReady(true);
         return;
       }
@@ -489,7 +494,8 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
         if (narrow) {
           const nextHeight = autoCanvasHeight(bounds.height, 1, layoutSpec, true);
           setCanvasHeight(nextHeight);
-          void setViewport({ x: 0, y: 0, zoom: 1 }, { duration: 0 });
+          const centredX = Math.round((width - bounds.width) / 2);
+          void setViewport({ x: centredX, y: 0, zoom: 1 }, { duration: 0 });
           return;
         }
         const firstViewport = getViewportForBounds(

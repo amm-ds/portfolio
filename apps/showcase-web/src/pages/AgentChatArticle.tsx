@@ -2,7 +2,9 @@ import type { ReactNode } from "react";
 import { AppArticleSection, AppScreenshot as Screenshot } from "../components/AppArticle";
 import { Card } from "../components/Card";
 import { LazyFlowDiagram } from "../components/diagrams/LazyFlowDiagram";
+import { DataTable } from "../components/DataTable";
 import { useScrollSpy } from "../hooks/useScrollSpy";
+import { AGENT_EVAL_SUMMARY } from "../lib/agentChatEvalSummary";
 import { renderMarkdown } from "../lib/markdown";
 import { usePageMeta } from "../seo";
 
@@ -384,8 +386,43 @@ export function AgentChatArticle() {
                 <strong>Committed result with <code>kimi-for-coding</code>: 108/108 assertions passed
                 across three repetitions of the same 16 cases.</strong> That is 48 case executions,
                 not 108 independent tasks. The report lists model identity, per-case verdicts, and
-                failure diagnostics.
+                failure diagnostics. Two other provider runs were single passes with a slightly
+                different grader set (33 assertions per pass): kimi-k3-256k passed 26/33 and
+                kimi-k3.1-pro 24/33 — provider snapshots, not comparable to the repeated suite.
+                Summary by case kind, generated from the committed report:
               </p>
+              <DataTable>
+                  <thead>
+                    <tr>
+                      <th scope="col">case kind</th>
+                      <th scope="col">grader assertions</th>
+                      <th scope="col">passed</th>
+                      <th scope="col">share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {AGENT_EVAL_SUMMARY.byKind.map((row) => (
+                      <tr key={row.kind}>
+                        <td>{row.kind}</td>
+                        <td>{row.assertions}</td>
+                        <td>{row.passed}</td>
+                        <td>{Math.round((row.assertions / AGENT_EVAL_SUMMARY.totalAssertions) * 100)}%</td>
+                      </tr>
+                    ))}
+                    <tr>
+                      <td>
+                        <strong>total ({AGENT_EVAL_SUMMARY.cases} cases × {AGENT_EVAL_SUMMARY.repetitions} repetitions)</strong>
+                      </td>
+                      <td>
+                        <strong>
+                          {AGENT_EVAL_SUMMARY.totalPassed}/{AGENT_EVAL_SUMMARY.totalAssertions}
+                        </strong>
+                      </td>
+                      <td>{AGENT_EVAL_SUMMARY.executions} executions</td>
+                      <td>100%</td>
+                    </tr>
+                </tbody>
+              </DataTable>
               <p>
                 Repeating a fixed suite does not measure fresh-task generalization, prose quality,
                 real messaging delivery, or acceptance for another provider. Treat it as regression

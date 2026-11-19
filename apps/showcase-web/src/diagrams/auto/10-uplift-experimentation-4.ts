@@ -16,7 +16,7 @@ export const AUTO_10_UPLIFT_EXPERIMENTATION_4_SPEC = {
     },
     {
       id: "t",
-      label: "rank by T-learner · +69% vs random",
+      label: "rank by T-learner · +70% vs random",
       kind: "task",
       facts: [],
     },

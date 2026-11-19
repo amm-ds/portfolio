@@ -198,12 +198,23 @@ describe("ProjectsIndex", () => {
     ]);
     expect(anchors).toEqual([
       ["/apps", "#apps"],
-      ["/live demos", "#demos"],
       ["/Agentic AI & LLM systems", "#agentic-ai-llm-systems"],
       ["/Machine learning", "#machine-learning"],
       ["/Optimization", "#optimization"],
       ["/Data engineering", "#data-engineering"],
+      ["/live demos", "#demos"],
     ]);
+    // page blocks render in the same order: apps, experiments, demos
+    const appsFirst = document
+      .getElementById("apps")!
+      .compareDocumentPosition(document.getElementById("experiments")!) &
+      Node.DOCUMENT_POSITION_FOLLOWING;
+    const experimentsFirst = document
+      .getElementById("experiments")!
+      .compareDocumentPosition(document.getElementById("demos")!) &
+      Node.DOCUMENT_POSITION_FOLLOWING;
+    expect(appsFirst).not.toBe(0);
+    expect(experimentsFirst).not.toBe(0);
   });
 
   it("renders the page opening exactly like /services and /about — services-hero, kicker, big title, intro", async () => {
@@ -368,14 +379,14 @@ describe("ProjectsIndex", () => {
     expect(clone.textContent).not.toMatch(/[0-9]/);
     // the whole card is the link to the demo route
     expect(demoCards[0].getAttribute("href")).toBe("/demos/churn-sandbox");
-    // demos block renders before the experiments block with the topic rows
+    // demos block renders after the experiments block with the topic rows
     const experimentsBlock = document.querySelector(".experiments-block")!;
     expect(
-      demos.compareDocumentPosition(experimentsBlock) & Node.DOCUMENT_POSITION_FOLLOWING,
+      experimentsBlock.compareDocumentPosition(demos) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     const firstRow = document.querySelector(".topic-row")!;
     expect(
-      demos.compareDocumentPosition(firstRow) & Node.DOCUMENT_POSITION_FOLLOWING,
+      firstRow.compareDocumentPosition(demos) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(experimentsBlock.querySelectorAll(".topic-row")).toHaveLength(4);
   });
@@ -610,10 +621,10 @@ describe("ProjectsIndex", () => {
         screen.getByText(/the live project index is unreachable — showing its last published snapshot/i),
       ).toBeInTheDocument(),
     );
-    // heading outline: apps first, then live demos and experiment rows
+    // heading outline: apps first, then experiments, then live demos
     expect(
       screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
-    ).toEqual(["apps", "live demos", "experiments"]);
+    ).toEqual(["apps", "experiments", "live demos"]);
     expect(screen.getByRole("heading", { level: 3, name: "Machine learning" })).toBeInTheDocument();
     // all thirteen snapshot projects render as cards
     await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(13));

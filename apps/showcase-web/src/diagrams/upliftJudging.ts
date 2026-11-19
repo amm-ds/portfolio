@@ -31,7 +31,7 @@ export const UPLIFT_JUDGING_SPEC = {
       kind: "model",
       facts: [
         "Cross-fitted out-of-fold scores — the recommended policy.",
-        "Qini 12.03; profit $6,838 at the 25% budget, +$2,812 (+69%) vs random.",
+        "Qini 12.03; profit $6,838 at the 25% budget, +$2,812 (+70%) vs random.",
       ],
     },
     {

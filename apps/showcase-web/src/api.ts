@@ -124,8 +124,11 @@ export interface StorySectionData {
 }
 
 export interface RoadmapItemData {
-  status: "delivered" | "remaining" | "deferred";
-  text: string;
+  status: "shipped" | "next" | "blocked";
+  /** Verb-first result or gate, 3-6 words, no metric. */
+  title: string;
+  /** One line (<=90 chars) carrying one number or one decision. */
+  detail: string;
 }
 
 export interface ProjectStoryData {
@@ -175,8 +178,8 @@ function isStory(value: unknown): value is ProjectStoryData {
   return value.roadmap === undefined || (
     Array.isArray(value.roadmap) && value.roadmap.every((item) =>
       isRecord(item) &&
-      hasStrings(item, ["status", "text"]) &&
-      ["delivered", "remaining", "deferred"].includes(item.status as string))
+      hasStrings(item, ["status", "title", "detail"]) &&
+      ["shipped", "next", "blocked"].includes(item.status as string))
   );
 }
 

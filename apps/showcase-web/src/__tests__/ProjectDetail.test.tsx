@@ -60,9 +60,21 @@ describe("ProjectDetail story handling", () => {
               retrieval_eval: "Verified answers beat the naive baseline on faithfulness.",
             },
             roadmap: [
-              { status: "delivered", text: "Baseline retrieval with citations" },
-              { status: "remaining", text: "Streaming UX polish" },
-              { status: "deferred", text: "Multilingual corpus — licensing" },
+              {
+                status: "shipped",
+                title: "Baseline retrieval with citations.",
+                detail: "Recall@5 0.831 on the tuning set.",
+              },
+              {
+                status: "next",
+                title: "Stream answers token by token.",
+                detail: "Needs a latency budget decision.",
+              },
+              {
+                status: "blocked",
+                title: "Multilingual corpus.",
+                detail: "Blocked on the owner licence decision.",
+              },
             ],
             sections: [
               {
@@ -107,12 +119,14 @@ describe("ProjectDetail story handling", () => {
     expect(screen.getByText(/\+50% vs naive_last/)).toBeInTheDocument();
     // figures: story 200 case fetches plotly JSON (404 in this mock) → iframe fallback renders async
     await waitFor(() => expect(document.querySelector("iframe")).not.toBeNull());
-    // roadmap renders at the end of the case study as a timeline of delivered milestones
-    expect(screen.getByText("Baseline retrieval with citations")).toBeInTheDocument();
-    // open/deferred items are authoring state, not visitor content
-    expect(screen.queryByText("Streaming UX polish")).toBeNull();
-    expect(screen.queryByText(/Multilingual corpus/)).toBeNull();
-    expect(document.querySelectorAll(".roadmap-node.delivered .roadmap-dot")).toHaveLength(1);
+    // roadmap renders at the end of the case study as a timeline of shipped
+    // milestones only; next/blocked cards stay authored but are not rendered
+    expect(screen.getByText("Baseline retrieval with citations.")).toBeInTheDocument();
+    expect(screen.queryByText("Stream answers token by token.")).toBeNull();
+    expect(screen.queryByText("Needs a latency budget decision.")).toBeNull();
+    expect(screen.queryByText("Multilingual corpus.")).toBeNull();
+    expect(screen.queryByText("Blocked on the owner licence decision.")).toBeNull();
+    expect(document.querySelectorAll(".roadmap-node.shipped .roadmap-dot")).toHaveLength(1);
     // figure_captions from the story payload thread through to the figure footer
     expect(document.querySelector(".figure-comment")!.textContent).toContain(
       "Verified answers beat the naive baseline on faithfulness.",

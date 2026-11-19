@@ -60,7 +60,7 @@ export const CARD_ACHIEVES: Record<string, string> = {
   "09-agentic-workflows":
     "Fixed tools and budgets pass **15/15 fixed tasks, 13/13 unseen answers and 5/6 should-fail probes** at about **$0.13 per suite** — ready for supervised pilots, not unattended use.",
   "10-uplift-experimentation":
-    "Beats random targeting by **+$2,812 (+69%; CI +$718 to +$4,767)**, though at $0.01 per email mailing everyone still wins.",
+    "Beats random targeting by **+$2,812 (+70%; CI +$718 to +$4,767)**, though at $0.01 per email mailing everyone still wins.",
   "11-data-engineering":
     "Polars runs **x19.2** and DuckDB **x14.9** over pandas on the geomean of 10 parity-checked tasks; sqlite answers every SQL task but file conversion leaves it **~29x slower**; seeded **1M-10M** tracks show the fast two scaling sub-linearly.",
   "12-tabular-ml-lifecycle":

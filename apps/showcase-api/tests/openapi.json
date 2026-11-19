@@ -1034,7 +1034,7 @@
             },
             "type": "array",
             "title": "Roadmap",
-            "description": "Finalized roadmap: delivered/deferred/remaining, no history."
+            "description": "Reader-facing roadmap: 3-4 shipped cards plus 1-2 next/blocked cards, at most 5 total, no history."
           },
           "key_concepts": {
             "items": {
@@ -1067,24 +1067,31 @@
         "properties": {
           "status": {
             "type": "string",
-            "pattern": "^(delivered|remaining|deferred)$",
+            "pattern": "^(shipped|next|blocked)$",
             "title": "Status"
           },
-          "text": {
+          "title": {
             "type": "string",
-            "maxLength": 300,
+            "maxLength": 60,
             "minLength": 1,
-            "title": "Text"
+            "title": "Title"
+          },
+          "detail": {
+            "type": "string",
+            "maxLength": 90,
+            "minLength": 1,
+            "title": "Detail"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "status",
-          "text"
+          "title",
+          "detail"
         ],
         "title": "RoadmapItem",
-        "description": "One roadmap entry. Status drives the case-study roadmap visual:\ndelivered (done, with results elsewhere in the story), remaining\n(genuinely open forward work), or deferred (consciously parked, with\nthe reason in the text)."
+        "description": "One roadmap entry. Status drives the case-study roadmap visual:\nshipped (done, with results elsewhere in the story), next (forward work\nwith a named gate), or blocked (parked on an owner decision, named in the\ndetail). The card title states the result or the gate in 3-6 words; the\ndetail is one line (at most 90 characters) carrying one number or one\ndecision \u2014 caveats live in the body, next to the number."
       },
       "SolveResponse": {
         "properties": {

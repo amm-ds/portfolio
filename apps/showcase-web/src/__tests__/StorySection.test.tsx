@@ -270,9 +270,10 @@ describe("StorySection h2 title styling", () => {
       (m) => m[0],
     );
     expect(h2BeforeRules).toHaveLength(1);
-    // the "/ " prompt marker stays green with no glow of its own
+    // the "/" prompt marker stays green with no glow of its own — no space
+    // after the slash: headings read "/01 Background" (H9)
     const beforeRule = h2BeforeRules[0];
-    expect(beforeRule).toContain('content: "/ ";');
+    expect(beforeRule).toContain('content: "/";');
     expect(beforeRule).toContain("color: var(--accent-bright);");
     expect(beforeRule).not.toContain("accent-glow");
     // the number renders in the rail's blue family
@@ -300,7 +301,7 @@ describe("StorySection h2 title styling", () => {
     const h2 = document.querySelector(".story-section h2")!;
     expect(h2.querySelector(".rail-num")).toBeNull();
     expect(h2.querySelector(".sec-num")!.textContent).toBe("01");
-    expect(h2.textContent).toBe("01Background");
+    expect(h2.textContent).toBe("01 Background");
   });
 });
 
