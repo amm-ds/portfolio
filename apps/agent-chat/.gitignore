@@ -12,4 +12,5 @@ agent_chat_memory/
 reports/*
 !reports/evals.md
 !reports/evals-kimi-*.md
+!reports/triage-*.md
 dist/
