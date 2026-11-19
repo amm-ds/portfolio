@@ -1,0 +1,42 @@
+{
+  "schema_version": "retrieval-baseline-v1",
+  "generated_at": "2026-11-19T15:59:23.395309+00:00",
+  "set": "sealed held-out (committed), answerable questions only",
+  "n_questions_total": 55,
+  "method": "retrieval-only recompute; dense = committed FAISS IndexFlatIP (MiniLM, rerank off); BM25 k1=1.2 b=0.75 over the same 200-token chunks; Wilson score interval",
+  "arms": {
+    "dense": {
+      "recall_at_5": 0.9761904761904762,
+      "recall_at_5_wilson95": [
+        0.8767879842623334,
+        0.9957845958655673
+      ],
+      "recall_at_10": 1.0,
+      "mrr_at_5": 0.9007936507936508,
+      "n_answerable": 42
+    },
+    "bm25": {
+      "recall_at_5": 0.9523809523809523,
+      "recall_at_5_wilson95": [
+        0.8421014760304114,
+        0.9868424750910944
+      ],
+      "recall_at_10": 0.9761904761904762,
+      "mrr_at_5": 0.878968253968254,
+      "n_answerable": 42
+    }
+  },
+  "verification_against_committed_sealed_retrieval": {
+    "dense": {
+      "recomputed": 0.9761904761904762,
+      "committed": 0.9762,
+      "matches": true
+    },
+    "bm25": {
+      "recomputed": 0.9523809523809523,
+      "committed": 0.9524,
+      "matches": true
+    }
+  },
+  "reading": "BM25 recall@5 sits within a few points of dense on this corpus; the gap is far inside both intervals - consistent with the committed fusion read that hybrid arms do not clear the gate."
+}

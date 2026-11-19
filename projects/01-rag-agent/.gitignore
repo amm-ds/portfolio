@@ -30,6 +30,10 @@
 !/reports/retrieval_tournament/
 !/reports/judge_calibration/
 !/reports/local_eval_preflight.json
+# …and the R4 retrieval baseline + R5 error budget reports (apps+rag pass;
+# same committed-evidence role: every public number traces to them).
+!/reports/retrieval_baseline/
+!/reports/error_budget/
 # …and the R6 failure ledger (trace review required before interventions).
 !/reports/stress_failure_ledger.md
 /reports/figures/*.html

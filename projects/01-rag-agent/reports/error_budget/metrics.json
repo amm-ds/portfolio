@@ -1,0 +1,21 @@
+{
+  "schema_version": "error-budget-v1",
+  "generated_at": "2026-11-19T15:59:24.094104+00:00",
+  "set": "sealed held-out (committed run)",
+  "cost_usd_per_query": 0.0009063399230769231,
+  "latency_p50_s": 24.442790375091136,
+  "latency_p95_s": 126.81147087505087,
+  "unsupported_rate": 0.16363636363636364,
+  "unsupported_n": 9,
+  "unsupported_total_n": 55,
+  "unsupported_wilson95": [
+    0.08855420336092283,
+    0.2826374573905716
+  ],
+  "sources": {
+    "cost": "reports/metrics.json -> rag_agent.est_cost_usd_per_query",
+    "latency": "reports/metrics.json -> detail.heldout.ops.p50/p95_latency_s",
+    "unsupported": "reports/question_traces_heldout.json -> verdict == 'unsupported-claim'"
+  },
+  "note": "Cost is the committed cloud-equivalent estimate at the reference rate card, not billed spend. Latency covers the full answer pass (retrieval + generation + verify)."
+}
