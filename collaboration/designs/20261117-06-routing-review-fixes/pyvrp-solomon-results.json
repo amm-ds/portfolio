@@ -8648,5 +8648,20 @@
     "calibration": "C101 reproduces the published best-known solution 828.94 exactly (recorded 828.937); 55/56 instances at or below the committed best-known reference.",
     "pyvrp_internal_feasibility": "route_feasible flags True on all 560 routes (solver hard-constraint checker).",
     "independent_walk": "A from-scratch re-walk of the persisted schedule() idx lists could not reproduce pyvrp's per-route distances: the schedule extraction carries an ordering/indexing mismatch (implied legs from activity start times differ from distance_matrix walks while solution.distance() matches the published BKS to 0.003). Per-route extraction needs pyvrp's visit-order API; treat per-route lists as advisory, the summary statistics as pyvrp-reported."
+  },
+  "table_check": {
+    "date": "2026-11-19",
+    "paper": "arXiv 2403.13795v2 (Wouda, Lan, Kool — PyVRP package paper)",
+    "resolution": "Apparent mismatch resolved by reading the tables directly: Table 4 (CVRP) lists X-n###-k## Uchoa instances; Table 5 (VRPTW) lists C1_10_*/C2_10_*/R1_10_*/R2_10_*/RC1_10_*/RC2_10_* — the Homberger and Gehring 1000-customer naming convention (also used by the paper's RC2_10_5 example). The VRPTW caption matches Table 5. No Solomon table exists in the paper.",
+    "paper_vrptw_headline": {
+      "pyvrp_mean_gap_pct": 0.4,
+      "pyvrp_gap_of_mean_pct": 0.46,
+      "hgs_dimacs_mean_gap_pct": 0.32,
+      "dimacs_reference_mean_gap_pct": 0.29,
+      "seeds_per_instance": 10,
+      "time_limit": "2 h per 1000-customer instance, PassMark-normalized",
+      "bks_improved": "27 of 300 Homberger/Gehring BKS in extended runs"
+    },
+    "consequence": "The published 0.40% mean gap refers to Homberger/Gehring 1000-customer VRPTW instances, NOT to the 56 Solomon 100-customer instances in this repository. The local run in this file (Solomon, 15 s/instance, single seed) is therefore NOT comparable to the paper's headline, and the 06 README must not cite 0.40% next to the Solomon ladder. Citing any PyVRP published number remains owner-gated."
   }
 }

@@ -31,10 +31,18 @@ The live run confirms the new contracts end-to-end against the hosted
 `kimi-for-coding` model: every unseen answer is preserved with the exact tool
 set, every designed-to-fail probe refuses gracefully, and no task exceeded the
 step or latency budget. The legacy run's single refusal miss and seven
-latency-budget misses did not reproduce live. These are single runs of 19
-tasks each — the live row is one confirmation pass, not a tightened estimate;
-see `metrics.json:detail.heldout.pass_rate_intervals` (Wilson intervals) for
-the uncertainty on the legacy rates.
+latency-budget misses did not reproduce live.
+
+- Legacy h19 in context: the one legacy refusal miss (h19, 2^500) was the
+  calculator-guard error — the model burned both bounded-retry Execute visits
+  on "exponent too large" and returned a failure message with no refusal
+  marker, so `RefusalSuccess` scored it a miss (see the 09 README). The live
+  run refused h19 correctly; terminal tool failures now return typed
+  `refused` results in deterministic tests.
+- These are single runs of 19 tasks each — the live row is one confirmation
+  pass, not a tightened estimate; see
+  `metrics.json:detail.heldout.pass_rate_intervals` (Wilson intervals) for the
+  uncertainty on the legacy rates.
 
 ## Files
 

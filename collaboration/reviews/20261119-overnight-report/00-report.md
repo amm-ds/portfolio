@@ -151,9 +151,9 @@ Total hosted spend this session: **$0.094112 cloud-equivalent** (single approved
 
 ## Remaining for the owner
 
-1. Review + commit (no git mutations were performed).
-2. Redeploy the site (item 1's guard fix needs a deploy to reach prod).
-3. Decide the four OPEN_QUESTIONS: NLP cascade per-row persistence (or accept "no measurable change"), M5 reconciled-baseline row, routing ALNS-vs-unhinted interval (needs a new solve), TabPFN license acceptance.
+1. Review the commits (done by owner 2026-11-19: `390c141` queue implementation, `e9a770b` collaboration records, `a503643` deploy log).
+2. ~~Redeploy~~ — done 2026-11-19: `e9a770b` is live on alejandromerida.dev; smoke suite green, the 02/08/11 metrics error box verified gone in a real browser.
+3. Decide the open questions — three blocked items end-to-end (04-NLP cascade per-row persistence, 12-TabPFN license acceptance, 06-routing ALNS-vs-unhinted interval which needs a new solve) and one partial block (02-M5 reconciled-baseline row). OPEN_QUESTIONS.md files: `collaboration/designs/20261117-04-nlp-review-fixes/`, `collaboration/designs/20261117-12-tabular-review-fixes/`, `collaboration/designs/20261117-06-routing-review-fixes/` (interval), `collaboration/designs/20261117-02-m5-review-fixes/` (reconciled row).
 4. Decide whether to surface the PyVRP comparator in the 06 README/story (new-solver scope).
 5. Known pre-existing oddity noticed while working: the provenance stamp convention replaces `_meta` results blocks with provenance (e.g. project 10's committed metrics.json no longer carries the `_meta.ci/cuped` detail the README references) — worth a separate look.
-6. Pre-queue uncommitted visualization work (figure/diagram fixes from the earlier session) is still in the tree and included in the working diff; it was not part of this queue.
+6. Pre-queue uncommitted visualization work was committed and deployed together with the queue on 2026-11-19 (pareto label fix and diagram fit-by-default landed on top of it before the push).
