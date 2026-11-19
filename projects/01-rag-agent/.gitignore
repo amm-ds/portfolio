@@ -57,3 +57,6 @@ data/*
 # committed corpus, fixed and hashed before any run.
 !data/golden_sealed_v2.json
 !data/golden_sealed_v2.sha256.json
+# …and its fixed 58-question subset (r3-sealed-v2-58 handoff; same rules).
+!data/golden_sealed_v2_58.json
+!data/golden_sealed_v2_58.sha256.json
