@@ -4,10 +4,10 @@ sections:
 - id: background
   text_md: |
     **When every answer carries a citation, what can still go wrong?**
-    Grounding-hardened QA answers only from 593 pinned Wikipedia articles and
-    cites each claim. Its verifier repairs or drops weak claims and refuses
-    without evidence. Even so, independent 30-question set B has 9
-    unsupported-claim outcomes, above the gate of 6.
+    Grounding-hardened QA answers only from 593 pinned Wikipedia articles,
+    citing each claim. Its verifier repairs or drops weak claims and refuses
+    without evidence — a screen, not proof. Independent set B has 9
+    unsupported-claim outcomes, over the gate of 6.
 
     ```diagram 01-rag-pipeline
     ```
@@ -195,7 +195,8 @@ sections:
 
     The judges check different things. A rubric judge labels failure types.
     RAGAS is an automated suite for scoring answer quality. A claim verifier
-    checks each claim against its cited passage. Follow these checks into the
+    checks each claim against its cited passage — a screen, not proof:
+    calibrated judges still accept about 44% of unsupported claims (Results). Follow these checks into the
     generation comparison figure. Hosted `kimi-for-coding` raises rubric
     faithfulness from 0.5504 to 0.6209 and answer relevance from 0.5573 to
     0.6458. Context recall stays at 0.9636. RAGAS faithfulness is 0.7337
@@ -284,7 +285,10 @@ sections:
     against 0.93 for correct answers. Across 42 verified answers, 258 claims
     had 16 repairs and 11 drops. Mean answer support is 0.98. The verifier
     bounds, repairs, and abstains; it does not turn weak drafts into grounded
-    ones.
+    ones. Judge calibration (Q3a, offline, 194 labels by construction)
+    quantifies the miss: the local judge accepts 0.4433 of unsupported
+    claims, Wilson 95% [0.3752, 0.5136], kappa 0.5464; the hosted judge
+    accepts 0.3966 [0.3269, 0.4707], kappa 0.6052 [0.5262, 0.6831].
 
     **Business summary:** Of 65 selected-provider answers, 46 are correct, 17
     keep unsupported claims, 2 miss retrieval, and 0 fail format. The accuracy
@@ -439,8 +443,8 @@ roadmap:
   title: "Chunk size and model choice tied on recall."
   detail: "All chunk sizes tie at recall@5 0.831; 200 tokens and MiniLM stay."
 - status: shipped
-  title: "Answers pass a three-judge citation check."
-  detail: "Rubric, RAGAS, and per-claim checks; generation costs $0.000906 a query."
+  title: "Answers face a three-judge citation check."
+  detail: "Rubric, RAGAS, per-claim checks; $0.000906 a query; judges miss 0.44 of unsupported."
 - status: shipped
   title: "Expanded the sealed held-out gate."
   detail: "15 → 55 sealed questions; 9 of 11 failures are grounding, not retrieval."
