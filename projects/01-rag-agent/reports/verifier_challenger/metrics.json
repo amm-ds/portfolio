@@ -1,0 +1,170 @@
+{
+  "checkpoint": {
+    "name": "lytang/MiniCheck-Flan-T5-Large",
+    "revision": "96eafd01cee2d16cf81aaa2fb226b14f422a37b3",
+    "license": "mit",
+    "license_record": "reports/verifier_challenger/license.md",
+    "license_text_sha256": "24b88d376d17db5d38c02f2f799a3e6aa282e1628c3b6ccc89de4409d49e8146"
+  },
+  "split": {
+    "file": "data/calibration/verifier_split.json",
+    "seed": 42,
+    "counts": {
+      "supported": {
+        "dev": 48,
+        "test": 49
+      },
+      "unsupported": {
+        "dev": 48,
+        "test": 49
+      }
+    },
+    "source_sha256": "675ac742796a273f47c743148b9e33829e7de26ff4e8d68e170e980e885859bc"
+  },
+  "threshold": 0.9410304427146912,
+  "threshold_rule": "dev accuracy max, ties to lower threshold",
+  "dev": {
+    "n": 96,
+    "accuracy": 0.9271
+  },
+  "test": {
+    "fa_strict": {
+      "k": 2,
+      "n": 49,
+      "rate": 0.0408,
+      "wilson95": [
+        0.0113,
+        0.1371
+      ]
+    },
+    "false_rejection": {
+      "k": 7,
+      "n": 49,
+      "rate": 0.1429,
+      "wilson95": [
+        0.071,
+        0.2667
+      ]
+    }
+  },
+  "test_sensitivity_excl_manual_review": {
+    "fa_strict": {
+      "k": 0,
+      "n": 46,
+      "rate": 0.0,
+      "wilson95": [
+        0.0,
+        0.0771
+      ]
+    },
+    "false_rejection": {
+      "k": 7,
+      "n": 49,
+      "rate": 0.1429,
+      "wilson95": [
+        0.071,
+        0.2667
+      ]
+    }
+  },
+  "baselines_on_test": {
+    "hosted_qwen3_4b_run0": {
+      "fa_strict": {
+        "k": 16,
+        "n": 46,
+        "rate": 0.3478,
+        "wilson95": [
+          0.2268,
+          0.4923
+        ]
+      },
+      "false_rejection": {
+        "k": 0,
+        "n": 49,
+        "rate": 0.0,
+        "wilson95": [
+          0.0,
+          0.0727
+        ]
+      }
+    },
+    "hosted_qwen3_4b_run1": {
+      "fa_strict": {
+        "k": 21,
+        "n": 46,
+        "rate": 0.4565,
+        "wilson95": [
+          0.3215,
+          0.5982
+        ]
+      },
+      "false_rejection": {
+        "k": 1,
+        "n": 49,
+        "rate": 0.0204,
+        "wilson95": [
+          0.0036,
+          0.1069
+        ]
+      }
+    },
+    "hosted_qwen3_4b_pooled": {
+      "fa_strict": {
+        "k": 37,
+        "n": 92,
+        "rate": 0.4022,
+        "wilson95": [
+          0.3078,
+          0.5043
+        ]
+      },
+      "false_rejection": {
+        "k": 1,
+        "n": 98,
+        "rate": 0.0102,
+        "wilson95": [
+          0.0018,
+          0.0556
+        ]
+      }
+    },
+    "n_test_covered": 95,
+    "n_test_total": 98,
+    "source": "reports/judge_calibration_hosted/qwen3_4b-20261115T125747/predictions.jsonl"
+  },
+  "local_baseline_all_claims": {
+    "judge": "local qwen2.5:3b",
+    "fa_strict_all_claims": 0.4433,
+    "fa_wilson95_all_claims": [
+      0.3752,
+      0.5136
+    ],
+    "source": "reports/judge_calibration/results.json (committed aggregate)",
+    "limitation": "per-claim verdicts not committed; cannot restrict to TEST ids"
+  },
+  "flips": {
+    "n": 0,
+    "rate": 0.0,
+    "max_abs_score_diff": 0.0
+  },
+  "chunking": {
+    "n_multi_chunk": 0,
+    "n_claims": 194
+  },
+  "gate": {
+    "fa_rate_max": 0.25,
+    "fa_rate_ok": true,
+    "fa_ucb_exclusive_max": 0.3269,
+    "fa_ucb_ok": true,
+    "fr_rate_max": 0.1,
+    "fr_rate_ok": false,
+    "flip_rate_max": 0.05,
+    "flip_rate_ok": true,
+    "pass": false
+  },
+  "runtime_seconds": 120.49,
+  "n_claims": 194,
+  "generated_at": "2026-11-19T23:48:36.675379+00:00",
+  "commit": "eebe331e9c048804b115c72e327dac7c782b0e06",
+  "hosted_calls": 0
+}
