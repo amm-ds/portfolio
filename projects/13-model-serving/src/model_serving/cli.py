@@ -42,6 +42,17 @@ def benchmark(params_file: OptParams = Path("params.yaml")) -> None:
     benchmark_core(load_config(params_file))
 
 
+@app.command(name="open-loop")
+def open_loop_cmd(params_file: OptParams = Path("params.yaml")) -> None:
+    """Q4e: constant-arrival-rate arm on both backends; writes reports/open_loop/."""
+    from model_serving.open_loop import run_open_loop
+
+    report = run_open_loop(load_config(params_file))
+    for backend in report["backends"]:
+        cells = ", ".join(f"r{c['rate_rps']} p99={c['p99_s']:.4f}s" for c in backend["cells"])
+        typer.echo(f"open-loop[{backend['backend']}]: {cells}")
+
+
 @app.command()
 def docker(params_file: OptParams = Path("params.yaml")) -> None:
     """Multi-stage image build, size measurement, compose smoke."""
