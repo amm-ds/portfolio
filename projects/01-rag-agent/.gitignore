@@ -41,10 +41,6 @@
 # …and the verifier-challenger pass (Phase 1 bake-off evidence: license record,
 # metrics, per-claim predictions — same committed-evidence role).
 !/reports/verifier_challenger/
-# …and its fixed dev/test split of the calibration claims (committed before any
-# scoring; the claims.jsonl it splits is regenerable and stays ignored).
-!data/calibration/
-!data/calibration/verifier_split.json
 # …and the R6 failure ledger (trace review required before interventions).
 !/reports/stress_failure_ledger.md
 /reports/figures/*.html
@@ -67,3 +63,14 @@ data/*
 # …and its fixed 58-question subset (r3-sealed-v2-58 handoff; same rules).
 !data/golden_sealed_v2_58.json
 !data/golden_sealed_v2_58.sha256.json
+# …and the verifier challenger's fixed dev/test split of the calibration claims
+# (committed before any scoring; the claims.jsonl it splits is regenerable via
+# scripts/build_calibration_set.py and stays ignored, as before). NOTE: these
+# negations must stay below the `data/*` exclusion above to take effect.
+!data/calibration/
+!data/calibration/verifier_split.json
+# The regenerable calibration label sets stay ignored, as before the split
+# was committed (re-excluded because unignoring the directory above would
+# otherwise make them trackable).
+data/calibration/claims.jsonl
+data/calibration/answers.jsonl
