@@ -40,6 +40,7 @@ from nlp_classification.model import (
     train_baseline,
     train_nn,
 )
+from nlp_classification.risk_coverage import run_risk_coverage
 from nlp_classification.shims import Dataset
 
 PARAMS_PATH = Path("params.yaml")
@@ -316,6 +317,17 @@ def fresh_holdout_cmd() -> None:
         f"(95% CI {delta['ci_95'][0]:+.4f} to {delta['ci_95'][1]:+.4f}) | "
         f"cascade rows={len(doc['cascade']['rows'])} "
         f"in {time.perf_counter() - started:.1f}s"
+    )
+
+
+@app.command(name="risk-coverage")
+def risk_coverage_cmd() -> None:
+    """Q4b: risk-coverage curve and AURC for the headline transformer on the
+    committed fresh holdout; writes reports/risk_coverage/ (new files only)."""
+    report = run_risk_coverage(_cfg())
+    typer.echo(
+        f"risk-coverage: n={report['n_fresh']} | AURC={report['aurc']:.4f} "
+        f"(95% CI {report['aurc_ci95'][0]:.4f} to {report['aurc_ci95'][1]:.4f})"
     )
 
 

@@ -31,6 +31,7 @@ from uplift_experimentation.models import (
     cross_fit_scores,
     fit_arm_uplift,
 )
+from uplift_experimentation.single_protocol import run_single_protocol, write_report_markdown
 
 app = typer.Typer(
     help="Uplift modeling & experimentation on the Hillstrom email dataset.",
@@ -230,6 +231,14 @@ def train(params_file: OptParams = Path("params.yaml")) -> None:
 def evaluate(params_file: OptParams = Path("params.yaml")) -> None:
     """Qini + profit evaluation, CUPED and power reads, figures and report."""
     evaluate_core(load_config(params_file))
+
+
+@app.command()
+def single_protocol(params_file: OptParams = Path("params.yaml")) -> None:
+    """Q4a: four-learner single-protocol comparison on the committed folds."""
+    cfg = load_config(params_file)
+    report = run_single_protocol(cfg)
+    write_report_markdown(report, cfg.reports_dir / "single_protocol")
 
 
 @app.command("demo-payload")

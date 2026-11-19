@@ -12,7 +12,8 @@
 > This agent answers only from retrieved evidence with per-claim citations:
 > retrieval recall@5 0.83 vs 0.03 random; selected `kimi-for-coding` reaches
 > RAGAS faithfulness 0.7337 [0.6562, 0.8131], but 17/65 tuning answers still
-> retain unsupported claims.
+> retain unsupported claims — the claim-verification judges accept 0.44 of
+> unsupported claims when calibrated (95% Wilson [0.3752, 0.5136]).
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/01-rag-agent)
 
@@ -133,7 +134,11 @@ detail.heldout_citations`; the headline `detail.heldout` is untouched): 258
 claims over 42 verified answers, first-check support 0.903 CI [0.868, 0.938],
 16 repaired / 11 dropped, and the five unsupported-claim answers drafted at
 0.74 first-check support vs 0.93 for correct ones — the verifier bounds and
-repairs, it does not ground weak drafts. That pass meters 236 calls /
+repairs, it does not ground weak drafts. Judge calibration (Q3a, offline,
+194 labels by construction) puts a number on that limit: the local judge
+accepts 0.4433 of unsupported claims, Wilson 95% [0.3752, 0.5136], kappa
+0.5464; the hosted judge accepts 0.3966 [0.3269, 0.4707], kappa 0.6052
+[0.5262, 0.6831]. That pass meters 236 calls /
 $1.583466 cloud-equivalent.
 
 ### Current grounding-hardened configuration

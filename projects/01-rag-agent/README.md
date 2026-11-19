@@ -58,8 +58,11 @@ and `read_excerpt` and returns `AnalysisResult(summary, citations, confidence)`.
 
 The verify loop checks each drafted claim against its full cited chunks. It
 repairs or drops unsupported claims and abstains when surviving support falls
-below 0.6. Provider selection, verification, and judging follow
-[DESIGN.md](DESIGN.md) and ADR-0004.
+below 0.6. Calibrated against labels by construction, the judges still miss
+often: the local judge accepts 0.4433 of unsupported claims, 95% Wilson
+[0.3752, 0.5136], kappa 0.5464; the hosted judge accepts 0.3966 [0.3269,
+0.4707], kappa 0.6052 [0.5262, 0.6831]. Provider selection, verification, and
+judging follow [DESIGN.md](DESIGN.md) and ADR-0004.
 
 ## Results
 
