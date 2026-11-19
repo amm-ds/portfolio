@@ -427,7 +427,7 @@ roadmap:
     detail: "Variant test scores never select a variant; diagnostics only."
   - status: next
     title: "External TabPFN-2 challenger"
-    detail: "Blocked on the licence decision; TabPFN-2 challenger pending; see README."
+    detail: "Dropped by owner decision; the TabPFN-2 route is not pursued."
 key_concepts:
   - "**Seasonal-naive floor:** predict the count at the same hour last week. Every candidate must beat this simple baseline, with an interval on the gain."
   - "**Frozen test window:** each candidate receives one final-window score. Every modeling choice uses validation; ablation test scores are post-freeze diagnostics."

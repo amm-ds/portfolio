@@ -4,7 +4,7 @@ Date: 2026-11-19
 Designer: Claude Code
 Executor: Kimi Code (owner runs it)
 Owner: amm-ds
-Status: APPROVED by owner on 2026-11-19 for Kimi execution. Licence reviewed: the Prior Labs License v1.1 has no commercial-use restriction and requires attribution (see below).
+Status: dropped (owner, 2026-11-19). Originally APPROVED by owner on 2026-11-19 for Kimi execution; stopped at step 3 when the weights required a Prior Labs token/licence acceptance, and the owner then dropped the challenger. Licence reviewed: the Prior Labs License v1.1 has no commercial-use restriction and requires attribution (see below).
 
 ## Objective
 
