@@ -1,12 +1,12 @@
 """Q4a single-protocol uplift comparison on the committed folds (next round).
 
 One scoring protocol, four learner labels, no new dependencies. The project
-DESIGN defers grf/econml ("heavyweight deps"), so the causal forest is
+DESIGN defers grf/econml ("heavyweight deps"), so the learner is
 hand-rolled on sklearn as a DR-learner forest: doubly-robust pseudo-outcomes
 from the committed cross-fit nuisances, regressed with a random forest.
 
 Learners (scores for every row, out-of-fold convention):
-- ``causal_forest``: DR-forest (this module), psi -> RandomForestRegressor.
+- ``dr_learner``: DR-forest (this module), psi -> RandomForestRegressor.
 - ``t_learner`` / ``two_model``: the committed out-of-fold T-learner column.
   The "two-model approach" and the T-learner are the same estimator family in
   the uplift literature (separate treated/control response models); both
@@ -215,7 +215,7 @@ def run_single_protocol(cfg: UpliftConfig) -> dict[str, Any]:
     # comparison uses the OOF scores only.
 
     learners: dict[str, np.ndarray] = {
-        "causal_forest": forest_oof,
+        "dr_learner": forest_oof,
         "t_learner_two_model": committed["t_learner"].to_numpy(),
         "x_learner": committed["x_learner"].to_numpy(),
     }
@@ -249,7 +249,7 @@ def run_single_protocol(cfg: UpliftConfig) -> dict[str, Any]:
             "(unnormalised; qini.qini_coefficient == AUQC - AUQC(random))"
         ),
         "formula_dr_pseudo_outcome": "psi = (mu1-mu0) + T(y-mu1)/g - (1-T)(y-mu0)/(1-g)",
-        "causal_forest_definition": (
+        "dr_learner_definition": (
             "hand-rolled DR-learner forest (sklearn RandomForestRegressor on DR "
             "pseudo-outcomes, cross-fitted on the committed folds; no grf/econml, "
             "per DESIGN.md no-heavyweight-deps)"
@@ -290,7 +290,7 @@ def write_report_markdown(report: dict[str, Any], out_dir: Path) -> None:
     lines += [
         "",
         "Notes:",
-        f"- Causal forest: {report['causal_forest_definition']}.",
+        f"- DR-learner forest: {report['dr_learner_definition']}.",
         f"- {report['t_two_model_note']}.",
         "- DR pseudo-outcome: " + report["formula_dr_pseudo_outcome"] + ".",
         "- DR policy value by budget (with intervals) is in `metrics.json` per learner.",

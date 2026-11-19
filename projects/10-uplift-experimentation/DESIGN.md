@@ -16,7 +16,7 @@
 | Option | Verdict | Why |
 |---|---|---|
 | causallib / causalml for T/X-learners | Rejected | Extra deps (causallib pulls statsmodels) for ~80 lines of code; hand-rolling on sklearn keeps the platform dependency-light and the method auditable line-by-line. |
-| Causal forests (grf / econml DML) | Deferred | Stronger non-parametrics, but heavyweight deps and weaker interpretability for a showcase; noted in roadmap as forward work. |
+| Causal forests (grf / econml DML) | Out of scope (library form) | The 2026-11-19 single-protocol comparison used a hand-rolled cross-fitted DR-learner forest on sklearn only (no new dependency); see `reports/single_protocol/`. A library causal forest (grf/econml) stays out of scope: heavyweight deps, weaker interpretability for a showcase. |
 | In-sample uplift scores | Rejected | Meta-learners overfit; Qini on training rows flatters every model. 5-fold cross-fitting gives honest out-of-fold scores. |
 | Multi-arm (Mens + Womens vs control) | Rejected for the primary read | A two-arm treatment keeps every estimand unambiguous. The secondary read now separates observed-outcome DR/IPW policy value (`policy_value.py`) from model-estimated planning (`multiarm.py`); the two-arm read stays primary and unchanged. |
 | Qini vs AUUC (uplift ROC) | Unnormalized Qini/AUUC | The committed coefficient is the area under the Qini curve minus the random line, in conversions × fraction. The per-arm summary labels this AUUC and keeps the existing tie handling and conversion-relevant units. |

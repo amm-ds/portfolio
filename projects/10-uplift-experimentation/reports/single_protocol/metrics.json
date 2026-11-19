@@ -1,15 +1,15 @@
 {
   "schema_version": "single-protocol-v1",
-  "generated_at": "2026-11-19T12:34:20.951089+00:00",
+  "generated_at": "2026-11-19T14:14:23.778799+00:00",
   "data_source": "committed folds (cfg.seed=42, cv_folds=5, OOF convention)",
   "n_rows": 42613,
   "outcome": "conversion",
   "formula_qini_area_auuc": "area between the incremental-conversions curve and the random line (unnormalised; qini.qini_coefficient == AUQC - AUQC(random))",
   "formula_dr_pseudo_outcome": "psi = (mu1-mu0) + T(y-mu1)/g - (1-T)(y-mu0)/(1-g)",
-  "causal_forest_definition": "hand-rolled DR-learner forest (sklearn RandomForestRegressor on DR pseudo-outcomes, cross-fitted on the committed folds; no grf/econml, per DESIGN.md no-heavyweight-deps)",
+  "dr_learner_definition": "hand-rolled DR-learner forest (sklearn RandomForestRegressor on DR pseudo-outcomes, cross-fitted on the committed folds; no grf/econml, per DESIGN.md no-heavyweight-deps)",
   "t_two_model_note": "the two-model approach and the T-learner are the same estimator family; one committed OOF column carries both labels",
   "learners": {
-    "causal_forest": {
+    "dr_learner": {
       "qini_area_auuc": -3.5257879629374287,
       "qini_area_auuc_ci95": [
         -16.212060916676236,
