@@ -1,0 +1,24 @@
+{
+  "dataset_revision": "2026-11-19.1-expanded",
+  "model": null,
+  "original": {
+    "n_cases": 7,
+    "n_reference_pages": 8,
+    "entity_f1": 0.7777777777777777,
+    "entity_f1_ci95": [
+      0.5405405405405406,
+      0.9253731343283582
+    ]
+  },
+  "expanded": {
+    "n_cases": 14,
+    "n_reference_pages": 15,
+    "entity_f1": 0.7291666666666666,
+    "entity_f1_ci95": [
+      0.5714285714285714,
+      0.8490566037735849
+    ]
+  },
+  "cost_estimate_usd": 0.049502,
+  "cost_note": "Character/4 estimate, not provider metering; configure current prices."
+}
