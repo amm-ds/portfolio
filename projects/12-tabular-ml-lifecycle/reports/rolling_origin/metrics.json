@@ -1,0 +1,122 @@
+{
+  "schema_version": "rolling-origin-v1",
+  "generated_at": "2026-11-19T14:22:42.385947+00:00",
+  "data_source": "committed validation window (time-ordered; existing fold, sliced per week)",
+  "rows_per_origin": 168,
+  "n_origins": 8,
+  "verification": {
+    "lightgbm_hpo": {
+      "recomputed_full_window_mae": 34.396797677319,
+      "committed_val_mae": 34.396797677319,
+      "matches": true
+    },
+    "mlp": {
+      "recomputed_full_window_mae": 34.21699224767231,
+      "committed_val_mae": 34.21699224767231,
+      "matches": true
+    }
+  },
+  "origins": [
+    {
+      "origin_week_index": 0,
+      "n_rows": 168,
+      "mlp_mae": 32.50947134835379,
+      "lightgbm_mae": 31.594642750890028,
+      "diff_mlp_minus_lightgbm": 0.9148285974637638,
+      "diff_ci95": [
+        -5.4411781228284335,
+        5.560294598122667
+      ]
+    },
+    {
+      "origin_week_index": 1,
+      "n_rows": 168,
+      "mlp_mae": 30.043867792401993,
+      "lightgbm_mae": 30.029247434566837,
+      "diff_mlp_minus_lightgbm": 0.014620357835156028,
+      "diff_ci95": [
+        -3.149851197824339,
+        3.1283249420729753
+      ]
+    },
+    {
+      "origin_week_index": 2,
+      "n_rows": 168,
+      "mlp_mae": 30.73338544936407,
+      "lightgbm_mae": 31.048540656539338,
+      "diff_mlp_minus_lightgbm": -0.3151552071752661,
+      "diff_ci95": [
+        -2.462535256912545,
+        3.389870618531301
+      ]
+    },
+    {
+      "origin_week_index": 3,
+      "n_rows": 168,
+      "mlp_mae": 39.16550822485061,
+      "lightgbm_mae": 37.436756983772185,
+      "diff_mlp_minus_lightgbm": 1.7287512410784274,
+      "diff_ci95": [
+        -6.510031415555915,
+        1.5829847913878228
+      ]
+    },
+    {
+      "origin_week_index": 4,
+      "n_rows": 168,
+      "mlp_mae": 36.36404959360758,
+      "lightgbm_mae": 35.95606441274845,
+      "diff_mlp_minus_lightgbm": 0.4079851808591357,
+      "diff_ci95": [
+        -5.820552278057093,
+        3.9166814261135485
+      ]
+    },
+    {
+      "origin_week_index": 5,
+      "n_rows": 168,
+      "mlp_mae": 39.09791546776181,
+      "lightgbm_mae": 38.94016733740971,
+      "diff_mlp_minus_lightgbm": 0.1577481303520969,
+      "diff_ci95": [
+        -4.875258881948047,
+        4.436547640896679
+      ]
+    },
+    {
+      "origin_week_index": 6,
+      "n_rows": 168,
+      "mlp_mae": 32.957404136657715,
+      "lightgbm_mae": 31.0861581782462,
+      "diff_mlp_minus_lightgbm": 1.8712459584115138,
+      "diff_ci95": [
+        -5.461745977097748,
+        0.7192459199137708
+      ]
+    },
+    {
+      "origin_week_index": 7,
+      "n_rows": 168,
+      "mlp_mae": 32.864335968380885,
+      "lightgbm_mae": 39.082803664379284,
+      "diff_mlp_minus_lightgbm": -6.218467695998399,
+      "diff_ci95": [
+        2.699983210460566,
+        10.142020837029664
+      ]
+    }
+  ],
+  "pooled": {
+    "diff_mlp_minus_lightgbm_mae": -0.17980542964669155,
+    "diff_ci95": [
+      -1.3669502646426033,
+      1.8543538925713314
+    ],
+    "block_bootstrap_block_size_hours": 24,
+    "note": "per-origin intervals use 7 non-overlapping day blocks; few blocks, wide intervals"
+  },
+  "headline_check": {
+    "tie_holds": true,
+    "reading": "the committed validation tie (MLP 34.217 vs LightGBM 34.397 MAE) is a full-window summary; per-origin diffs below show where the gap comes from. No headline number changes."
+  }
+}

@@ -12,6 +12,7 @@ from portfolio_core.logging import get_logger
 
 from tabular_ml_lifecycle.config import LifecycleConfig, yaml
 from tabular_ml_lifecycle.report import build_report
+from tabular_ml_lifecycle.rolling_origin import run_rolling_origin
 from tabular_ml_lifecycle.stages import (
     eda_core,
     evaluate_core,
@@ -96,6 +97,21 @@ def evaluate(
 ) -> None:
     """Score every candidate once on the test window; paired-bootstrap the champion."""
     evaluate_core(load_config(params_file, data_source, seed))
+
+
+@app.command()
+def rolling_origin(
+    params_file: OptParams = Path("params.yaml"),
+) -> None:
+    """Q4f: per-week origins of the committed validation window, MLP vs LightGBM."""
+    report = run_rolling_origin(load_config(params_file))
+    p = report["pooled"]
+    typer.echo(
+        f"rolling-origin: {report['n_origins']} origins | pooled diff "
+        f"{p['diff_mlp_minus_lightgbm_mae']:+.3f} MAE "
+        f"[{p['diff_ci95'][0]:+.3f}, {p['diff_ci95'][1]:+.3f}] | "
+        f"tie holds: {report['headline_check']['tie_holds']}"
+    )
 
 
 @app.command()
