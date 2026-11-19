@@ -100,9 +100,9 @@ def test_roadmap_block_roundtrip(tmp_path: Path) -> None:
         short_version=_SHORT,
         sections=[_section("background")],
         roadmap=[
-            RoadmapItem(status="delivered", text="Shipped thing"),
-            RoadmapItem(status="remaining", text="Open thing"),
-            RoadmapItem(status="deferred", text="Parked thing — needs X"),
+            RoadmapItem(status="shipped", title="Shipped thing", detail="One line."),
+            RoadmapItem(status="next", title="Open thing", detail="Needs a gate."),
+            RoadmapItem(status="blocked", title="Parked thing", detail="Owner decision."),
         ],
     )
     import yaml
@@ -113,15 +113,23 @@ def test_roadmap_block_roundtrip(tmp_path: Path) -> None:
     loaded = load_story(tmp_path)
     assert loaded is not None
     assert len(loaded.roadmap) == 3
-    assert [r.status for r in loaded.roadmap] == ["delivered", "remaining", "deferred"]
-    assert len(loaded.roadmap_by_status("remaining")) == 1
+    assert [r.status for r in loaded.roadmap] == ["shipped", "next", "blocked"]
+    assert loaded.roadmap[0].title == "Shipped thing"
+    assert len(loaded.roadmap_by_status("next")) == 1
 
 
 def test_roadmap_status_validated() -> None:
     from pydantic import ValidationError
 
     with pytest.raises(ValidationError):
-        RoadmapItem(status="planned", text="x")
+        RoadmapItem(status="planned", title="x", detail="y")
+
+
+def test_roadmap_detail_length_cap() -> None:
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        RoadmapItem(status="shipped", title="x", detail="x" * 91)
 
 
 def test_key_concepts_default_and_roundtrip(tmp_path: Path) -> None:

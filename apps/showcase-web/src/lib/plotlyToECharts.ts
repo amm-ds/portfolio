@@ -1888,6 +1888,10 @@ export function plotlyToECharts(
       const nameWidth = namedSeries.reduce((sum, n) => sum + n.length * 7.2 + 34, 0);
       const rows = Math.max(1, Math.ceil(nameWidth / Math.max(120, innerWpx)));
       band += rows * 20 + 10;
+      // bottom-row x-axis names wrap to two lines and share this band; the
+      // category loop above skips non-category axes, so reserve for them here
+      // (nab_tune_surface 2x2 regression: legend overlapped the wrapped names)
+      if (xInfos.some((info) => axisTitleText(info) !== null)) band += 84;
     }
     return band;
   })();
@@ -1913,6 +1917,21 @@ export function plotlyToECharts(
       hideOverlap: true,
     };
     if (info.raw.showticklabels === false) axisLabel.show = false;
+    // Honour the two tick formats the repo authors use (H8): ".3g" compacts
+    // float score labels that overflow the narrow-canvas left margin, and
+    // "%b %d" renders timeline timestamps as "Jan 29" instead of raw epochs.
+    const tickformat = typeof info.raw.tickformat === "string" ? info.raw.tickformat : null;
+    let tickFormatter: ((value: number | string) => string) | null = null;
+    if (tickformat === ".3g") {
+      tickFormatter = (value) => String(Number(Number(value).toPrecision(3)));
+    } else if (tickformat === "%b %d") {
+      const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      tickFormatter = (value) => {
+        const date = typeof value === "number" ? new Date(value) : new Date(String(value));
+        return Number.isNaN(date.getTime()) ? String(value) : `${MONTHS[date.getMonth()]} ${date.getDate()}`;
+      };
+    }
+    if (tickFormatter) axisLabel.formatter = tickFormatter;
     // axis name: wrap long titles so they never clip, and keep clearance from
     // (possibly rotated) tick labels below/left
     const gridW = grids[gridIndex]?.width ?? innerWpx;
@@ -1951,8 +1970,9 @@ export function plotlyToECharts(
     if (info.raw.autorange === "reversed") opt.inverse = true;
     if (info.type === "value") {
       // trim raw-float ticks (authored ranges and extents can land on
-      // 0.9560236…; integers still get thousands separators)
-      axisLabel.formatter = (v: number) => formatTick(v);
+      // 0.9560236…; integers still get thousands separators); an authored
+      // tickformat (see above) wins over the default trimming
+      axisLabel.formatter = tickFormatter ?? ((v: number) => formatTick(v));
     }
     // range precedence: an authored layout.*axis.range wins verbatim; then the
     // bar-family zero baseline (positive-only extents); otherwise the window

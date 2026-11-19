@@ -794,6 +794,23 @@ def profit_figure(
 ) -> go.Figure:
     """Incremental revenue minus send cost vs budget fraction for every policy."""
     fig = go.Figure()
+    # The recommended-point profit must come from the full-resolution curve on
+    # the same nearest-grid semantics as profit_at in evaluate_policies — the
+    # display curves below are even-stride decimated (_fig_curve), whose grid
+    # points fall elsewhere and drift the annotation away from the committed
+    # metrics.json profit_at_budget (6838 vs 6698/6497 annotated).
+    budget_profits = {
+        policy: float(
+            profit_curve(
+                np.array([cfg.policy_budget]),
+                np.array([float(inc[int(np.argmin(np.abs(fr - cfg.policy_budget)))])]),
+                n_total,
+                cfg.revenue_per_conversion,
+                cfg.cost_per_email,
+            )[0]
+        )
+        for policy, (fr, inc) in curves.items()
+    }
     curves = {policy: _fig_curve(fr, inc) for policy, (fr, inc) in curves.items()}
     for policy, (fr, inc) in curves.items():
         profit = profit_curve(fr, inc, n_total, cfg.revenue_per_conversion, cfg.cost_per_email)
@@ -809,19 +826,8 @@ def profit_figure(
     style_runs(fig, best="t_learner")
     # The recommended operating point is whichever policy maximizes revenue
     # minus send cost at the configured budget — mark it prominently (audit:
-    # the 25% recommendation was not visible on the frontier).
-    budget_profits = {
-        policy: float(
-            profit_curve(
-                np.array([cfg.policy_budget]),
-                np.array([float(np.interp(cfg.policy_budget, fr, inc))]),
-                n_total,
-                cfg.revenue_per_conversion,
-                cfg.cost_per_email,
-            )[0]
-        )
-        for policy, (fr, inc) in curves.items()
-    }
+    # the 25% recommendation was not visible on the frontier). budget_profits
+    # was computed above from the full-resolution curves.
     recommended = select_recommended_policy(budget_profits)
     recommended_profit = budget_profits[recommended]
     fig.add_scatter(

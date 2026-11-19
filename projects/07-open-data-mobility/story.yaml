@@ -24,7 +24,7 @@ figure_captions:
     Manhattan's volume drives absolute error; persistence still edges the default GBM in the Bronx.
   gbm_vs_nn: >-
     Q4 run ladder with same-hour-yesterday lag-24 in grey. Served `gbm_tuned` removes
-    28.3% of MAE (MASE 0.763); xGB is best on test at −31.2%. MAPE is secondary
+    28.3% of MAE (MASE 0.763); xGB (XGBoost) is best on test at −31.2%. MAPE is secondary
     because zero and low-demand zone-hours make percentage errors unstable.
   p90_band: >-
     City-wide actual, served-GBM mean and p90 upper band over 14 test days.
@@ -465,13 +465,18 @@ sections:
     figures: []
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 roadmap:
-  - status: delivered
-    text: "Built the streaming 41.2M-trip pipeline into one zero-filled zone-hour panel."
-  - status: delivered
-    text: "Selected and served `gbm_tuned` on embargoed validation: 4.676 MAE, −28.3% vs yesterday."
-  - status: delivered
-    text: "Calibrated the p90 twin to 90.8% coverage and flagged the no-borough bucket."
-  - status: delivered
-    text: "Ran the green-transfer study and productionized per-service retraining."
-  - status: delivered
-    text: "Scored drift months in-window through 2025-01 and shipped the two-service API."
+  - status: shipped
+    title: "Replay the study with one command"
+    detail: "41.2M trips zero-filled into one replayable zone-hour panel."
+  - status: shipped
+    title: "Validation winner served; test leader rejected."
+    detail: "The test leader tested −4.1% better; the holdout has no vote."
+  - status: shipped
+    title: "Calibrate the band; flag no-borough zones"
+    detail: "90.8% coverage overall; no-borough bucket flagged at 84.7%."
+  - status: shipped
+    title: "Retrain per service; drift stays in-window"
+    detail: "Green refit on 337,080 zone-hours wins; drift in-window; two-service API live."
+  - status: next
+    title: "Test causal weather and longer horizons"
+    detail: "Needs a new study contract with causal identification and multi-hour setup."

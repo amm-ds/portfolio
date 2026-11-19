@@ -214,7 +214,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
       "power analysis",
       "uplift meta-learners (T/X)",
       "Qini evaluation",
-      "profit-based targeting policy"
+      "revenue-minus-send-cost targeting policy"
     ],
     "title": "Retention Uplift & Experimentation",
     "topic": "Decision Science"

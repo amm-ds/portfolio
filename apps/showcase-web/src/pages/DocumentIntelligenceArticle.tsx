@@ -54,6 +54,21 @@ uv run document-intelligence-eval --output reports/offline-metrics.json
 uv run document-intelligence-eval --live --output reports/live-metrics.json
 \`\`\``;
 
+// Committed live result (2026-11-08, kimi:kimi-for-coding) as a pipe table so
+// it renders through the shared markdown table path (data-table + scroll
+// wrapper), not a raw <table> in prose. Numbers are the committed report's.
+const LIVE_RESULT_TABLE = `**Committed live result — 2026-11-08, \`kimi:kimi-for-coding\`**
+
+| measure | result | interpretation |
+|---|---|---|
+| corpus | 7 documents / 8 reference pages | synthetic, born-digital regression fixtures |
+| summary coverage / citation support | 0.818 / 0.818 | both leave unsupported or uncovered reference points |
+| entity F1 / topic F1 | 0.677 / 0.500 | compact references expose entity/topic over-extraction |
+| chat correctness / reference citations | 1.00 / 1.00 | perfect on these scripted questions, not general chat quality |
+| evidence resolvability / unsupported citations | 1.00 / 0.00 | source matching succeeds; semantic support remains separate |
+| page failure rate / analysis miss rate | 0.00 / 1.00 | no page crashed, but every reference page had at least one strict miss |
+| median case latency | 38.5 s | 31.9 s analysis plus 6.6 s chat medians, not an SLO |`;
+
 const SECTIONS = [
   { id: "background", title: "Background" },
   { id: "contract", title: "Page analysis contract" },
@@ -340,19 +355,7 @@ export function DocumentIntelligenceArticle() {
             </div>
             {renderMarkdown(EVAL_SNIPPET)}
             <div className="prose">
-              <p><strong>Committed live result — 2026-11-08, <code>kimi:kimi-for-coding</code></strong></p>
-              <table>
-                <thead><tr><th>measure</th><th>result</th><th>interpretation</th></tr></thead>
-                <tbody>
-                  <tr><td>corpus</td><td>7 documents / 8 reference pages</td><td>synthetic, born-digital regression fixtures</td></tr>
-                  <tr><td>summary coverage / citation support</td><td>0.818 / 0.818</td><td>both leave unsupported or uncovered reference points</td></tr>
-                  <tr><td>entity F1 / topic F1</td><td>0.677 / 0.500</td><td>compact references expose entity/topic over-extraction</td></tr>
-                  <tr><td>chat correctness / reference citations</td><td>1.00 / 1.00</td><td>perfect on these scripted questions, not general chat quality</td></tr>
-                  <tr><td>evidence resolvability / unsupported citations</td><td>1.00 / 0.00</td><td>source matching succeeds; semantic support remains separate</td></tr>
-                  <tr><td>page failure rate / analysis miss rate</td><td>0.00 / 1.00</td><td>no page crashed, but every reference page had at least one strict miss</td></tr>
-                  <tr><td>median case latency</td><td>38.5 s</td><td>31.9 s analysis plus 6.6 s chat medians, not an SLO</td></tr>
-                </tbody>
-              </table>
+              {renderMarkdown(LIVE_RESULT_TABLE)}
               <p>
                 This is one small provider run with no repeated-run variance estimate. Lexical and
                 exact-match metrics do not establish semantic correctness on other documents. Usage

@@ -38,18 +38,18 @@ and, since the multi-arm upgrade, scored for the best-arm channel-choice read.
 ## Metrics
 
 Out-of-fold Qini coefficient (area between policy curve and random line),
-incremental conversions, and profit at budget under revenue $114 per
+incremental conversions, and revenue minus send cost at budget under revenue $114 per
 conversion / $0.01 per email ($114 is mean spend among converters — revenue,
 not margin; COGS is not in the snapshot). Headline: T-learner Qini 12.0,
-+$2,812 profit delta vs random at 25% budget; both carry 95% paired-bootstrap
++$2,812 revenue-minus-send-cost delta vs random at 25% budget; both carry 95% paired-bootstrap
 CIs in `reports/metrics.json` (`_meta.ci`). The separate
 `multi_arm.policy_value` block uses five-fold out-of-fold arm outcome models,
 known 1/3 randomization probabilities, and observed conversions for DR/IPW
 policy values with paired bootstrap CIs. Best-arm beats stochastic random on DR
-profit by $6,990 [$1,107, $13,282], but best-arm minus single-arm Mens is
+revenue minus send cost by $6,990 [$1,107, $13,282], but best-arm minus single-arm Mens is
 −$2,902 [−$7,702, $1,965], so channel-choice superiority is not established.
 The `multi_arm.policies` block remains MODEL-ESTIMATED planning — summed
-predicted uplift, with magnitudes ~2× hot — rather than observed profit. Per-arm
+predicted uplift, with magnitudes ~2× hot — rather than observed revenue minus send cost. Per-arm
 Qini/AUUC contrasts stay empirical (randomized pairs).
 
 ## Limits

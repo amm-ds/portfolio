@@ -28,16 +28,21 @@ figure_captions:
     llama.cpp Q8_0 at 6.4 tok/s and 7.12 s. Quantization and packaging differ
     together, so this compares combinations, not engines in isolation.
 roadmap:
-  - status: delivered
-    text: "Built the deterministic task suite: 8 schema-checked prompts with keyword checklists."
-  - status: delivered
-    text: "Built the async load harness recording every request at concurrency 1 through 8."
-  - status: delivered
-    text: "Committed the full grid: 19 cells, 760 requests, zero failures, one quiet machine."
-  - status: delivered
-    text: "Caught the silent-reasoning config bug in a smoke pass before the runs."
-  - status: delivered
-    text: "Shipped offline re-aggregation: percentiles re-derived from the committed raw record."
+  - status: shipped
+    title: "Standardized the task across all arms."
+    detail: "8 schema-checked prompts with keyword checklists."
+  - status: shipped
+    title: "Committed the full grid without failures."
+    detail: "19 cells and 760 requests on one quiet machine."
+  - status: shipped
+    title: "A silent config error was caught before the runs."
+    detail: "Reasoning disabled before the committed runs."
+  - status: shipped
+    title: "Re-derived every published value offline."
+    detail: "Percentiles recomputed from the raw record."
+  - status: next
+    title: "Prove the values on shipping hardware."
+    detail: "Needs quiet-hardware access and an MLX build for the MoE."
 key_concepts:
   - "**Latency percentiles:** p50 is the median response time, p95 is the time within which 95% finish, and p99 is the 99th-percentile time. Together they reveal delays that a mean can hide."
   - "**Packaging confound:** the runner and quantization change together, so the 2.9× gap compares combinations rather than engines alone."

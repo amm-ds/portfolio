@@ -1,28 +1,29 @@
 project_id: 03-anomaly-detection
-short_version: "NAB, 9 evaluable series: IsolationForest touches 16/17 incidents but fires 1,609 raw alerts. Daily budgeting cuts that to 80 pages; like-for-like, the rolling-feature ensemble halves 66 budgeted pages to 35 at equal recall 0.604, range-F1 0.533. NAB official score not reported."
+short_version: "NAB (9 series): IsolationForest touches 16/17 incidents with 1,609 raw alerts. One fit per series; no-skill = 16 seeded baselines. Budgeting cuts to 80 pages; like-for-like, the ensemble halves 66 budgeted pages to 35 at recall 0.604, range-F1 0.533. NAB score not reported."
 sections:
 - id: background
   text_md: |
-    **On nine evaluable NAB series, IsolationForest touches 16/17 incidents but
-    emits 1,609 raw alerts.** Three of twelve series have labels only in
-    training and leave incident aggregates. Range recall averages over all
-    twelve, counting those three as zero, so it differs from windows touched.
-    Pointwise PR-AUC ranks minutes (0.527); range-F1 scores incidents (0.157).
+    **How do you page on anomaly scores without drowning on-call in false
+    alarms? On nine evaluable NAB series, IsolationForest touches 16/17
+    incidents but emits 1,609 raw alerts.** Three of twelve series have
+    train-only labels. Range recall averages over all twelve, counting those
+    three as zero, unlike windows touched. Pointwise PR-AUC ranks minutes
+    (0.527); range-F1 scores incidents (0.157).
 
-    The champion is the rank-average ensemble on rolling features: 35 budgeted
-    pages, range-F1 0.533, and range precision 0.553. Nearly half of pages fall
+    The champion, the rank-average ensemble on rolling features, has 35
+    budgeted pages, range-F1 0.533, and range precision 0.553; nearly half fall
     outside incidents.
 
     ```diagram 03-detection-pipeline
     ```
 
     In `03-detection-pipeline`, follow scores into raw, deduplicated, and
-    budgeted streams. The cap allows one page per series per 24 hours. On the
+    budgeted streams; the cap allows one page per series per 24 hours. On the
     IsolationForest rolling+residual cell, it cuts 1,609 raw alerts to 80 pages.
-    It proves no transfer to other datasets or production.
+    It does not show transfer to other datasets or production.
 
     **Business summary:** The ensemble halves like-for-like budgeted load from
-    66 to 35 at equal range recall. Precision and transfer remain unresolved.
+    66 to 35 at equal recall. Precision and transfer remain unresolved.
   figures: []
 - id: objectives
   text_md: |
@@ -263,7 +264,8 @@ sections:
   figures: [pr_curves, range_pr, adaptive_stream]
 - id: results
   text_md: |
-    **Read the evidence panel by panel.** In `nab_timelines`, amber bands
+    **The panels show false alarms crowding real incidents; read them panel
+    by panel.** In `nab_timelines`, amber bands
     mark labelled incidents and pink crosses mark IsolationForest alerts.
     The six representative NAB panels contain 897 alerts. Find each amber
     band, then compare crosses inside it with those outside. Inside crosses
@@ -349,9 +351,9 @@ sections:
     - **Keep precision in the decision.** Range precision is 0.107 at fixed
       budget, 0.306 for headline IsolationForest, and 0.553 for the champion
       ensemble on the rolling cell. The headline 2%-budget precision is
-      0.527 with a series-level bootstrap 95% CI [0.231, 0.811] (2,000
-      resamples, seed 42, `nab_metrics.json:pa_k_2_precision_interval`) —
-      the interval spans the no-skill band's upper edge, so read it as an
+      0.527 with a series-level bootstrap 95% CI [0.230, 0.811] (2,000
+      resamples, seed 42, `nab_metrics.json:pa_k_2_precision_interval`). The
+      interval spans the no-skill band's upper edge, so read it as an
       alert-budget dial, not proof of unattended paging. The NAB official
       score is not reported (owner decision 2026-11-18): it needs the
       official scorer with application profiles; these numbers use the
@@ -370,9 +372,12 @@ sections:
     | **overall** | **0.527** | **0.157** | **16/17 (1,609)** |
 
     Range-PR sweep + no-skill controls (threshold sweep over score quantiles,
-    window matching throughout; artifact `reports/nab_metrics.json → no_skill`):
+    window matching throughout; artifact `reports/nab_metrics.json → no_skill`).
+    The champion is one deterministic fit per series; the no-skill band is 16
+    seeded random baselines (per Lyu 2026, preprint: report the number of runs;
+    single unreplicated source):
 
-    | measure | champion | no-skill band (16 seeds) |
+    | measure | champion (1 run/series) | no-skill band (16 seeds) |
     |---|---|---|
     | range-PR area | **0.804** | 0.228 [0.081, 0.401] |
     | precision at 0.5% of stream | 0.680 | — |
@@ -412,8 +417,8 @@ sections:
     OCSVM 0.1355 PR-AUC; random 0.5091 / 0.0194; rolling-median residual features
     lift IsolationForest to 0.9999 / 0.9960 without NAB transfer. NSL-KDD probe:
     0.8877 / 0.8979 at 56.9% test prevalence. In `threshold_sweep`, the marked
-    2% point adds the point-level view: 115 flags, about 15% precision and
-    recall (14.8%), and 17 hits on anomalous minutes, not 17 incidents.
+    2% point adds the point-level view: 17 of 120 flags hit real incidents,
+    14.2% precision, not 17 incidents.
 
     ## Protocol
 
@@ -480,20 +485,21 @@ sections:
     reproducible.
   figures: [threshold_sweep]
 roadmap:
-- status: delivered
-  text: "Built the NAB event-aware evaluation contract: past-only splits, frozen threshold, seeded floor."
-- status: delivered
-  text: "Ran the detector × feature sweep across three families on NAB and synthetic streams."
-- status: delivered
-  text: "Delivered the alert-budget stream: deduped episodes, one page per series per 24 h."
-- status: delivered
-  text: "Applied alert budgeting in every sweep cell; the IsolationForest rolling+residual cell cuts 1,609 raw alerts to 80 pages at range-F1 0.157 → 0.315."
-- status: delivered
-  text: "Validated train-side operating-point tuning: IsolationForest's adoption transfers, OCSVM's does not."
-- status: delivered
-  text: "Added the rank-average ensemble to the sweep: at the frozen default it halves the like-for-like paged load (66 → 35 pages, range-F1 0.388 → 0.533) at equal recall, and its flat validation surface keeps the default operating point."
-- status: delivered
-  text: "Challenged the detector layer at the fixed budget — context calibration, rank fusion, and normalized fusion behind a precision/F1/coverage gate: none clears it (fusion reaches range-F1 0.403 at 14/17 coverage), so the committed detector stands, published as a designed negative result."
+- status: shipped
+  title: "Locked the event-aware evaluation contract."
+  detail: "Past-only splits, frozen threshold, seeded random floor."
+- status: shipped
+  title: "Rank-average ensemble halves paged load at equal recall."
+  detail: "66 → 35 pages at recall 0.604, range-F1 0.533."
+- status: shipped
+  title: "A detector challenge with a published negative result."
+  detail: "No fusion clears the precision gate; the committed detector stands."
+- status: next
+  title: "Re-run the headline on TSB-AD with VUS-PR."
+  detail: "Current benchmark for this task; no hosted calls needed."
+- status: next
+  title: "Report run count and fit variance on the champion."
+  detail: "Single fit per series today (Lyu 2026 disclosure)."
 key_concepts:
 - "**Alert-budget stream:** Deduplicated alert episodes capped at one page per series per 24 h, turning 1,609 raw alerts into 80 pages."
 - "**Rank-average ensemble:** The mean of each minute's normalized ranks under IsolationForest, LOF, and OCSVM; it wins the sweep at the frozen default without recalibration or tuning."
@@ -508,7 +514,7 @@ figure_captions:
   hpo_importance: "One-Class Support Vector Machine tuning on synthetic train-only validation: gamma, the boundary-width setting, carries 99% of importance, moving from the failing `scale` default to 0.0131 (best validation PR-AUC 0.126)."
   pr_curves: "Pointwise precision-recall curves on the synthetic test window, with the 1.89% prevalence floor. Tuned OCSVM was frozen by validation PR-AUC 0.151 before this test AP 0.136 was measured; these curves do not select the champion or measure event-window recall."
   range_pr: "NAB event-aware precision-recall across score-quantile thresholds. Range-PR area is 0.804 versus a 16-seed no-skill band of 0.228 [0.081, 0.401]. At 2% of the stream, precision is 0.527 and recall over evaluable windows is 0.944; these are threshold-sweep values, not the fixed-budget raw headline's range precision or twelve-series range recall."
-  threshold_sweep: "Synthetic precision and recall across alert budgets, with the fixed 2% point marked: 115 flags, about 15% precision and recall (14.8%), including 17 hits on anomalous minutes. This is point-level load, not 17 incidents."
+  threshold_sweep: "Synthetic test-window precision and recall across alert budgets, with the fixed 2% point marked: 17 of 120 flags hit real incidents, 14.2% precision. This is point-level load, not 17 incidents."
   adaptive_stream: "Synthetic test-window outcomes for fixed and adaptive thresholds: 120 alerts, 18 true positives, and 102 false positives fixed; 113, 17, and 96 adaptive. Precision/recall are 0.150/0.159 fixed and 0.150/0.150 adaptive. The right panel shows drift z for all five chunks against the trigger at 1.0; none fires. Separately, the same synthetic-calibrated rule fires on 31 of 120 real NAB chunks, so adaptive thresholds remain rejected for the headline operating point."
   nab_timelines: "Six representative NAB test windows: amber bands are labelled events and pink crosses are IsolationForest alerts. These panels contain 897 alerts; nyc_taxi misses one window while the other five series touch theirs. This matrix is the single timeline presentation; the nyc_taxi miss is not repeated in a separate figure."
   nab_score_distribution: "IsolationForest scores across evaluable NAB series, split by in-window versus outside-window minutes. Their overlap explains why no tested threshold cleanly separates incidents from normal traffic."

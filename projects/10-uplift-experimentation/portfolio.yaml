@@ -7,7 +7,7 @@ techniques:
 - power analysis
 - uplift meta-learners (T/X)
 - Qini evaluation
-- profit-based targeting policy
+- revenue-minus-send-cost targeting policy
 data: Hillstrom email marketing (MineThatData, ~64k customers, sha256-pinned)
 status: working
 order: 10

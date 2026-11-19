@@ -180,6 +180,9 @@ def backend_comparison_slope(metrics: dict[str, Any]) -> go.Figure:
 
 def footprint_cost_bars(metrics: dict[str, Any]) -> go.Figure:
     """Three panels: RSS, image size breakdown, electricity cost per 1k preds."""
+    # H8: short bar labels in this dense 1x3 — the full BACKEND_LABELS strings
+    # rotated into the neighbouring panel at narrow widths.
+    short_backend = {"native": "torch", "onnx": "ONNX"}
     fig = make_subplots(
         rows=1,
         cols=3,
@@ -192,7 +195,7 @@ def footprint_cost_bars(metrics: dict[str, Any]) -> go.Figure:
     )
     backends = ["native", "onnx"]
     fig.add_bar(
-        x=[BACKEND_LABELS[b] for b in backends],
+        x=[short_backend[b] for b in backends],
         y=[metrics["serving"][b]["rss_mb"]["median"] for b in backends],
         marker={"color": [BACKEND_COLORS[b] for b in backends]},
         showlegend=False,
@@ -211,7 +214,7 @@ def footprint_cost_bars(metrics: dict[str, Any]) -> go.Figure:
         )
     cost = metrics["cost"]["cost_per_1k_predictions_usd"]
     fig.add_bar(
-        x=[BACKEND_LABELS[b] for b in backends],
+        x=[short_backend[b] for b in backends],
         y=[cost[b] for b in backends],
         marker={"color": [BACKEND_COLORS[b] for b in backends]},
         showlegend=False,

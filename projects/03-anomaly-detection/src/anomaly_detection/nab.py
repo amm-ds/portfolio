@@ -341,15 +341,20 @@ def _aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     out["events_missed"] = int(sum(r["events_missed"] for r in rows))
     out["alerts_fired"] = int(sum(r["alerts_fired"] for r in rows))
     out["adaptive_drift_events"] = int(sum(r["adaptive_drift_events"] for r in rows))
-    aucs = [r["range_pr_auc"] for r in rows if r.get("range_pr_auc") is not None]
-    out["range_pr_auc"] = float(np.mean(aucs)) if aucs else None
-    for key in ("pa_k_0.5", "pa_k_1", "pa_k_2", "pa_k_5"):
-        precs = [r[key]["range_precision"] for r in rows if key in r]
-        recs = [r[key]["range_recall"] for r in rows if key in r]
-        out[key] = {
-            "range_precision": float(np.mean(precs)) if precs else None,
-            "range_recall": float(np.mean(recs)) if recs else None,
-        }
+    # Range-PR/percentile enrichment exists only on the headline evaluate path;
+    # sweep/tune rows (via nab_sweep._base_row) never carry these keys. Report
+    # them only when the underlying rows computed them — null placeholders
+    # would be speculative schema in sweep/tune artifacts.
+    if any("range_pr_auc" in r for r in rows):
+        aucs = [r["range_pr_auc"] for r in rows if r.get("range_pr_auc") is not None]
+        out["range_pr_auc"] = float(np.mean(aucs)) if aucs else None
+        for key in ("pa_k_0.5", "pa_k_1", "pa_k_2", "pa_k_5"):
+            precs = [r[key]["range_precision"] for r in rows if key in r]
+            recs = [r[key]["range_recall"] for r in rows if key in r]
+            out[key] = {
+                "range_precision": float(np.mean(precs)) if precs else None,
+                "range_recall": float(np.mean(recs)) if recs else None,
+            }
     return out
 
 
@@ -570,6 +575,12 @@ def nab_figures(
     n_alerts = sum(int(results[k]["alerts_fired"]) for k in keys)
     fig.update_annotations(font_size=15)
     fig.update_xaxes(tickformat="%b %d", nticks=4)
+    # H8: the top row's x tick labels collide with the bottom row's subplot
+    # titles at narrow widths — the timestamps repeat per panel anyway.
+    fig.update_xaxes(showticklabels=False, row=1)
+    # H8: compact y tick labels (%.3g) — the raw floats (e.g. 106.104) are
+    # wider than the narrow-canvas left margin and ran into the subplot titles.
+    fig.update_yaxes(tickformat=".3g")
     fig.update_yaxes(tickfont_size=13)
     fig.update_xaxes(tickfont_size=13)
     fig.update_layout(

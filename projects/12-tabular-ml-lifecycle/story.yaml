@@ -9,10 +9,11 @@ short_version: |
 sections:
   - id: background
     text_md: |
-      **The deliverable is one number: bike rentals next hour.** A fleet team
-      uses it to place bikes. The study follows one table from source checks
-      to a final forecast. It pins the data, splits records by time, uses only
-      past information, and compares models of increasing complexity.
+      **How many bikes will be rented in the next hour?** A fleet team places
+      bikes by that number, so the deliverable is one forecast per hour. The
+      study follows one table from source checks to a final forecast. It pins
+      the data, splits records by time, uses only past information, and
+      compares models of increasing complexity.
 
       The starting point is a seasonal-naive forecast: the count at the same
       hour last week. The final challenger is a multi-layer perceptron (MLP),
@@ -219,8 +220,9 @@ sections:
       **The measurement chain is fixed before the test scores appear.** Follow
       `auto-12-tabular-ml-lifecycle-3` from validation selection to one test
       score per candidate. No test number feeds a modeling choice. The diagram
-      pairs the served-model row with the same floor row for 2,000 bootstrap
-      resamples. Hourly resampling gives the primary interval; intact 24-hour
+      pairs the served-model row — the one candidate validation selected to
+      serve — with the same floor row for 2,000 bootstrap resamples. Hourly
+      resampling gives the primary interval; intact 24-hour
       and 168-hour blocks test sensitivity to serial dependence. All three use
       the same test window and none measures model-selection uncertainty.
 
@@ -258,8 +260,9 @@ sections:
     figures: [model_comparison, residual_heatmap, residual_vs_fitted]
   - id: results
     text_md: |
-      **Separate the candidate ledger from the regularization evidence.** Use
-      the exact table for model scores and `ablation_dotplot` for validation
+      **The candidate ledger carries the margin; the ablation carries the
+      control evidence.** Use the exact table for model scores and
+      `ablation_dotplot` for validation
       effects of switching MLP controls on or off. The ablation figure does not
       establish the served-model-versus-floor margin.
 
@@ -405,19 +408,26 @@ sections:
       **Business summary:** The MLP's measured gain over the seasonal-naive
       floor has hourly and block-bootstrap support on one protected test window.
       The result is useful evidence for this dataset, with explicit limits on
-      serial dependence, missing hours, and transfer.
+      serial dependence, missing hours, and transfer. Keep the served MLP while
+      the interval on the gain excludes zero, and put any challenger through
+      the same frozen-window protocol before it replaces the current comparison.
     figures: [bootstrap_ci]
 roadmap:
-  - status: delivered
-    text: "Built the reproducible pipeline: sha256-pinned UCI ingest, 26 DQ gates, time-based split with a frozen test window, seeded synthetic CI twin."
-  - status: delivered
-    text: "Engineered leakage-safe features (cyclical encodings, past-only lags) with MI + permutation + correlation-pruned selection written into a feature contract."
-  - status: delivered
-    text: "Ran the seeded ladder — seasonal naive, ridge, random forest, LightGBM with time-budgeted Optuna HPO, hand-written PyTorch MLP — and selected the served model on validation (tied with LightGBM)."
-  - status: delivered
-    text: "Measured the served-model vs floor gap with 2,000 paired hourly resamples plus day/week block sensitivity; every 95% CI excludes zero."
-  - status: delivered
-    text: "Shipped overfitting-control artifacts and labeled all ablation test scores as post-freeze diagnostics; training reads train/validation only."
+  - status: shipped
+    title: "Reproducible, leakage-safe training pipeline."
+    detail: "Frozen test window; 26 DQ gates; sha256-pinned source; contract features; CI twin."
+  - status: shipped
+    title: "Served MLP ties LightGBM on validation."
+    detail: "MAE 25.4 vs 83.2 for the seasonal-naive floor."
+  - status: shipped
+    title: "Gap to the floor holds under resampling."
+    detail: "Every 95% CI excludes zero (hourly and week-block)."
+  - status: shipped
+    title: "Ablation scores labelled as post-freeze diagnostics."
+    detail: "Variant test scores never select a variant; diagnostics only."
+  - status: next
+    title: "External TabPFN-2 challenger"
+    detail: "Dropped by owner decision; the TabPFN-2 route is not pursued."
 key_concepts:
   - "**Seasonal-naive floor:** predict the count at the same hour last week. Every candidate must beat this simple baseline, with an interval on the gain."
   - "**Frozen test window:** each candidate receives one final-window score. Every modeling choice uses validation; ablation test scores are post-freeze diagnostics."
@@ -433,7 +443,7 @@ figure_captions:
   mlp_loss_curves: Per-epoch train and validation MAE for the PyTorch MLP, with the best epoch marked. Training keeps improving while validation stalls, exposing the overfitting gap that regularization controls address.
   learning_curves: "Validation MAE versus training-set fraction for tuned LightGBM and the MLP. Both curves flatten toward the full set, indicating that feature information, not row count, is the immediate ceiling."
   model_comparison: "One frozen test MAE per candidate, with the seasonal-naive floor as the dashed grey reference. Compare points with that reference. The served model is the validation leader, never the lowest test-score selector."
-  residual_heatmap: Served-model residuals by hour x season and hour x weather situation, on one shared diverging scale centered at zero. Red means under-forecast and blue means over-forecast; compare colors across both panels to locate structured misses.
+  residual_heatmap: Served-model mean residuals (actual minus forecast, in rentals) by hour x season and hour x weather situation on the frozen test window, on one shared diverging scale centered at zero. Red means over-forecast and blue means under-forecast; compare colors across both panels to locate structured misses.
   residual_vs_fitted: Residual versus fitted value on the test window. Read vertical spread from left to right. Spread widens with predicted demand while remaining centered on zero, indicating larger high-demand misses without global bias.
   ablation_dotplot: "MLP regularization ablation (2x2x2) on validation MAE, with teal marking the shipped configuration. Compare the lowest validation point with teal. Early stopping matters; variant test scores appear separately as post-freeze diagnostics."
-  bootstrap_ci: "Three histograms of 2,000 paired resamples each: hourly rows, 24-hour blocks, and 168-hour blocks. The 95% CIs are [52.5, 63.1], [44.2, 71.8], and [38.8, 73.4]. Wider block intervals show serial-dependence sensitivity on the same test window, not model-selection variance."
+  bootstrap_ci: "Three histograms of 2,000 paired resamples each — hourly rows, 24-hour blocks, and 168-hour blocks — for the served-model vs floor MAE gain on the frozen test window. The 95% CIs are [52.5, 63.1], [44.2, 71.8], and [38.8, 73.4]. Wider block intervals show serial-dependence sensitivity, not model-selection variance."

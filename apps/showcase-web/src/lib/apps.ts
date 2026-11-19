@@ -27,7 +27,7 @@ export const APPS: AppEntry[] = [
     href: "/apps/agent-chat",
     summary:
       "A generic, modular agent you can lift out and adapt: typed tools and toolsets, disk-loaded skills, pgvector retrieval, human approval for consequential actions, and a streaming chat UI — the full path from clone to deployed service.",
-    does: "pydantic-ai v2 agent (Kimi, local Ollama or hosted, with fallback), FastAPI streaming SSE, Postgres + pgvector memory and retrieval, React chat surface in the terminal design language",
+    does: "pydantic-ai v2 agent (a hosted or local model, with fallback), FastAPI streaming SSE, Postgres + pgvector memory and retrieval, React chat surface in the terminal design language",
     achieves: "swap the tools, keep the chassis — skills load from folders, providers switch by env, one command stands up the stack",
     stack: ["pydantic-ai", "FastAPI", "Postgres + pgvector", "React + TS", "docker compose"],
     result: "16 cases ×3 · 108/108 assertions",

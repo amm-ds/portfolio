@@ -55,7 +55,12 @@ def rentals_by_hour_season_figure(df: pd.DataFrame) -> go.Figure:
             row=row,
             col=col,
         )
-        fig.update_xaxes(title_text="hour of day", row=row, col=col, dtick=4)
+        # H8: x-axis name on the bottom row only — on the top row it collided
+        # with the lower panels' subplot titles at narrow widths.
+        if row == 2:
+            fig.update_xaxes(title_text="hour of day", row=row, col=col, dtick=4)
+        else:
+            fig.update_xaxes(dtick=4, row=row, col=col)
         if col == 1:
             fig.update_yaxes(title_text="mean rentals", row=row, col=col)
     apply_theme(fig, height=640)

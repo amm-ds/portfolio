@@ -1130,3 +1130,37 @@ describe("narrow-width legend (mobile figure-layout handoff)", () => {
     expect(option.legend.bottom).toBeUndefined();
   });
 });
+
+
+describe("tickformat support (H8)", () => {
+  it("compacts float labels with .3g instead of overflowing the margin", () => {
+    const payload: PlotlyPayload = {
+      data: [{ type: "scatter", x: [1, 2], y: [106.104, 45.213] }],
+      layout: {
+        width: 1000,
+        height: 560,
+        yaxis: { tickformat: ".3g" },
+        margin: { l: 70, r: 140, t: 110, b: 70 },
+      },
+    } as unknown as PlotlyPayload;
+    const option = asOpt(plotlyToECharts(payload, "dark", 335));
+    const formatter = option.yAxis[0].axisLabel?.formatter as (v: number) => string;
+    expect(formatter(106.104)).toBe("106");
+    expect(formatter(45.213)).toBe("45.2");
+  });
+
+  it("renders timeline timestamps as Mon DD with %b %d", () => {
+    const payload: PlotlyPayload = {
+      data: [{ type: "scatter", x: ["2026-11-29", "2026-12-01"], y: [1, 2] }],
+      layout: {
+        width: 1000,
+        height: 560,
+        xaxis: { tickformat: "%b %d" },
+        margin: { l: 70, r: 140, t: 110, b: 70 },
+      },
+    } as unknown as PlotlyPayload;
+    const option = asOpt(plotlyToECharts(payload, "dark", 335));
+    const formatter = option.xAxis[0].axisLabel?.formatter as (v: string) => string;
+    expect(formatter("2026-11-29")).toBe("Nov 29");
+  });
+});

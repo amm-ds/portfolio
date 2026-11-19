@@ -22,7 +22,7 @@ export const AUTO_10_UPLIFT_EXPERIMENTATION_1_SPEC = {
     },
     {
       id: "t",
-      label: "rank by uplift · +69% at 25%",
+      label: "rank by uplift · +70% at 25%",
       kind: "task",
       facts: [],
     },

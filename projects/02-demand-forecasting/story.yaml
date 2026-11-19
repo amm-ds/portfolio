@@ -3,26 +3,26 @@ short_version: "M5 full panel: 30,490 series, one scored test origin (final 28 d
 sections:
 - id: background
   text_md: |
-    **Walmart sales forecasting at full scale.** The M5 data covers 30,490
-    daily sales series, one per item at each store, over 1,969 days. LightGBM
-    is a machine-learning method that combines decision trees. This project
-    blends several LightGBM models into one forecast.
+    **How far can a learned forecaster beat the simple weekly rule on
+    Walmart's full M5 panel?** The M5 data covers 30,490 daily sales series,
+    one per item-store, over 1,969 days. LightGBM is a machine-learning method
+    combining decision trees. This project blends several LightGBM models into
+    one forecast at full scale.
 
     The official score is WRMSSE, or weighted root mean squared scaled error.
-    It measures error across 42,840 products and product groups, called nodes,
-    in a hierarchy of totals and subtotals. Higher-revenue nodes carry more
-    weight. The seasonal-naive floor repeats the previous week's sales for each
-    weekday.
+    It measures error across 42,840 products and product groups (nodes) in a
+    hierarchy of totals and subtotals. Higher-revenue nodes carry more weight.
+    The seasonal-naive floor repeats last week's sales per weekday.
 
     ```diagram 02-m5-pipeline
     ```
 
-    Follow the diagram from raw sales to one forecast. Its final block shows
-    the last 28 days, scored once: the blend reaches 0.6161 against the floor's
-    0.8929, a 31.0% error reduction.
+    Follow the diagram from raw sales to one forecast. Its final block scores
+    the last 28 days once: the blend reaches an official WRMSSE of 0.6161
+    against the floor's 0.8929, a 31.0% error reduction.
 
     **Business summary:** On the full M5 panel, the blend cuts official WRMSSE
-    from 0.8929 to 0.6161, a 31.0% reduction against the seasonal-naive floor.
+    against the seasonal-naive floor.
   figures: []
 - id: objectives
   text_md: |
@@ -105,8 +105,8 @@ sections:
     - The mid-volume series fluctuates around quiet days.
 
     Those visible quiet stretches explain why zero-day accuracy needs a separate
-    check. On days with zero actual sales, the floor is right 66.6% of the time,
-    compared with 57.3% for the ensemble. That caveat is not visible in the
+    check. On days with zero actual sales, zero-day accuracy is 66.6% for the
+    floor against 57.3% for the ensemble. That caveat is not visible in the
     three ensemble forecast curves, so it must sit beside the headline result.
 
     **Business summary:** The sample figure shows the challenge behind the
@@ -208,10 +208,11 @@ sections:
     equivalence is claimed because this project does not evaluate an external run.
 
     In the per-level figure, compare the blend and floor bars at each level.
-    The blend's margin is broadest at aggregate levels: 0.350 on total sales
-    against the floor's 0.560. At item level, learned candidates cluster between
-    1.04 and 1.15 while the floor sits at 1.38–1.39 because series-level noise
-    dominates. The widening bars toward the top show where the win comes from.
+    The blend's margin is broadest at aggregate levels: total-sales WRMSSE is
+    0.350 for the blend against the floor's 0.560. At item level, learned
+    candidates cluster between 1.04 and 1.15 while the floor sits at 1.38–1.39
+    because series-level noise dominates. The widening bars toward the top show
+    where the win comes from.
 
     Neither the diagram nor the figure measures savings. Stockouts, promotions,
     and returns sit outside the model, so no safety-stock or cost claim follows.
@@ -222,8 +223,9 @@ sections:
   figures: [m5_full_per_level_wrmsse]
 - id: results
   text_md: |
-    **The ranked-bars figure gives the final result: convex ensemble 0.6161,
-    best single 0.6217, floor 0.8929** on the scored-once competition window.
+    **The ranked-bars figure gives the final official-WRMSSE result: convex
+    ensemble 0.6161, best single 0.6217, floor 0.8929** on the scored-once
+    competition window.
     Compare the bars directly:
 
     - The three pooled arms score 0.6217 / 0.6313 / 0.6575. All beat the global
@@ -233,19 +235,21 @@ sections:
     - The blend combines 0.60 store×category + 0.10 store + 0.30 department.
       Its 0.6161 score is a 31.0% reduction against the floor.
 
-    The overall bars do not show the remaining quiet-day weakness. On zero-actual
-    days, the floor stays right 66.6% of the time against the ensemble's 57.3%.
-    Full scale prices those days into the hierarchy but does not fix them.
+    The overall bars do not show the remaining quiet-day weakness. On
+    zero-actual days, zero-day accuracy stays with the floor: 66.6% against
+    the ensemble's 57.3%. Full scale prices those days into the hierarchy but
+    does not fix them.
 
     A separate measured experiment tested spike capture for the erratic quadrant,
     meaning dense series with severe swings. The pooled fit gave each series'
     best sales days more influence during training and could replace the usual
     fit where past windows preferred it. On a capped development window, meaning
-    a smaller past-only evaluation, the swap won its quadrant. Its erratic win-rate
-    was 0.845 against the floor, compared with the blend's 0.839.
+    a smaller past-only evaluation, the swap won its erratic quadrant against
+    the floor.
 
-    The wider result did not hold up: pooled WRMSSE was 0.621 against the blend's
-    0.601, twice the noise band. An adoption gate, a rule that rejects a candidate
+    The wider result did not hold up: the pooled fit scored twice the noise
+    band worse than the blend on WRMSSE. An adoption gate, a rule that rejects
+    a candidate
     when the wider result worsens, rejected it. This arm is absent from the
     ranking figure because its evidence comes only from that capped window. Its
     full-panel performance remains unproven, and the final ensemble stays 0.6161.
@@ -279,11 +283,11 @@ sections:
       two selection origins, rather than rewarding one lucky origin.
     - Its scored-once windows keep the headline believable: choose on two origins
       and grade exactly once on the competition window.
-    - The full-panel choice still loses on quiet days. On zero-actual days, the
-      floor is right 66.6% of the time against the ensemble's 57.3%.
+    - The full-panel choice still loses on quiet days. On zero-actual days,
+      zero-day accuracy stays with the floor: 66.6% against the ensemble's 57.3%.
     - Spike capture remains a measured negative result. It won the erratic
       quadrant on a capped window but over-forecasted the wider panel, with
-      pooled WRMSSE 0.621 versus 0.601, twice the noise band. The adoption gate
+      a pooled-WRMSSE setback of twice the noise band. The adoption gate
       rejected it, so no full-panel improvement is claimed.
     - The 31.0% reduction has bounded support. The screen uses only two origins,
       no bootstrap confidence intervals exist, and stockouts are unmodeled.
@@ -346,9 +350,10 @@ sections:
     ```
 
     **Business summary:** The closing diagram's pooled ensemble reaches 0.6161
-    against the 0.8929 floor, a 31.0% reduction on the official scheme. Its thin
-    selection screen, missing confidence intervals, and weaker quiet-day accuracy
-    limit the claim.
+    against the 0.8929 floor, a 31.0% reduction on the official scheme. Use it
+    for full-panel, weekly-reforecast M5 demand, and re-check the choice where
+    quiet-day accuracy outranks aggregate WRMSSE or once bootstrap intervals
+    bound the gap.
   figures: []
 key_concepts:
   - "**Official hierarchical WRMSSE**: The competition metric scales each node's error by train-window volatility, applies revenue weights, and averages with equal total weight per level across all 42,840 nodes."
@@ -358,18 +363,21 @@ key_concepts:
   - "**Intermittent demand**: Sales occur only occasionally. This describes 91% of the panel's series, while 59.5% of days are zero. Quiet days strongly affect accuracy, and the floor still wins them."
   - "**Scored-once evaluation**: Candidates are chosen on past origins and graded exactly once on the competition window. Random splits could leak future information into training."
 roadmap:
-- status: delivered
-  text: "Built the leakage-safe full-panel feature pipeline for all 30,490 series."
-- status: delivered
-  text: "Ran the 8-candidate ladder — floor, global and Tweedie LightGBM, pooled fits, AutoETS."
-- status: delivered
-  text: "Screened ensemble members on 2 selection origins; blended weights on a 0.05 simplex grid."
-- status: delivered
-  text: "Scored every candidate once on the competition window under official WRMSSE."
-- status: delivered
-  text: "Reported bias, per-level, and zero-day metrics beside the headline."
-- status: delivered
-  text: "Challenged the erratic quadrant with a spike-capture arm behind an adoption gate — rejected at the pooled-WRMSSE check on the capped window (0.621 vs 0.601, twice the noise band), published as a designed negative result. The deferred full-panel refinement is tracked in DESIGN.md."
+- status: shipped
+  title: "Cover the full panel without leakage."
+  detail: "All 30,490 series modeled strictly from past-only information."
+- status: shipped
+  title: "Select one blend and score it once."
+  detail: "Best three of six by mean + 1.0×std; scored once over 28 days."
+- status: shipped
+  title: "Expose the quiet-day trade-off."
+  detail: "Floor still wins zero-day accuracy: 66.6% vs 57.3%."
+- status: shipped
+  title: "Publish the spike-capture negative result."
+  detail: "Adoption gate rejected the swap; no full-panel gain is claimed."
+- status: next
+  title: "Bound the gap with bootstrap intervals."
+  detail: "Selection uses 2 origins; no interval exists yet."
 figure_captions:
   m5_full_sample_series: "Three catalog series at the scored-once test origin on 2016-05-22: top-units, hardest-intermittent, and mid-volume. Each panel shows 56 days of history, 28 days of actual sales, and the ensemble curve with its member envelope. The envelope is the members' spread, not a calibrated interval. Look for the weekly shape, weeks-long zero runs, and quiet days."
   m5_full_candidate_ranking: "All 8 candidates ranked by official hierarchical WRMSSE on the scored-once competition window across 42,840 revenue-weighted nodes. Lower bars are better. The stability-screened convex ensemble leads at 0.6161, the best single pooled fit scores 0.6217, and the seasonal-naive floor scores 0.8929."

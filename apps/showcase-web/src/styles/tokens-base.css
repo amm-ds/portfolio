@@ -273,7 +273,7 @@ code {
   font-size: 0.9rem;
 }
 
-/* --- Roadmap block: visual timeline --- */
+/* --- Roadmap block: shipped timeline --- */
 
 .roadmap {
   padding: 1.25rem 1.5rem;
@@ -341,14 +341,10 @@ code {
   background: var(--surface);
 }
 
-.roadmap-node.delivered .roadmap-dot {
+.roadmap-node.shipped .roadmap-dot {
   border-color: var(--accent-bright);
   background: var(--accent);
   box-shadow: 0 0 8px var(--accent-glow);
-}
-
-.roadmap-node.deferred .roadmap-dot {
-  border-color: var(--danger);
 }
 
 .roadmap-label {

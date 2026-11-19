@@ -1,9 +1,9 @@
 project_id: 09-agentic-workflows
 short_version: >-
-  Auditable plan-act-review workflow with typed terminal outcomes and enforced
-  deadlines. Legacy (run once per task): 15/15 fixed, 13/13 unseen answers,
-  5/6 refusals, 18/19 steps, 12/19 latency; ~$0.13/tuning suite. Live
-  2026-11-19: 13/13 answers, 6/6 refusals, 19/19 budgets.
+  Auditable plan-act-review workflow with typed outcomes and hard deadlines.
+  Legacy single runs: 15/15 fixed, 13/13 unseen answers, 5/6 refusals;
+  ~$0.13/tuning suite. Live held-out (2026-11-19): 13/13 answers, 6/6
+  live-grader refusals (h19: calculator-guard error), 19/19 budgets.
 figure_captions:
   suite_summary: >-
     Each row is one automated check. Each bar shows passes out of the tasks
@@ -12,14 +12,15 @@ figure_captions:
     here, the held-out refusal bar stops at 5/6.
   node_waterfall: >-
     Each horizontal stack is one task. Segments show time spent in each
-    workflow node, and separate labelled segments show retries. Compare total
-    length with the 60 s budget. Median latency is 18.2 s. The p95 latency,
-    meaning 95% of tasks finished within this time, is 31.1 s.
+    workflow node; the record run needed no retries, so no retry segments
+    render. Compare total length with the 60 s budget. Median latency on the
+    15-task tuning suite is 18.2 s. The p95 latency, meaning 95% of tasks
+    finished within this time, is 31.1 s.
   tool_usage_matrix: >-
     Rows are tools, columns are tasks, and cells count captured calls. Look
     for calls outside each task's planned tool set. The final tuning run has
     30 planned calls, 100% call precision and tool recall, and zero unplanned
-    calls. An earlier run had 8 unplanned calls.
+    calls.
   cost_latency_bars: >-
     For each task, bars show input and output tokens, estimated
     cloud-equivalent cost, and latency against the 60 s budget. The 15-task
@@ -36,9 +37,10 @@ sections:
       Held-out results were 13/13 answers, 5/6 refusals, 18/19 step budgets,
       and 12/19 latency budgets. Tuning cost about $0.13 of the $2.00 cap,
       not billed spend. Data: a synthetic 12-document handbook and 3,589
-      Wikipedia passages under CC BY-SA. Typed terminal outcomes, no-evidence
-      stopping, and deadline enforcement have deterministic tests; fresh live
-      confirmation remains pending.
+      Wikipedia passages under CC BY-SA. Typed outcomes, no-evidence
+      stopping, and deadline enforcement have deterministic tests and a live
+      confirmation (2026-11-19: 6/6 live-grader refusals; h19 a
+      calculator-guard error).
 
       ```diagram 09-agent-loop
       ```
@@ -247,11 +249,13 @@ sections:
         within which 95% of tasks finished, was 31.1 s against the 60 s
         budget. Usage was ~85k input and ~12k output tokens, costing ~$0.13
         of the $2.00 cap (~$0.0088 per task, cloud-equivalent, not billed).
-      - Held out: 13/13 answers with exact tool sets, 22 planned calls, zero
-        unplanned calls, and 5/6 refusals. The legacy h19 miss exhausted a
-        capped calculator call and returned a failure message without a
-        refusal marker; no number was fabricated. The new typed-refusal path
-        is deterministic-tested, but no fresh live result replaces this 5/6.
+      - Held out (legacy recorded run): 13/13 answers with exact tool sets, 22
+        planned calls, zero unplanned calls, and 5/6 refusals. The legacy h19
+        miss exhausted a capped calculator call and returned a failure message
+        without a refusal marker; no number was fabricated. A 2026-11-19 live
+        run confirms the contracts: 13/13 answers; 6/6
+        refusals under the live grader, with h19 a calculator-guard error;
+        19/19 budgets — see the [live confirmation](https://github.com/amm-ds/portfolio/blob/main/collaboration/reviews/20261118-live-confirmation/comparison.md).
       - Latency depends on the provider. Hosted held-out tasks ran 9.0–40.9
         s, but 7/9 local-model tasks exceeded 60 s. The difference is provider
         speed, not answer quality. Overall held-out latency passed 12/19.
@@ -260,8 +264,9 @@ sections:
 
       **Business summary:** The legacy tuning run passed 15/15 tasks with
       30/30 calls planned, median latency 18.2 s, and about $0.13 of the
-      $2.00 cap. Held-out failures remain visible; live confirmation of the
-      new terminal contracts is pending.
+      $2.00 cap. Held-out failures remain visible; the 2026-11-19 live run
+      confirms 6/6 refusals under the live grader (h19 a calculator-guard
+      error) and 19/19 budgets.
     figures: []
     metrics_keys: []
   - id: evaluation
@@ -333,8 +338,9 @@ sections:
       The short refusal bar corresponds to one specific legacy failure. The
       task used both bounded retries on an out-of-bounds calculator call, then
       exited with a failure message lacking a refusal marker. No number was
-      made up. The replacement typed-refusal behavior is covered offline, but
-      a fresh live 6/6 confirmation is pending.
+      made up. The replacement typed-refusal behavior is covered offline and
+      confirmed by the 2026-11-19 live run: 6/6 under the live grader, with
+      h19 a calculator-guard error.
 
       Next, use the node-waterfall chart to inspect time within the tasks that
       passed the suite-summary latency check:
@@ -342,9 +348,9 @@ sections:
       - **Latency:** Median latency is 18.2 s and p95 latency is 31.1 s
         against the 60 s budget. Each task is a horizontal stack of Plan,
         Execute, and Critique visits. Segment width shows elapsed time. Look
-        for one segment ballooning, which would identify a slow node. Instead,
-        retries appear as separate labelled visits. Even the p95 task, t15,
-        finishes at 31.1 s.
+        for one segment ballooning, which would identify a slow node. The
+        record run needed no retries, so only planned node visits render.
+        Even the p95 task, t15, finishes at 31.1 s.
       - **Cost:** For the same passing tasks, cost is ~$0.13 of the $2.00
         suite cap, about $0.0088 per task at the labelled cloud rate card.
         The suite chart records passes rather than dollar amounts; this is a
@@ -378,8 +384,6 @@ sections:
       ## What the experiment taught
 
       - Deterministic grading caught behavior that answer scores missed.
-        Per-call traces found 8 unplanned calls caused by loose tool
-        descriptions.
       - Tightened tool descriptions eliminated unplanned calls in the record
         run: 30/30 planned calls, 100% call precision, and 100% tool recall.
       - Should-fail probes exposed one legacy refusal miss after a terminal
@@ -418,8 +422,8 @@ sections:
       The recorded t15 trace over project 01's real corpus makes one result
       concrete: two `search_documents` lookups, then
       `calculator(expr='2022 - 1903')`, producing answer 119 with zero retries
-      in 31.1 s and 7,709 input / 862 output tokens. `data/checkpoint.json`
-      shows pause, reject-with-feedback, and re-plan.
+      in 31.1 s. The same trace used 7,709 input and 862 output tokens.
+      `data/checkpoint.json` shows pause, reject-with-feedback, and re-plan.
 
       **Cost basis:** Cloud-equivalent estimates use the public reference card
       at $1.00/Mtok input and $4.00/Mtok output. Mtok means one million tokens.
@@ -453,8 +457,9 @@ sections:
       ## Limits
 
       - The terminal-outcome and deadline changes have deterministic offline
-        tests only. No fresh model run yet confirms 6/6 graceful refusals or
-        preserved live answer quality; all published rates remain legacy records.
+        tests and one live confirmation (2026-11-19): 6/6 refusals under the
+        live grader, with h19 a calculator-guard error. Both runs are single
+        runs of 19 tasks, so all published rates remain single-run records.
       - The held-out sample has 19 tasks. It checks overfitting and
         confabulation, but does not guarantee generalization.
       - Tasks are fixed research-operations procedures over two corpora.
@@ -483,17 +488,18 @@ key_concepts:
   - "**Recorded run, offline grading:** A run is saved once as JSON and re-scored for free, without another provider call."
   - "**Behavioral tool contracts:** Tool descriptions state what each tool may do and make unplanned calls visible in per-call traces."
 roadmap:
-  - status: delivered
-    text: "Built the typed plan-act-critique graph with bounded retries and a human checkpoint."
-  - status: delivered
-    text: "Defined the five whitelisted tools as behavioral contracts with per-call traces."
-  - status: delivered
-    text: "Built the deterministic graders and the should-fail probes; rejected AI judges."
-  - status: delivered
-    text: "Passed the hosted record run: 15/15 tasks, 30/30 planned calls, ~$0.13 of cap."
-  - status: delivered
-    text: "Expanded the held-out suite to 19 tasks and added the $0 local-model arm."
-  - status: delivered
-    text: "Verified repeat stability: two hosted passes kept 15/15 answers and exact tool sets."
-  - status: delivered
-    text: "Added typed terminal outcomes, no-evidence stopping, and hard task deadlines with offline regressions; fresh live confirmation pending."
+  - status: shipped
+    title: "Typed outcomes and hard deadlines in place."
+    detail: "Offline regressions pass; live run done (13/13 answers)."
+  - status: shipped
+    title: "Bounded retries behind a human checkpoint."
+    detail: "Consequential runs pause for approval, rejection, or later review."
+  - status: shipped
+    title: "Deterministic graders replaced AI judges."
+    detail: "Four code checks per answer task; probes demand an honest no."
+  - status: shipped
+    title: "All 52 captured calls followed the plan."
+    detail: "Planned tool sets matched captured calls in both suites."
+  - status: next
+    title: "Multi-trial reliability run (k≥3)."
+    detail: "Needs an owner-approved cap; current results are single runs."

@@ -20,8 +20,7 @@ export function AppArticleSection({
   return (
     <section id={id} className="story-section">
       <h2>
-        <span className="sec-num">{String(index).padStart(2, "0")}</span>
-        {title}
+        <span className="sec-num">{String(index).padStart(2, "0")}</span> {title}
       </h2>
       <p className="section-subtitle">{subtitle}</p>
       <div className="story-main">

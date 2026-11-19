@@ -158,24 +158,25 @@
 }
 
 .story-section h2::before {
-  content: "/ ";
+  content: "/";
   color: var(--accent-bright);
   text-shadow: none;
 }
 
 /* the section number (real markup from CaseStudy's map index — the rail no
-   longer numbers its items, so this blue number stands alone) */
+   longer numbers its items, so this blue number stands alone); the JSX space
+   after the span is the only separator — a margin here read as a double
+   space between number and title (owner fix 2026-11-19) */
 .story-section h2 .sec-num {
   color: var(--secondary);
-  margin-right: 0.6rem;
 }
 
-/* one-line label under each section h2 (src/lib/sectionMeta.ts) — blue like
-   the other small labels */
+/* one-line label under each section h2 (src/lib/sectionMeta.ts) — muted like
+   the other secondary explanatory text, in both themes */
 .story-section .section-subtitle {
   font-family: var(--mono);
   font-size: 0.8rem;
-  color: var(--secondary);
+  color: var(--muted);
   margin: -0.2rem 0 0.9rem;
 }
 

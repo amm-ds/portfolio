@@ -188,6 +188,7 @@ checkpoints; toolsets composed via `FunctionToolset` + `PrefixedToolset`.
   `search_documents + calculator` (the year-gap subtraction is arithmetic)
   and the t05 prompt pinned to "before inverter losses" to remove ground-
   truth ambiguity.
+  Correction (2026-11-19): the "8 unplanned calls" count has no committed artifact behind it and is removed from the public copy; this record is kept for design history.
 - 2026-10-30 — Held-out expansion wave (roadmap): `HELDOUT_SUITE` grew from
   10 to 19 tasks — 6 new answer tasks (h11-h16) over previously unexercised
   handbook/Wikipedia facts (incl. the photosynthesis topic) and 3 new

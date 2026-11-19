@@ -75,8 +75,8 @@ ONNX's up-to-15% leads at the saturated cells read as scheduling noise on
 a shared CPU, not capability. The footprint story is measured, not
 estimated: fresh-process RSS 298 vs 318 MB (native vs ONNX), and a 6.47 GB
 image — 145 MB base, 6.19 GB venv, 1 MB model — dominated by torch and the
-3.3 GB CUDA stack a CPU service never loads. A `chown` after `COPY` once
-doubled the venv layer (12.8 GB); measuring found it. Electricity uses the
+CUDA libraries a CPU service never loads. A `chown` after `COPY` once
+doubled the venv layer; measuring found it. Electricity uses the
 committed concurrency-16 throughput basis: ~$1.15e-05 per 1k predictions at
 a declared 65 W and $0.30 per kWh. That cost basis is not the concurrency-4
 throughput knee, and the wattage is an assumption, not a measurement.

@@ -66,9 +66,9 @@ def eda_churn_profile_figure(df: pl.DataFrame) -> go.Figure:
         title="Churn profile by contract, charges and tenure",
         barmode="overlay",
         yaxis_title="churn rate",
-        xaxis2_title="monthly_charges",
+        # H8: panels 2/3 keep y titles only — their x-axis names collided with
+        # the neighbor panel at narrow widths, and the subplot titles name them.
         yaxis2_title="density",
-        xaxis3_title="tenure_months",
         yaxis3_title="density",
     )
     add_takeaway(

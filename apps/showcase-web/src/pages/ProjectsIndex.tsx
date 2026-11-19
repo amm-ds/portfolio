@@ -224,9 +224,9 @@ function DemoCard({ data, domain }: { data: DemoCardData; domain?: string }) {
   );
 }
 
-/** Demos block rendered above the experiments rows — one of the two big page
+/** Demos block rendered after the experiments rows — one of the two big page
  * sections. Cards come from the demo registry (`GET /demos`) and render in a
- * full-width grid like the experiment cards below; a failed request is labelled
+ * full-width grid like the experiment cards; a failed request is labelled
  * and falls back to the static `DEMOS` snapshot, never to a successful empty list.
  * The linked experiment's domain joins the use case in the metadata. */
 function DemosSection({ projects }: { projects: Project[] | null }) {
@@ -295,10 +295,10 @@ function DemosSection({ projects }: { projects: Project[] | null }) {
   );
 }
 
-/** Projects index: "live demos" and "experiments" are the two big page
- * sections; inside experiments, offering-domain rows are subordinate group
- * labels with their cards in a responsive 2-column grid. Both blocks live
- * inside /projects (`/experiments` is an alias).
+/** Projects index: the page runs apps, then experiments, then live demos;
+ * inside experiments, offering-domain rows are subordinate group labels with
+ * their cards in a responsive 2-column grid. The experiments and demos blocks
+ * live inside /projects (`/experiments` is an alias).
  *
  * Resilience is section-scoped: a GET /projects failure renders the committed
  * project snapshot immediately; the demos section independently decides whether
@@ -349,8 +349,8 @@ export function ProjectsIndex() {
       <PageIndex
         items={[
           { id: "apps", label: "apps" },
-          { id: "demos", label: "live demos" },
           ...rows.map((row) => ({ id: rowAnchor(row.name), label: row.name })),
+          { id: "demos", label: "live demos" },
         ]}
       />
       {snapshot && (
@@ -374,7 +374,6 @@ export function ProjectsIndex() {
           ))}
         </div>
       </div>
-      <DemosSection projects={projects} />
       {projects !== null && projects.length > 0 && (
         <div className="experiments-block" id="experiments">
           <h2 className="section-title section-title--major">experiments</h2>
@@ -404,6 +403,7 @@ export function ProjectsIndex() {
           </div>
         </div>
       )}
+      <DemosSection projects={projects} />
     </>
   );
 }
