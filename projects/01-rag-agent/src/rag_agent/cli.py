@@ -167,6 +167,38 @@ def _run_stress_pass(config: RAGConfig, stress_file: Path | None, stress_tag: st
     )
 
 
+def _validate_sealed_pass_options(
+    *,
+    offline: bool,
+    ragas: bool,
+    max_questions: int | None,
+    heldout: bool,
+    stress: bool,
+    stress_file: Path | None,
+    stress_tag: str | None,
+    heldout_file: Path | None,
+) -> None:
+    """Reject invalid option combinations for the sealed-set passes."""
+    if offline:
+        raise typer.BadParameter(
+            "sealed-set passes need a provider and cannot combine with --offline"
+        )
+    if ragas:
+        raise typer.BadParameter(
+            "sealed-set passes bound cost with a verify-on pass only; no --ragas"
+        )
+    if max_questions is not None:
+        raise typer.BadParameter(
+            "sealed-set passes always run the full sealed set; no --max-questions"
+        )
+    if stress_file is not None and not stress:
+        raise typer.BadParameter("--stress-file requires --stress")
+    if stress_tag and not stress:
+        raise typer.BadParameter("--stress-tag requires --stress")
+    if heldout_file is not None and not heldout:
+        raise typer.BadParameter("--heldout-file requires --heldout")
+
+
 @app.command()
 def evaluate(
     ragas: Annotated[
@@ -240,6 +272,16 @@ def evaluate(
             "--no-verify reproduces the pre-wave-14 baseline answer path.",
         ),
     ] = None,
+    heldout_file: Annotated[
+        Path | None,
+        typer.Option(
+            "--heldout-file",
+            help="R3: evaluate a different sealed golden set (same schema as "
+            "data/golden_heldout.json). The set must be authored and hashed "
+            "before the run; combined with --reports-dir so committed "
+            "artifacts stay untouched.",
+        ),
+    ] = None,
     reports_dir: Annotated[
         Path | None,
         typer.Option(
@@ -259,24 +301,22 @@ def evaluate(
     if reports_dir is not None:
         config.reports_dir = reports_dir
     if heldout or citations or stress:
-        if offline:
-            raise typer.BadParameter(
-                "sealed-set passes need a provider and cannot combine with --offline"
-            )
-        if ragas:
-            raise typer.BadParameter(
-                "sealed-set passes bound cost with a verify-on pass only; no --ragas"
-            )
-        if max_questions is not None:
-            raise typer.BadParameter(
-                "sealed-set passes always run the full sealed set; no --max-questions"
-            )
+        _validate_sealed_pass_options(
+            offline=offline,
+            ragas=ragas,
+            max_questions=max_questions,
+            heldout=heldout,
+            stress=stress,
+            stress_file=stress_file,
+            stress_tag=stress_tag,
+            heldout_file=heldout_file,
+        )
         if verify is not None:
             config.verify.enabled = verify
-        if stress_file is not None and not stress:
-            raise typer.BadParameter("--stress-file requires --stress")
-        if stress_tag and not stress:
-            raise typer.BadParameter("--stress-tag requires --stress")
+        if heldout_file is not None:
+            if not heldout_file.exists():
+                raise typer.BadParameter(f"--heldout-file not found: {heldout_file}")
+            config.heldout_questions_path = heldout_file
         if stress:
             _run_stress_pass(config, stress_file, stress_tag)
             return

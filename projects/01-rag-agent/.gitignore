@@ -34,6 +34,10 @@
 # same committed-evidence role: every public number traces to them).
 !/reports/retrieval_baseline/
 !/reports/error_budget/
+# …and the R2 warrant-strength check + R3 sealed-v2 run (hosted evidence;
+# same committed-evidence role).
+!/reports/warrant_check/
+!/reports/sealed_v2/
 # …and the R6 failure ledger (trace review required before interventions).
 !/reports/stress_failure_ledger.md
 /reports/figures/*.html
@@ -49,3 +53,7 @@ data/*
 !data/golden_stress_b.json
 !data/golden_stress_c.json
 !data/golden_stress_d.json
+# …and the R3 sealed-v2 set (apps+rag pass): authored offline from the
+# committed corpus, fixed and hashed before any run.
+!data/golden_sealed_v2.json
+!data/golden_sealed_v2.sha256.json
