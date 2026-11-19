@@ -252,10 +252,11 @@ re-confirmed.) Full data in `reports/hpo_seeds.json` and
 `metrics.json → _meta.hpo_seeds`.
 
 **Calibration.** Temperature scaling fitted on the 400-row validation split
-(T = 0.927 — the selected model is mildly *under*-confident) cuts test ECE
-from **0.0360 to 0.0227** (−37 % relative). Predictions are unchanged (argmax
-is temperature-invariant), so calibration is a free reliability upgrade for any
-confidence-thresholded routing; numbers in `metrics.json → _meta.calibration`.
+(T = 0.927 — the selected model is mildly *under*-confident) cuts test
+calibration error without changing predictions (argmax is
+temperature-invariant), so calibration is a free reliability upgrade for any
+confidence-thresholded routing; numbers in `metrics.json → _meta.calibration`
+and the before/after pair in `DESIGN.md`.
 
 Hand-written loop history for the default run (validation macro-F1 drives
 early stopping):

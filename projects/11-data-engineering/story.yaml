@@ -116,9 +116,8 @@ sections:
         are exact. Float sums agree within a relative band of 1e-5, meaning
         a difference of at most 0.00001 times the value.
       - Timings are untraced medians of 5 on one shared machine. Trust their
-        ordering and magnitude, not the third decimal. Tracing inside the
-        timed region made pandas's group-by look 4x slower than it is, so
-        timing excludes it.
+        ordering and magnitude, not the third decimal. Timing excludes
+        tracing so profiling cannot skew the medians.
       - Each task measures memory in a fresh process. Otherwise, an earlier
         task's peak could be charged to a later one.
 
@@ -313,9 +312,8 @@ sections:
       - Exact float equality is the wrong determinism bar. Parallel engines
         reorder summation, and the 295-trip EWR sum sat on a rounding cliff.
         The gate compares counts and keys exactly and floats within 1e-5.
-      - Profiling can change the measurement. Tracing inside the timed region
-        made pandas's group-by look 4x slower than it is. Wall time is
-        untraced, with a separate untimed allocation pass.
+      - Profiling can change the measurement. Timing excludes tracing, with
+        a separate untimed allocation pass.
       - sqlite is a correct classical baseline with linear growth and a
         per-task conversion cost of seconds. Parquet write stays n/a because
         standard-library sqlite3 cannot do it.
@@ -403,16 +401,21 @@ sections:
       The parity gate caught real dropped rows before timing was accepted.
     figures: []
 roadmap:
-  - status: delivered
-    text: "Pinned the NYC TLC 2024-01 slice (sha256) with derived CSV and 31-way partitioned layout, plus a seeded synthetic CI track."
-  - status: delivered
-    text: "Built the 10-task contract on four engines with canonical-result parity as a hard gate; sqlite's missing parquet writer is honestly n/a."
-  - status: delivered
-    text: "Measured untraced median-of-5 wall time, cold fresh-process reads, true peak RSS, and a separate allocation pass; geomean x19.2 (Polars), x14.9 (DuckDB)."
-  - status: delivered
-    text: "Added the seeded 1M/3M/10M scalability study: pandas and sqlite grow linearly (slopes ~1.0), Polars and DuckDB sub-linearly (0.31-0.76)."
-  - status: delivered
-    text: "The gates earned their keep: parity caught pandas dropping the N/A borough; the repeat gate caught parallel-float rounding cliffs."
+  - status: shipped
+    title: "Gate every timing on identical rows."
+    detail: "SHA-256-pinned input; 39/39 measured cells passed the canonical gate."
+  - status: shipped
+    title: "Untraced medians keep timings honest."
+    detail: "Median of 5 warm repeats; tracing stays outside the timed region."
+  - status: shipped
+    title: "Parity checks catch real dropped rows."
+    detail: "Cross-engine comparison exposed 1,658 hidden N/A-borough trips."
+  - status: shipped
+    title: "Polars and DuckDB scale better than linearly."
+    detail: "Log-log slopes 0.31-0.76; pandas and sqlite hold 0.98-1.09."
+  - status: next
+    title: "Benchmark real trips at 10M rows."
+    detail: "The 10M track is seeded synthetic, not real trips."
 key_concepts:
   - "**Wall-time speedup:** divide one engine's median elapsed time by another's. Read it per task; the geomean is the geometric mean of those ratios."
   - "**Peak RSS (resident set size):** the most physical memory a process holds. A fresh process per task keeps earlier tasks out of the measurement."

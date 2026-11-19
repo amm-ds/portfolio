@@ -65,8 +65,11 @@ moving from 0.729 to 0.562.
 A threshold sweep under the project's window matching puts the headline on a
 no-skill footing: the champion's **range-PR area is 0.804** against a 16-seed
 random band at **0.228 [0.081, 0.401]**, and **precision at a 2% alert budget
-is 0.527 [0.231, 0.811]** (recall 0.944) against a no-skill **0.082 [0.063, 0.105]** — six
+is 0.527 [0.230, 0.811]** (recall 0.944) against a no-skill **0.082 [0.063, 0.105]** — six
 times the no-skill precision while still touching nearly every window. The
+champion is one deterministic fit per series (no repeats); the no-skill band is
+16 seeded random baselines — the number of runs is stated per Lyu 2026
+(preprint recommending run counts; a single unreplicated source). The
 precision interval is a series-level bootstrap (resample the nine evaluable
 series with replacement; 2,000 resamples, seed 42) committed at
 `reports/nab_metrics.json → pa_k_2_precision_interval`. At 0.5%

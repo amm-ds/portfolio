@@ -159,8 +159,9 @@ sections:
       - **Calibration was nearly free.** Calibration makes confidence match
         observed accuracy. ECE means expected calibration error, which measures
         that mismatch. A temperature is one number that rescales confidence.
-        Fitting it on validation cuts selected-model test ECE from 0.0360 to
-        0.0227, a 37% reduction, without changing a prediction. Read this beside
+        Fitting it on validation cuts the selected model's test calibration
+        error without changing a prediction; the before/after pair is recorded
+        in `DESIGN.md`. Read this beside
         `training_curve`: its macro-F1 line tracks predictions, while calibration
         changes only confidence.
       - **Errors concentrate where topics blur.** The confusion matrix in
@@ -202,7 +203,8 @@ sections:
 
       **Business summary:** The figures and scale evidence favor more data, not
       more tuning. Each tripling adds about +1.5 macro-F1 points, reaching
-      0.9460 test and 0.9529 fresh. One temperature cuts calibration error 37%.
+      0.9460 test and 0.9529 fresh. One temperature cuts calibration error
+      for free.
     figures: [training_curve, hpo_history]
     metrics_keys: [baseline_tfidf_logreg, encoder_b, distilbert, distilbert_tuned, distilbert_scale_4000, distilbert_scale_12000, distilbert_scale_40000, distilbert_full_120k]
   - id: evaluation
@@ -332,8 +334,8 @@ sections:
       - Data leakage means evaluation information influencing model choices.
         Validation-only model and threshold fitting keep test/fresh labels out
         of those choices; fresh candidate scores are diagnostics only.
-      - Calibration was nearly free. One temperature cut ECE 37% without changing
-        a single prediction.
+      - Calibration was nearly free. One temperature cut calibration error
+        without changing a single prediction.
 
       ## Exact numbers
 
@@ -477,16 +479,21 @@ sections:
     figures: []
     metrics_keys: [distilbert_full_120k]
 roadmap:
-  - status: delivered
-    text: "Built the five-rung model ladder with seeded floors and one shared test set."
-  - status: delivered
-    text: "Ran the 120k full-data model: 0.9460 test macro-F1, with epoch and seed probes."
-  - status: delivered
-    text: "Confirmed inconclusive paired tuning evidence and the 37% one-temperature calibration cut."
-  - status: delivered
-    text: "Selected the validation-fitted τ=0.6 selective LLM cascade: 0.9539265 fresh macro-F1 with 22 reviews."
-  - status: delivered
-    text: "Ran the controlled data-scale ladder: device effect ≤0.011 F1, data +1.3–1.6 points per 3×."
+  - status: shipped
+    title: "Beat every rung with full data."
+    detail: "0.9460 test-split macro-F1; floors end at 0.1000 and 0.2533."
+  - status: shipped
+    title: "Keep the default under inconclusive tuning evidence."
+    detail: "Paired 95% CI [−0.0048, +0.0204] crosses zero."
+  - status: shipped
+    title: "Calibrated probabilities with one temperature."
+    detail: "One temperature rescales confidence; predictions unchanged."
+  - status: shipped
+    title: "Macro-F1 rises 1.3–1.6 points per 3× more data."
+    detail: "+1.3–1.6 macro-F1 points per 3× data step."
+  - status: next
+    title: "Persist per-row review decisions."
+    detail: "Would unlock the paired cascade interval; not stored today."
 key_concepts:
 - "**Macro-F1**: the unweighted mean of per-topic F1, so a rare topic counts as much as a common one."
 - "**Model ladder**: cheapest-first rungs judged by one metric pair. A rung must beat the rung below it to justify its extra cost."
@@ -494,7 +501,7 @@ key_concepts:
 - "**Fresh holdout**: 1,000 disjoint articles used for fixed diagnostics, never for model selection."
 - "**Keyword-first router**: the cheaper baseline scores every item with keywords and escalates the uncertain quarter to the bounded transformer."
 - "**Selective LLM cascade**: the full-data transformer keeps confident predictions. Only rows below validation-fitted τ=0.6 receive batched LLM review."
-- "**Calibration (ECE)**: expected calibration error measures the mismatch between confidence and observed accuracy. One temperature fitted on validation cut this error 37% without changing a prediction."
+- "**Calibration (ECE)**: expected calibration error measures the mismatch between confidence and observed accuracy. One temperature fitted on validation cut this error without changing a prediction."
 figure_captions:
   eda_class_balance: Each bounded split has 25% per class, and training texts cluster at 20–50 words. Topic frequencies and the 128-token cap do not explain the bounded differences.
   training_curve: Two distinct full-120k histories in separate panels. Solid lines are the shipped two-epoch headline run; dotted lines are the four-epoch probe, whose learning-rate schedule is not a continuation of the headline run. The star marks the headline's final validation macro-F1 (0.9464) beside, not within, the probe history. The probe peaks at 0.9477 in epoch 3, then declines while validation loss rises.

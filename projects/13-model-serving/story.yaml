@@ -10,12 +10,13 @@ short_version: |
 sections:
   - id: background
     text_md: |
-      **A model is useful when other software can call it.** This study
-      deploys the champion from experiment 12. It is a small multilayer
-      perceptron (MLP). An MLP is a neural network that learns from tables.
-      This one predicts hourly bike rentals. FastAPI is a Python tool for
-      building web APIs. An API, or application programming interface, sets
-      the rules for requests and answers.
+      **What does it take to turn a trained model into software other
+      systems can call?** This study deploys the champion from experiment
+      12. It is a small multilayer perceptron (MLP). An MLP is a neural
+      network that learns from tables. This one predicts hourly bike
+      rentals. FastAPI is a Python tool for building web APIs. An API, or
+      application programming interface, sets the rules for requests and
+      answers.
 
       Follow the pipeline diagram from rebuild to container. A container
       packages a service with everything it needs to run. At each step, the
@@ -32,7 +33,7 @@ sections:
   - id: objectives
     text_md: |
       **Three gates protect the results.** Follow their order in the diagram.
-      First reproduce the champion. Next prove export parity. Then measure
+      First reproduce the champion. Next verify export parity. Then measure
       serving. Mean absolute error (MAE) is the average prediction error.
       Test MAE uses data held back for a final check. The same pinned data,
       recipe, and seed must reproduce experiment 12's committed test MAE.
@@ -125,7 +126,7 @@ sections:
     figures: []
   - id: training
     text_md: |
-      **The diagram shows how training produces a guarded service.** Fitting
+      **Training produces a guarded service.** Fitting
       the champion takes seconds on this data size. Training saves the native
       state_dict, which contains the PyTorch model weights. It also saves an
       architecture json file. JSON is a text format for structured data, used
@@ -205,9 +206,10 @@ sections:
       The chart does not isolate queueing from computation.
 
       In `backend_comparison_slope`, compare each paired native and ONNX
-      point. ONNX leads some saturated cells by up to 15% and ties elsewhere.
-      Because the requests match, these small gaps read as scheduling noise
-      on a shared CPU, not a different model.
+      point. ONNX leads the c64 throughput cell by 13.8% and ties elsewhere;
+      p50 medians differ by at most 4%. Because the requests match, these
+      small gaps read as scheduling noise on a shared CPU, not a different
+      model.
 
       **Business summary:** The figures show 1.6 ms p50 single-request
       latency (p95 2.0 ms, p99 2.2 ms; n = 300 requests per cell), a ~950
@@ -226,7 +228,8 @@ sections:
       - Throughput: peak near 970 req/s at concurrency 4 on both backends
         (median 933 native / 970 ONNX); throughput sags at 16 clients, then
         partially recovers at 64. No dynamic batching is enabled to explain
-        that shape; ONNX is up to 15% ahead at saturated cells; zero errors
+        that shape; ONNX is 13.8% ahead at the c64 throughput cell and p50
+        medians differ by at most 4%; zero errors
         occur across 4,320 requests per backend.
       - Batch: ~56k rows/s at size 128 on both backends, with flat per-request latency under saturation.
 
@@ -234,10 +237,8 @@ sections:
       and cost panel. RSS, or resident set size, is the memory held by a
       running process. Fresh-process RSS is 298 vs 318 MB. The full image
       measures 6.5 GB: 145 MB base, 6.2 GB venv, and 1 MB model. A venv, or
-      virtual environment, holds the service's Python packages. Torch and the
-      3.3 GB CUDA stack dominate it. CUDA is NVIDIA's software platform for
-      graphics processing units (GPUs), which run parallel calculations. This
-      CPU service never loads it.
+      virtual environment, holds the service's Python packages. Torch and its
+      bundled CUDA libraries dominate it. This CPU service never loads them.
 
       The same figure's image comparison includes the ONNX-only slim image
       (`Dockerfile.slim`, `docker-slim` command). It measures 291 MB against
@@ -248,8 +249,7 @@ sections:
 
       The measured 6.5 GB bar is the fixed build. The venv stays at its final
       path because its shebangs, or interpreter paths in scripts, are absolute.
-      A later `chown -R` copied that layer. The earlier build measured 12.8 GB,
-      against 6.5 GB after the fix.
+      A later `chown -R` copied that layer before the fix.
 
       The cost panel shows about $0.000012 per 1k predictions at the committed
       concurrency-16 basis. It uses median-of-repeats throughput on this host
@@ -298,11 +298,12 @@ sections:
         noise scales with output magnitude, so a purely absolute gate can be
         too tight on ill-scaled outputs or too loose on good ones.
       - Paired payloads matter more than identical settings alone. Both
-        backends saw the same byte stream, so the up-to-15% saturated-cell
-        deltas read as scheduling noise, not capability.
+        backends saw the same byte stream, so the small saturated-cell deltas
+        (13.8% only at the c64 throughput cell; p50 medians within 4%) read
+        as scheduling noise, not capability.
       - Image measurement exposes hidden costs. The CPU tabular model carries
-        3.3 GB of CUDA libraries, and a `chown` after `COPY` doubled the venv
-        layer until measurement revealed it.
+        CUDA libraries it never loads, and a `chown` after `COPY` doubled the
+        venv layer until measurement revealed it.
 
       ## Exact numbers
 
@@ -362,7 +363,7 @@ sections:
         Re-measure with the paired harness on the target deployment.
       - No TLS, auth, multi-worker or GPU path. The paired harness needs both
         backends, so a torch-free native image is future work.
-      - The ~3.3 GB NVIDIA/CUDA stack inside the full image is never loaded by
+      - The NVIDIA/CUDA stack inside the full image is never loaded by
         this CPU service. The ONNX-only slim image (`Dockerfile.slim`, 291 MB,
         smoke-passed) is the built answer. Stripping the stack from the
         *native* image remains a separate variant.
@@ -372,18 +373,26 @@ sections:
 
       **Business summary:** The diagram joins a verified champion, measured
       serving, and explicit limits into one reproducible deployment case.
+      The takeaway decision: gate every export on measured parity, warm
+      the backend before traffic, and re-run the paired harness on the
+      target host before quoting capacity or cost numbers.
     figures: []
 roadmap:
-  - status: delivered
-    text: "Re-derived experiment 12's champion from the committed recipe — identical frame checksum, identical test MAE (25.4316), reproduction gate exact."
-  - status: delivered
-    text: "Exported ONNX under a hard parity gate (max-abs 7.2e-07 on 512 seeded probe rows, tolerance 1e-4), enforced in the train stage."
-  - status: delivered
-    text: "Built the project-local FastAPI service: contract-mirroring schema, /predict + /predict/batch, /health + /ready, request ids, structured errors, native|onnx backends."
-  - status: delivered
-    text: "Load-tested both backends with paired seeded request streams: concurrency sweep 1/4/16/64, batch curve 1/8/32/128, RSS probes, median of repeats."
-  - status: delivered
-    text: "Shipped the multi-stage Docker build with measured image size (6.5 GB, breakdown recorded), compose smoke, and the stated-assumption electricity cost line."
+  - status: shipped
+    title: "Reproduced the champion; gated the export."
+    detail: "Parity max-abs 7.2e-07 on 512 seeded probe rows against the 1e-4 gate."
+  - status: shipped
+    title: "Served both backends from one schema."
+    detail: "Only the --backend flag differs; readiness gates traffic."
+  - status: shipped
+    title: "Paired backends passed the load test."
+    detail: "4,320 requests per backend, zero errors; median of 3 repeats."
+  - status: shipped
+    title: "Image bloat measured; slim variant shipped."
+    detail: "Slim image 291 MB, 22.2× smaller, smoke-passed."
+  - status: next
+    title: "Re-measure on the target deployment host."
+    detail: "Absolute numbers are host-specific; the paired harness travels."
 key_concepts:
   - "**Reproduction gate:** The same pinned data, recipe, and seed must reproduce the champion's committed test MAE exactly before export."
   - "**Parity gate:** The export must match native predictions on a fixed probe grid within an absolute plus relative float32 tolerance."
@@ -394,5 +403,5 @@ key_concepts:
 figure_captions:
   latency_concurrency_lines: Per-request latency versus concurrency for both backends. Points are medians of 3 repeats, and the shaded band shows the repeat minimum and maximum for p95. Single-request p50 is ~2 ms. The curves bend where one shared CPU saturates.
   batch_throughput_curve: The batch endpoint under saturation. Throughput scales ~linearly with batch size while queue-dominated per-request latency stays flat. Both backends reach ~56k rows/s at size 128.
-  backend_comparison_slope: Paired p50 latency for each concurrency cell, with native on the left and ONNX on the right. The x-label is the ONNX/native ratio. Gaps inside ~20% read as scheduling noise on a shared CPU.
+  backend_comparison_slope: Paired p50 latency for each concurrency cell, with native on the left and ONNX on the right. The x-label is the ONNX/native ratio. Small gaps read as scheduling noise on a shared CPU.
   footprint_cost_bars: "Three measured or declared footprints: fresh-process RSS (298 vs 318 MB), the measured 6.5 GB image split into base, venv, and model, and estimated electricity cost per 1k predictions at the committed concurrency-16 basis (65 W, $0.30 per kWh, declared)."

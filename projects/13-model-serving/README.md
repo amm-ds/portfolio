@@ -91,9 +91,9 @@ full image measures **6.47 GB**; the smoke-passed ONNX-only slim image is
 
 Numbers, curve shapes, and paired deltas come from one machine with no GPU and
 a single worker — the paired harness is the reusable asset, not demonstrated
-transfer of those observations. The full image contains ~3.3 GB of unused
-CUDA; the per-prediction electricity cost is a declared-assumption estimate
-(65 W, $0.30/kWh), not a metered bill.
+transfer of those observations. The full image contains unused
+CUDA libraries a CPU service never loads; the per-prediction electricity cost
+is a declared-assumption estimate (65 W, $0.30/kWh), not a metered bill.
 
 ## Tests
 

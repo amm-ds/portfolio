@@ -261,8 +261,18 @@ def select_operating_point(
 def tune_figure(selection: dict[str, Any]) -> go.Figure:
     """Validation surface per detector family: range-F1 vs cooldown, one line
     per threshold budget; ring = documented default, star = adopted point."""
-    fig = make_subplots(rows=1, cols=len(DETECTORS), subplot_titles=list(DETECTORS))
-    for col, detector in enumerate(DETECTORS, start=1):
+    # 2x2 grid (H6): a single row of four compresses each panel below reading
+    # width on phones and squeezes the side text into the plots; two rows of
+    # two keep every panel legible at 375 px and on desktop.
+    fig = make_subplots(
+        rows=2,
+        cols=2,
+        subplot_titles=list(DETECTORS),
+        vertical_spacing=0.14,
+        horizontal_spacing=0.08,
+    )
+    for idx, detector in enumerate(DETECTORS):
+        prow, pcol = idx // 2 + 1, idx % 2 + 1
         surface = selection["surfaces"][detector]
         chosen = selection["families"][detector]
         for budget in THRESHOLD_BUDGETS:
@@ -276,9 +286,9 @@ def tune_figure(selection: dict[str, Any]) -> go.Figure:
                 mode="lines+markers",
                 name=f"threshold budget {budget:.3f}",
                 legendgroup=f"{budget}",
-                showlegend=col == 1,
-                row=1,
-                col=col,
+                showlegend=(prow, pcol) == (1, 1),
+                row=prow,
+                col=pcol,
             )
         default_row = _surface_row(surface, DEFAULT_BUDGET, DEFAULT_COOLDOWN_HOURS)
         fig.add_scatter(
@@ -287,9 +297,11 @@ def tune_figure(selection: dict[str, Any]) -> go.Figure:
             mode="markers",
             name="default (kept if star absent)",
             marker={"symbol": "circle-open", "size": 13, "color": "#64748b"},
-            showlegend=col == 1,
-            row=1,
-            col=col,
+            # Caption explains the ring/star — keeping these out of the legend
+            # saves two rows that overlapped the panels at narrow widths (H6).
+            showlegend=False,
+            row=prow,
+            col=pcol,
         )
         if chosen["adopted"]:
             fig.add_scatter(
@@ -298,14 +310,17 @@ def tune_figure(selection: dict[str, Any]) -> go.Figure:
                 mode="markers",
                 name="adopted operating point",
                 marker={"symbol": "star", "size": 15, "color": "#dc2626"},
-                showlegend=col == 1,
-                row=1,
-                col=col,
+                showlegend=False,
+                row=prow,
+                col=pcol,
             )
     # Viewer report (wave 19): "autolimit also the y axis" — the authored
     # [0, 1.05] window flattened the curves into the bottom of the canvas;
     # the data spans well inside the unit interval, so the axis autoranges.
-    fig.update_xaxes(type="log", title="per-series cooldown (hours, log)")
+    # H6: x-axis title only on the bottom row — on the top row it collides
+    # with the lower panels' subplot titles in the 2x2 grid.
+    fig.update_xaxes(type="log")
+    fig.update_xaxes(title="per-series cooldown (hours, log)", row=2)
     fig.update_yaxes(title="validation range-F1 (budgeted stream)")
     fig.update_layout(title="Train-side operating-point selection surfaces (NAB)")
     add_takeaway(
@@ -313,7 +328,7 @@ def tune_figure(selection: dict[str, Any]) -> go.Figure:
         "inner 80/20 split of each train window — mean over 12 series x 2 feature "
         "sets; only points >=0.05 F1 above the ring move the operating point",
     )
-    return apply_theme(fig, height=460)
+    return apply_theme(fig, height=720)
 
 
 def _iter_series(config: AnomalyConfig) -> Any:

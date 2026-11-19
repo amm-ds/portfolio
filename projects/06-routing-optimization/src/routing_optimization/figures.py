@@ -359,10 +359,8 @@ def pareto_figure(rows: pl.DataFrame) -> go.Figure:
     # (ascending gap) and force each label at least one clear step above every
     # already-placed label in its x-window. The legend carries solver names.
     placed: list[tuple[float, float]] = []
-    y_step = max(
-        (rows["mean_gap_pct"].max() - rows["mean_gap_pct"].min()) * 0.07,
-        1.0,
-    )
+    gaps = [float(g) for g in rows["mean_gap_pct"]]
+    y_step = max((max(gaps) - min(gaps)) * 0.07, 1.0)
     for row in rows.sort("mean_gap_pct").iter_rows(named=True):
         delta = row["mean_veh_delta"]
         delta_txt = f"{delta:+.2f}" if delta is not None else "n/a"

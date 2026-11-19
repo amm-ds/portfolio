@@ -3,23 +3,23 @@ short_version: "Grounding-hardened cited QA over 593 Wikipedia articles. Frozen 
 sections:
 - id: background
   text_md: |
-    **Grounding-hardened QA answers only from 593 pinned Wikipedia articles and
-    cites each claim.** Its verifier repairs or drops weak claims and refuses
-    without evidence. Independent 30-question set B has 9 unsupported-claim
-    outcomes, above the gate of 6.
+    **When every answer carries a citation, what can still go wrong?**
+    Grounding-hardened QA answers only from 593 pinned Wikipedia articles and
+    cites each claim. Its verifier repairs or drops weak claims and refuses
+    without evidence. Even so, independent 30-question set B has 9
+    unsupported-claim outcomes, above the gate of 6.
 
     ```diagram 01-rag-pipeline
     ```
 
-    In `01-rag-pipeline`, follow CPU retrieval through drafting and verification.
-    The diagram explains the control path, not answer correctness.
+    In `01-rag-pipeline`, follow CPU retrieval through drafting and
+    verification; it explains the control path, not answer correctness.
 
-    Keep evaluation denominators separate. The 65-question tuning run reached
-    retrieval recall@5 0.831 versus 0.677 word match, with 17 unsupported
-    outcomes. An earlier gated 55-question sealed pass kept 44 correct (0.80,
-    CI [0.69, 0.89]). The current frozen 30-question stress re-run reached 0.733
-    (CI [0.567, 0.867]); set B reached 0.633 (CI [0.467, 0.80]) and missed two
-    quality gates.
+    The 65-question tuning run reached retrieval recall@5 0.831 versus 0.677
+    word match, with 17 unsupported outcomes. An earlier gated 55-question
+    sealed pass kept 44 correct (0.80, CI [0.69, 0.89]). The current frozen
+    30-question stress re-run reached 0.733 correct (CI [0.567, 0.867]). Set B
+    reached 0.633 correct (CI [0.467, 0.80]) and missed two quality gates.
 
     **Business summary:** The assistant is auditable over one Wikipedia slice,
     but independent evidence still fails key quality gates.
@@ -176,7 +176,7 @@ sections:
     Excerpt from [index.py](https://github.com/amm-ds/portfolio/blob/main/projects/01-rag-agent/src/rag_agent/index.py).
     The funnel and model comparison show recall@5 0.831 against 0.677 for word
     match and 0.031 for seeded random. The funnel ends at retrieval, so it
-    does not prove answer quality. The hosted pass classified 17 of 65 answers
+    does not measure answer quality. The hosted pass classified 17 of 65 answers
     as keeping unsupported claims. Full run records live in the conclusions.
 
     **Business summary:** The chosen retrieval setup finds the right article
@@ -309,8 +309,8 @@ sections:
     The current champion is the grounding-hardening configuration with hosted
     generation and dense MiniLM retrieval plus cross-encoder reranking. On the
     frozen 30-question stress re-run it reaches 0.733 correct (CI [0.567,
-    0.867]) and reduces unsupported-claim outcomes to 5 of 30 (was 11 of 30;
-    the CI width exceeds the change, so this is not a demonstrated gain).
+    0.867]). Unsupported-claim outcomes fall to 5 of 30, from 11 of 30; the CI
+    width exceeds the change, so this is not a demonstrated gain.
     Independent set B reaches 0.633 correct (CI [0.467, 0.80]) but misses the
     unsupported claim gate at 9/30 and answer-expected correctness at 0.550.
     Earlier tuning and gated sealed results remain separate evidence, not
@@ -432,18 +432,21 @@ key_concepts:
   - "**Cloud-equivalent cost metering:** A public rate card turns token use into estimated dollars and applies a hard cap to every pass."
   - "**Auditable is not trustworthy:** Every answer traces to a readable passage, yet 17 of 65 still kept unsupported claims. Verification bounds harm; it does not remove it."
 roadmap:
-- status: delivered
-  text: "Built the pinned 593-article corpus with sha256 contract and data-registry citation."
-- status: delivered
-  text: "Measured the retrieval pipeline: chunk sweep, MiniLM-vs-BGE tie, cross-encoder rerank."
-- status: delivered
-  text: "Shipped verify-on answers with separate rubric, RAGAS, and claim judges."
-- status: delivered
-  text: "Added per-phase cost metering under a hard USD cap."
-- status: delivered
-  text: "Expanded the sealed held-out gate 15 → 55 questions; the generation
-    pass keeps 44/55 correct, and 9 of 11 failures are grounding, not
-    retrieval."
+- status: shipped
+  title: "Pinned a 593-article corpus under contract."
+  detail: "Source, snapshot date, license, and credit sit in the data registry."
+- status: shipped
+  title: "Chunk size and model choice tied on recall."
+  detail: "All chunk sizes tie at recall@5 0.831; 200 tokens and MiniLM stay."
+- status: shipped
+  title: "Answers pass a three-judge citation check."
+  detail: "Rubric, RAGAS, and per-claim checks; generation costs $0.000906 a query."
+- status: shipped
+  title: "Expanded the sealed held-out gate."
+  detail: "15 → 55 sealed questions; 9 of 11 failures are grounding, not retrieval."
+- status: next
+  title: "Write a fresh sealed set first."
+  detail: "The next quality claim needs a new sealed set; set B failed two gates."
 figure_captions:
   eda_corpus_composition: "Articles per topic and word-length distribution for all 593 bounded Wikipedia articles. Topic coverage is near-balanced. The long tail ends at the 12,000-character cap."
   retrieval_funnel: "Question-level outcomes for the reranked top-3 on 65 golden questions: 54 hits and 11 misses. Upstream candidate volumes are 975 embedding passages (65 × top-15) and 195 retained passages (65 × top-3); those passage counts are deliberately not plotted as question outcomes. Reranking improves rank quality, not recall@5."
