@@ -1,0 +1,1354 @@
+{
+  "schema_version": "warrant-check-v1",
+  "generated_at": "2026-11-19T16:32:09.378708+00:00",
+  "model": "kimi-for-coding (repo LLM_* env, platform factory)",
+  "rate_card": {
+    "input_per_mtok_usd": 1.0,
+    "output_per_mtok_usd": 4.0
+  },
+  "spend_usd_cloud_equivalent": 0.394369,
+  "tokens": {
+    "input": 147149,
+    "output": 61805
+  },
+  "n_supported_claims": 247,
+  "n_judged": 219,
+  "n_excluded_no_locatable_evidence": 28,
+  "verdicts": {
+    "supports": 179,
+    "overstates": 27,
+    "does_not_support": 13
+  },
+  "overstatement_rate": 0.1232876712328767,
+  "overstatement_wilson95": [
+    0.08613021617039442,
+    0.17343305866544012
+  ],
+  "binary_unsupported_committed": {
+    "n": 11,
+    "total": 258,
+    "rate": 0.04263565891472868,
+    "wilson95": [
+      0.02397122996725861,
+      0.07472001219538932
+    ],
+    "source": "reports/citation_records_heldout.json (verify-on pass)"
+  },
+  "per_claim_verdicts": [
+    {
+      "question": "What role does Photosystem II play in the light-dependent reactions of photosynthesis?",
+      "claim": "Photosystem II is the first protein complex in the light-dependent reactions of oxygenic photosynthesis, located in the thylakoid membrane of plants, algae, and cyanobacteria.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that photosystem II \"is the first protein complex in the light-dependent reactions of oxygenic photosynthesis\" and \"is located in the thylakoid membrane of plants, algae, and cyanobacteria,\" matching the claim exactly in scope and strength."
+    },
+    {
+      "question": "What role does Photosystem II play in the light-dependent reactions of photosynthesis?",
+      "claim": "Its primary roles are: (1) capturing photons of light to energize electrons, which are then transferred through coenzymes and cofactors to reduce plastoquinone to plastoquinol; (2) replacing these lost electrons by oxidizing (splitting) water, which produces hydrogen ions and molecular oxygen\u2014this water-splitting activity makes it a water-plastoquinone oxidoreductase; (3) providing the electrons for all of photosynthesis to occur by replenishing them from water; and (4) generating hydrogen ions (protons) that help create a proton gradient used by ATP synthase to produce ATP.",
+      "verdict": "supports",
+      "reason": "The passage explicitly states each of the four roles: photon capture energizing electrons transferred via coenzymes/cofactors to reduce plastoquinone to plastoquinol; water oxidation replacing electrons to form H+ and O2 (water-plastoquinone oxidoreductase); providing electrons for all photosynthesis by replenishing from water; and water-derived protons creating a gradient used by ATP synthase to generate ATP."
+    },
+    {
+      "question": "What role does Photosystem II play in the light-dependent reactions of photosynthesis?",
+      "claim": "The energized electrons transferred to plastoquinone ultimately reduce NADP+ to NADPH or are used in non-cyclic electron flow.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"the energized electrons transferred to plastoquinone are ultimately used to reduce to nadph or are used in non-cyclic electron flow,\" matching the claim's content and scope (the typo omits NADP+ but the meaning is unambiguous)."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "**Two partially isolated compartments.** C4 leaves generally contain two partially isolated compartments \u2014 mesophyll cells and bundle-sheath cells \u2014 so that RuBisCO can work in an environment with a lot of carbon dioxide and very little oxygen.",
+      "verdict": "supports",
+      "reason": "The passage states that leaves contain two partially isolated compartments (mesophyll and bundle-sheath cells) to enable rubisco to work in a CO2-rich, low-O2 environment, matching the claim's content and strength in the C4 photosynthesis context."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "**Step 1 \u2014 Initial fixation in the mesophyll (the \"CO2 pump\").** CO2 is initially fixed in the mesophyll cells by PEP carboxylase (PEPC), in which the three-carbon phosphoenolpyruvate (PEP) reacts with CO2 to form the four-carbon oxaloacetic acid (OAA).",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that CO2 is initially fixed in mesophyll cells by PEP carboxylase, with the three-carbon PEP reacting with CO2 to form the four-carbon OAA, matching the claim's content, entities, and scope."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "PEPC has a low KM for CO2 (hence high affinity) and is not confounded by O2, so it works even at low CO2 concentrations.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"pepc has a low km for [CO2] \u2014 and, hence, high affinity, and is not confounded by o2 thus it will work even at low concentrations of [CO2]\", matching the claim's content and strength exactly."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "Because this first carboxylation uses a high-affinity enzyme that is not confounded by oxygen, it can fix carbon even when carbon dioxide is at low concentration.",
+      "verdict": "supports",
+      "reason": "The passage states PEP carboxylase \"has a low km ... and, hence, high affinity, and is not confounded by o2 thus it will work even at low concentrations,\" which directly matches the claim's reasoning and strength."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "**Step 2 \u2014 Transport as a C4 acid.** OAA can then be reduced to malate or transaminated to aspartate.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"oaa can then be reduced to malate or transaminated to aspartate,\" matching the claim's content, scope, and strength exactly."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "In the NADP-ME subtype (the most commonly described), the OAA is converted to malate, which diffuses to the bundle-sheath cells surrounding a nearby vein.",
+      "verdict": "overstates",
+      "reason": "The passage confirms malate diffusing to bundle-sheath cells and decarboxylation by NADP-ME, but nowhere states that NADP-ME is \"the most commonly described\" subtype, so the claim adds an unsupported characterization."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "**Step 3 \u2014 Decarboxylation in the bundle sheath (CO2 release).** In the bundle sheath, the malate is decarboxylated by NADP-malic enzyme (NADP-ME) to produce CO2 and pyruvate.",
+      "verdict": "supports",
+      "reason": "The passage states malate is decarboxylated in bundle-sheath cells by NADP-ME \"to produce [CO\u2082] and pyruvate,\" with the missing product unambiguously identified as CO\u2082 by the subsequent statement that it is fixed by Rubisco \u2014 matching the claim's enzyme, substrate, location, and products exactly."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "This decarboxylation creates a CO2-rich environment around RuBisCO, thereby suppressing photorespiration.",
+      "verdict": "supports",
+      "reason": "The passage states the intermediates \"are decarboxylated, creating a CO2-rich environment around rubisco and thereby suppressing photorespiration,\" matching the claim's content and mechanism exactly."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "The released CO2 is then fixed by RuBisCO to produce phosphoglycerate (PGA), entering the Calvin cycle.",
+      "verdict": "supports",
+      "reason": "The passage states the CO2 released by NADP-ME decarboxylation of malate \"is fixed by rubisco to produce phosphoglycerate (pga)\" which \"enters the conversion phase of the calvin cycle,\" matching the claim's content and sequence."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "**Step 4 \u2014 Regeneration of the acceptor.** The resulting pyruvate diffuses back to the mesophyll, where it is converted back to PEP by pyruvate phosphate dikinase (PPDK), a reaction requiring inorganic phosphate and ATP (producing PEP, AMP, and inorganic pyrophosphate).",
+      "verdict": "overstates",
+      "reason": "The passage only supports that \"the resulting pyruvate (pyr)... diffuses back to the mesophyll,\" but it never states that pyruvate is converted back to PEP by PPDK or specifies Pi/ATP inputs and AMP/PPi products."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "This extra ATP cost is the price of the concentrating mechanism; in exchange, concentrating CO2 allows high rates of photosynthesis at higher temperatures, since higher CO2 concentration overcomes the reduction of gas solubility with temperature (Henry's law).",
+      "verdict": "supports",
+      "reason": "The passage directly states that extra ATP is needed to regenerate PEP and that concentrating CO2 enables high photosynthesis rates at higher temperatures because higher CO2 overcomes the temperature-dependent reduction of gas solubility per Henry's law, matching the claim's content and causal chain."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "**Anatomical basis and variants.** C4 plants often possess \"kranz anatomy,\" in which vascular bundles are surrounded by two rings of cells, the inner ring being starch-rich bundle sheath cells.",
+      "verdict": "supports",
+      "reason": "The passage states that kranz anatomy features vascular bundles surrounded by two rings of cells with the inner ring being bundle sheath cells containing starch-rich chloroplasts, matching the claim's content, scope, and qualifier \"often.\""
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "The biochemical details vary among three subtypes defined by the decarboxylating enzyme: NADP-malic enzyme (NADP-ME), NAD-malic enzyme (NAD-ME), and PEP carboxykinase (PEPCK); for example, maize and sugarcane use a combination of NADP-ME and PEPCK, while millet uses preferentially NAD-ME.",
+      "verdict": "supports",
+      "reason": "The passage states exactly that C4 biochemical variability is grouped into three subtypes differentiated by the decarboxylating enzyme (NADP-ME, NAD-ME, PEPCK), and gives the same examples: maize and sugarcane use a combination of NADP-ME and PEPCK, while millet uses preferentially NAD-ME."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "In the NAD-ME type, OAA is transaminated to aspartate, which is the metabolite that diffuses to the bundle sheath, where it is transaminated back to OAA before decarboxylation.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that OAA is \"transaminated by aspartate aminotransferase to aspartate (asp) which is the metabolite diffusing to the bundle sheath\" and that \"in the bundle sheath asp is transaminated again to oaa and then undergoes... oxidative decarboxylation,\" matching the claim's steps, entities, and scope."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "A few species operate a limited C4 cycle without distinct bundle sheath tissue.",
+      "verdict": "supports",
+      "reason": "The passage states \"there are, however, a few species that operate a limited cycle without any distinct bundle sheath tissue,\" directly matching the claim's content and strength (the surrounding references to kranz anatomy, bundle-sheath-type areas, and rubisco confirm the omitted term is the C4 cycle)."
+    },
+    {
+      "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+      "claim": "The net result is that CO2 capture occurs in mesophyll cells while the Calvin cycle runs in bundle sheath cells, and this spatial separation is what allows the CO2 concentration around RuBisCO to be raised well above ambient.",
+      "verdict": "supports",
+      "reason": "The passage explicitly states the mesophyll/ bundle sheath spatial separation of CO2 capture and the Calvin cycle, and that CO2-impermeable bundle sheath cells concentrate internal CO2 high enough to avoid photorespiration, matching the claim's content and causal mechanism."
+    },
+    {
+      "question": "What is the function of a plastid in a plant cell?",
+      "claim": "A plastid is a membrane-bound organelle in plant cells whose functions include carrying out photosynthesis (in chloroplasts, which contain chlorophyll), storing products such as starch, and synthesizing fatty acids and terpenes that are used for energy production and as raw materials for other molecules.",
+      "verdict": "does_not_support",
+      "reason": "The passage only states that plastids contribute to pigment production, that most are photosynthetic leading to color and energy storage/production, and lists plastid types \u2014 it never mentions chloroplasts, chlorophyll, starch, fatty acids, or terpenes, so the claim's specific functions and entities are unsupported."
+    },
+    {
+      "question": "What is aircraft upset and why is it dangerous for flight safety?",
+      "claim": "Aircraft upset is a dangerous condition in which an aircraft's flight attitude or airspeed moves outside the normal bounds of operation for which it is designed.",
+      "verdict": "supports",
+      "reason": "The passage states almost verbatim that aircraft upset is \"a dangerous condition in aircraft operations in which the flight attitude or airspeed of an aircraft is outside the normal bounds of operation for which it is designed,\" matching the claim's content and scope exactly."
+    },
+    {
+      "question": "What is aircraft upset and why is it dangerous for flight safety?",
+      "claim": "It is dangerous because it can lead to loss of control (LOC) of the aircraft and sometimes total loss of the aircraft itself.",
+      "verdict": "supports",
+      "reason": "The passage states aircraft upset \"is a dangerous condition\" that \"may result in the loss of control (loc) of the aircraft, and sometimes the total loss of the aircraft itself,\" matching the claim's content, qualifiers (\"can\" \u2248 \"may\"), and scope."
+    },
+    {
+      "question": "What is aircraft upset and why is it dangerous for flight safety?",
+      "claim": "Causes of loss of control include excessive altitude for the airplane's weight, turbulent weather, pilot disorientation, or system failure.",
+      "verdict": "supports",
+      "reason": "The passage states loss of control \"may be due to excessive altitude for the airplane's weight, turbulent weather, pilot disorientation, or a system failure,\" matching the claim's listed causes and its \"include\" framing exactly."
+    },
+    {
+      "question": "What is aircraft upset and why is it dangerous for flight safety?",
+      "claim": "The hazard is well documented: Boeing data attribute 2,051 deaths in 22 accidents during 1998\u20132007 to LOC accidents, and NTSB data for 1994\u20132003 record 32 accidents and more than 2,100 lives lost worldwide.",
+      "verdict": "supports",
+      "reason": "The passage states exactly the cited figures: Boeing data of 2,051 deaths in 22 LOC accidents during 1998\u20132007 and NTSB data of 32 accidents and more than 2,100 lives lost worldwide in 1994\u20132003, matching the claim's scope, numbers, and timeframe."
+    },
+    {
+      "question": "Where is geothermal power used in the United Kingdom?",
+      "claim": "In the United Kingdom, geothermal energy is used in only a few specific locations, and mainly for heating rather than electricity.",
+      "verdict": "supports",
+      "reason": "The passage states the UK's only existing geothermal station is the heat-only Southampton scheme, with just one electricity plant (Cornwall) still in drilling \u2014 matching \"only a few specific locations\" and use \"mainly for heating rather than electricity.\""
+    },
+    {
+      "question": "Where is geothermal power used in the United Kingdom?",
+      "claim": "The UK's only operating geothermal heat-generating station is in Southampton, where a borehole taps into the Wessex aquifer and supplies heat to the Southampton District Energy Scheme, which heats buildings such as the Civic Centre, WestQuay shopping centre, Royal South Hants Hospital, Solent University and Carnival offices.",
+      "verdict": "overstates",
+      "reason": "The passage supports the Southampton station, Wessex aquifer borehole, and District Energy Scheme, but it does not mention the specific heated buildings (Civic Centre, WestQuay, hospital, university, Carnival offices), so the claim adds unsupported detail beyond the passage's scope."
+    },
+    {
+      "question": "Where is geothermal power used in the United Kingdom?",
+      "claim": "Other geothermal projects are in Cornwall (the United Downs power project near Redruth, with drilling begun in 2018, and the planned Eden Project Hot Rock Geothermal Plant near St Austell), a planned district-heating scheme in Stoke-on-Trent, and a shelved heat project at Eastgate in Weardale, County Durham.",
+      "verdict": "overstates",
+      "reason": "The passage supports only the United Downs item (\u201cdrilling commenced at the site in november 2018\u201d) and Eastgate (\u201cshelved in 2010\u201d), while saying nothing about an Eden Project plant near St Austell or a Stoke-on-Trent district-heating scheme, so the claim\u2019s wider list exceeds the evidence."
+    },
+    {
+      "question": "Where is geothermal power used in the United Kingdom?",
+      "claim": "Geothermal resources with greatest potential include hot aquifers in the North East, Wessex, Cheshire and Northern Ireland, and 2012 'hotspots' were identified in Cornwall, Weardale, the Lake District, East Yorkshire, Lincolnshire, Cheshire, Worcester, Dorset, Hampshire, Northern Ireland and Scotland.",
+      "verdict": "does_not_support",
+      "reason": "The 2012 \"hotspots\" list matches the passage exactly, but the claim's assertion about hot aquifers with greatest potential in the North East, Wessex, Cheshire and Northern Ireland appears nowhere in the passage, so the passage does not warrant the full claim."
+    },
+    {
+      "question": "What are building-integrated photovoltaics?",
+      "claim": "Building-integrated photovoltaics (BIPV) are photovoltaic materials used to replace conventional building materials in parts of the building envelope, such as the roof, skylights, or fa\u00e7ades.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"building-integrated photovoltaics (bipv) are photovoltaic materials that are used to replace conventional building materials in parts of the building envelope such as the roof, skylights, or fa\u00e7ades,\" matching the claim exactly in content, scope, and strength."
+    },
+    {
+      "question": "What are building-integrated photovoltaics?",
+      "claim": "They are increasingly incorporated into new building construction as a principal or ancillary source of electrical power, and existing buildings can be retrofitted with similar technology.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that BIPV \"are increasingly being incorporated into the construction of new buildings as a principal or ancillary source of electrical power, although existing buildings may be retrofitted with similar technology,\" matching the claim's content, scope, and strength (\"may\" \u2248 \"can be\")."
+    },
+    {
+      "question": "What are building-integrated photovoltaics?",
+      "claim": "The advantage of integrated photovoltaics over non-integrated systems is that the initial cost can be offset by reducing spending on the building materials and labor that the BIPV modules replace.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"the advantage of integrated photovoltaics over more common non-integrated systems is that the initial cost can be offset by reducing the amount spent on building materials and labor that would normally be used to construct the part of the building that the bipv modules replace\" \u2014 matching the claim's content and strength exactly."
+    },
+    {
+      "question": "What are building-integrated photovoltaics?",
+      "claim": "BIPV also enables broader solar adoption when aesthetics matter and traditional rack-mounted solar panels would disrupt the building's intended appearance.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"bipv allows for more widespread solar adoption when the building's aesthetics matter and traditional rack-mounted solar panels would disrupt the intended look of the building,\" matching the claim's content, scope, and strength."
+    },
+    {
+      "question": "What are building-integrated photovoltaics?",
+      "claim": "The term building-applied photovoltaics (BAPV) is sometimes used for photovoltaics retrofitted into a building after construction is complete; most building-integrated installations are actually BAPV.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that BAPV \"is sometimes used to refer to photovoltaics that are retrofit \u2013 integrated into the building after construction is complete\" and that \"most building-integrated installations are actually bapv,\" matching the claim's exact qualifiers and scope."
+    },
+    {
+      "question": "How does a convolutional neural network process grid-like data such as images?",
+      "claim": "A convolutional neural network (CNN) processes grid-like data such as images through layers that perform convolutions: an input layer (a tensor shaped as inputs \u00d7 height \u00d7 width \u00d7 channels), hidden convolutional layers, and an output layer.",
+      "verdict": "supports",
+      "reason": "The passage directly states a CNN consists of input, hidden (convolutional), and output layers, that the input is a tensor shaped (number of inputs) \u00d7 (input height) \u00d7 (input width) \u00d7 (input channels), and that hidden layers perform convolutions on images \u2014 matching the claim's structure, entities, and scope."
+    },
+    {
+      "question": "How does a convolutional neural network process grid-like data such as images?",
+      "claim": "In each convolutional layer, small convolution kernels (filters) with shared weights slide across the input matrix, computing dot products (typically the Frobenius inner product) with the local region they cover; each convolutional neuron thus processes only its receptive field.",
+      "verdict": "overstates",
+      "reason": "The passage supports that a convolution kernel performs a (usually Frobenius) dot product with the layer's input as it slides along, but it never states the kernels are \"small,\" that they have \"shared weights,\" or that each neuron processes only its \"receptive field\" \u2014 details the claim adds."
+    },
+    {
+      "question": "How does a convolutional neural network process grid-like data such as images?",
+      "claim": "As the kernel slides, it generates a feature map (activation map), usually passed through an activation function such as ReLU, which becomes the input to the next layer.",
+      "verdict": "supports",
+      "reason": "The passage states that as the kernel slides it generates a \"feature map, also called an activation map,\" that the layer's \"activation function is commonly relu,\" and that the feature map \"contributes to the input of the next layer,\" matching the claim's content and scope."
+    },
+    {
+      "question": "How does a convolutional neural network process grid-like data such as images?",
+      "claim": "Convolution is followed by other layers such as pooling, fully connected, and normalization layers.",
+      "verdict": "supports",
+      "reason": "The passage directly states that after the convolution operation generates a feature map feeding the next layer, \"this is followed by other layers such as pooling layers, fully connected layers, and normalization layers,\" matching the claim's content and strength exactly."
+    },
+    {
+      "question": "How does a convolutional neural network process grid-like data such as images?",
+      "claim": "This weight-sharing drastically reduces the number of free parameters compared with fully connected networks\u2014for example, a 5\u00d75 shared-weight tiling needs only 25 neurons versus 10,000 weights per neuron for a 100\u00d7100 image\u2014enabling deeper networks and helping avoid vanishing/exploding gradients.",
+      "verdict": "supports",
+      "reason": "The passage states every element of the claim with matching strength and numbers: 10,000 weights per neuron for a 100\u00d7100 image, 25 neurons for a 5\u00d75 shared-weight tiling, reduction of free parameters enabling deeper networks, and avoidance of vanishing/exploding gradients."
+    },
+    {
+      "question": "How does a convolutional neural network process grid-like data such as images?",
+      "claim": "Because the same filters slide across the input, CNNs produce translation-equivariant feature maps and learn hierarchical patterns of increasing complexity from smaller, simpler patterns, learning the filters automatically rather than using hand-engineered feature extraction.",
+      "verdict": "supports",
+      "reason": "The passage states all three parts of the claim: sliding shared filters provide \"translation-equivariant responses known as feature maps,\" CNNs \"assemble patterns of increasing complexity using smaller and simpler patterns,\" and \"the network learns to optimize the filters... through automated learning, whereas in traditional algorithms these filters are hand-engineered,\" matching the claim's scope and strength exactly."
+    },
+    {
+      "question": "What is the climate of Mars like?",
+      "claim": "1. Mars has a cold, thin-atmosphere climate that nonetheless shares important features with Earth's \u2014 polar ice caps, seasonal changes, and observable weather patterns \u2014 though with much lower thermal inertia and, unlike Earth, no oceans.",
+      "verdict": "overstates",
+      "reason": "The passage supports the similarities (polar ice caps, seasonal changes, observable weather patterns) and lower thermal inertia, but the claim's descriptors \"cold,\" \"thin-atmosphere,\" and \"unlike Earth, no oceans\" appear nowhere in the passage, adding unsupported specifics."
+    },
+    {
+      "question": "What is the climate of Mars like?",
+      "claim": "2. **Temperature.** Reported in-situ values for Mars's average temperature differ, but surface temperatures can reach a high at noon at the equator and a low at the poles, with actual Viking lander site measurements spanning a wide range.",
+      "verdict": "supports",
+      "reason": "The passage states each element of the claim with matching scope and strength: differing in-situ average temperature values, surface temperatures reaching a high at noon at the equator and a low at the poles, and actual Viking lander site measurements ranging across a span."
+    },
+    {
+      "question": "What is the climate of Mars like?",
+      "claim": "The Spirit rover recorded a maximum daytime air temperature in the shade of , and regularly recorded temperatures well above , except in winter.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim: \"the spirit rover recorded a maximum daytime air temperature in the shade of , and regularly recorded temperatures well above , except in winter,\" matching the claim exactly in content and qualifiers."
+    },
+    {
+      "question": "What is the climate of Mars like?",
+      "claim": "4. Later spacecraft datasets (Mars Global Surveyor's TES, Mars Odyssey's THEMIS, Mars Reconnaissance Orbiter's Mars Climate Sounder) suggest generally colder atmospheric temperatures and lower dust loading in recent decades than during the Viking era; TES data indicated much colder (10\u201320 K) global atmospheric temperatures during the 1997 versus 1977 perihelion periods, and that the global aphelion atmosphere is colder, less dusty, and cloudier than the established Viking climatology indicated.",
+      "verdict": "supports",
+      "reason": "The passage matches the claim nearly verbatim: all three instruments (TES, THEMIS, Mars Climate Sounder) are named, and the quoted findings \u2014 colder temperatures/lower dust in recent decades, \"much colder (10\u201320 k)\" during 1997 vs 1977 perihelion, and a colder, less dusty, cloudier aphelion atmosphere than Viking climatology \u2014 align exactly in scope and strength."
+    },
+    {
+      "question": "What is the climate of Mars like?",
+      "claim": "5. **Seasons and predictability.** Mars's temperature and circulation vary every Martian year, as expected for a planet with an atmosphere and axial tilt.",
+      "verdict": "supports",
+      "reason": "The passage explicitly states \"mars' temperature and circulation vary every martian year (as expected for any planet with an atmosphere and axial tilt),\" which matches the claim's content and strength."
+    },
+    {
+      "question": "What is the climate of Mars like?",
+      "claim": "6. Because Mars lacks oceans \u2014 a major source of interannual variation on Earth \u2014 its weather tends to be more repeatable and hence more predictable than Earth's.",
+      "verdict": "supports",
+      "reason": "The passage states Mars \"lacks oceans, a source of much interannual variation on earth\" and that \"martian weather tends to be more repeatable and hence more predictable than that of earth,\" matching the claim's content, entities, and strength."
+    },
+    {
+      "question": "What is the climate of Mars like?",
+      "claim": "7. Mars Orbiter Camera data from March 1999 covering 2.5 Martian years show that if an event occurs at a particular time of year, it is fairly likely to repeat the next year at nearly the same location, give or take a week.",
+      "verdict": "supports",
+      "reason": "The passage states nearly verbatim that Mars Orbiter Camera data beginning March 1999 and covering 2.5 Martian years indicate that an event at a particular time of year is \u201cfairly likely to repeat the next year at nearly the same location, give or take a week,\u201d matching the claim\u2019s scope and qualifiers."
+    },
+    {
+      "question": "What is the climate of Mars like?",
+      "claim": "8. **Dust storms, clouds, and precipitation.** Martian dust storms kick up fine particles around which clouds can form, and these clouds can form very high up.",
+      "verdict": "supports",
+      "reason": "The passage directly states \"martian dust storms can kick up fine particles... around which clouds can form. these clouds can form very high up,\" matching the claim's content and strength."
+    },
+    {
+      "question": "What is the climate of Mars like?",
+      "claim": "9. The first Mariner 4 images showed visible clouds in Mars's upper atmosphere; they are very faint and can only be seen reflecting sunlight against the night sky, similar to Earth's mesospheric (noctilucent) clouds.",
+      "verdict": "supports",
+      "reason": "The passage directly states each element of the claim: Mariner 4's first images showed visible clouds in Mars's upper atmosphere, they are very faint and visible only reflecting sunlight against the night sky, and they resemble Earth's mesospheric (noctilucent) clouds."
+    },
+    {
+      "question": "What is the climate of Mars like?",
+      "claim": "10. On September 29, 2008, the Phoenix lander detected snow falling from clouds above its landing site near Heimdal Crater, though the precipitation vaporized before reaching the ground \u2014 a phenomenon called virga.",
+      "verdict": "supports",
+      "reason": "The passage explicitly states the Phoenix lander detected snow from clouds above its landing site near Heimdal Crater on September 29, 2008, that vaporized before reaching the ground, a phenomenon called virga \u2014 matching the claim exactly in date, entities, and scope."
+    },
+    {
+      "question": "What is the climate of Mars like?",
+      "claim": "11. **Long-term and geological context.** Mars's climate includes periodic ice ages, and some scientists maintain that the great mass of the Tharsis volcanoes has had a major influence on the climate, since erupting volcanoes give off large amounts of gas, mainly water vapor and CO2.",
+      "verdict": "does_not_support",
+      "reason": "The passage mentions \"periodic ice ages\" but contains no reference to Tharsis volcanoes, volcanic outgassing of water vapor and CO2, or any claim that volcanic mass influenced Mars's climate."
+    },
+    {
+      "question": "What is the climate of Mars like?",
+      "claim": "12. The climate is also of considerable relevance to the question of whether life is or ever has been present on the planet.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"the climate is of considerable relevance to the question of whether life is or ever has been present on the planet,\" matching the claim's content and strength exactly."
+    },
+    {
+      "question": "How does the Aviation Section of the U.S. Signal Corps fit into the early history of aviation?",
+      "claim": "The Aviation Section, Signal Corps, was the aerial warfare service of the United States from 1914 to 1918, and a direct statutory ancestor of the United States Air Force.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"the aviation section, signal corps, was the aerial warfare service of the united states from 1914 to 1918, and a direct statutory ancestor of the united states air force,\" and confirms the USAF recognizes it as its predecessor."
+    },
+    {
+      "question": "How does the Aviation Section of the U.S. Signal Corps fit into the early history of aviation?",
+      "claim": "The Aviation Section, Signal Corps, was the aerial warfare service of the United States from 1914 to 1918, and a direct statutory ancestor of the United States Air Force.",
+      "verdict": "supports",
+      "reason": "The passage's first sentence states verbatim that the Aviation Section, Signal Corps, was the aerial warfare service of the United States from 1914 to 1918 and a direct statutory ancestor of the United States Air Force, matching the claim exactly in scope and strength."
+    },
+    {
+      "question": "How does the Aviation Section of the U.S. Signal Corps fit into the early history of aviation?",
+      "claim": "It was created by the Act of 18 July 1914 (Public Law 143, 63rd Congress) to supersede the Aeronautical Division, Signal Corps, after earlier legislation to make aviation an independent corps died in committee.",
+      "verdict": "supports",
+      "reason": "The passage explicitly states the Aviation Section, Signal Corps \"was created by the act of 18 july 1914... (public law 143, 63rd congress)... to supersede the aeronautical division\" and that \"earlier legislation to make the aviation service independent from the signal corps died in committee,\" matching the claim's entities, scope, and strength."
+    },
+    {
+      "question": "How does the Aviation Section of the U.S. Signal Corps fit into the early history of aviation?",
+      "claim": "At its creation it had only 19 officers and 101 enlisted men, with a first appropriation of $250,000 for fiscal year 1915.",
+      "verdict": "does_not_support",
+      "reason": "The passage confirms \"19 officers and 101 enlisted men\" at creation, but contains no mention of any appropriation of $250,000 or fiscal year 1915, so the claim's appropriation content is entirely absent from the cited evidence."
+    },
+    {
+      "question": "How does the Aviation Section of the U.S. Signal Corps fit into the early history of aviation?",
+      "claim": "Its 1st Aero Squadron flew the first American military reconnaissance over foreign territory on 16 March 1916 with Pershing's Punitive Expedition into Mexico, and its airmen had earlier, in April 1915, become the first American military airmen to come under hostile fire.",
+      "verdict": "does_not_support",
+      "reason": "The passage confirms only the April 1915 \"first under hostile fire\" event, but contains nothing about the 1st Aero Squadron, the 16 March 1916 date, or the first reconnaissance over foreign territory with Pershing's Punitive Expedition."
+    },
+    {
+      "question": "How does the Aviation Section of the U.S. Signal Corps fit into the early history of aviation?",
+      "claim": "It also established early aviation infrastructure and organizations, including the San Antonio Air Center (the first permanent aeronautical station, 1916), training stations such as San Diego and Mineola, New York, overseas detachments in the Philippines, Hawaii, and Panama, and the first National Guard aviation unit (the 1st Aero Company, New York National Guard, 1915).",
+      "verdict": "overstates",
+      "reason": "The passage confirms the San Antonio Air Center as the first permanent aeronautical station (1916), San Diego and Mineola training stations, and Manila detachment, but it never mentions Hawaii, Panama, or the 1st Aero Company, New York National Guard (1915), so the claim inflates scope beyond the evidence."
+    },
+    {
+      "question": "How does the Aviation Section of the U.S. Signal Corps fit into the early history of aviation?",
+      "claim": "Its existence also illustrates the growing pains of early military aviation: it began in turbulence, with friction between young pilot officers and non-pilot Signal Corps leadership, and legal restrictions (only unmarried lieutenants under 30 could be detailed) that hindered professional growth.",
+      "verdict": "overstates",
+      "reason": "The passage fully supports the legal restriction claim (\"only unmarried lieutenants of the line under the age of 30 could be detailed... handicapped the growth of the service\"), but it never mentions friction between young pilot officers and non-pilot Signal Corps leadership, so the claim adds unsupported content beyond the evidence."
+    },
+    {
+      "question": "How does the Aviation Section of the U.S. Signal Corps fit into the early history of aviation?",
+      "claim": "entry into World War I in April 1917, the Signal Corps proved inadequate to the task of building a wartime air arm; aviation was removed from Signal Corps jurisdiction in spring 1918, its statutory responsibilities were suspended by President Wilson, and it was formally disestablished with the creation of the Air Service in 1920.",
+      "verdict": "overstates",
+      "reason": "The passage matches the claim on Signal Corps inadequacy after April 1917 entry, aviation's removal in spring 1918, and disestablishment via the Air Service in 1920, but it never mentions President Wilson suspending statutory responsibilities, so the claim adds unsupported specificity."
+    },
+    {
+      "question": "How does boosting combine weak learners, and how does ensemble averaging differ from it?",
+      "claim": "Boosting combines weak learners by converting them into a single strong learner.",
+      "verdict": "supports",
+      "reason": "The passage states boosting is \"a family of machine learning algorithms that convert weak learners to strong ones\" and frames the Kearns\u2013Valiant question as \"can a set of weak learners create a single strong learner?\", matching the claim's content and scope."
+    },
+    {
+      "question": "How does boosting combine weak learners, and how does ensemble averaging differ from it?",
+      "claim": "A weak learner is a classifier only slightly correlated with the true classification (able to label examples better than random guessing), while a strong learner is arbitrarily well-correlated with the true classification.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that a weak learner is \"a classifier that is only slightly correlated with the true classification (it can label examples better than random guessing)\" and a strong learner is \"arbitrarily well-correlated with the true classification,\" matching the claim exactly in scope and strength."
+    },
+    {
+      "question": "How does boosting combine weak learners, and how does ensemble averaging differ from it?",
+      "claim": "Boosting is an ensemble meta-algorithm primarily for reducing bias (and also variance) in supervised learning.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that boosting is \"an ensemble meta-algorithm for primarily reducing bias, and also variance in supervised learning,\" matching the claim exactly."
+    },
+    {
+      "question": "How does boosting combine weak learners, and how does ensemble averaging differ from it?",
+      "claim": "In practice (e.g., AdaBoost), boosting works iteratively over multiple rounds: it trains a simple classifier, evaluates its training error, updates the weights of training examples\u2014increasing weights for misclassified examples and decreasing weights for correctly classified ones\u2014so subsequent learners focus on harder cases.",
+      "verdict": "supports",
+      "reason": "The passage describes exactly the claimed process: \"for t rounds... train a classifier using a single feature and evaluate the training error... update the weights of the training images: increase if classified wrongly by this classifier, decrease if correctly,\" matching the iterative reweighting claim; the concluding rationale about focusing on harder cases is a direct restatement of the weight-increase mechanism rather than an inflated addition."
+    },
+    {
+      "question": "How does boosting combine weak learners, and how does ensemble averaging differ from it?",
+      "claim": "The final strong classifier is formed as a linear combination of the individual classifiers, with each classifier's coefficient larger if its training error is small.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that the final strong classifier is \"the linear combination of the t classifiers (coefficient larger if training error is small),\" matching the claim's content and strength exactly."
+    },
+    {
+      "question": "How does boosting combine weak learners, and how does ensemble averaging differ from it?",
+      "claim": "Ensemble averaging differs from boosting in that it creates multiple models independently (each with low bias and high variance, e.g., neural networks with different random initial weights or varied parameters), trains each separately, and then combines them by averaging their outputs, so that the various errors of the models \"average out.\" The result is hopefully a combined model with low bias and low variance\u2014a resolution of the bias-variance dilemma.",
+      "verdict": "supports",
+      "reason": "The passage states that ensemble averaging creates experts with low bias and high variance (via varied initial weights/parameters), trains each separately, and averages them to hopefully achieve low bias and low variance, \"a resolution of the bias-variance dilemma,\" matching the claim's core content; only the passing \"differs from boosting\" framing is absent, but nothing contradicts it and the substantive description fully aligns."
+    },
+    {
+      "question": "How does boosting combine weak learners, and how does ensemble averaging differ from it?",
+      "claim": "Unlike boosting, ensemble averaging is one of the two major types of static committee machines, where multiple models are created and trained separately and then combined to produce a desired output, frequently performing better than any individual model because the various errors of the models \"average out.\"",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that ensemble averaging creates multiple models and combines them for a desired output, is one of the two major types of static committee machines, and frequently outperforms individual models because errors \"average out\" \u2014 matching the claim's scope and qualifiers."
+    },
+    {
+      "question": "How does a narrow-body aircraft differ from a wide-body aircraft?",
+      "claim": "A narrow-body aircraft (also called a single-aisle aircraft) is an airliner arranged along a single aisle, permitting up to 6-abreast seating in a narrower cabin.",
+      "verdict": "supports",
+      "reason": "The passage states nearly verbatim that a narrow-body (single-aisle) aircraft is \"an airliner arranged along a single aisle, permitting up to 6-abreast seating in a cabin less than [X] in width,\" matching the claim's content and strength, with \"narrower cabin\" paraphrasing \"cabin less than [X] in width.\""
+    },
+    {
+      "question": "How does a narrow-body aircraft differ from a wide-body aircraft?",
+      "claim": "In contrast, a wide-body aircraft is a larger airliner usually configured with multiple aisles and a wider fuselage, allowing at least seven-abreast seating and often more travel classes.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that a wide-body is \"a larger airliner usually configured with multiple aisles and a fuselage diameter of more than ..., allowing at least seven-abreast seating and often more travel classes,\" matching every element of the claim; \"wider fuselage\" fairly paraphrases \"fuselage diameter of more than.\""
+    },
+    {
+      "question": "How does a narrow-body aircraft differ from a wide-body aircraft?",
+      "claim": "Historically, twin-engine narrow-body aircraft such as the Boeing 737 Classic, McDonnell-Douglas MD-80, and Airbus A320 were primarily used in short to medium-haul markets that did not require the range or passenger capacity of that period's wide-body aircraft.",
+      "verdict": "supports",
+      "reason": "The passage states nearly verbatim that twin-engine narrow-bodies like the 737 Classic, MD-80, and A320 were primarily employed in short to medium-haul markets needing neither the range nor capacity of that period's wide-bodies, matching the claim's scope and strength."
+    },
+    {
+      "question": "What is the Memphis Belle known for?",
+      "claim": "The Memphis Belle is known as a Boeing B-17F Flying Fortress used during World War II.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"the memphis belle is a boeing b-17f flying fortress used during the second world war,\" matching the claim's exact content and scope."
+    },
+    {
+      "question": "What is the Memphis Belle known for?",
+      "claim": "It was one of the first USAAF B-17 heavy bombers to complete 25 combat missions, after which its crew returned to the United States to sell war bonds.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that the Memphis Belle \"was one of the first united states army air forces b-17 heavy bombers to complete 25 combat missions, after which the aircrew returned with the bomber to the united states to sell war bonds,\" matching the claim's content, scope, and strength exactly."
+    },
+    {
+      "question": "What is the Memphis Belle known for?",
+      "claim": "The aircraft inspired two motion pictures: the 1944 documentary \"Memphis Belle: A Story of a Flying Fortress\" and the 1990 Hollywood feature film \"Memphis Belle.\" It has been on display at the National Museum of the United States Air Force in Dayton, Ohio since May 2018.",
+      "verdict": "supports",
+      "reason": "The passage states the Memphis Belle inspired both \u201ca 1944 documentary film, memphis belle: a story of a flying fortress and the 1990 hollywood feature film, memphis belle\u201d and that at the Dayton museum \u201csince may 2018, it has been on display.\u201d"
+    },
+    {
+      "question": "What was the Kamikaze aircraft of 1937 known for?",
+      "claim": "The Kamikaze was a Mitsubishi Ki-15 Karigane airplane (registration J-BAAI) sponsored by the newspaper Asahi Shimbun.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that the Kamikaze was \"a Mitsubishi Ki-15 Karigane airplane, (registration J-BAAI) sponsored by the newspaper Asahi Shimbun,\" exactly matching the claim's entities and scope."
+    },
+    {
+      "question": "What was the Kamikaze aircraft of 1937 known for?",
+      "claim": "It became famous on April 9, 1937, as the first Japanese-built aircraft to fly from Japan to Europe.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim: \"it became famous on april 9, 1937, as the first japanese-built aircraft to fly from japan to europe\" \u2014 exactly matching the claim's date, scope, and wording."
+    },
+    {
+      "question": "What was the Kamikaze aircraft of 1937 known for?",
+      "claim": "The flight from Tokyo to London took 51 hours, 17 minutes and 23 seconds and was piloted by Masaaki Iinuma, with Kenji Tsukagoshi serving as navigator.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"the flight from tokyo to london took 51 hours, 17 minutes and 23 seconds and was piloted by masaaki iinuma (1912\u20131941), with kenji tsukagoshi (1900\u20131943) serving as navigator,\" matching every detail of the claim."
+    },
+    {
+      "question": "What was the Kamikaze aircraft of 1937 known for?",
+      "claim": "The flight was the first F\u00e9d\u00e9ration A\u00e9ronautique Internationale aviation record won by the Japanese, and it made Iinuma a national hero, acclaimed as the \"Japanese Lindbergh\"; both he and Tsukagoshi were awarded the L\u00e9gion d'honneur by the French government.",
+      "verdict": "supports",
+      "reason": "The passage explicitly states the flight was \"the first f\u00e9d\u00e9ration a\u00e9ronautique internationale aviation record to have been won by the japanese,\" that Iinuma \"was acclaimed as the 'japanese lindbergh'\" and became a national hero, and that \"both the pilot and navigator kenji tsukagoshi were awarded the l\u00e9gion d'honneur by the french government.\""
+    },
+    {
+      "question": "What is Dutch roll and how is it controlled on swept-wing aircraft?",
+      "claim": "Dutch roll is an oscillatory combined roll-and-yaw motion: the aircraft yaws and rolls to one side, recovers toward equilibrium, overshoots, then yaws and rolls the other way, repeating in cycles typically lasting 3\u201315 seconds (longer for airliners).",
+      "verdict": "supports",
+      "reason": "The passage matches the claim: dutch roll is \"an oscillatory combined roll and yaw motion\" with the exact described sequence (yaw/roll right, recovery, overshoot, yaw/roll left, repeating), and \"the period is usually on the order of 3\u201315 seconds,\" varying from a few seconds for light aircraft to \"a minute or more for airliners,\" consistent with the claim's \"(longer for airliners).\""
+    },
+    {
+      "question": "What is Dutch roll and how is it controlled on swept-wing aircraft?",
+      "claim": "On swept-wing aircraft it is controlled by installing a yaw damper\u2014effectively a special-purpose autopilot that damps out yawing oscillations by applying automatic rudder corrections.",
+      "verdict": "supports",
+      "reason": "The passage directly states that \"in swept-back wing aircraft, the dutch roll is solved by installing a yaw damper, in effect a special-purpose automatic pilot that damps out any yawing oscillation by applying rudder corrections,\" matching the claim's content and strength in full."
+    },
+    {
+      "question": "What is Dutch roll and how is it controlled on swept-wing aircraft?",
+      "claim": "Some swept-wing aircraft have an inherently unstable Dutch roll, making the yaw damper a safety requirement rather than a convenience; such aircraft use dual yaw dampers, and a failed damper may require limiting flight to lower altitudes and possibly lower Mach numbers where Dutch roll stability improves.",
+      "verdict": "does_not_support",
+      "reason": "While the passage states that \"some swept-wing aircraft have an unstable dutch roll\" and that yaw dampers damp the oscillation, it never mentions dual (redundant) yaw dampers, flight restrictions to lower altitudes or Mach numbers after a damper failure, or Dutch roll stability improving at lower altitudes/Mach."
+    },
+    {
+      "question": "How were the Hiy\u014d-class aircraft carriers adapted from ocean liners, and what was the fate of the name ship Hiy\u014d?",
+      "claim": "Hiy\u014d was purchased by the Navy Ministry in 1941 and converted while building, being completed shortly after the Battle of Midway in June 1942.",
+      "verdict": "overstates",
+      "reason": "The passage confirms the 1941 purchase by the Navy Ministry and completion shortly after Midway in June 1942, but it never states she was \"converted while building,\" an added detail the evidence does not warrant."
+    },
+    {
+      "question": "How were the Hiy\u014d-class aircraft carriers adapted from ocean liners, and what was the fate of the name ship Hiy\u014d?",
+      "claim": "The name ship Hiy\u014d was torpedoed in June 1943 (spending about three months under repair) and was ultimately sunk during the Battle of the Philippine Sea on 20 June 1944, when an American aerial torpedo hit triggered a gasoline-vapour explosion; 247 officers and ratings were lost, about a fifth of her complement.",
+      "verdict": "overstates",
+      "reason": "The passage supports most of the claim (mid-1943 torpedoing with ~3 months repair, sinking on 20 June 1944 by a gasoline-vapour explosion from an American torpedo, 247 lost, about a fifth of complement), but the claim adds specificity the passage does not state: it says torpedoed in \"June 1943\" whereas the passage only says \"mid-1943,\" and it calls the torpedo \"aerial,\" whereas the passage only says \"American torpedo.\""
+    },
+    {
+      "question": "How did the origins of the Japanese carriers Unry\u016b and Zuih\u014d differ, and how did each meet her end?",
+      "claim": "Unry\u016b was purpose-built as a fleet aircraft carrier\u2014the lead ship of her class\u2014laid down at Yokosuka Naval Arsenal on 1 August 1942, launched on 25 September 1943, and commissioned on 6 August 1944.",
+      "verdict": "overstates",
+      "reason": "The passage confirms all three dates and the shipyard, but it never states Unry\u016b was \"purpose-built as a fleet aircraft carrier\" or \"the lead ship of her class,\" adding unsupported characterizations beyond the evidence."
+    },
+    {
+      "question": "How did the origins of the Japanese carriers Unry\u016b and Zuih\u014d differ, and how did each meet her end?",
+      "claim": "Zuih\u014d, by contrast, began life as the submarine tender Takasaki, laid down on 20 June 1935 at Yokosuka Naval Arsenal; she was designed from the start to be convertible to either a fleet oiler or a light aircraft carrier, and was renamed and converted into a carrier while still under construction, becoming the name ship of a two-ship class of light carriers.",
+      "verdict": "does_not_support",
+      "reason": "The passage confirms Zuih\u014d was the two-ship class name ship converted from submarine tender Takasaki while under construction, but it does not contain the claimed laying-down date (20 June 1935), the Yokosuka Naval Arsenal location, or that she was designed from the start to be convertible to a fleet oiler or light carrier."
+    },
+    {
+      "question": "How did the origins of the Japanese carriers Unry\u016b and Zuih\u014d differ, and how did each meet her end?",
+      "claim": "Unry\u016b was torpedoed and sunk by the submarine USS Redfish on 19 December 1944 in the East China Sea.",
+      "verdict": "supports",
+      "reason": "The passage states that on 19 December 1944, Unry\u016b was torpedoed and sunk by Redfish (USS Redfish), which sank \"to the bed of the east china sea,\" matching the claim's date, attacker, manner, and location exactly."
+    },
+    {
+      "question": "How did the origins of the Japanese carriers Unry\u016b and Zuih\u014d differ, and how did each meet her end?",
+      "claim": "Redfish fired four torpedoes; the first hit under the carrier's bridge, stopping her dead, and a second struck near the forward elevator, detonating the volatile forward aviation gasoline tanks and causing the warheads of Ohka kamikaze planes stored on the lower hangar deck to explode, essentially blowing off the bow.",
+      "verdict": "supports",
+      "reason": "The passage states Redfish fired four torpedoes; the first hit directly under the bridge stopping the vessel dead, and a second struck near the forward elevator, detonating the forward aviation gasoline tanks and Ohka warheads on the lower hangar deck, essentially blowing the bow off the ship \u2014 matching the claim's scope and strength exactly."
+    },
+    {
+      "question": "How did the origins of the Japanese carriers Unry\u016b and Zuih\u014d differ, and how did each meet her end?",
+      "claim": "She sank bow-first in just seven minutes with the loss of 1,238 officers, crewmen and passengers; only 145 men survived.",
+      "verdict": "supports",
+      "reason": "The passage states the ship \"sank bow-first... in just seven minutes\" with \"1,238 officers, crewmen and passengers losing their lives\" and \"only 145 men survived\" \u2014 matching the claim's figures, qualifiers, and details exactly."
+    },
+    {
+      "question": "How did the origins of the Japanese carriers Unry\u016b and Zuih\u014d differ, and how did each meet her end?",
+      "claim": "Zuih\u014d mainly served as a decoy for the main striking forces and was sunk by American aircraft during the Battle of Leyte Gulf.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that at Leyte Gulf Zuih\u014d \"mainly served as a decoy for the main striking forces and was sunk by american aircraft,\" matching the claim's content and strength."
+    },
+    {
+      "question": "How does the PS10 solar power plant convert sunlight into electricity?",
+      "claim": "The PS10 solar power plant converts sunlight into electricity using a concentrating solar power tower system.",
+      "verdict": "supports",
+      "reason": "The passage states PS10 is \"the world's first commercial concentrating solar power tower\" whose heliostats \"concentrates the sun's rays\" onto a receiver, with \"the turbine driv[ing] a generator, producing electricity,\" matching the claim's content exactly."
+    },
+    {
+      "question": "How does the PS10 solar power plant convert sunlight into electricity?",
+      "claim": "It has 624 large movable mirrors called heliostats, each concentrating the sun's rays onto the top of a 115-meter (377 ft) high tower.",
+      "verdict": "supports",
+      "reason": "The passage states PS10 produces electricity with 624 large movable mirrors called heliostats, and \"each of the mirrors ... concentrates the sun's rays to the top of a 115-meter (377 ft) high\" tower, matching the claim's numbers, entities, and scope."
+    },
+    {
+      "question": "How does the PS10 solar power plant convert sunlight into electricity?",
+      "claim": "At the top of the tower, a solar receiver uses the concentrated sunlight to produce saturated steam at 275 \u00b0C.",
+      "verdict": "supports",
+      "reason": "The passage states \"the solar receiver at the top of the tower produces saturated steam at 275 \u00b0c,\" directly matching the claim's content (location, entity, and temperature all align)."
+    },
+    {
+      "question": "How does the PS10 solar power plant convert sunlight into electricity?",
+      "claim": "A steam turbine, located with the receiver at the tower top, is driven by this steam; the turbine in turn drives a generator, producing electricity.",
+      "verdict": "supports",
+      "reason": "The passage states a solar receiver and a steam turbine are located at the tower top and \"the turbine drives a generator, producing electricity,\" matching the claim's content and scope."
+    },
+    {
+      "question": "How does the PS10 solar power plant convert sunlight into electricity?",
+      "claim": "The plant has an 11 MW capacity and an energy conversion efficiency of approximately 17%.",
+      "verdict": "does_not_support",
+      "reason": "The passage confirms the 11 MW capacity but never mentions or implies an energy conversion efficiency of approximately 17%, so the claim's efficiency component is unsupported."
+    },
+    {
+      "question": "How does the PS10 solar power plant convert sunlight into electricity?",
+      "claim": "Additionally, PS10 can store heat in tanks as superheated and pressurized water at 50 bar and 285 \u00b0C, which can evaporate and flash back to steam to release energy when needed, providing about 30 minutes of storage.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that PS10 stores heat as superheated pressurized water at 50 bar and 285 \u00b0C, which evaporates and flashes back to steam to release energy, with 30 minutes of storage."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "1. Small wind turbines (also called micro or urban wind turbines) generate electricity for small-scale use and are typically smaller than the turbines found in wind farms.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that small wind turbines, also called micro or urban wind turbines, generate electricity for small-scale use and are typically smaller than wind-farm turbines \u2014 matching the claim's scope and strength exactly."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "2. The main differences are:\n\n**Scale and output.** Small turbines usually produce between 500 W and 10 kW, with some as small as 50 W; their blades produce 0.5\u201310 kW at optimal wind speed.",
+      "verdict": "overstates",
+      "reason": "The passage states turbines \"usually produce between 500 w and 10 kw, with some as small as 50 w,\" matching the first clause, but it never mentions blades producing 0.5\u201310 kW \"at optimal wind speed,\" so the claim adds an unsupported, more specific detail."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "3. Definitions vary: the Canadian Wind Energy Association classifies small turbines as up to 300 kW, while the IEC 61400 standard defines them by a rotor area under 200 m\u00b2 and voltage below 1000 V a.c.",
+      "verdict": "supports",
+      "reason": "The passage directly states both facts: \"the canadian wind energy association considers small wind turbines to be up to 300 kw, while the iec 61400 standard defines them as having a rotor area smaller than 200 m2 and generating voltage below 1000 va.c. or 1500 vd.c.\" \u2014 matching the claim's figures and qualifiers exactly."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "6. **Yaw and drivetrain.** Small turbines often have passive yaw systems, use a direct drive generator, and use a tail fin to point into the wind.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that small wind turbines \"often have passive yaw systems,\" \"use a direct drive generator and use a tail fin to point into the wind,\" exactly matching the claim's content and hedged strength."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "7. Larger turbines instead have geared powertrains and are actively pointed into the wind \u2014 typically actively controlled to face the wind direction measured by a wind vane on the back of the nacelle, minimizing yaw angle to maximize output.",
+      "verdict": "overstates",
+      "reason": "The passage only states that larger turbines \"have geared powertrains that are actively pointed into the wind\"; it says nothing about a wind vane on the back of the nacelle, minimizing yaw angle, or maximizing output, so the claim adds specific mechanisms and purposes the evidence does not warrant."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "8. **Rotor type.** Most small wind turbines are horizontal-axis, though vertical-axis wind turbines (VAWTs) may have benefits in maintenance and placement, at the cost of being less efficient at converting wind to electricity.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim: \"most small wind turbines are horizontal-axis wind turbines, but vertical axis wind turbines (vawts) may have benefits in maintenance and placement, although they are less efficient at converting wind to electricity\" \u2014 matching the claim's content and strength exactly."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "9. **Siting and installation.** Small turbines must reach a cut-in wind speed to generate and are often placed on towers above nearby obstacles, since obstacles can significantly disturb the wind.",
+      "verdict": "supports",
+      "reason": "The passage states turbines \"must reach a certain wind speed, called the cut-in speed, to start generating electricity,\" are \"often placed on towers... to avoid obstacles,\" and that \"wind tunnel studies show significant negative effects from nearby obstacles\" \u2014 matching the claim's scope and strength exactly."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "10. Rooftop versions can suffer vibration and turbulence from the roof ledge and often struggle to generate significant power, particularly in urban areas.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that small-scale rooftop turbines \"may face issues such as vibration and turbulence caused by the roof ledge\" and \"often struggle to generate significant amounts of power, particularly in urban areas,\" matching the claim's scope and strength."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "11. DIY/hobbyist turbines are usually rooftop units of about 1 kW or less on tilt-up or fixed/guyed towers.",
+      "verdict": "supports",
+      "reason": "The passage states DIY wind turbines are \"usually smaller (rooftop) turbines of approximately 1 kw or less\" and that \"these small wind turbines are usually tilt-up or fixed / guyed towers,\" matching the claim's scope, hedging (\"usually\"), and magnitude (about 1 kW or less)."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "12. Wind farms instead space turbines about 7 rotor diameters apart and interconnect them with a medium-voltage (often 34.5 kV) collection system and communications network, stepping up to high voltage at a substation for the transmission grid.",
+      "verdict": "supports",
+      "reason": "The passage explicitly states turbines are interconnected via a medium-voltage (often 34.5 kV) collection and communications network, spaced 7D apart in a fully developed wind farm, and stepped up at a substation to the high-voltage transmission grid \u2014 matching the claim's content and strength."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "13. **Electrical and braking systems.** Small turbine generators are usually three-phase AC, with a trend toward induction types, though some use single-phase or DC output.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"the generators for small wind turbines are usually three-phase alternating current generators and the trend is to use the induction type, although some models utilize single-phase generators or direct current output,\" matching the claim exactly."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "14. Braking a small turbine can be done by dumping generator energy into a resistor bank \u2014 a method usually not applied on large, grid-connected turbines.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that braking a small turbine can be done by dumping generator energy into a resistor bank and that this method is usually not applied on large, grid-connected turbines, matching the claim's content and qualifier exactly."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "15. Modern large turbines use variable-speed generators with partial or full-scale power converters for grid interconnection and low-voltage ride-through capability.",
+      "verdict": "supports",
+      "reason": "The passage states \"most modern turbines use variable speed generators combined with either a partial or full-scale power converter between the turbine generator and the collector system, which generally have more desirable properties for grid interconnection and have low voltage ride through-capabilities,\" matching the claim's entities and scope."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "16. **Cost and market.** In the US, residential turbines of 2\u201310 kW carry installed costs that incentives in 19 states can cut by up to 50 percent, to $3 per watt, with payback estimated at 5\u201312 years.",
+      "verdict": "supports",
+      "reason": "The passage states that US residential turbines of 2\u201310 kW have incentives in 19 states reducing purchase price by up to 50% to $3 per watt, and Southwest Windpower estimates 5\u201312 year payback \u2014 matching the claim's scope and numbers."
+    },
+    {
+      "question": "How do small wind turbines differ from the large turbines used in wind farms?",
+      "claim": "17. Much US demand for small wind is for remote-location power and for site assessment ahead of large-scale wind installations.",
+      "verdict": "supports",
+      "reason": "The passage states that \"in 2019, much of the us demand for small wind turbines was for power generation at remote locations, and for purposes of site assessment for large scale wind power installations,\" matching the claim's content, scope, and hedged strength."
+    },
+    {
+      "question": "What design feature of the quietrevolution turbine avoids the pulsations that affect straight-bladed Darrieus turbines?",
+      "claim": "The quietrevolution turbine avoids the pulsations that affect straight-bladed Darrieus turbines by using three vertical airfoil blades, each with a helical twist of 120 degrees.",
+      "verdict": "supports",
+      "reason": "The passage directly states that quietrevolution turbines have three vertical airfoil blades with a 120-degree helical twist that \"spreads the torque evenly over the entire revolution, thus preventing the destructive pulsations of the straight-bladed giromill (darrieus turbine),\" exactly matching the claim's content and mechanism."
+    },
+    {
+      "question": "What design feature of the quietrevolution turbine avoids the pulsations that affect straight-bladed Darrieus turbines?",
+      "claim": "This helical design spreads the torque evenly over the entire revolution, preventing the destructive pulsations of the straight-bladed giromill (Darrieus turbine).",
+      "verdict": "supports",
+      "reason": "The passage states directly: \"this feature spreads the torque evenly over the entire revolution, thus preventing the destructive pulsations of the straight-bladed giromill (darrieus turbine)\", matching the claim's content and strength exactly."
+    },
+    {
+      "question": "What efficiency limits do third-generation photovoltaic cells try to overcome?",
+      "claim": "Third-generation photovoltaic cells try to overcome the Shockley\u2013Queisser limit, which restricts single-bandgap solar cells to about 31\u201341% power efficiency (33.7% theoretical maximum for a perfect single-layer cell).",
+      "verdict": "overstates",
+      "reason": "The passage supports that third-generation cells \"potentially\" overcome the Shockley\u2013Queisser limit of \"31\u201341% power efficiency for single bandgap solar cells,\" but the parenthetical claim of a \"33.7% theoretical maximum for a perfect single-layer cell\" appears nowhere in the passage, adding an unsupported specific figure and greater precision than the cited evidence provides."
+    },
+    {
+      "question": "What efficiency limits do third-generation photovoltaic cells try to overcome?",
+      "claim": "The limit arises because photons below the bandgap energy are not absorbed (e.g., infrared for silicon's ~1.1 eV bandgap), while photons above the bandgap lose their excess energy as heat (e.g., blue light's energy is wasted in a silicon cell).",
+      "verdict": "supports",
+      "reason": "The passage directly states that energy above the bandgap is lost (\"in this case blue light's energy is lost in a silicon cell\") and that lower-energy photons are rejected, matching both mechanisms and examples in the claim."
+    },
+    {
+      "question": "What efficiency limits do third-generation photovoltaic cells try to overcome?",
+      "claim": "Approaches to exceed this limit include multi-junction/tandem cells, hot-carrier cells, intermediate-band cells, and photon upconversion/downconversion.",
+      "verdict": "supports",
+      "reason": "The passage demonstrates multi-junction cells exceeding the single-layer limit (44%/48% vs. 33.7%) and lists hot-carrier, intermediate-band, and photon upconversion/downconversion among the third-generation technologies aimed at surpassing it."
+    },
+    {
+      "question": "How does the Andasol solar power station keep generating electricity after sunset?",
+      "claim": "The Andasol solar power station keeps generating electricity after sunset by using a thermal storage system that captures part of the heat produced in its solar field during the day and stores it in a molten salt mixture (60% sodium nitrate and 40% potassium nitrate) held in large tanks.",
+      "verdict": "supports",
+      "reason": "The passage states the storage system absorbs part of the heat produced in the solar field during the day, stores it in a molten salt mixture of 60% sodium nitrate and 40% potassium nitrate, and that the stored heat is enough to run the turbine and produce electricity \"for about 7.5 hours at full-load, in case of overcast skies or after sunset,\" matching the claim's content, entities, and strength."
+    },
+    {
+      "question": "How does the Andasol solar power station keep generating electricity after sunset?",
+      "claim": "When the sun is down, that stored heat is used to run the turbine and produce electricity\u2014each fully loaded storage system holds about 1,010 MW\u00b7h of heat, enough for roughly 7.5 hours of full-load generation after sunset or during overcast skies.",
+      "verdict": "supports",
+      "reason": "The passage states \"each unit fully loaded storage system holds 1,010 mw\u00b7ht of heat, enough to run the turbine and produce electricity for about 7.5 hours at full-load, in case of overcast skies or after sunset,\" matching the claim exactly."
+    },
+    {
+      "question": "How does the Andasol solar power station keep generating electricity after sunset?",
+      "claim": "This storage approach almost doubles the plant\u2019s annual operational hours.",
+      "verdict": "supports",
+      "reason": "The passage states \"this process almost doubles the number of operational hours at the solar thermal power plant per year,\" matching the claim's content, scope, and strength."
+    },
+    {
+      "question": "Why has geothermal power not succeeded in Australia despite its promising hot granite resources?",
+      "claim": "The most advanced project, Geodynamics' 1 MWe Habanero pilot plant in South Australia's Cooper Basin, operated for 160 days in 2013 but was abandoned after being assessed as uneconomic due to a combination of the high cost of commercialising generation and the remoteness of the site.",
+      "verdict": "supports",
+      "reason": "The passage confirms the Habanero plant \"progressed the furthest,\" \"operated for 160 days in 2013,\" and was \"abandoned after being assessed as uneconomic due to a combination of the cost of commercialising generation and the remoteness of the site,\" matching the claim's facts and scope."
+    },
+    {
+      "question": "Why has geothermal power not succeeded in Australia despite its promising hot granite resources?",
+      "claim": "Geodynamics' chief executive explained that although the technology worked, the cost of implementing it and delivering the electricity to market exceeded the revenue that could be generated; the company plugged and remediated its wells and exited geothermal power entirely (later renaming itself ReNu Energy).",
+      "verdict": "supports",
+      "reason": "The passage quotes CEO Chris Murray stating \"the technology worked\" but costs of implementation and delivery exceeded \"the revenue stream that we could create,\" confirms wells were \"plugged and remediated,\" and states Geodynamics is \"no longer exploring geothermal power\" and \"changed its name to renu energy\" \u2014 matching every element of the claim at matching strength."
+    },
+    {
+      "question": "Why has geothermal power not succeeded in Australia despite its promising hot granite resources?",
+      "claim": "As a result, no geothermal power plants are operating in Australia, even though exploratory drilling confirmed high-temperature hot granites at depths of more than four kilometres in Central Australia and South Australia was once described as \"Australia's hot rock haven\" with hopes of supplying an estimated 6.8% of Australia's baseload power needs by 2030.",
+      "verdict": "supports",
+      "reason": "The passage confirms no operating plants (all projects abandoned; the lone Queensland plant \"remains idle\"), hot granites detected at depths \"of more than four kilometres\" in Central Australia, and South Australia described as \"australia's hot rock haven\" hoped to provide \"an estimated 6.8% of australia's base load power needs by 2030\" \u2014 matching the claim's entities, figures, and scope."
+    },
+    {
+      "question": "What is a large language model and how does it generate text?",
+      "claim": "A large language model (LLM) is a type of language model notable for its ability to achieve general-purpose language understanding and generation.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim: \"a large language model (llm) is a type of language model notable for its ability to achieve general-purpose language understanding and generation,\" exactly matching the claim's content and strength."
+    },
+    {
+      "question": "What is a large language model and how does it generate text?",
+      "claim": "LLMs acquire these abilities by using massive amounts of data to learn billions of parameters during training and consuming large computational resources during their training and operation.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"llms acquire these abilities by using massive amounts of data to learn billions of parameters during training and consuming large computational resources during their training and operation,\" matching the claim exactly in content and strength."
+    },
+    {
+      "question": "What is a large language model and how does it generate text?",
+      "claim": "They are artificial neural networks, mainly transformers, and are (pre-)trained using self-supervised learning and semi-supervised learning.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"llms are artificial neural networks (mainly transformers) and are (pre-)trained using self-supervised learning and semi-supervised learning,\" matching the claim's content, entities, and scope exactly."
+    },
+    {
+      "question": "What is a large language model and how does it generate text?",
+      "claim": "As autoregressive language models, LLMs generate text by taking an input text and repeatedly predicting the next token or word.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim: \"as autoregressive language models, they work by taking an input text and repeatedly predicting the next token or word,\" which matches the claim's content and strength exactly."
+    },
+    {
+      "question": "What is a large language model and how does it generate text?",
+      "claim": "This generation process works within the scope of a context window, which limits how much of a conversation or text the model can take into account when generating its next answer.",
+      "verdict": "supports",
+      "reason": "The passage states that how much of a conversation a model can take into account when generating its next answer \"is limited by the size of a context window,\" directly matching the claim's content and strength."
+    },
+    {
+      "question": "What is a large language model and how does it generate text?",
+      "claim": "To determine which tokens are relevant to each other within the context window, the attention mechanism calculates \"soft\" weights for each token's embedding using multiple attention heads, each with its own relevance for calculating its own soft weights.",
+      "verdict": "supports",
+      "reason": "The passage directly states that the attention mechanism calculates \"soft\" weights for each token's embedding using multiple attention heads, \"each with its own 'relevance' for calculating its own soft weights\" \u2014 matching the claim's content and strength exactly."
+    },
+    {
+      "question": "What is a large language model and how does it generate text?",
+      "claim": "During training, a model may be pre-trained either to predict how a segment continues or what is missing in a segment, given a segment from its training dataset.",
+      "verdict": "supports",
+      "reason": "The passage states the claim nearly verbatim: \"a model may be pre-trained either to predict how the segment continues, or what is missing in the segment, given a segment from its training dataset,\" matching the claim's scope and the \"may\" qualifier exactly."
+    },
+    {
+      "question": "What is a large language model and how does it generate text?",
+      "claim": "After pre-training, reinforcement learning from human feedback (RLHF) through algorithms such as proximal policy optimization can be used to further fine-tune a model based on a dataset of human preferences.",
+      "verdict": "supports",
+      "reason": "The passage states nearly verbatim that \"reinforcement learning from human feedback (rlhf) through algorithms, such as proximal policy optimization, is used to further fine-tune a model based on a dataset of human preferences,\" and \"further fine-tune\" implies the post-pre-training timing the claim adds."
+    },
+    {
+      "question": "What is a large language model and how does it generate text?",
+      "claim": "Notable examples of LLMs include OpenAI's GPT models (e.g., GPT-3.5 and GPT-4, used in ChatGPT), Google's PaLM (used in Bard), and Meta's LLaMa.",
+      "verdict": "supports",
+      "reason": "The passage explicitly states \"notable examples include openai's gpt models (e.g., gpt-3.5 and gpt-4, used in chatgpt), google's palm (used in bard), and meta's llama,\" exactly matching the claim's content, entities, and strength."
+    },
+    {
+      "question": "What is a hyperparameter and how does it differ from a parameter learned during training?",
+      "claim": "A hyperparameter is a parameter whose value is used to control the learning process, as opposed to other parameters (typically node weights) whose values are derived via training.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"a hyperparameter is a parameter whose value is used to control the learning process. by contrast, the values of other parameters (typically node weights) are derived via training,\" matching the claim exactly in scope and strength."
+    },
+    {
+      "question": "What is a hyperparameter and how does it differ from a parameter learned during training?",
+      "claim": "In other words, hyperparameters are set to govern how training proceeds, while learned parameters are estimated from the data by the training algorithm.",
+      "verdict": "supports",
+      "reason": "The passage states hyperparameters \"control the learning process\" while \"the training algorithm learns the parameters from the data,\" directly matching the claim's contrast."
+    },
+    {
+      "question": "What is a hyperparameter and how does it differ from a parameter learned during training?",
+      "claim": "Hyperparameters come in two classes: model hyperparameters, which cannot be inferred while fitting the model to the training set because they relate to model selection (e.g., the topology and size of a neural network), and algorithm hyperparameters, which in principle do not affect the model's performance but influence the speed and quality of learning (e.g., learning rate, batch size, mini-batch size).",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that hyperparameters are classified as model hyperparameters (cannot be inferred while fitting, refer to model selection, e.g., topology and size of a neural network) and algorithm hyperparameters (in principle have no influence on model performance but affect speed and quality of learning, e.g., learning rate, batch size, mini-batch size), matching the claim exactly in scope and strength."
+    },
+    {
+      "question": "What is a hyperparameter and how does it differ from a parameter learned during training?",
+      "claim": "Some algorithms require no hyperparameters at all\u2014for example, ordinary least squares regression\u2014whereas others add them, such as LASSO, which introduces a regularization hyperparameter that must be set before the parameters are estimated through training.",
+      "verdict": "supports",
+      "reason": "The passage states that \"some simple algorithms (such as ordinary least squares regression) require none\" and that \"lasso is an algorithm that adds a regularization hyperparameter to ordinary least squares regression, which has to be set before estimating the parameters through the training algorithm,\" matching the claim's content, entities, and scope exactly."
+    },
+    {
+      "question": "How does active learning reduce the cost of labeling data?",
+      "claim": "Active learning reduces labeling costs by letting the learning algorithm interactively query a user or other information source to label only selected new data points, instead of requiring all data to be labeled in advance.",
+      "verdict": "supports",
+      "reason": "The passage states that active learning algorithms \"can interactively query a user (or some other information source) to label new data points,\" that \"manual labeling is expensive,\" and that \"since the learner chooses the examples, the number of examples to learn a concept can often be much lower than the number required in normal supervised learning\" \u2014 matching the claim's mechanism and cost-reduction rationale."
+    },
+    {
+      "question": "How does active learning reduce the cost of labeling data?",
+      "claim": "When unlabeled data is abundant but manual labeling is expensive, the learner chooses which examples to label, so the number of examples needed to learn a concept can often be much lower than in normal supervised learning.",
+      "verdict": "supports",
+      "reason": "The passage directly states that when \"unlabeled data is abundant but manual labeling is expensive,\" the learner \"chooses the examples, the number of examples to learn a concept can often be much lower than the number required in normal supervised learning\" \u2014 matching the claim's content, qualifiers, and scope exactly."
+    },
+    {
+      "question": "How does active learning reduce the cost of labeling data?",
+      "claim": "This means fewer human annotations are required overall, lowering labeling expense while still enabling supervised learning; large-scale projects may also use crowdsourcing frameworks such as Amazon Mechanical Turk within the active learning loop.",
+      "verdict": "supports",
+      "reason": "The passage states the number of labeled examples needed is \"often... much lower than the number required in normal supervised learning\" in a setting where \"manual labeling is expensive,\" and explicitly says \"large-scale active learning projects may benefit from crowdsourcing frameworks such as amazon mechanical turk... in the active learning loop,\" matching both the cost/annotation and crowdsourcing components of the claim."
+    },
+    {
+      "question": "How does the weighted majority algorithm combine predictions from a pool of algorithms?",
+      "claim": "The weighted majority algorithm (WMA) combines predictions by assigning a positive weight to each algorithm in the pool, collecting weighted votes from all of them, and outputting the prediction with the higher total vote.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"a positive weight is given to each of the algorithms in the pool. the compound algorithm then collects weighted votes from all the algorithms in the pool, and gives the prediction that has a higher vote,\" exactly matching the claim's description."
+    },
+    {
+      "question": "How does the weighted majority algorithm combine predictions from a pool of algorithms?",
+      "claim": "When the compound algorithm makes a mistake, the algorithms in the pool that contributed to the wrong predicting will be discounted by a certain ratio \u03b2 where 0<\u03b2<1.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"if the compound algorithm makes a mistake, the algorithms in the pool that contributed to the wrong predicting will be discounted by a certain ratio \u03b2 where 0<\u03b2<1,\" matching the claim's content exactly."
+    },
+    {
+      "question": "How does a bidirectional recurrent neural network draw on both past and future context?",
+      "claim": "A bidirectional recurrent neural network (BRNN) draws on both past and future context by splitting the neurons of a regular RNN into two directions\u2014one processing input in the positive time direction (forward states) and one in the negative time direction (backward states)\u2014and connecting both hidden layers to the same output layer.",
+      "verdict": "supports",
+      "reason": "The passage states BRNNs split regular RNN neurons into forward and backward directions so that \"input information from the past and future of the current time frame can be used,\" and its training description (\"forward states and backward states are passed first, then output neurons are passed\") indicates both directional hidden states feed into the same output layer, matching the claim's content and scope."
+    },
+    {
+      "question": "How does a bidirectional recurrent neural network draw on both past and future context?",
+      "claim": "This lets the output layer receive information from past (backwards) and future (forward) states simultaneously, unlike standard RNNs, where future input information cannot be reached from the current state.",
+      "verdict": "supports",
+      "reason": "The passage states that BRNNs connect two hidden layers so \"the output layer can get information from past (backwards) and future (forward) states simultaneously\" and that in standard RNNs \"the future input information cannot be reached from the current state,\" matching the claim's content and scope."
+    },
+    {
+      "question": "How does a bidirectional recurrent neural network draw on both past and future context?",
+      "claim": "The two directional states do not feed into each other\u2019s inputs, so each direction\u2019s computation remains independent while jointly informing the prediction; this is especially useful when context on both sides is needed, as in handwriting recognition, where knowing the letters before and after the current letter improves performance.",
+      "verdict": "overstates",
+      "reason": "The passage supports that two hidden layers of opposite directions connect to the same output providing both-side context for handwriting recognition, but it never states that the directional states do not feed into each other's inputs or that each direction's computation remains independent \u2014 that mechanism is an unsupported addition."
+    },
+    {
+      "question": "How does a general regression neural network differ from a probabilistic neural network?",
+      "claim": "GRNN and PNN were both suggested by D.F. Specht, and both use radial basis functions, but GRNN is used for regression, prediction, and classification while PNN is widely used in classification and pattern recognition problems.",
+      "verdict": "does_not_support",
+      "reason": "The passage supports the GRNN claims (Specht 1991, radial basis functions, regression/prediction/classification) but never mentions PNN at all, so the PNN portion of the claim \u2014 Specht's authorship, RBF usage, and classification/pattern-recognition applications \u2014 is entirely absent from the cited evidence."
+    },
+    {
+      "question": "How does a general regression neural network differ from a probabilistic neural network?",
+      "claim": "A generalized regression neural network is used for regression, prediction, and classification, while a probabilistic neural network is widely used in classification and pattern recognition problems.",
+      "verdict": "does_not_support",
+      "reason": "The passage states \"grnn can be used for regression, prediction, and classification,\" but it never mentions a probabilistic neural network or its use in classification and pattern recognition, leaving half the claim unsupported."
+    },
+    {
+      "question": "What is CV dazzle and how does it relate to adversarial attacks on machine learning?",
+      "claim": "CV dazzle (computer vision dazzle, also called dazzle makeup or anti-surveillance makeup) is a type of camouflage used to hamper facial recognition software, inspired by dazzle camouflage historically used on ships and planes.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that CV dazzle is a type of camouflage used to hamper facial recognition software, inspired by dazzle camouflage used on vehicles such as ships and planes, matching the claim's scope and strength."
+    },
+    {
+      "question": "What is CV dazzle and how does it relate to adversarial attacks on machine learning?",
+      "claim": "It combines stylized makeup, asymmetric hair, and sometimes infrared lights built into glasses or clothing to break up the facial patterns that computer vision algorithms detect.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that 'cv dazzle combines stylized makeup, asymmetric hair, and sometimes infrared lights built in to glasses or clothing to break up detectable facial patterns recognized by computer vision algorithms,' matching the claim's content and strength exactly."
+    },
+    {
+      "question": "What is CV dazzle and how does it relate to adversarial attacks on machine learning?",
+      "claim": "It attempts to block facial recognition systems (such as DeepFace) by creating an \"anti-face\" through occlusion (covering certain facial features), transformation (altering the shape or colour of parts of the face), or a combination of both, and has been shown to be somewhat successful at defeating commonly used face detection software.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that CV dazzle \"attempts to block detection by facial recognition technologies such as deepface 'by creating an anti-face'\" using \"occlusion, covering certain facial features; transformation, altering the shape or colour of parts of the face; and a combination of the two,\" and that \"it has been shown to be somewhat successful at defeating face detection software in common use\" \u2014 matching the claim's entities, mechanisms, and hedged strength exactly."
+    },
+    {
+      "question": "What is CV dazzle and how does it relate to adversarial attacks on machine learning?",
+      "claim": "Its relationship to adversarial attacks on machine learning: adversarial machine learning is the study of attacks on machine learning algorithms and defenses against them, and one of its most common attack types is the evasion attack, in which samples are modified to exploit a trained model's imperfections so they are misclassified or evade detection.",
+      "verdict": "supports",
+      "reason": "The passage explicitly defines adversarial machine learning as the study of attacks on ML algorithms and defenses, lists evasion attacks among the most common attack types, and its historical spam-filter example substantiates the claim that evasion attacks modify samples to cause misclassification or evade detection."
+    },
+    {
+      "question": "What is CV dazzle and how does it relate to adversarial attacks on machine learning?",
+      "claim": "CV dazzle is a form of evasion attack that uses stylized makeup, asymmetric hair, and sometimes infrared lights built into glasses or clothing to break up detectable facial patterns recognized by computer vision algorithms.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"cv dazzle combines stylized makeup, asymmetric hair, and sometimes infrared lights built in to glasses or clothing to break up detectable facial patterns recognized by computer vision algorithms,\" and describes it as camouflage that hampers/defeats facial recognition software \u2014 fully matching the claim's description."
+    },
+    {
+      "question": "What is CV dazzle and how does it relate to adversarial attacks on machine learning?",
+      "claim": "The broader phenomenon of adversarial patterns on glasses or clothing designed to deceive facial-recognition systems or license-plate readers has even spawned a niche industry of \"stealth streetwear.\"",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that adversarial patterns on glasses or clothing designed to deceive facial-recognition systems or license-plate readers \"have led to a niche industry of 'stealth streetwear',\" matching the claim's content and scope exactly."
+    },
+    {
+      "question": "What is the subnivean climate and which animals depend on it?",
+      "claim": "It provides insulation and protection from predators and is the winter environment of many hibernal animals.",
+      "verdict": "supports",
+      "reason": "The passage explicitly states it \"is the environment of many hibernal animals, as it provides insulation and protection from predators,\" matching the claim's content and strength."
+    },
+    {
+      "question": "What is the subnivean climate and which animals depend on it?",
+      "claim": "It forms through three types of snow metamorphosis\u2014destructive, constructive, and melt metamorphosis\u2014which transform snowflakes into ice crystals and create spaces under the snow where small animals can move.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that the subnivean climate \"is formed by three different types of snow metamorphosis\" (destructive, constructive, melt) that \"transform individual snowflakes into ice crystals and create spaces under the snow where small animals can move\" \u2014 matching the claim's entities, scope, and strength exactly."
+    },
+    {
+      "question": "What is the subnivean climate and which animals depend on it?",
+      "claim": "Animals that depend on it include small mammals such as mice, voles, shrews, and lemmings, which rely on winter snow cover for survival and move under the snow for protection from heat loss and some predators.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"subnivean fauna includes small mammals such as mice, voles, shrews, and lemmings that must rely on winter snow cover for survival\" and that \"these mammals move under the snow for protection from heat loss and some predators,\" matching the claim's entities and scope exactly."
+    },
+    {
+      "question": "What is the subnivean climate and which animals depend on it?",
+      "claim": "In non-permafrost winter regions, the subnivean zone stays close to 32\u00b0F (0\u00b0C) once snow is at least about six inches (15 cm) deep.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that in winter regions without permafrost, the subnivean zone maintains a temperature close to 32\u00b0F (0\u00b0C) once snow depth reaches six inches (15 cm) or more, exactly matching the claim's scope, conditions, and quantities."
+    },
+    {
+      "question": "What is the subnivean climate and which animals depend on it?",
+      "claim": "Larger animals also use subnivean space: in the Arctic, ringed seals rest, sleep, and give birth in closed spaces under the snow above openings in the ice, and female polar bears den in snow caves to give birth.",
+      "verdict": "overstates",
+      "reason": "The passage says seals rest and sleep in the closed spaces under the snow, but states they \"give birth to their pups on the ice,\" whereas the claim asserts seals give birth in the closed subnivean spaces; the polar bear portion matches, but the claim conflates the seal birthing location with the den space."
+    },
+    {
+      "question": "What is the climate of Vancouver like?",
+      "claim": "Vancouver has a moderate oceanic climate (K\u00f6ppen Cfb) that borders on a warm-summer Mediterranean climate (Csb).",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that Vancouver \"has a moderate oceanic climate (k\u00f6ppen climate classification cfb) that borders on a warm-summer mediterranean climate (csb),\" matching the claim's content and strength exactly."
+    },
+    {
+      "question": "What is the climate of Vancouver like?",
+      "claim": "Its summers are typically dry\u2014often producing moderate drought conditions in July and August\u2014while the rest of the year is rainy, especially between October and March.",
+      "verdict": "supports",
+      "reason": "The passage explicitly states Vancouver's \"summer months are typically dry, often resulting in moderate drought conditions, usually in july and august\" and \"the rest of the year is rainy, especially between october and march,\" matching the claim's content, scope, and qualifiers exactly."
+    },
+    {
+      "question": "What is the climate of Vancouver like?",
+      "claim": "The city is Canada's third most rainy city, with over 161 rainy days per year, though rainfall varies sharply across the region: North Vancouver receives roughly double the annual rainfall of Vancouver Airport.",
+      "verdict": "supports",
+      "reason": "The passage states Vancouver is 'canada's third most rainy city, with over 161 rainy days per year' and that in North Vancouver 'the amount of rain received doubles' compared to Vancouver Airport, matching the claim's content and strength."
+    },
+    {
+      "question": "What is the climate of Vancouver like?",
+      "claim": "Snow in Vancouver tends to be wet, and winter temperatures often rise above and fall below freezing during the day, creating icy road conditions.",
+      "verdict": "overstates",
+      "reason": "The passage matches the wet-snow and fluctuating-temperature content, but hedges the outcome as conditions that \"can make for icy road conditions,\" whereas the claim asserts they are \"creating icy road conditions,\" inflating the modal certainty from possibility to fact."
+    },
+    {
+      "question": "What is the climate of Vancouver like?",
+      "claim": "Thunderstorms are rare (averaging about 6.1 days per year), and spring and autumn are usually showery and cool.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that thunderstorms are rare with an average of 6.1 thunderstorm days per year and that spring and autumn weather is usually showery and cool, matching the claim exactly."
+    },
+    {
+      "question": "What is the climate of Vancouver like?",
+      "claim": "The climate is moderated by the North Pacific Current and sheltered by Vancouver Island's mountains, though sea breezes and mountainous terrain create notable microclimates across Greater Vancouver.",
+      "verdict": "supports",
+      "reason": "The passage states Vancouver is \"tempered by the north pacific current\" and \"sheltered by the mountains of vancouver island to the west,\" and that \"sea breezes and mountainous terrain make greater vancouver a region of microclimates,\" matching every element of the claim."
+    },
+    {
+      "question": "How does the climate of Alaska vary from region to region?",
+      "claim": "Alaska's climate varies sharply from region to region, ranging from rainy temperate rainforest in the southeast to true Arctic tundra in the far north:\n\n- **Southeast (Juneau/panhandle):** A mid-latitude oceanic climate (K\u00f6ppen Cfb) in the south and a subarctic oceanic climate (Cfc) in the north.",
+      "verdict": "overstates",
+      "reason": "The passage fully supports the Southeast bullet (Cfb in southern sections, Cfc in northern parts, temperate rainforest), but it says nothing about sharp climate variation statewide or \"true Arctic tundra in the far north,\" so the claim's broader framing exceeds the passage's scope."
+    },
+    {
+      "question": "How does the climate of Alaska vary from region to region?",
+      "claim": "Much of the southern part is temperate rainforest\u2014the wettest and warmest part of the state, with mild winters (average daytime highs above freezing, the only region where this occurs) and high precipitation year-round, peaking in autumn.",
+      "verdict": "overstates",
+      "reason": "The passage confirms most details but explicitly qualifies that the Southeast is not the only region with above-freezing winter daytime highs\u2014\"except for in the southern parts of the aleutian islands such as unalaska\"\u2014so the claim's \"the only region where this occurs\" is inaccurate."
+    },
+    {
+      "question": "How does the climate of Alaska vary from region to region?",
+      "claim": "- **Southcentral (Anchorage):** A subarctic climate (K\u00f6ppen Dfc) that is mild by Alaskan standards due to coastal proximity.",
+      "verdict": "supports",
+      "reason": "The passage explicitly states Anchorage's Southcentral climate is \"mild by alaskan standards\" due \"in large part to its proximity to the coast\" and \"is a subarctic climate (k\u00f6ppen dfc),\" matching every element of the claim."
+    },
+    {
+      "question": "How does the climate of Alaska vary from region to region?",
+      "claim": "It receives less rain than the southeast but more snow, with clearer days and frequent strong southeast winds (the Knik wind) near Palmer in winter.",
+      "verdict": "supports",
+      "reason": "The passage states that south central Alaska \"does not get nearly as much rain as the southeast of alaska, it does get more snow, although days tend to be clearer there\" and has \"frequent, strong southeast winds known as the knik wind in the vicinity of palmer, especially in the winter months\" \u2014 matching the claim's content, scope, and qualifiers."
+    },
+    {
+      "question": "How does the climate of Alaska vary from region to region?",
+      "claim": "- **Interior (Fairbanks/east):** A true continental subarctic climate described as \"extreme\"\u2014some of the hottest and coldest temperatures in the state occur here, with summer temperatures reaching the 90s \u00b0F (near 34 \u00b0C) and winter lows falling far below zero.",
+      "verdict": "supports",
+      "reason": "The passage states the east/Fairbanks climate is \"extreme\" and \"a true continental subarctic climate,\" with \"some of the hottest and coldest temperatures in alaska,\" summers \"reaching into the 90s \u00b0f (near 34 \u00b0c),\" and winter temperatures that fall below zero\u2014matching the claim's content and strength."
+    },
+    {
+      "question": "How does the climate of Alaska vary from region to region?",
+      "claim": "Precipitation is sparse and peaks in summer; nearly all precipitation between October and April falls as snow, and ice fog is a hazard in deep winter.",
+      "verdict": "supports",
+      "reason": "The passage directly states that precipitation is \"generally sparse around the year, peaking during the summer months,\" that \"virtually all precipitation between october and april falls as snow,\" and that \"ice fog is a significant hazard during especially cold periods\" (November\u2013March), matching the claim's content and strength."
+    },
+    {
+      "question": "How does the climate of Alaska vary from region to region?",
+      "claim": "- **West:** Shaped by the Bering Sea and Gulf of Alaska; a subarctic oceanic climate in the southwest grading to continental subarctic farther north.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that western Alaska's climate 'is determined largely by the bering sea and the gulf of alaska' and 'is a subarctic oceanic climate in the southwest and a continental subarctic climate farther north,' matching the claim exactly."
+    },
+    {
+      "question": "How does the climate of Alaska vary from region to region?",
+      "claim": "Temperatures are moderate for the latitude, but precipitation varies enormously, with the northern side of the Seward Peninsula being technically a desert and some locations between Dillingham and Bethel averaging much higher precipitation.",
+      "verdict": "supports",
+      "reason": "The passage states the temperature is \"somewhat moderate considering how far north the area is,\" has a \"tremendous amount of variety, especially when considering precipitation,\" and explicitly contrasts the technically-a-desert northern Seward Peninsula with locations between Dillingham and Bethel averaging much higher precipitation \u2014 matching the claim's scope and strength."
+    },
+    {
+      "question": "How does the climate of Alaska vary from region to region?",
+      "claim": "- **North (Arctic Alaska):** An Arctic climate (K\u00f6ppen E) with long, very cold winters and short, cool summers; the sun does not rise for some weeks in winter and is out for 24 hours during some weeks in summer.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that the extreme north is \"an arctic climate (k\u00f6ppen e) with long, very cold winters and short, cool summers. the sun does not rise at all during some weeks in the winter, and is out for 24 hours during some weeks in the summer,\" matching the claim's content and strength."
+    },
+    {
+      "question": "How does the climate of Alaska vary from region to region?",
+      "claim": "Even with constant summer sun, average July lows in Utqia\u0121vik barely exceed freezing, snow is possible year-round, and it is the coldest region in Alaska.",
+      "verdict": "supports",
+      "reason": "The passage directly mirrors each claim component: \"despite 24 hours of sunshine in the summertime, the average low temperature is barely above freezing in utqia\u0121vik in july,\" \"snow may fall any month of the year,\" and \"north alaska is the coldest region in alaska.\""
+    },
+    {
+      "question": "How can climate change increase the risk of species extinctions?",
+      "claim": "Climate change can increase extinction risk through several pathways: (1) It alters temperature and weather patterns, pushing conditions outside a species' evolved ecological niche; species normally adapt or move, but the pace of recent change leaves many without suitable nearby habitat.",
+      "verdict": "supports",
+      "reason": "The passage explicitly states the claim's content with matching scope: climate change alters temperature/weather, pushing conditions outside species' niches (causing extinction), and while species normally adapt or move, the \"speed of recent climate change is so unprecedented\" that only 5% of ectotherm locations are within 50 km of suitable habitat \u2014 warranting \"many without suitable nearby habitat.\""
+    },
+    {
+      "question": "How can climate change increase the risk of species extinctions?",
+      "claim": "(2) It increases the frequency and intensity of extreme weather events that can directly wipe out regional populations.",
+      "verdict": "supports",
+      "reason": "The passage states \"climate change also increases both the frequency and intensity of extreme weather events, which can directly wipe out regional populations of species,\" matching the claim's content with identical scope and strength."
+    },
+    {
+      "question": "How can climate change increase the risk of species extinctions?",
+      "claim": "(3) Sea level rise can render coastal and low-lying island species extinct, as already occurred with the Bramble Cay melomys in Australia.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that species in coastal and low-lying island habitats \"can also be rendered extinct by sea level rise; this has already happened with bramble cay melomys in australia,\" matching the claim's content and strength exactly."
+    },
+    {
+      "question": "How can climate change increase the risk of species extinctions?",
+      "claim": "(4) It can increase the prevalence and spread of wildlife diseases, such as the amphibian-decline fungus Batrachochytrium dendrobatidis.",
+      "verdict": "supports",
+      "reason": "The passage states climate change \"has been linked with the increased prevalence and global spread\" of wildlife diseases, specifically naming B. dendrobatidis as a driver of amphibian decline \u2014 the claim's \"can increase\" is if anything a weaker, hedged version that matches in scope and entities."
+    },
+    {
+      "question": "How can climate change increase the risk of species extinctions?",
+      "claim": "(5) It can disrupt ecological partnerships through phenology changes and climate niche mismatch, decoupling species interactions and putting ecosystem services at risk.",
+      "verdict": "supports",
+      "reason": "The passage directly states that climate change may disrupt ecological partnerships via phenology changes and climate niche mismatch, leading to decoupling of species interactions and putting ecosystem services at risk \u2014 matching the claim's content, entities, and cautious \"can\" strength."
+    },
+    {
+      "question": "How can climate change increase the risk of species extinctions?",
+      "claim": "There is also evidence that warm-edge range contractions and extreme weather have already caused local extinctions, with some populations failing to recover.",
+      "verdict": "supports",
+      "reason": "The passage states there is \"abundant evidence for local extinctions from contractions at the warm edges of species' ranges,\" cites 31 cases of complete local extirpation from extreme weather, and notes populations \"did not recover to pre-disturbance levels in 38% of the cases,\" matching the claim's content and strength."
+    },
+    {
+      "question": "How do climate change conspiracy theories relate to organized climate change denial?",
+      "claim": "**Conspiracy theory as a denial tactic.** Climate change conspiracy theories assert that the scientific consensus on global warming rests on conspiracies to produce manipulated data or suppress dissent, typically alleging that climate science was invented or distorted through worldwide professional and criminal misconduct for ideological or financial reasons.",
+      "verdict": "supports",
+      "reason": "The passage states the claim's content nearly verbatim: conspiracy theories assert consensus rests on conspiracies to manipulate data or suppress dissent, it is a climate change denial tactic, and theorists typically allege worldwide professional/criminal misconduct invented or distorted the science for ideological or financial reasons."
+    },
+    {
+      "question": "How do climate change conspiracy theories relate to organized climate change denial?",
+      "claim": "Climate change conspiracy theories are one of a number of tactics used in climate change denial to attempt to manufacture political and public controversy disputing the scientific consensus on global warming.",
+      "verdict": "supports",
+      "reason": "The passage states nearly verbatim that climate change conspiracy theories are \"one of a number of tactics used in climate change denial to attempt to manufacture political and public controversy disputing this consensus,\" matching the claim's content and scope exactly."
+    },
+    {
+      "question": "How do climate change conspiracy theories relate to organized climate change denial?",
+      "claim": "**The organized side of the relationship.** The effort to undermine public trust in climate science is itself organized, carried out by industrial, political, and ideological interests.",
+      "verdict": "supports",
+      "reason": "The passage directly states the conspiracy to undermine public trust in climate science \"is organized by industrial, political and ideological interests,\" matching the claim's content and scope exactly."
+    },
+    {
+      "question": "How do climate change conspiracy theories relate to organized climate change denial?",
+      "claim": "Climate change denial has been associated with the fossil fuels lobby, the Koch brothers, industry advocates, ultraconservative think tanks, and ultraconservative alternative media, often in the United States; more than 90% of papers skeptical of climate change originate from right-wing think tanks.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that climate change denial has been associated with the fossil fuels lobby, the Koch brothers, industry advocates, ultraconservative think tanks, and ultraconservative alternative media (often in the US), and that more than 90% of skeptical papers originate from right-wing think tanks \u2014 matching the claim's scope and strength exactly."
+    },
+    {
+      "question": "How do climate change conspiracy theories relate to organized climate change denial?",
+      "claim": "Although oil companies published research in the 1970s that broadly concurred with the scientific community, they subsequently organized a widespread and systematic denial campaign to seed public disinformation\u2014a strategy compared to the tobacco industry's organized denial of smoking hazards, and in some cases carried out by the same individuals who previously spread tobacco industry denialist propaganda.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that in the 1970s oil companies published research broadly concurring with the scientific community, and since then organized a widespread and systematic denial campaign to seed public disinformation, compared to tobacco industry denial and sometimes carried out by the same individuals who spread tobacco denialist propaganda \u2014 matching the claim's scope and strength exactly."
+    },
+    {
+      "question": "How do climate change conspiracy theories relate to organized climate change denial?",
+      "claim": "Commentators have traced this directly: George Monbiot described *The Great Global Warming Swindle* as \"the same old conspiracy theory that we've been hearing from the denial industry for the past ten years,\" and characterized similar commentary as \"the usual conspiracy theories about the 'powerful and very extensive body of vested interests' working to suppress the truth.\" Australian meteorologists concluded that rather than critically deconstructing climate science, the film used other means to suggest climate scientists are lying or seriously misguided, calling it \"not scientifically sound.\" Such coverage is a notable vector: *The Greenhouse Conspiracy*, broadcast by Channel 4 in 1990, rejected the scientific consensus and claimed scientists critical of it were being suppressed.",
+      "verdict": "does_not_support",
+      "reason": "The passage supports the Monbiot quotes and the Australian meteorologists' \"not scientifically sound\" critique, but it says nothing about \"The Greenhouse Conspiracy\" or a 1990 Channel 4 broadcast, a portion of the claim the cited evidence does not contain."
+    },
+    {
+      "question": "How do climate change conspiracy theories relate to organized climate change denial?",
+      "claim": "Researchers have also noted increases in climate change denial, particularly among supporters of the far right.",
+      "verdict": "overstates",
+      "reason": "The passage states the content almost verbatim, but attributes it to a single named lecturer (Alexandre Lopez-Borrull), while the claim generalizes to plural \"researchers,\" inflating the source's scope."
+    },
+    {
+      "question": "What is a climate appraisal and how does it fit into climate risk management?",
+      "claim": "A climate appraisal is a unique, location-based report for a specific property on climate change (from global warming) and other environmental risks.",
+      "verdict": "supports",
+      "reason": "The passage opens with the identical statement: \"a climate appraisal is a unique, location-based report for a specific property on climate change (from global warming) and other environmental risks,\" matching the claim exactly in wording, scope, and strength."
+    },
+    {
+      "question": "What is a climate appraisal and how does it fit into climate risk management?",
+      "claim": "Information in a climate appraisal report enables property owners and/or buyers to assess for themselves how climate change risks could impact a specific property address in the future, probably by utilizing both historical and projected data from scientific modeling to display those potential risks.",
+      "verdict": "supports",
+      "reason": "The passage states the claim nearly verbatim, including matching qualifiers (\"probably,\" \"may\") and scope (specific property address, historical and projected scientific modeling data)."
+    },
+    {
+      "question": "What is a climate appraisal and how does it fit into climate risk management?",
+      "claim": "Such reports may include historical and projected information on shoreline reduction from sea level rise, risk from hurricanes, tornadoes, earthquakes, volcanoes, droughts, wildfires, floods, diseases, and industrial pollution, and may integrate a wide range of environmental risk information after geocoding a location.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that a climate appraisal report \"may include historical and projected information\" on the exact list of risks cited and \"may integrate a wide range of environmental risk information after geocoding a location,\" matching the claim's content, scope, and hedged \"may\" strength precisely."
+    },
+    {
+      "question": "What is a climate appraisal and how does it fit into climate risk management?",
+      "claim": "Climate risk management (CRM), by contrast, is a term describing the strategies involved in reducing climate risk, through the work of various fields including climate change adaptation, disaster management and sustainable development.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"climate risk management (crm) is a term describing the strategies involved in reducing climate risk, through the work of various fields including climate change adaptation, disaster management and sustainable development,\" matching the claim's exact content and scope."
+    },
+    {
+      "question": "What is a climate appraisal and how does it fit into climate risk management?",
+      "claim": "It is a generic term referring to an approach to climate-sensitive decision making that seeks to promote sustainable development by reducing the vulnerability associated with climate risk.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"climate risk management is a generic term referring to an approach to climate-sensitive decision making. the approach seeks to promote sustainable development by reducing the vulnerability associated with climate risk,\" exactly matching the claim's wording and scope."
+    },
+    {
+      "question": "What is a climate appraisal and how does it fit into climate risk management?",
+      "claim": "CRM involves strategies aimed at maximizing positive and minimizing negative outcomes for communities in fields such as agriculture, food security, water resources, and health, and covers a broad range of potential actions including early-response systems, strategic diversification, dynamic resource-allocation rules, financial instruments (such as climate risk insurance), infrastructure design, and capacity building.",
+      "verdict": "supports",
+      "reason": "The passage states nearly word-for-word that \"crm involves strategies aimed at maximizing positive and minimizing negative outcomes for communities in fields such as agriculture, food security, water resources, and health\" and lists the same actions (early-response systems, strategic diversification, dynamic resource-allocation rules, financial instruments such as climate risk insurance, infrastructure design, capacity building)."
+    },
+    {
+      "question": "What is the role of Photosystem I in the light reactions of photosynthesis?",
+      "claim": "Photosystem I (PSI) is one of the two photosystems in the light-dependent reactions of photosynthesis.",
+      "verdict": "supports",
+      "reason": "The passage states PSI \"is one of two photosystems in the photosynthetic light reactions,\" directly matching the claim's content and scope (\"light-dependent reactions\" is equivalent in meaning)."
+    },
+    {
+      "question": "What is the role of Photosystem I in the light reactions of photosynthesis?",
+      "claim": "Its role is to use absorbed light energy to drive the transfer of electrons across the thylakoid membrane from plastocyanin to ferredoxin.",
+      "verdict": "supports",
+      "reason": "The passage states photosystem I 'uses light energy to catalyze the transfer of electrons across the thylakoid membrane from plastocyanin to ferredoxin,' and adds that 'the photon energy absorbed by photosystem i' drives downstream processes, matching the claim's content and strength."
+    },
+    {
+      "question": "What is the role of Photosystem I in the light reactions of photosynthesis?",
+      "claim": "These electrons are ultimately used to produce NADPH, a moderate-energy hydrogen carrier, while the absorbed photon energy also contributes to a proton-motive force that helps generate ATP.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that electrons transferred by PSI are ultimately used to produce the moderate-energy hydrogen carrier NADPH, and that absorbed photon energy produces a proton-motive force used to generate ATP, matching the claim exactly."
+    },
+    {
+      "question": "Why do C3 plants struggle to grow in hot, dry conditions?",
+      "claim": "C3 plants struggle in hot, dry conditions because of two linked problems that both increase wasteful photorespiration.",
+      "verdict": "supports",
+      "reason": "The passage states both that heat causes rubisco to incorporate more oxygen into RuBP, increasing photorespiration, and that drought-driven stomatal closure lowers the CO2:O2 ratio, \"and therefore also increases photorespiration\" \u2014 matching the claim's two problems both raising wasteful photorespiration."
+    },
+    {
+      "question": "Why do C3 plants struggle to grow in hot, dry conditions?",
+      "claim": "First, heat directly affects their key photosynthetic enzyme: as temperatures rise, RuBisCO incorporates more oxygen (instead of carbon dioxide) into RuBP, triggering photorespiration \u2014 a process that causes a net loss of carbon and nitrogen from the plant and therefore limits growth.",
+      "verdict": "supports",
+      "reason": "The passage states that RuBisCO incorporates more oxygen into RuBP as temperatures increase, leading to photorespiration causing a net loss of carbon and nitrogen that can limit growth \u2014 matching the claim's causal chain with only trivial wording differences (\"can therefore limit\" vs. \"therefore limits\")."
+    },
+    {
+      "question": "Why do C3 plants struggle to grow in hot, dry conditions?",
+      "claim": "Second, in dry environments plants lose up to 97% of the water they absorb through transpiration, so they close their stomata to conserve water; but closed stomata prevent CO2 from entering the leaves, lowering the internal CO2:O2 ratio, which further increases photorespiration.",
+      "verdict": "supports",
+      "reason": "The passage directly states that \"plants lose up to 97% of the water taken up through their roots by transpiration,\" and in dry areas plants shut their stomata, which stops CO2 from entering the leaves, \"lowers the co2:o2 ratio and therefore also increases photorespiration\" \u2014 matching the claim's content and strength exactly."
+    },
+    {
+      "question": "Why do C3 plants struggle to grow in hot, dry conditions?",
+      "claim": "Unlike C4 plants, C3 plants have no carbon-concentrating mechanism (they run the Calvin cycle directly in mesophyll cells without first shuttling CO2 via a four-carbon molecule to bundle sheath cells), so they cannot maintain high CO2 concentrations around RuBisCO to suppress this wasteful oxygenase activity.",
+      "verdict": "overstates",
+      "reason": "The passage supports that C3 plants lack a CO2-concentrating mechanism and run the Calvin cycle directly in mesophyll cells, but it never mentions RuBisCO's oxygenase activity, photorespiration, or that concentrating CO2 serves to suppress oxygenation \u2014 so the claim's stated purpose (\"to suppress this wasteful oxygenase activity\") and the absolute \"cannot\" go beyond the passage."
+    },
+    {
+      "question": "Why do C3 plants struggle to grow in hot, dry conditions?",
+      "claim": "Consequently, C4 and CAM plants, which possess such adaptations, can out-compete C3 plants in hot, sunny, dry climates.",
+      "verdict": "supports",
+      "reason": "The passage states that \"C4 and CAM plants have adaptations that allow them to survive in hot and dry areas, and they can therefore out-compete C3 plants in these areas,\" directly warranting the claim's core content; the added word \"sunny\" is consistent with the passage's light-driven photorespiration context and does not inflate the claim's strength or scope materially."
+    },
+    {
+      "question": "What is alarm photosynthesis?",
+      "claim": "Alarm photosynthesis is a variation of photosynthesis in which calcium oxalate crystals act as dynamic carbon pools, supplying CO\u2082 to photosynthetic cells when stomata are partially or totally closed.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"alarm photosynthesis is a variation of photosynthesis where calcium oxalate crystals function as dynamic carbon pools, supplying carbon dioxide (co2) to photosynthetic cells when stomata are partially or totally closed,\" matching the claim's content and scope exactly."
+    },
+    {
+      "question": "What is alarm photosynthesis?",
+      "claim": "It helps plants cope with the trade-off between taking up atmospheric CO\u2082 and losing water vapor.",
+      "verdict": "supports",
+      "reason": "The passage states alarm photosynthesis is \"a means to alleviate the perpetual plant dilemma of using atmospheric co2 for photosynthesis and losing water vapor, or saving water and reducing photosynthesis,\" directly matching the claim's description of coping with the CO\u2082 uptake/water loss trade-off."
+    },
+    {
+      "question": "What is alarm photosynthesis?",
+      "claim": "Under stress such as water deficit, oxalate released from calcium oxalate crystals is converted to CO\u2082 by oxalate oxidase, and that CO\u2082 can support the Calvin cycle; the hydrogen peroxide byproduct can be neutralized by catalase.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that under stress (e.g. water deficit) oxalate from calcium oxalate crystals is converted to CO\u2082 by oxalate oxidase, that CO\u2082 can support the Calvin cycle, and that the H\u2082O\u2082 byproduct can be neutralized by catalase \u2014 exactly matching the claim's content, scope, and strength."
+    },
+    {
+      "question": "What is alarm photosynthesis?",
+      "claim": "Unlike C4 and CAM, it functions as a biochemical pump that collects carbon from the organ interior or soil rather than from the atmosphere.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that alarm photosynthesis, in contrast to C4 and CAM, \"operates as a biochemical pump that collects carbon from the organ interior (or from the soil) and not from the atmosphere,\" matching the claim exactly."
+    },
+    {
+      "question": "What is unusual about chlorophyll f?",
+      "claim": "Chlorophyll f is unusual because it absorbs light further into the red (infrared) region of the spectrum than other chlorophylls.",
+      "verdict": "supports",
+      "reason": "The passage states that chlorophyll f \"absorbs further in the red (infrared light) than other chlorophylls,\" matching the claim's content exactly."
+    },
+    {
+      "question": "What is unusual about chlorophyll f?",
+      "claim": "It was first reported in 2010 by Min Chen in stromatolites from Western Australia's Shark Bay.",
+      "verdict": "overstates",
+      "reason": "The passage says it \"was reported\" in 2010, but the claim adds \"first reported,\" asserting a priority that the passage does not establish."
+    },
+    {
+      "question": "What is unusual about chlorophyll f?",
+      "claim": "Its function in photosynthetic reactions remains uncertain, and its ecological distribution is still unknown, though it has been shown to support energy transfer and charge separation processes.",
+      "verdict": "supports",
+      "reason": "The passage directly states \"the function of chl f in photosynthetic reactions is uncertain and the ecological distribution of chl f remains unknown\" and that \"chl f has been shown to support some of the roles in photosynthetic reactions, in both the energy transfer and in the charge separation processes,\" matching the claim's content and strength exactly."
+    },
+    {
+      "question": "What is unusual about chlorophyll f?",
+      "claim": "It is produced from chlorophyllide f by chlorophyll synthase, with chlorophyllide f being made from chlorophyllide a by the enzyme PsbA4 (also known as ChlF).",
+      "verdict": "supports",
+      "reason": "The passage explicitly states: \"chl f is produced from chlorophyllide f by chlorophyll synthase. chlorophyllide f is made from chlorophyllide a by an enzyme known as psba4 or chlf.\" \u2014 matching the claim's content exactly."
+    },
+    {
+      "question": "What is protochlorophyllide and why can it be dangerous to plants in the light?",
+      "claim": "Protochlorophyllide (specifically monovinyl protochlorophyllide) is an intermediate in the biosynthesis of chlorophyll a.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that \"protochlorophyllide, or monovinyl protochlorophyllide, is an intermediate in the biosynthesis of chlorophyll a,\" matching the claim exactly in content, entities, and strength."
+    },
+    {
+      "question": "What is protochlorophyllide and why can it be dangerous to plants in the light?",
+      "claim": "It differs from chlorophyll in that it lacks the phytol side-chain and the reduced pyrrole in ring D, and it is highly fluorescent (mutants that accumulate it glow red under blue light).",
+      "verdict": "supports",
+      "reason": "The passage directly states that protochlorophyllide \"lacks the phytol side-chain of chlorophyll and the reduced pyrrole in ring d\" and \"is highly fluorescent; mutants that accumulate it glow red if irradiated with blue light,\" matching every element of the claim with identical scope and strength."
+    },
+    {
+      "question": "What is protochlorophyllide and why can it be dangerous to plants in the light?",
+      "claim": "In angiosperms, the enzyme that converts protochlorophyllide to chlorophyllide a\u2014protochlorophyllide reductase\u2014is light-dependent, so the intermediate accumulates whenever the plant is in darkness.",
+      "verdict": "overstates",
+      "reason": "The passage confirms a light-dependent POR exists in plants but never states that angiosperms lack the dark-operative form or that protochlorophyllide accumulates in darkness, so the claim inflates the passage's scope."
+    },
+    {
+      "question": "What is protochlorophyllide and why can it be dangerous to plants in the light?",
+      "claim": "It is dangerous to plants in the light because, once illuminated, the accumulated protochlorophyllide is rapidly converted to chlorophyll, and if it over-accumulates due to damaged regulation, the light exposure kills leaf tissue.",
+      "verdict": "overstates",
+      "reason": "The passage supports that over-accumulated protochlorophyllide from darkness kills leaf tissue when exposed to light in mutants with damaged regulation, but it never states the mechanism that illumination rapidly converts protochlorophyllide to chlorophyll \u2014 the claim adds an unstated causal explanation."
+    },
+    {
+      "question": "What is protochlorophyllide and why can it be dangerous to plants in the light?",
+      "claim": "For example, the Arabidopsis FLU mutant with damaged regulation can survive only in continuous darkness (where protochlorophyllide is not dangerous) or under continuous light (where it can convert all produced protochlorophyllide into chlorophyll without over-accumulating it).",
+      "verdict": "supports",
+      "reason": "The passage explicitly states the Arabidopsis flu mutant with damaged regulation can survive only in continuous darkness (where protochlorophyllide is not dangerous) or under continuous light (where it converts all produced protochlorophyllide into chlorophyll without over-accumulation), matching the claim's content, scope, and strength."
+    },
+    {
+      "question": "What is protochlorophyllide and why can it be dangerous to plants in the light?",
+      "claim": "Similarly, in the barley Tigrina mutant, light kills the majority of leaf tissue that developed in darkness, producing white stripes of necrotic regions.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that in the barley tigrina mutant \"light kills the majority of the leaf tissue that has developed in the darkness\" and \"the leaves are covered by white stripes of necrotic regions,\" exactly matching the claim's content and strength."
+    },
+    {
+      "question": "What is the Joint Center for Artificial Photosynthesis and how does its mission fit the field of artificial photosynthesis?",
+      "claim": "Department of Energy (DOE) Energy Innovation Hub founded in 2010.",
+      "verdict": "supports",
+      "reason": "The passage explicitly states \"jcap, founded in 2010, is a (doe) energy innovation hub,\" exactly matching the claim's content and scope."
+    },
+    {
+      "question": "What is the Joint Center for Artificial Photosynthesis and how does its mission fit the field of artificial photosynthesis?",
+      "claim": "Its primary mission is to find a cost-effective method to produce fuels using only sunlight, water, and carbon dioxide as inputs.",
+      "verdict": "supports",
+      "reason": "The passage states verbatim that JCAP's \"primary mission is to find a cost-effective method to produce fuels using only sunlight, water, and carbon-dioxide,\" exactly matching the claim's scope and strength."
+    },
+    {
+      "question": "What is the Joint Center for Artificial Photosynthesis and how does its mission fit the field of artificial photosynthesis?",
+      "claim": "The program was funded with a budget of $122 million over five years, subject to Congressional appropriation, and is led by the California Institute of Technology (Caltech) with Lawrence Berkeley National Laboratory as its main partner, drawing on more than 120 scientists and engineers from these and other institutions including Stanford University, UC Berkeley, UCSB, UC Irvine, UC San Diego, and the Stanford Linear Accelerator.",
+      "verdict": "supports",
+      "reason": "The passage states all claim elements verbatim: \"$122m over five years, subject to congressional appropriation,\" managed by Caltech with Lawrence Berkeley National Laboratory as its main partner, \"more than 120 scientists and engineers,\" and the same list of partner institutions including Stanford, UC Berkeley, UCSB, UC Irvine, UC San Diego, and Stanford Linear Accelerator."
+    },
+    {
+      "question": "What is the Joint Center for Artificial Photosynthesis and how does its mission fit the field of artificial photosynthesis?",
+      "claim": "JCAP also serves as a central hub coordinating other solar fuels research teams across the United States, including 20 DOE Energy Frontier Research Centers.",
+      "verdict": "supports",
+      "reason": "The passage states directly that JCAP \"serves as a central hub for other solar fuels research teams across the united states, including 20 doe energy frontier research center,\" matching the claim's content and scope exactly."
+    },
+    {
+      "question": "What is the Joint Center for Artificial Photosynthesis and how does its mission fit the field of artificial photosynthesis?",
+      "claim": "JCAP's mission fits squarely within the field of artificial photosynthesis, which is defined as a chemical process that biomimics natural photosynthesis to convert sunlight, water, and carbon dioxide into carbohydrates and oxygen, or more broadly as any scheme for capturing and storing sunlight's energy in the chemical bonds of a fuel (a solar fuel).",
+      "verdict": "does_not_support",
+      "reason": "The passage matches the claim's definition of artificial photosynthesis exactly, but it never mentions JCAP or its mission, so it cannot warrant the claim that JCAP's mission fits within that field."
+    },
+    {
+      "question": "What is the Joint Center for Artificial Photosynthesis and how does its mission fit the field of artificial photosynthesis?",
+      "claim": "The central purpose of artificial photosynthesis research is to produce storable solar fuels via direct processes using only water, carbon dioxide, and sunlight as inputs, with oxygen as the only by-product.",
+      "verdict": "overstates",
+      "reason": "The passage states the purpose is to produce storable solar fuel via direct processes, but presents \"only water, carbon dioxide and sunlight\" as inputs and oxygen as the only by-product as an ultimate goal (\"would ultimately be\") contingent on developing suitable catalysts, whereas the claim asserts these as definitive facts and adds the \"central purpose\" framing."
+    },
+    {
+      "question": "What is the Joint Center for Artificial Photosynthesis and how does its mission fit the field of artificial photosynthesis?",
+      "claim": "JCAP's goal of cost-effectively producing fuels from exactly these three inputs directly implements this field's core objective.",
+      "verdict": "supports",
+      "reason": "The passage states JCAP (the joint center for artificial photosynthesis) has the \"primary mission ... to find a cost-effective method to produce fuels using only sunlight, water, and carbon-dioxide,\" matching the claim's three inputs and its identification of this as the field's core objective."
+    },
+    {
+      "question": "What is the Joint Center for Artificial Photosynthesis and how does its mission fit the field of artificial photosynthesis?",
+      "claim": "Furthermore, the field's research encompasses developing photocatalysts able to perform the oxidation and reduction half-reactions of photosynthesis, photoelectrochemistry, and microbial biofuel production\u2014areas aligned with JCAP's focus on solar fuels generation.",
+      "verdict": "overstates",
+      "reason": "The passage supports research on solar fuel devices, photoelectrochemistry, and microbial biofuels, but never mentions photocatalysts performing oxidation/reduction half-reactions or JCAP, so the claim adds specifics beyond the cited evidence."
+    },
+    {
+      "question": "What is the Joint Center for Artificial Photosynthesis and how does its mission fit the field of artificial photosynthesis?",
+      "claim": "JCAP represents the field's transition from academic research to large-scale, coordinated institutional effort, paralleling other initiatives like Mitsubishi Chemical Holdings' KAITEKI Institute established in 2009 for carbon dioxide reduction through artificial photosynthesis.",
+      "verdict": "does_not_support",
+      "reason": "The passage never mentions JCAP; it only describes the field's academic origins and Mitsubishi's 2009 KAITEKI Institute, so the claim's central assertion about JCAP leading a transition is unsupported."
+    }
+  ],
+  "note": "The overstatement rate is computed over claims with locatable evidence (quote/span recovered verbatim from the committed chunk corpus); excluded claims are counted above, not guessed."
+}
