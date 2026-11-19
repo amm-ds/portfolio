@@ -126,7 +126,9 @@ def test_page_chat_is_limited(tmp_path: Path) -> None:
         doc = process(client)
         doc_id = doc["document"]["id"]
         url = f"/documents/{doc_id}/pages/1/chat"
-        body = {"messages": [{"role": "user", "content": "Which organization produced the report?"}]}
+        body = {
+            "messages": [{"role": "user", "content": "Which organization produced the report?"}]
+        }
         assert client.post(url, headers=HEADERS, json=body).status_code == 200
         assert client.post(url, headers=HEADERS, json=body).status_code == 200
         blocked = client.post(url, headers=HEADERS, json=body)

@@ -195,4 +195,12 @@ def create_app(
             status_code=500,
         )
 
+    @app.exception_handler(404)
+    async def not_found_handler(request: Request, exc: Exception) -> JSONResponse:
+        """Unmatched routes: same envelope, not Starlette's bare 404."""
+        return JSONResponse(
+            content=error_body(request, "http_404", "Not Found"),
+            status_code=404,
+        )
+
     return app
