@@ -38,6 +38,13 @@
 # same committed-evidence role).
 !/reports/warrant_check/
 !/reports/sealed_v2/
+# …and the verifier-challenger pass (Phase 1 bake-off evidence: license record,
+# metrics, per-claim predictions — same committed-evidence role).
+!/reports/verifier_challenger/
+# …and its fixed dev/test split of the calibration claims (committed before any
+# scoring; the claims.jsonl it splits is regenerable and stays ignored).
+!data/calibration/
+!data/calibration/verifier_split.json
 # …and the R6 failure ledger (trace review required before interventions).
 !/reports/stress_failure_ledger.md
 /reports/figures/*.html
