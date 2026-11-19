@@ -14,6 +14,7 @@ import typer
 import yaml  # type: ignore[import-untyped]
 from portfolio_core.logging import get_logger, setup_logging
 
+from data_engineering.cold_start import run_cold_start
 from data_engineering.config import DEConfig
 from data_engineering.data import DataBundle
 from data_engineering.engines import adapter_names
@@ -209,6 +210,16 @@ def _load_existing(out_dir: Path) -> tuple[dict[str, Any], dict[str, Any]] | Non
         )
     except json.JSONDecodeError:
         return None
+
+
+@app.command(name="cold-start")
+def cold_start_cmd(
+    params_file: OptParams = Path("params.yaml"),
+) -> None:
+    """Q4g: re-time cold starts per cell with spread; writes reports/cold_start/."""
+    cfg = load_config(params_file)
+    report = run_cold_start(cfg)
+    typer.echo(f"cold-start: {report['n_cells']} cells x 5 probes -> reports/cold_start/")
 
 
 @app.command(name="build-report")

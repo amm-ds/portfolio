@@ -1,0 +1,294 @@
+{
+  "schema_version": "cold-start-v1",
+  "generated_at": "2026-11-19T14:32:41.135845+00:00",
+  "data_source": "real-trip bundle via load_real_bundle (same as the committed benchmark)",
+  "method": "5 fresh-process cold probes per cell (python -m data_engineering.cold); warm numbers are the committed time_all_s medians, read-only",
+  "n_cells": 15,
+  "cells": [
+    {
+      "task": "partitioned_read",
+      "engine": "duckdb",
+      "cold_repeats_s": [
+        0.02817,
+        0.007551,
+        0.007343,
+        0.007696,
+        0.008002
+      ],
+      "cold_min_s": 0.007343,
+      "cold_median_s": 0.007696,
+      "cold_max_s": 0.02817,
+      "cold_spread_s": 0.020827000000000002,
+      "peak_rss_mb_max": 187.6,
+      "committed_cold_s_single_probe": 0.00709,
+      "committed_warm_median_s": 0.006106,
+      "cold_over_warm_ratio": 1.26
+    },
+    {
+      "task": "partitioned_read",
+      "engine": "pandas",
+      "cold_repeats_s": [
+        0.082714,
+        0.078221,
+        0.084748,
+        0.071714,
+        0.075275
+      ],
+      "cold_min_s": 0.071714,
+      "cold_median_s": 0.078221,
+      "cold_max_s": 0.084748,
+      "cold_spread_s": 0.013034000000000004,
+      "peak_rss_mb_max": 559.2,
+      "committed_cold_s_single_probe": 0.076304,
+      "committed_warm_median_s": 0.048158,
+      "cold_over_warm_ratio": 1.624
+    },
+    {
+      "task": "partitioned_read",
+      "engine": "polars",
+      "cold_repeats_s": [
+        0.007093,
+        0.007227,
+        0.0061,
+        0.007752,
+        0.006485
+      ],
+      "cold_min_s": 0.0061,
+      "cold_median_s": 0.007093,
+      "cold_max_s": 0.007752,
+      "cold_spread_s": 0.0016519999999999998,
+      "peak_rss_mb_max": 208.1,
+      "committed_cold_s_single_probe": 0.006022,
+      "committed_warm_median_s": 0.003621,
+      "cold_over_warm_ratio": 1.959
+    },
+    {
+      "task": "partitioned_read",
+      "engine": "sqlite",
+      "cold_repeats_s": [
+        5.296283,
+        5.204039,
+        5.316311,
+        5.325439,
+        5.226967
+      ],
+      "cold_min_s": 5.204039,
+      "cold_median_s": 5.296283,
+      "cold_max_s": 5.325439,
+      "cold_spread_s": 0.1214000000000004,
+      "peak_rss_mb_max": 1309.3,
+      "committed_cold_s_single_probe": 5.226544,
+      "committed_warm_median_s": 5.190358,
+      "cold_over_warm_ratio": 1.02
+    },
+    {
+      "task": "read_csv",
+      "engine": "duckdb",
+      "cold_repeats_s": [
+        0.106817,
+        0.081283,
+        0.082977,
+        0.082418,
+        0.082694
+      ],
+      "cold_min_s": 0.081283,
+      "cold_median_s": 0.082694,
+      "cold_max_s": 0.106817,
+      "cold_spread_s": 0.025534,
+      "peak_rss_mb_max": 312.3,
+      "committed_cold_s_single_probe": 0.080012,
+      "committed_warm_median_s": 0.076638,
+      "cold_over_warm_ratio": 1.079
+    },
+    {
+      "task": "read_csv",
+      "engine": "pandas",
+      "cold_repeats_s": [
+        1.232948,
+        1.201556,
+        1.220408,
+        1.202274,
+        1.206517
+      ],
+      "cold_min_s": 1.201556,
+      "cold_median_s": 1.206517,
+      "cold_max_s": 1.232948,
+      "cold_spread_s": 0.031391999999999864,
+      "peak_rss_mb_max": 900.8,
+      "committed_cold_s_single_probe": 1.229444,
+      "committed_warm_median_s": 1.164842,
+      "cold_over_warm_ratio": 1.036
+    },
+    {
+      "task": "read_csv",
+      "engine": "polars",
+      "cold_repeats_s": [
+        0.040817,
+        0.041279,
+        0.036483,
+        0.041518,
+        0.043337
+      ],
+      "cold_min_s": 0.036483,
+      "cold_median_s": 0.041279,
+      "cold_max_s": 0.043337,
+      "cold_spread_s": 0.006853999999999999,
+      "peak_rss_mb_max": 406.0,
+      "committed_cold_s_single_probe": 0.048454,
+      "committed_warm_median_s": 0.039624,
+      "cold_over_warm_ratio": 1.042
+    },
+    {
+      "task": "read_csv",
+      "engine": "sqlite",
+      "cold_repeats_s": [
+        5.833177,
+        5.854053,
+        5.934592,
+        5.982024,
+        5.850991
+      ],
+      "cold_min_s": 5.833177,
+      "cold_median_s": 5.854053,
+      "cold_max_s": 5.982024,
+      "cold_spread_s": 0.14884699999999995,
+      "peak_rss_mb_max": 1524.3,
+      "committed_cold_s_single_probe": 5.820308,
+      "committed_warm_median_s": 5.753463,
+      "cold_over_warm_ratio": 1.017
+    },
+    {
+      "task": "read_parquet",
+      "engine": "duckdb",
+      "cold_repeats_s": [
+        0.006422,
+        0.006971,
+        0.005149,
+        0.005807,
+        0.00477
+      ],
+      "cold_min_s": 0.00477,
+      "cold_median_s": 0.005807,
+      "cold_max_s": 0.006971,
+      "cold_spread_s": 0.002201,
+      "peak_rss_mb_max": 178.6,
+      "committed_cold_s_single_probe": 0.004764,
+      "committed_warm_median_s": 0.002865,
+      "cold_over_warm_ratio": 2.027
+    },
+    {
+      "task": "read_parquet",
+      "engine": "pandas",
+      "cold_repeats_s": [
+        0.080669,
+        0.072962,
+        0.071793,
+        0.073608,
+        0.083544
+      ],
+      "cold_min_s": 0.071793,
+      "cold_median_s": 0.073608,
+      "cold_max_s": 0.083544,
+      "cold_spread_s": 0.011750999999999998,
+      "peak_rss_mb_max": 551.2,
+      "committed_cold_s_single_probe": 0.072076,
+      "committed_warm_median_s": 0.044103,
+      "cold_over_warm_ratio": 1.669
+    },
+    {
+      "task": "read_parquet",
+      "engine": "polars",
+      "cold_repeats_s": [
+        0.004985,
+        0.005053,
+        0.004678,
+        0.004754,
+        0.004538
+      ],
+      "cold_min_s": 0.004538,
+      "cold_median_s": 0.004754,
+      "cold_max_s": 0.005053,
+      "cold_spread_s": 0.0005149999999999998,
+      "peak_rss_mb_max": 198.3,
+      "committed_cold_s_single_probe": 0.00489,
+      "committed_warm_median_s": 0.002453,
+      "cold_over_warm_ratio": 1.938
+    },
+    {
+      "task": "read_parquet",
+      "engine": "sqlite",
+      "cold_repeats_s": [
+        4.816956,
+        4.808183,
+        4.827363,
+        4.909289,
+        4.845764
+      ],
+      "cold_min_s": 4.808183,
+      "cold_median_s": 4.827363,
+      "cold_max_s": 4.909289,
+      "cold_spread_s": 0.10110600000000058,
+      "peak_rss_mb_max": 1252.4,
+      "committed_cold_s_single_probe": 4.800242,
+      "committed_warm_median_s": 4.868952,
+      "cold_over_warm_ratio": 0.991
+    },
+    {
+      "task": "write_parquet",
+      "engine": "duckdb",
+      "cold_repeats_s": [
+        0.108117,
+        0.106592,
+        0.108282,
+        0.10105,
+        0.100991
+      ],
+      "cold_min_s": 0.100991,
+      "cold_median_s": 0.106592,
+      "cold_max_s": 0.108282,
+      "cold_spread_s": 0.007291000000000006,
+      "peak_rss_mb_max": 661.4,
+      "committed_cold_s_single_probe": 0.11125,
+      "committed_warm_median_s": 0.083094,
+      "cold_over_warm_ratio": 1.283
+    },
+    {
+      "task": "write_parquet",
+      "engine": "pandas",
+      "cold_repeats_s": [
+        0.519336,
+        0.517699,
+        0.51342,
+        0.512692,
+        0.526197
+      ],
+      "cold_min_s": 0.512692,
+      "cold_median_s": 0.517699,
+      "cold_max_s": 0.526197,
+      "cold_spread_s": 0.01350499999999999,
+      "peak_rss_mb_max": 599.5,
+      "committed_cold_s_single_probe": 0.500373,
+      "committed_warm_median_s": 0.500422,
+      "cold_over_warm_ratio": 1.035
+    },
+    {
+      "task": "write_parquet",
+      "engine": "polars",
+      "cold_repeats_s": [
+        0.07868,
+        0.067494,
+        0.071764,
+        0.065516,
+        0.061796
+      ],
+      "cold_min_s": 0.061796,
+      "cold_median_s": 0.067494,
+      "cold_max_s": 0.07868,
+      "cold_spread_s": 0.016884000000000003,
+      "peak_rss_mb_max": 530.0,
+      "committed_cold_s_single_probe": 0.058071,
+      "committed_warm_median_s": 0.074328,
+      "cold_over_warm_ratio": 0.908
+    }
+  ]
+}
