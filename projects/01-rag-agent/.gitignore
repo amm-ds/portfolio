@@ -41,6 +41,9 @@
 # …and the verifier-challenger pass (Phase 1 bake-off evidence: license record,
 # metrics, per-claim predictions — same committed-evidence role).
 !/reports/verifier_challenger/
+# …and the verifier-cascade DEV calibration (frozen rule, folds, cached local
+# verdicts, CV table, metrics — same committed-evidence role).
+!/reports/verifier_cascade_dev/
 # …and the R6 failure ledger (trace review required before interventions).
 !/reports/stress_failure_ledger.md
 /reports/figures/*.html
