@@ -164,6 +164,14 @@ class RAGConfig(PortfolioBaseModel):
     rerank_multiplier: int = Field(default=5, ge=1)
     excerpt_chars: int = Field(default=240, ge=40)
 
+    # G4 fix (2026-11-20): per-answer bounds for the analysis agent's tool
+    # loop. A model turn re-sends the full transcript, so without these the
+    # loop could grow without bound (measured: 1.5M input tokens on one
+    # sealed-v2 question, two answers aborted at the 4M total-token ceiling).
+    agent_tool_calls_limit: int = Field(default=8, ge=1)
+    agent_request_limit: int = Field(default=12, ge=1)
+    agent_input_tokens_limit: int = Field(default=200_000, ge=1_000)
+
     corpus_path: Path = Path("data/raw/corpus.jsonl")
     contract_path: Path = Path("data/raw/dataset_contract.json")
     index_dir: Path = Path("data/index")
