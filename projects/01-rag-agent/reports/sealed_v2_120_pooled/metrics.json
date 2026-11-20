@@ -1,7 +1,7 @@
 {
-  "scope": "pooled sealed-v2: 58-question run + 62-question held-out run, one configuration",
-  "generated_at": "2026-11-20T14:27:52.866695+00:00",
-  "commit": "f83556c041bac92da5256251acf8c085bd9b4ad2",
+  "scope": "pooled sealed-v2: 58-question run + 62-question held-out (all real outcomes), one configuration",
+  "generated_at": "2026-11-20T19:04:23.815467+00:00",
+  "commit": "fc859c9f5591e11eb0d3437bea474c499e5655f6",
   "input_files": {
     "golden_sealed_v2.json": "616973ba390fdc1f8c9bf0b53fcf8e1b9bd24f5e93b563184bbc2ca9f8ce54e2",
     "golden_sealed_v2_58.json": "266d2ef3e5d26176d6b22ade3464984fba48ce89e297ce670c4c0b554420fb17",
@@ -18,37 +18,45 @@
       "folder": "reports/sealed_v2_62",
       "n": 62,
       "meter_spend_usd": 0.526214,
-      "code": "g4-heldout-62-2026-11-20 @ f83556c (with G4 trace amendment f43e2c9)"
+      "code": "g4-heldout-62-2026-11-20 @ f83556c (trace amendment f43e2c9)",
+      "note": "28 real outcomes; 34 provider-500 format-failures"
+    },
+    "sealed_v2_62_retry": {
+      "folder": "reports/sealed_v2_62_retry",
+      "n": 62,
+      "meter_spend_usd_total": 2.21482,
+      "code": "g4-heldout-62-2026-11-20 @ fc859c9",
+      "note": "health check $0.517896 (index 26) + aborted 34-retry $0.362940 + aborted 33-continuation $1.500479 (no artifacts) + final 33-run $1.316928; two runs produced no committed artifacts"
     }
   },
   "pooled_120": {
     "n_questions": 120,
     "n_answerable": 92,
     "unsupported_claim": {
-      "k": 22,
+      "k": 28,
       "n": 120,
-      "rate": 0.1833,
+      "rate": 0.2333,
       "wilson95": [
-        0.1243,
-        0.262
+        0.1667,
+        0.3166
       ],
       "answerable_only": {
-        "k": 22,
+        "k": 28,
         "n": 92,
-        "rate": 0.2391,
+        "rate": 0.3043,
         "wilson95": [
-          0.1636,
-          0.3356
+          0.2197,
+          0.4046
         ]
       }
     },
     "false_abstention": {
-      "k": 6,
+      "k": 7,
       "n": 92,
-      "rate": 0.0652,
+      "rate": 0.0761,
       "wilson95": [
-        0.0302,
-        0.1351
+        0.0373,
+        0.1488
       ]
     },
     "budget_terminated": {
@@ -62,11 +70,7 @@
     }
   },
   "validity": {
-    "warning": "The 62-question run was hit by a provider 500 storm from trace index 26 onward: 34/62 traces are format-failure (33 ModelHTTPError 500, 1 timeout), only 28/62 questions produced real outcomes (19 correct, 7 unsupported-claim, 2 empty-answer). The pooled 120 figures above are the mechanical pool of committed verdicts as the handoff specifies, but they are NOT a valid 120-question configuration measurement: 44 of the 62 questions (34 failures + unanswerable rows misclassified by failures) carry provider-error artifacts rather than configuration signal.",
-    "healthy_rows": {
-      "sealed_v2": 58,
-      "sealed_v2_62": 28
-    },
-    "recommendation": "Owner decision required: re-run the 62 under a fresh cap (a healthy 62 costs ~$1.10; remaining stop headroom after $0.5262 is $0.6738, so the current cap does not cover a re-run)."
+    "status": "valid",
+    "statement": "All 62 questions of the held-out run now have real outcomes (no provider failures remain): 28 from the first pass, index 26 from the retry health check, 33 from the final retry run. The 120-question pooled figures are computed from committed per-question traces of both runs on one configuration."
   }
 }
