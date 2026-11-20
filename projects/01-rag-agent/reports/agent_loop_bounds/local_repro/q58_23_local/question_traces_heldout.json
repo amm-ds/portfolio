@@ -1,0 +1,25 @@
+[
+  {
+    "question": "Under mid-range scenarios of future warming, only what percentage of current ectotherm locations are within 50 km of a place that could serve as an equally suitable habitat at the end of this century?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": false,
+    "faithfulness": NaN,
+    "abstained": false,
+    "format_ok": false,
+    "output_retries": 0,
+    "verdict": "budget-terminated",
+    "error": "UsageLimitExceeded: The next tool call(s) would exceed the tool_calls_limit of 8 (tool_calls=9). Consider raising the limit, or see the docs on usage limits for budget-aware patterns: https://pydantic",
+    "gate_coverage": 0.95,
+    "gate_max_similarity": 0.95,
+    "evidence_score": 0.95,
+    "n_surviving_claims": null,
+    "budget_terminated": true,
+    "gate_refused": false,
+    "claim_states": null,
+    "usage_limit_hit": "The next tool call(s) would exceed the tool_calls_limit of 8 (tool_calls=9). Consider raising the limit, or see the docs",
+    "top_k_clamps": 0
+  }
+]

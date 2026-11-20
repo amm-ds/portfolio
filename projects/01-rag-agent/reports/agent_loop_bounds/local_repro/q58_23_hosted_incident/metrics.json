@@ -1,0 +1,142 @@
+{
+  "detail": {
+    "heldout": {
+      "n_questions": 1,
+      "composition": {
+        "single_hop/answer": 1
+      },
+      "retrieval": {
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "mrr@5": 1.0,
+        "n_questions": 1,
+        "random_recall@5": 0.0,
+        "random_mrr@5": 0.0,
+        "delta_mrr@5_vs_random": 1.0
+      },
+      "rag": {
+        "n_questions": 1,
+        "faithfulness": 0.0,
+        "answer_relevance": 0.0,
+        "context_recall": 1.0
+      },
+      "faithfulness": {
+        "mean": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      "taxonomy": {
+        "counts": {
+          "unsupported-claim": 1
+        },
+        "correct_share": 0.0,
+        "correct_share_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      "abstention": {
+        "n_unanswerable": 0,
+        "n_answerable": 1,
+        "refusal_accuracy": NaN,
+        "refusal_accuracy_ci95": [
+          NaN,
+          NaN
+        ],
+        "cite_when_expected": 1.0,
+        "cite_when_expected_ci95": [
+          1.0,
+          1.0
+        ],
+        "false_abstention_rate": 0.0,
+        "false_abstention_rate_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      "verify": {
+        "enabled": true,
+        "min_support": 0.6,
+        "max_repair_calls": 2,
+        "n_answers_verified": 1,
+        "n_verify_abstentions": 0,
+        "n_verify_skipped": 0,
+        "n_verifier_failures": 0,
+        "total_repair_calls": 0,
+        "mean_support_fraction": 1.0,
+        "mean_verify_latency_s": 4.421,
+        "verify_latency_share_of_answer": 0.1292,
+        "diagnose_mech": false,
+        "n_drafted": 1,
+        "n_mechanical_fail": 0,
+        "n_judged": 1,
+        "n_judge_supported": 1,
+        "n_surviving": 1,
+        "n_dropped": 0,
+        "n_verification_error": 0,
+        "n_accepted_original": 1,
+        "n_accepted_repaired": 0,
+        "n_dropped_original": 0,
+        "n_dropped_repaired": 0,
+        "claim_retention_rate": 1.0,
+        "claim_repair_rate": 0.0,
+        "claim_drop_rate": 0.0,
+        "mechanical_false_rejections": 0
+      },
+      "ops": {
+        "backend": "env:kimi-for-coding",
+        "p50_latency_s": 34.22921070898883,
+        "p95_latency_s": 34.22921070898883
+      },
+      "meter": {
+        "active": true,
+        "model": "kimi-for-coding",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
+        "phases": {
+          "agent": {
+            "calls": 1,
+            "input_tokens": 7280,
+            "output_tokens": 678,
+            "cached_input_tokens": 5632,
+            "spend_usd": 0.00605
+          },
+          "judge": {
+            "calls": 2,
+            "input_tokens": 1218,
+            "output_tokens": 233,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.00215
+          },
+          "verify": {
+            "calls": 1,
+            "input_tokens": 647,
+            "output_tokens": 258,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.001679
+          },
+          "ragas": {
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.0
+          }
+        },
+        "total": {
+          "calls": 4,
+          "input_tokens": 9145,
+          "output_tokens": 1169,
+          "cached_input_tokens": 5632,
+          "spend_usd": 0.009878999999999999
+        },
+        "ledger_spend_usd": 0.009879,
+        "budget_usd": 3.0
+      },
+      "traces_path": "reports/agent_loop_bounds/local_repro/q58_23/question_traces_heldout.json",
+      "note": "sealed held-out set, reported separately from the tuning set; verify-on pass without RAGAS to bound hosted cost"
+    }
+  },
+  "ragas_version": "0.3.1"
+}

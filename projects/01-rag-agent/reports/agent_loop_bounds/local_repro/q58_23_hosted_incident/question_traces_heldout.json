@@ -1,0 +1,35 @@
+[
+  {
+    "question": "Under mid-range scenarios of future warming, only what percentage of current ectotherm locations are within 50 km of a place that could serve as an equally suitable habitat at the end of this century?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.0,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "unsupported-claim",
+    "error": "",
+    "gate_coverage": 0.95,
+    "gate_max_similarity": 0.95,
+    "evidence_score": 0.95,
+    "n_surviving_claims": 1,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 1
+    },
+    "answer": "Under mid-range scenarios of future warming, only 5% of current ectotherm locations are within 50 km of a place that could serve as an equally suitable habitat at the end of this century.",
+    "claims": [
+      {
+        "claim": "Under mid-range scenarios of future warming, only 5% of current ectotherm locations are within 50 km of a place that could serve as an equally suitable habitat at the end of this century.",
+        "evidence_span": "mechanical; judge: The evidence states verbatim that 'even under \"mid-range\" scenarios of future warming, only 5% of current ectotherm locations ... are within 50 km of a place which could serve as an equally suitable habitat at the end of this century.' Every qualifier, number, distance, and entity assignment in the claim is directly entailed.",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ],
+    "top_k_clamps": 0
+  }
+]

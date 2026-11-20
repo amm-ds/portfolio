@@ -1,0 +1,114 @@
+{
+  "detail": {
+    "heldout": {
+      "n_questions": 1,
+      "composition": {
+        "unanswerable/abstain": 1
+      },
+      "retrieval": {
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "mrr@5": 0.0,
+        "n_questions": 1,
+        "random_recall@5": 0.0,
+        "random_mrr@5": 0.0,
+        "delta_mrr@5_vs_random": 0.0
+      },
+      "rag": {
+        "n_questions": 0,
+        "faithfulness": NaN,
+        "answer_relevance": NaN,
+        "context_recall": NaN
+      },
+      "faithfulness": {
+        "mean": NaN,
+        "ci95": [
+          NaN,
+          NaN
+        ]
+      },
+      "taxonomy": {
+        "counts": {
+          "budget-terminated": 1
+        },
+        "correct_share": 0.0,
+        "correct_share_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      "abstention": {
+        "n_unanswerable": 1,
+        "n_answerable": 0,
+        "refusal_accuracy": 0.0,
+        "refusal_accuracy_ci95": [
+          0.0,
+          0.0
+        ],
+        "cite_when_expected": NaN,
+        "cite_when_expected_ci95": [
+          NaN,
+          NaN
+        ],
+        "false_abstention_rate": NaN,
+        "false_abstention_rate_ci95": [
+          NaN,
+          NaN
+        ]
+      },
+      "verify": null,
+      "ops": {
+        "backend": "env:kimi-for-coding",
+        "p50_latency_s": 23.60819850000553,
+        "p95_latency_s": 23.60819850000553
+      },
+      "meter": {
+        "active": true,
+        "model": "kimi-for-coding",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
+        "phases": {
+          "agent": {
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.0
+          },
+          "judge": {
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.0
+          },
+          "verify": {
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.0
+          },
+          "ragas": {
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.0
+          }
+        },
+        "total": {
+          "calls": 0,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "cached_input_tokens": 0,
+          "spend_usd": 0.0
+        },
+        "ledger_spend_usd": 0.0,
+        "budget_usd": 3.0
+      },
+      "traces_path": "reports/agent_loop_bounds/local_repro/q62_26/question_traces_heldout.json",
+      "note": "sealed held-out set, reported separately from the tuning set; verify-on pass without RAGAS to bound hosted cost"
+    }
+  },
+  "ragas_version": "0.3.1"
+}
