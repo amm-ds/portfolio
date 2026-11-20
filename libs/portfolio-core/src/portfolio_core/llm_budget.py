@@ -258,19 +258,30 @@ def is_hosted_active(settings: Settings | None = None) -> bool:
 
 
 def budget_limits(settings: Settings | None = None) -> Any | None:
-    """pydantic-ai ``UsageLimits`` for the hosted provider, else ``None``.
+    """pydantic-ai ``UsageLimits`` for both provider paths.
 
     Request/token limits only — pydantic-ai tracks those counters natively. The
     USD cap is deliberately NOT mapped to ``UsageLimits.cost_limit``: genai-prices
     has no card for ``kimi-for-coding``, so pydantic-ai cannot price the run and
     the cap would be inert (see module docstring). Use :func:`get_ledger` /
-    :func:`meter_result` for the enforceable USD cap. Local Ollama stays
-    unlimited → ``None``.
+    :func:`meter_result` for the enforceable USD cap.
+
+    Local Ollama (G4 fix, project 01, 2026-11-20): previously ``None`` —
+    unbounded. A runaway tool loop there could grow a prompt without any
+    ceiling (the hosted path always had the 4M total-token backstop). The
+    local path now gets finite per-answer ceilings mirroring project 01's
+    RAGConfig agent-loop defaults (``agent_tool_calls_limit=8``,
+    ``agent_request_limit=12``, ``agent_input_tokens_limit=200_000``).
     """
-    if not is_hosted_active(settings):
-        return None
     from pydantic_ai.usage import UsageLimits
 
+    if not is_hosted_active(settings):
+        return UsageLimits(
+            request_limit=12,
+            tool_calls_limit=8,
+            input_tokens_limit=200_000,
+            total_tokens_limit=4_000_000,
+        )
     s = settings or get_settings()
     return UsageLimits(
         request_limit=s.llm_max_requests,

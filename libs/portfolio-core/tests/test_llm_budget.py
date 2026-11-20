@@ -191,9 +191,16 @@ class TestBudgetLimits:
         assert limits.total_tokens_limit == 4_000_000
         assert limits.cost_limit is None  # USD cap enforced by SpendLedger instead
 
-    def test_local_returns_none(self) -> None:
-        # explicit None overrides a real .env in the working tree
-        assert budget_limits(Settings(LLM_API_KEY=None, LLM_BASE_URL=None)) is None
+    def test_local_returns_finite_per_answer_limits(self) -> None:
+        # G4 fix (project 01, 2026-11-20): the local path was None (unbounded);
+        # a runaway tool loop had no ceiling. Now finite per-answer limits
+        # mirroring project 01's RAGConfig agent-loop defaults.
+        limits = budget_limits(Settings(LLM_API_KEY=None, LLM_BASE_URL=None))
+        assert limits is not None
+        assert limits.request_limit == 12
+        assert limits.tool_calls_limit == 8
+        assert limits.input_tokens_limit == 200_000
+        assert limits.total_tokens_limit == 4_000_000
 
     def test_env_defaults(self) -> None:
         s = Settings()
