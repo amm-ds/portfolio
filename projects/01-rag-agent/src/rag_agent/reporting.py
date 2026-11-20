@@ -85,6 +85,8 @@ class QuestionTrace:
     # recorded, not used. None keeps pre-amendment traces byte-identical.
     answer: str | None = None
     claims: list[dict[str, str]] | None = None  # [{claim, evidence_span, label, state}]
+    # G4 fix (2026-11-20): which usage limit terminated the answer, if any.
+    usage_limit_hit: str | None = None
 
 
 def is_abstention(summary: str, confidence: float) -> bool:
@@ -566,6 +568,8 @@ def write_question_traces(
             row["answer"] = t.answer
         if t.claims is not None:
             row["claims"] = t.claims
+        if t.usage_limit_hit is not None:
+            row["usage_limit_hit"] = t.usage_limit_hit
         rows.append(row)
     out = path or config.reports_dir / "question_traces.json"
     out.parent.mkdir(parents=True, exist_ok=True)

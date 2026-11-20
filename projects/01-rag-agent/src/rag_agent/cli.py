@@ -16,7 +16,7 @@ from portfolio_core.llm import LLMProviderUnavailableError
 from portfolio_core.llm_budget import BudgetExceededError
 from portfolio_core.logging import get_logger
 
-from rag_agent.agent import build_agent
+from rag_agent.agent import agent_usage_limits, build_agent
 from rag_agent.config import RAGConfig
 from rag_agent.corpus import load_corpus, prepare_client_corpus
 from rag_agent.corpus import prepare_corpus as prepare_corpus_impl
@@ -458,7 +458,9 @@ def chat(
         if prompt_text.strip() in {":quit", ":q", "exit", "quit"}:
             typer.echo("bye")
             return
-        result = agent.run_sync(prompt_text, deps=retriever)
+        result = agent.run_sync(
+            prompt_text, deps=retriever, usage_limits=agent_usage_limits(config)
+        )
         output = result.output
         if claim_judge is not None:
             report = verify_result(prompt_text, output, retriever, config, claim_judge)

@@ -39,7 +39,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import plotly.graph_objects as go
-from portfolio_core.llm_budget import BudgetExceededError, budget_limits
+from portfolio_core.llm_budget import BudgetExceededError
 from portfolio_core.logging import get_logger
 from portfolio_eval.rag import RAGEvalResult
 from pydantic import ValidationError
@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 
     from pydantic_ai.models import Model
 
-from rag_agent.agent import build_agent
+from rag_agent.agent import agent_usage_limits, build_agent
 from rag_agent.config import RAGConfig, RetrievalBest
 from rag_agent.corpus import load_corpus
 from rag_agent.figures import (
@@ -163,17 +163,20 @@ def answer_with_output_retries(
     agent: Agent[Retriever, AnalysisResult],
     question: str,
     retriever: Retriever,
+    config: RAGConfig,
     max_retries: int = MAX_OUTPUT_RETRIES,
-) -> tuple[AgentRunResult[AnalysisResult] | None, int, str]:
+) -> tuple[AgentRunResult[AnalysisResult] | None, int, str, str | None]:
     """Run the agent with ≤ ``max_retries`` output-retries on invalid output.
 
-    Returns ``(result, n_retries, error)``: a successful ``result`` (retries
-    counted), or ``(None, n_retries, error)`` when every attempt failed — the
-    caller keeps the failure taxonomy label in that case. The USD budget cap
-    (:class:`BudgetExceededError`) always propagates: it must stop the run,
-    never be recorded as a per-question failure. Token-cap terminations
-    (pydantic-ai ``UsageLimitExceeded``) return a typed error string instead:
-    the trace classifies them as ``budget-terminated``, never format-failure.
+    Returns ``(result, n_retries, error, usage_limit_hit)``: a successful
+    ``result`` (retries counted), or ``(None, n_retries, error, hit)`` when
+    every attempt failed — the caller keeps the failure taxonomy label in
+    that case and records ``hit`` (the usage limit that fired) in the trace.
+    The USD budget cap (:class:`BudgetExceededError`) always propagates: it
+    must stop the run, never be recorded as a per-question failure.
+    Token-cap terminations (pydantic-ai ``UsageLimitExceeded``) return a
+    typed error string instead: the trace classifies them as
+    ``budget-terminated``, never format-failure.
     """
     retries = 0
     while True:
@@ -182,22 +185,23 @@ def answer_with_output_retries(
                 question,
                 deps=retriever,
                 retries={"output": 0},  # retries are explicit and counted here
-                usage_limits=budget_limits(),
+                usage_limits=agent_usage_limits(config),
             )
-            return result, retries, ""
+            return result, retries, "", None
         except BudgetExceededError:
             raise
         except UsageLimitExceeded as exc:  # R6: token-cap termination, typed
-            return None, retries, f"UsageLimitExceeded: {exc}"[:200]
+            hit = str(exc)[:120]
+            return None, retries, f"UsageLimitExceeded: {exc}"[:200], hit
         except (ValidationError, UnexpectedModelBehavior) as exc:
             error = f"{type(exc).__name__}: {exc}"[:200]
             if retries >= max_retries:
                 logger.warning("agent output invalid after %d retries: %s", retries, error)
-                return None, retries, error
+                return None, retries, error, None
             retries += 1
             logger.warning("agent output invalid (retry %d/%d): %s", retries, max_retries, error)
         except Exception as exc:  # broad: not retryable; recorded and returned
-            return None, retries, f"{type(exc).__name__}: {exc}"[:200]
+            return None, retries, f"{type(exc).__name__}: {exc}"[:200], None
 
 
 # Embedding-model arms compared on the same chunk-200 chunk structure. BGE
@@ -637,9 +641,10 @@ def run_rag_eval(
         output: AnalysisResult | None = None
         output_retries = 0
         error = ""
+        usage_limit_hit: str | None = None
         try:
-            result, output_retries, error = answer_with_output_retries(
-                agent, question.question, retriever
+            result, output_retries, error, usage_limit_hit = answer_with_output_retries(
+                agent, question.question, retriever, config
             )
             if result is not None:
                 output = result.output
@@ -678,6 +683,7 @@ def run_rag_eval(
                     budget_terminated=any(
                         marker in error for marker in ("UsageLimitExceeded", "BudgetExceeded")
                     ),
+                    usage_limit_hit=usage_limit_hit,
                 )
             )
             continue

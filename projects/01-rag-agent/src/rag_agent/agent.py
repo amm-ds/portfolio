@@ -19,6 +19,7 @@ from portfolio_core.logging import get_logger
 from pydantic_ai import Agent
 from pydantic_ai.models import Model
 from pydantic_ai.tools import RunContext
+from pydantic_ai.usage import UsageLimits
 
 from rag_agent.config import RAGConfig
 from rag_agent.index import Retriever
@@ -26,6 +27,23 @@ from rag_agent.provider import model_settings_for_provider
 from rag_agent.schemas import AnalysisResult, Citation
 
 logger = get_logger(__name__)
+
+
+def agent_usage_limits(config: RAGConfig) -> UsageLimits:
+    """Per-answer bounds for the analysis agent's tool loop (G4 fix, 2026-11-20).
+
+    Every model turn re-sends the full transcript, so an unbounded tool loop
+    can grow a single answer's prompt without limit (measured: 1.5M input
+    tokens on sealed-v2 62-file index 26; two 58-file answers aborted at the
+    4M total-token ceiling). The 4M total-token backstop is kept; the
+    configured ceilings bind first.
+    """
+    return UsageLimits(
+        tool_calls_limit=config.agent_tool_calls_limit,
+        request_limit=config.agent_request_limit,
+        input_tokens_limit=config.agent_input_tokens_limit,
+        total_tokens_limit=4_000_000,
+    )
 
 SYSTEM_PROMPT = """You are a meticulous research assistant over a curated Wikipedia corpus.
 
