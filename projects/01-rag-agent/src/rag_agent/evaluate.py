@@ -690,6 +690,21 @@ def run_rag_eval(
         relevance = selected.judge(
             question.question, question.question + " " + context, summary
         ).score
+        # G4 amendment: record answer + per-claim text for sealed audits
+        # (recorded, not used; schema fields are optional, default None).
+        claim_texts = (
+            [
+                {
+                    "claim": cc.claim,
+                    "evidence_span": cc.reason,
+                    "label": "supported" if cc.supported else "unsupported",
+                    "state": cc.terminal_state,
+                }
+                for cc in vreport.claims
+            ]
+            if vreport is not None
+            else None
+        )
         traces.append(
             QuestionTrace(
                 question=question.question,
@@ -707,6 +722,8 @@ def run_rag_eval(
                 evidence_score=gate.evidence_score,
                 n_surviving_claims=vreport.n_surviving if vreport is not None else None,
                 claim_states=_claim_states(vreport),
+                answer=summary,
+                claims=claim_texts,
             )
         )
         if question.expected_behavior == "answer":

@@ -81,6 +81,10 @@ class QuestionTrace:
     gate_refused: bool = False  # R6: evidence gate refused before generation
     # R7: per-question claim terminal states {accepted_original: n, ...}
     claim_states: dict[str, int] | None = None
+    # G4 amendment (2026-11-20): optional answer/claim text for sealed audits;
+    # recorded, not used. None keeps pre-amendment traces byte-identical.
+    answer: str | None = None
+    claims: list[dict[str, str]] | None = None  # [{claim, evidence_span, label, state}]
 
 
 def is_abstention(summary: str, confidence: float) -> bool:
@@ -532,8 +536,9 @@ def write_question_traces(
     config: RAGConfig, traces: list[QuestionTrace], path: Path | None = None
 ) -> Path:
     """Persist a per-question trace table (tuning set, or the held-out set)."""
-    rows = [
-        {
+    rows = []
+    for t in traces:
+        row: dict[str, Any] = {
             "question": t.question,
             "category": t.category,
             "expected_behavior": t.expected_behavior,
@@ -555,8 +560,13 @@ def write_question_traces(
             "gate_refused": t.gate_refused,
             "claim_states": t.claim_states,
         }
-        for t in traces
-    ]
+        # G4 amendment: optional fields are omitted unless populated, so
+        # traces built without them serialize exactly as before.
+        if t.answer is not None:
+            row["answer"] = t.answer
+        if t.claims is not None:
+            row["claims"] = t.claims
+        rows.append(row)
     out = path or config.reports_dir / "question_traces.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
