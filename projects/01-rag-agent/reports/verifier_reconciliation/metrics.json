@@ -1,0 +1,105 @@
+{
+  "rubric": {
+    "source": "reports/verifier_cascade_dev/local_verdicts.jsonl",
+    "prompt": "src/rag_agent/judge.py RUBRIC_SYSTEM_PROMPT + Question/Context/Answer user prompt",
+    "rates": {
+      "fa_all_claims": {
+        "k": 23,
+        "n": 194,
+        "rate": 0.1186,
+        "wilson95": [
+          0.0803,
+          0.1716
+        ]
+      },
+      "fa_strict_unsupported": {
+        "k": 23,
+        "n": 97,
+        "rate": 0.2371,
+        "wilson95": [
+          0.1635,
+          0.3307
+        ]
+      },
+      "false_rejection_supported": {
+        "k": 12,
+        "n": 97,
+        "rate": 0.1237,
+        "wilson95": [
+          0.0722,
+          0.2039
+        ]
+      }
+    }
+  },
+  "entailment": {
+    "source": "reports/verifier_reconciliation/entailment_verdicts.jsonl",
+    "prompt": "scripts/calibrate_judge.py CLAIM_PROMPT + evaluate() inline system prompt",
+    "rates": {
+      "fa_all_claims": {
+        "k": 2,
+        "n": 194,
+        "rate": 0.0103,
+        "wilson95": [
+          0.0028,
+          0.0368
+        ]
+      },
+      "fa_strict_unsupported": {
+        "k": 2,
+        "n": 97,
+        "rate": 0.0206,
+        "wilson95": [
+          0.0057,
+          0.0721
+        ]
+      },
+      "false_rejection_supported": {
+        "k": 83,
+        "n": 97,
+        "rate": 0.8557,
+        "wilson95": [
+          0.7722,
+          0.912
+        ]
+      }
+    }
+  },
+  "agreement": {
+    "k": 100,
+    "n": 194,
+    "share": 0.5155
+  },
+  "confusion_2x2_by_gold": {
+    "supported": {
+      "accept_accept": 14,
+      "accept_reject": 71,
+      "reject_accept": 0,
+      "reject_reject": 12
+    },
+    "unsupported": {
+      "accept_accept": 1,
+      "accept_reject": 22,
+      "reject_accept": 1,
+      "reject_reject": 73
+    }
+  },
+  "reconciliation": {
+    "committed_fa_all_claims": "0.4433 (86/194)",
+    "entailment_fa_all_claims": {
+      "k": 2,
+      "n": 194,
+      "rate": 0.0103,
+      "wilson95": [
+        0.0028,
+        0.0368
+      ]
+    },
+    "tolerance_claims": 1,
+    "reproduced": false,
+    "decision": "the committed 0.4433 or the cache path is wrong; discrepancy reported, cascade result unchanged (per handoff: stop, do not change the cascade result)"
+  },
+  "generated_at": "2026-11-20T01:28:44.305235+00:00",
+  "commit": "561ad93acc2b6c0e60facf9ed2e2c6f660042c94",
+  "hosted_calls": 0
+}
