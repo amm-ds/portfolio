@@ -1,0 +1,72 @@
+{
+  "scope": "pooled sealed-v2: 58-question run + 62-question held-out run, one configuration",
+  "generated_at": "2026-11-20T14:27:52.866695+00:00",
+  "commit": "f83556c041bac92da5256251acf8c085bd9b4ad2",
+  "input_files": {
+    "golden_sealed_v2.json": "616973ba390fdc1f8c9bf0b53fcf8e1b9bd24f5e93b563184bbc2ca9f8ce54e2",
+    "golden_sealed_v2_58.json": "266d2ef3e5d26176d6b22ade3464984fba48ce89e297ce670c4c0b554420fb17",
+    "golden_sealed_v2_62.json": "a57355f5d853bd86512d2fec816a950fd25a15aee1e540d414871f0c4836b4f0"
+  },
+  "runs": {
+    "sealed_v2": {
+      "folder": "reports/sealed_v2",
+      "n": 58,
+      "meter_spend_usd": 1.034388,
+      "code": "apps-rag-pass-2026-11-19 @ 557ad6b"
+    },
+    "sealed_v2_62": {
+      "folder": "reports/sealed_v2_62",
+      "n": 62,
+      "meter_spend_usd": 0.526214,
+      "code": "g4-heldout-62-2026-11-20 @ f83556c (with G4 trace amendment f43e2c9)"
+    }
+  },
+  "pooled_120": {
+    "n_questions": 120,
+    "n_answerable": 92,
+    "unsupported_claim": {
+      "k": 22,
+      "n": 120,
+      "rate": 0.1833,
+      "wilson95": [
+        0.1243,
+        0.262
+      ],
+      "answerable_only": {
+        "k": 22,
+        "n": 92,
+        "rate": 0.2391,
+        "wilson95": [
+          0.1636,
+          0.3356
+        ]
+      }
+    },
+    "false_abstention": {
+      "k": 6,
+      "n": 92,
+      "rate": 0.0652,
+      "wilson95": [
+        0.0302,
+        0.1351
+      ]
+    },
+    "budget_terminated": {
+      "count": 2,
+      "indices_58_file": [
+        23,
+        35
+      ],
+      "indices_62_file": [],
+      "note": "listed separately, not folded into unsupported"
+    }
+  },
+  "validity": {
+    "warning": "The 62-question run was hit by a provider 500 storm from trace index 26 onward: 34/62 traces are format-failure (33 ModelHTTPError 500, 1 timeout), only 28/62 questions produced real outcomes (19 correct, 7 unsupported-claim, 2 empty-answer). The pooled 120 figures above are the mechanical pool of committed verdicts as the handoff specifies, but they are NOT a valid 120-question configuration measurement: 44 of the 62 questions (34 failures + unanswerable rows misclassified by failures) carry provider-error artifacts rather than configuration signal.",
+    "healthy_rows": {
+      "sealed_v2": 58,
+      "sealed_v2_62": 28
+    },
+    "recommendation": "Owner decision required: re-run the 62 under a fresh cap (a healthy 62 costs ~$1.10; remaining stop headroom after $0.5262 is $0.6738, so the current cap does not cover a re-run)."
+  }
+}
