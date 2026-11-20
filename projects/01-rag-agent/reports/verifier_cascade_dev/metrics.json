@@ -1,0 +1,60 @@
+{
+  "rule": "reports/verifier_cascade_dev/rule.md",
+  "folds": "reports/verifier_cascade_dev/folds.json",
+  "cv_results": "reports/verifier_cascade_dev/cv_results.jsonl",
+  "grid_size": 4095,
+  "unique_dev_scores": 91,
+  "cv": {
+    "k": 5,
+    "n_bands": 4095,
+    "n_qualifying": 0,
+    "qualifying": [],
+    "extremes": {
+      "min_fa": {
+        "t_lo": 0.979887,
+        "t_hi": 0.98143,
+        "fa_k": 0,
+        "fa_n": 48,
+        "fa_rate": 0.0,
+        "fr_k": 44,
+        "fr_n": 48,
+        "fr_rate": 0.9167,
+        "deferred_k": 0,
+        "deferred_n": 96,
+        "deferred_share": 0.0
+      },
+      "min_fr": {
+        "t_lo": 0.062879,
+        "t_hi": 0.94103,
+        "fa_k": 7,
+        "fa_n": 48,
+        "fa_rate": 0.1458,
+        "fr_k": 0,
+        "fr_n": 48,
+        "fr_rate": 0.0,
+        "deferred_k": 2,
+        "deferred_n": 96,
+        "deferred_share": 0.0208
+      },
+      "min_deferred": {
+        "t_lo": 0.083923,
+        "t_hi": 0.94103,
+        "fa_k": 7,
+        "fa_n": 48,
+        "fa_rate": 0.1458,
+        "fr_k": 0,
+        "fr_n": 48,
+        "fr_rate": 0.0,
+        "deferred_k": 0,
+        "deferred_n": 96,
+        "deferred_share": 0.0
+      }
+    }
+  },
+  "runtime_seconds": 0.09,
+  "generated_at": "2026-11-20T00:59:52.609850+00:00",
+  "commit": "d9730106c9c8d38d7ef3507b2e7f89dcba2f6a4c",
+  "hosted_calls": 0,
+  "final_band": null,
+  "note": "no qualifying band on DEV CV; TEST not read"
+}
