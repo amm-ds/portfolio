@@ -44,6 +44,9 @@
 # …and the verifier-cascade DEV calibration (frozen rule, folds, cached local
 # verdicts, CV table, metrics — same committed-evidence role).
 !/reports/verifier_cascade_dev/
+# …and the verifier-reconciliation check (entailment-prompt verdicts through
+# the cascade code path, comparison metrics — same committed-evidence role).
+!/reports/verifier_reconciliation/
 # …and the R6 failure ledger (trace review required before interventions).
 !/reports/stress_failure_ledger.md
 /reports/figures/*.html
