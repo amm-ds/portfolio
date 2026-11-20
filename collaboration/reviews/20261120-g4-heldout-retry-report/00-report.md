@@ -100,3 +100,53 @@ fresh headroom, and the order guarantees the first question is the expensive
 one. Alternatively, investigate the prompt-size blowup (some retrieved
 contexts appear to stuff ~1.4M tokens) before spending again — that is a
 code-level question outside this amendment's no-change rule.
+
+---
+
+# Continuation (owner-approved 2026-11-20: "proceed with higher cap, finish finally") — FINAL
+
+The owner approved a higher cap to finish. What happened, in order:
+
+1. **33-question continuation at stop $1.50** (committed subset `fc859c9`):
+   healthy run, zero 500s, but three pathological questions (~$0.30/0.48/0.54)
+   pushed the meter to **$1.500479 — aborting on the final tail call with all
+   33 questions processed and zero committed artifacts** (the CLI writes only
+   on completion). The $1.50 stop held; my earlier ≥$1.00 estimate was beaten
+   by the third giant question.
+2. **Final re-run of the same 33 at stop $2.50** (hard $3.00): completed.
+   **Spend $1.316928.** Verdicts: correct 26, unsupported-claim 6,
+   empty-answer 1; zero format-failures, zero budget-terminated; refusal
+   accuracy 1.0 (12/12); all 33 traces carry answer text, 21 carry claim
+   text. Artifacts in `reports/sealed_v2_62_retry/`.
+
+## Final numbers
+
+- **Combined 62 (combined, retry for failed items only)**: all 62 questions
+  have real outcomes; **questions still failing: 0**. Combined verdicts:
+  correct 46, unsupported-claim 13, empty-answer 3. Unsupported **13/62 =
+  0.2097** [0.1268, 0.3264] over all questions; **13/44 = 0.2955** [0.1816,
+  0.4422] over answerable-only. False abstention 3/44 = 0.0682. Combined
+  budget-terminated rows by index: **none** (58-file's two remain 23 and 35).
+- **Pooled 120 — now VALID** (Amendment 2's condition met; warning removed
+  in `reports/sealed_v2_120_pooled/metrics.json`): unsupported **28/120 =
+  0.2333** [0.1667, 0.3166] over all questions; **28/92 = 0.3043** [0.2197,
+  0.4046] over answerable-only; false abstention 7/92 = 0.0761; budget-
+  terminated 2 (58-file indices 23, 35), listed separately.
+- **Final spend accounting (all kimi-for-coding, cloud-equivalent)**:
+  58-run $1.034388 + G4 pass 1 $0.526214 + retry authority $0.517896 +
+  $0.362940 + $1.500479 + final $1.316928 = **$5.258845 total**. The
+  four-attempt path cost ~$2.18 more than a right-sized first cap would
+  have; the overshoot of Amendment 2's $0.80 hard cap (to $0.880836) is
+  stated in the section above.
+
+## Commits (continuation)
+
+- `fc859c9` — continuation subset (33) defined and hashed
+- `c2e84a9` — final 33-question run artifacts
+- `80432b5` — pooled 120 recomputed valid
+
+The handoff's purpose is fulfilled: per-question answers and claim text are
+committed for the entire sealed-v2 set (58 count-only by history; all 62
+with full text), and a valid 120-question single-configuration result
+exists. Whether the pooled 28/120 figure replaces the 58-question 26%
+headline in copy remains the owner's call, as the handoff states.
