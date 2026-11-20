@@ -1,115 +1,103 @@
-# G4 held-out 62 report — STOP before spend (trace schema gap)
+# G4 held-out 62 report
 
 Date: 2026-11-20
 Handoff: `collaboration/designs/20261120-rag-g4-heldout/03-implementation-handoff.md`
-(approved cap $1.30, stop at cumulative $1.20, kimi-for-coding only)
-Branch: `g4-heldout-62-2026-11-20` from `verifier-reconciliation-2026-11-20`
-(head `e7a4880`). No merge, no deploy.
++ Amendment (owner-approved 2026-11-20): minimal trace extension.
+Budget: kimi-for-coding only, hard cap $1.30, stop at cumulative $1.20.
+Branch: `g4-heldout-62-2026-11-20`. No merge, no deploy.
 
-## Outcome
+## Headline: run completed under budget, but a provider 500 storm makes it a degraded measurement
 
-**Stopped before any hosted spend, per the handoff's own step 4 and stop
-conditions. Meter spend: $0.00. No evaluation ran; no `reports/sealed_v2_62/`
-folder was created; no production configuration, committed golden file,
-committed report, or copy was touched.** The one approved prep step (define
-and hash the 62-question complement) was completed so an approved
-continuation can start immediately.
+The 62-question pass ran to completion on the unchanged production
+configuration (+ the approved trace amendment) for **$0.526214
+cloud-equivalent** (ledger budget $1.20; stop and hard cap never reached).
+However, the kimi-for-coding endpoint began returning HTTP 500 at trace
+index 26 and never recovered (brief islands at indices 36 and 43): **34 of
+62 traces are `format-failure`** (33 `ModelHTTPError 500`, 1 request
+timeout). Only **28 of 62 questions produced real outcomes**. The numbers
+below are committed exactly as measured; the pooled 120 figures are the
+handoff's mechanical pool but are **not a valid 120-question configuration
+measurement**. A clean re-run needs a fresh cap decision (~$1.10 expected;
+remaining stop headroom $0.6738 does not cover it).
 
-## Why the stop: the trace schema holds no answers and no claim text
+## Commits and hashes
 
-Handoff step 4 requires per-question answers and claim text in the run's
-trace output, and forbids adding capture by editing production code without
-owner approval. The committed schema, verified on this exact code path
-(the same commit the 58-question run used):
+- `20814ff` — `docs(01): sealed-v2 held-out complement (62) defined and hashed`
+- `f43e2c9` — `feat(01): sealed-v2 trace carries answer and claim text (optional, default none)` (amendment, committed separately per the amendment)
+- `f83556c` — gitignore whitelist for the two new report folders
+- `99e4530` — `feat(01): sealed-v2 held-out 62 pass - degraded by provider 500 storm`
+- `67e695d` — `feat(01): sealed-v2 120 pooled metrics with validity warning`
+- Code-path hash at run time: `f83556c`; parent `golden_sealed_v2.json`
+  sha256 verified before the run: `616973ba…ce54e2` (matches the handoff).
+- Input hashes: `_58` `266d2ef3…20fb17`; `_62` `a57355f5…36b4f0`.
 
-`src/rag_agent/reporting.py:60-83` — `QuestionTrace` fields, verbatim:
+## Amendment gates (actual output, run before the hosted pass)
 
-```
-question, category, expected_behavior, top_rank, retrieved_relevant,
-cited_relevant, faithfulness, abstained, format_ok, output_retries, error,
-gate_coverage, gate_max_similarity, evidence_score, n_surviving_claims,
-budget_terminated, gate_refused, claim_states
-```
+- `uv run pytest -q projects/01-rag-agent` → **207 passed, 0 failed**; the
+  command exits 1 solely on the known pre-existing libs coverage gate
+  (`Required test coverage of 80.0 not reached. Total coverage: 78.19%`) —
+  reported separately per the handoff; threshold untouched.
+- `check_headline_numbers.py` → `11 claims checked, 0 finding(s)` / `OK`
+- `check_docs.py` → `check-docs: OK`
 
-`src/rag_agent/evaluate.py:693-711` constructs exactly these fields; the
-summary text exists in memory (`summary = output.summary`) but is written
-only into the in-memory `RagasRow` sample (not committed; not produced
-without `--ragas`), and claim text is never recorded — only
-`n_surviving_claims` and the `claim_states` counts. `write_question_traces`
-serializes what it is given. Conclusion: with the code as committed, an
-approved run would reproduce the 58-question run's gap — no answer text, no
-claim text — making the handoff's stated purpose (Phase 1 human audit and
-failure analysis from committed artifacts) impossible. This is the handoff's
-own stop condition; stopping is following the handoff, not deviating from
-it.
+## The run (handoff steps 5–6)
 
-## Documented deviation: branch base
+- Invocation: `uv run python -m rag_agent.cli evaluate --heldout
+  --heldout-file data/golden_sealed_v2_62.json --reports-dir
+  reports/sealed_v2_62` from `projects/01-rag-agent`, root `.env` sourced,
+  `LLM_COST_LIMIT_USD=1.20` exported (process env only). `reports/sealed_v2/`
+  untouched; no committed golden file, report, or copy edited.
+- Meter: `ledger_spend_usd` **0.526214**, `budget_usd` 1.20, model
+  kimi-for-coding, 108 calls. **Ollama was not used (hosted only).**
+- Verdicts (62 traces): correct 19, unsupported-claim 7, empty-answer 2,
+  **format-failure 34** (all provider errors; first at index 26).
+- **Budget-terminated rows by index: none in this run.** (The 58-question
+  run's two remain indices **23 and 35** of the 58-file, listed separately,
+  never folded into unsupported.)
+- Unsupported-claim rate, **26%-style denominator stated both ways**:
+  - all questions: **7/62 = 0.1129**, Wilson 95% [0.0558, 0.2152];
+  - answerable-only (44): **7/44 = 0.1591**, Wilson 95% [0.0793, 0.2937].
+  - For the record, the existing 26% headline is **15/58 = 0.2586** over all
+    58 vs **15/48 = 0.3125** over answerable-only.
+- Abstention: refusal accuracy 0.2778 (5/18 — depressed by the failure
+  storm consuming unanswerable rows); false abstention 0.0455 (2/44).
+- Quality (answered rows): faithfulness 0.59, answer relevance 0.6265,
+  context recall 1.0. Latency p50 10.03 s, p95 132.33 s.
 
-The handoff says branch from `main`. Verified impossible to satisfy together
-with "unchanged production configuration" and "pool with the 58 run":
+## Trace amendment verified (handoff step 4)
 
-- `origin/main` (tip `3ac47bd`) has **no** `data/golden_sealed_v2.json`,
-  **no** `data/golden_sealed_v2_58.json`, and **no** `reports/sealed_v2/`
-  (`git ls-tree origin/main` checked 2026-11-20).
-- `src/rag_agent/cli.py` on main differs from the 58-run code by 72 lines
-  (`git diff origin/main..apps-rag-pass-2026-11-19`); the 58 run
-  (`557ad6b`) exists only on the apps-rag-pass line.
+`reports/sealed_v2_62/question_traces_heldout.json` carries `answer` on the
+28 answered rows and `claims` as `{claim, evidence_span, label, state}` on
+the 23 rows with verify reports — the Phase 1 audit material the 58 run
+lacked. Failure rows keep the pre-amendment schema exactly (keys omitted).
 
-Owner decision (2026-11-20): branch from `verifier-reconciliation-2026-11-20`
-(`e7a4880`), the tip that contains the 58 run, its reports, and the
-identical code path. Deviation recorded per handoff step 9.
+## Pooled 120 (handoff step 7) — with the validity warning
 
-## Hashes and commits
+From `reports/sealed_v2_120_pooled/metrics.json`:
 
-- Prep commit: `20814ff` — `docs(01): sealed-v2 held-out complement (62)
-  defined and hashed`
-- Code-path git hash: `e7a4880b63228ee7f19ff17dc1ccc471a730598a`
-- Parent `data/golden_sealed_v2.json` sha256:
-  `616973ba390fdc1f8c9bf0b53fcf8e1b9bd24f5e93b563184bbc2ca9f8ce54e2`
-  — **matches the handoff's recorded value; step-2 stop condition clear.**
-- New `data/golden_sealed_v2_62.json` sha256:
-  `a57355f5d853bd86512d2fec816a950fd25a15aee1e540d414871f0c4836b4f0`
-- Complement verified: 62 items, disjoint from the 58, union equals the 120;
-  category mix 32 single_hop / 12 multi_hop / 18 unanswerable (44
-  answerable). Original order preserved.
+- answerable 92; unsupported **22/120 = 0.1833**, Wilson [0.1243, 0.2620]
+  over all questions; 22/92 = 0.2391 over answerable-only.
+- False abstention **6/92 = 0.0652** [0.0302, 0.1351].
+- Budget-terminated: **2** (58-file indices 23 and 35; 62-file none) —
+  listed separately, not folded into unsupported.
 
-## Gates (actual output)
+**Validity warning (also committed in the file):** the pool mixes 58 healthy
+rows with 28 healthy + 34 provider-error rows; it must not be quoted as the
+120-question configuration result. A capped re-run is the owner decision this
+hands back.
 
-- `uv run pytest -q projects/01-rag-agent` → **204 passed, 0 failed**; exit 1
-  solely from the pre-existing libs coverage gate (`Required test coverage of
-  80.0 not reached. Total coverage: 78.19%`) — reported separately per the
-  handoff; threshold untouched.
-- `uv run python scripts/check_headline_numbers.py` → `11 claims checked,
-  0 finding(s)` / `OK`
-- `uv run python scripts/check_docs.py` → `check-docs: OK`
+## Deviations
 
-## Context restated for the approved continuation
+1. Branch based on `verifier-reconciliation-2026-11-20`, not `main` — main
+   lacks the sealed-v2 assets and the 58-run code path (documented in the
+   stop-and-gap report, owner-approved).
+2. The run's outcome (provider 500 storm) is reported as-is per the
+   stop conditions — no stop condition fired mid-run (all calls were
+   kimi-for-coding; caps untouched; parent hash matched; trace capture
+   worked), and the handoff specifies completing and reporting rather than
+   re-running.
 
-- 58-question run budget-terminated rows by index: **23 and 35**
-  (answerable rows terminated at the per-answer 4,000,000-token limit;
-  recorded in `reports/sealed_v2/metrics.json` and the r3-sealed-v2-58
-  report). This run produced none (it did not run).
-- The 26% headline, denominator both ways: **15/58 = 0.2586** (Wilson 95%
-  [0.1635, 0.3838]) over **all 58 questions**; over **answerable-only (48)**
-  the same 15 unsupported outcomes are **15/48 = 0.3125**. The public 26%
-  headline uses the all-questions denominator.
-- Prior 58-question spend (for the record): $1.034388 cloud-equivalent on
-  the kimi-for-coding meter. **This pass added $0.00.**
+## Zero-extra-spend statement
 
-## Zero-hosted-calls and no-Ollama statement
-
-No hosted calls were made (kimi-for-coding or otherwise); no local Ollama
-calls were made. The only actions were git operations, file hashing, the
-free gates above, and reading committed artifacts.
-
-## What an approved continuation needs (owner decisions, not made here)
-
-1. Approve a minimal trace extension in advance — e.g. optional
-   `answer: str | None` and `claims: list[str] | None` on `QuestionTrace`,
-   populated from `output.summary` and the verify report — as a separate,
-   reviewed change to production code; OR
-2. Accept count-only traces and restate the handoff's objective without
-   per-claim text (Phase 1 audit would then need a separate capture path).
-
-With either decision, this branch's committed 62-file and hashes let the run
-proceed immediately under the same caps ($1.30 hard, $1.20 stop).
+Hosted spend in this pass: **$0.526214 cloud-equivalent**, kimi-for-coding
+only, from the committed meter. No Ollama, no other provider, no re-run.
