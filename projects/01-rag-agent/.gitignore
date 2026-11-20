@@ -45,6 +45,7 @@
 # …and the amendment-2 retry: the aborted 34-question retry (health-check
 # evidence only - the CLI writes no artifacts on a budget abort).
 !/reports/sealed_v2_62_retry/
+# the 62 (indices 27-35, 37-42, 44-61), fixed and hashed before the run.
 # …and the verifier-challenger pass (Phase 1 bake-off evidence: license record,
 # metrics, per-claim predictions — same committed-evidence role).
 !/reports/verifier_challenger/
@@ -93,3 +94,7 @@ data/*
 # otherwise make them trackable).
 data/calibration/claims.jsonl
 data/calibration/answers.jsonl
+
+# …and the owner's continuation subset: the 33 still-unfetched questions of
+# the 62 (indices 27-35, 37-42, 44-61), fixed and hashed before the run.
+!data/golden_sealed_v2_62_retry2.json

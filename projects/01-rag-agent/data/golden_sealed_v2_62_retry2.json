@@ -1,0 +1,320 @@
+[
+  {
+    "question": "Which Swedish diplomat serving as a United Nations mediator was assassinated in 1948 while trying to broker an Arab-Israeli truce?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Bernadotte",
+      "mediator",
+      "assassinated"
+    ]
+  },
+  {
+    "question": "Under Singapore's Protection from Online Falsehoods and Manipulation Act, what must a person served with a correction direction do, and what are the penalties for non-compliance?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "POFMA",
+      "correction direction"
+    ]
+  },
+  {
+    "question": "Which space telescope, launched in December 2021 as the successor to the Hubble Space Telescope, operates near the second Sun-Earth Lagrange point?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "James Webb",
+      "Webb",
+      "Hubble"
+    ]
+  },
+  {
+    "question": "How long were home rooftop solar panels installed in the United Kingdom in 2022 estimated to take to pay back their cost?",
+    "relevant_titles": [
+      "Solar power in the United Kingdom"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Why does Columbus, Ohio receive relatively light winter snowfall?",
+    "relevant_titles": [
+      "Climate of Columbus, Ohio"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "During which period was the Volga Hydroelectric Station the largest power station in the world?",
+    "relevant_titles": [
+      "Volga Hydroelectric Station"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Which architect designed the Royal Greenhouses of Laeken, and on behalf of which king?",
+    "relevant_titles": [
+      "Royal Greenhouses of Laeken"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "On what dates was the Climate Change Coalition registered and deregistered as an Australian political party?",
+    "relevant_titles": [
+      "Climate Change Coalition"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "By roughly what percentage have human-caused emissions increased atmospheric carbon dioxide above pre-industrial levels?",
+    "relevant_titles": [
+      "Greenhouse gas emissions"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "How was the large black algal bloom nicknamed 'the blob' in the Chukchi Sea first detected in July 2009?",
+    "relevant_titles": [
+      "The blob (Chukchi Sea algae)"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "The Ames Hydroelectric Generating Plant and the Chivilingo Hydroelectric Plant both began operating in the 1890s — what was each built to power?",
+    "relevant_titles": [
+      "Ames Hydroelectric Generating Plant",
+      "Chivilingo Hydroelectric Plant"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "How much wind power capacity had Scotland installed by Q1 2023, and what share of total UK renewable generation did Scotland produce in 2020?",
+    "relevant_titles": [
+      "Wind power in Scotland",
+      "Renewable energy in Scotland"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "In the biosynthetic pathway to chlorophylls, which enzyme reduces a vinyl group to an ethyl group, and which enzyme converts protochlorophyllide to chlorophyllide a?",
+    "relevant_titles": [
+      "Divinyl chlorophyllide a 8-vinyl-reductase",
+      "Protochlorophyllide reductase"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What is the maximum administrative fine that can be imposed under the GDPR for serious data-protection violations?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "GDPR",
+      "Data Protection"
+    ]
+  },
+  {
+    "question": "Which Alpine principality counts Vaduz as its capital?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Liechtenstein",
+      "Vaduz"
+    ]
+  },
+  {
+    "question": "For what contribution did Maryam Mirzakhani receive the Fields Medal?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Mirzakhani",
+      "Maryam"
+    ]
+  },
+  {
+    "question": "What is algaemia, and which genus of algae most commonly causes it?",
+    "relevant_titles": [
+      "Algaemia"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What is AIML, and which natural-language software agent was it originally created to power?",
+    "relevant_titles": [
+      "Artificial Intelligence Markup Language"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "How do photosynthesis systems non-destructively measure photosynthetic rates in the field?",
+    "relevant_titles": [
+      "Photosynthesis system"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Which organization declared Lake Winnipeg the most threatened lake in the world in 2013, and for what reason?",
+    "relevant_titles": [
+      "Lake Winnipeg algae threat"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What component did Bernard Widrow and Ted Hoff's ADALINE use to emulate the synapses of an artificial neuron?",
+    "relevant_titles": [
+      "Physical neural network"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Who introduced the rectifier (ReLU) activation function, and in what year?",
+    "relevant_titles": [
+      "Rectifier (neural networks)"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "In neural networks, how does dilution differ from dropout?",
+    "relevant_titles": [
+      "Dilution (neural networks)"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What distinctive organelle characterises the protist group Kinetoplastida?",
+    "relevant_titles": [
+      "Kinetoplastida"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Which publisher founded both the International Journal of Pattern Recognition and Artificial Intelligence and the International Journal on Artificial Intelligence Tools?",
+    "relevant_titles": [
+      "International Journal of Pattern Recognition and Artificial Intelligence",
+      "International Journal on Artificial Intelligence Tools"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "From what algal sources were the bacteria Mesonia algae and Winogradskyella algae each isolated?",
+    "relevant_titles": [
+      "Mesonia algae",
+      "Winogradskyella algae"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "By what systematic enzyme names are Photosystem II and Photosystem I also known?",
+    "relevant_titles": [
+      "Photosystem II",
+      "Photosystem I"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What were the main provisions of the European Union's AI Act adopted in 2024?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "AI Act",
+      "European Parliament",
+      "trilogue"
+    ]
+  },
+  {
+    "question": "Who designed the Burj Khalifa, and in what year was the tower completed?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Burj Khalifa",
+      "Adrian Smith"
+    ]
+  },
+  {
+    "question": "What was the name of the dog launched aboard Sputnik 2 in 1957?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Laika",
+      "Sputnik"
+    ]
+  },
+  {
+    "question": "In what year did India's Chandrayaan-3 spacecraft land on the Moon?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Chandrayaan",
+      "Vikram"
+    ]
+  },
+  {
+    "question": "Which novel won the Booker Prize in 2023, and who wrote it?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Booker Prize",
+      "Prophet Song"
+    ]
+  },
+  {
+    "question": "What was the largest iceberg ever recorded, and from which ice shelf did it calve?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "A-76",
+      "iceberg"
+    ]
+  }
+]
