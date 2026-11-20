@@ -38,6 +38,10 @@
 # same committed-evidence role).
 !/reports/warrant_check/
 !/reports/sealed_v2/
+# …and the G4 held-out 62 run + 120-question pool (hosted evidence; same
+# committed-evidence role). The 58-question folder above stays untouched.
+!/reports/sealed_v2_62/
+!/reports/sealed_v2_120_pooled/
 # …and the verifier-challenger pass (Phase 1 bake-off evidence: license record,
 # metrics, per-claim predictions — same committed-evidence role).
 !/reports/verifier_challenger/
