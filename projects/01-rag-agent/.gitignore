@@ -69,6 +69,9 @@ data/*
 # …and its fixed 58-question subset (r3-sealed-v2-58 handoff; same rules).
 !data/golden_sealed_v2_58.json
 !data/golden_sealed_v2_58.sha256.json
+# …and its 62-question held-out complement (g4-heldout-62 handoff; same
+# rules: defined and hashed before any run, disjoint from the 58, union 120).
+!data/golden_sealed_v2_62.json
 # …and the verifier challenger's fixed dev/test split of the calibration claims
 # (committed before any scoring; the claims.jsonl it splits is regenerable via
 # scripts/build_calibration_set.py and stays ignored, as before). NOTE: these
