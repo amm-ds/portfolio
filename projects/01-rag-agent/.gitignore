@@ -42,6 +42,9 @@
 # committed-evidence role). The 58-question folder above stays untouched.
 !/reports/sealed_v2_62/
 !/reports/sealed_v2_120_pooled/
+# …and the amendment-2 retry: the aborted 34-question retry (health-check
+# evidence only - the CLI writes no artifacts on a budget abort).
+!/reports/sealed_v2_62_retry/
 # …and the verifier-challenger pass (Phase 1 bake-off evidence: license record,
 # metrics, per-claim predictions — same committed-evidence role).
 !/reports/verifier_challenger/

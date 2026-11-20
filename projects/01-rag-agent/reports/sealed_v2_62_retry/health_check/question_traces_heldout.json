@@ -1,0 +1,25 @@
+[
+  {
+    "question": "When did the Eysturoyartunnilin, the subsea tunnel linking Streymoy and Eysturoy in the Faroe Islands and containing the world's first underwater roundabout, open to traffic?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "top_rank": null,
+    "retrieved_relevant": false,
+    "cited_relevant": false,
+    "faithfulness": 0.3,
+    "abstained": true,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.3125,
+    "gate_max_similarity": 0.1875,
+    "evidence_score": 0.2625,
+    "n_surviving_claims": 0,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": null,
+    "answer": "I could not find any information about the Eysturoyartunnilin tunnel or its opening date in the retrieved corpus evidence. Multiple searches covering the tunnel's name, the Faroe Islands, the underwater roundabout, and related terms returned only unrelated articles (on hydroelectric power, aviation, machine learning, algae, and climate), with no passage mentioning this tunnel. Therefore I cannot answer the question from the available evidence.",
+    "claims": []
+  }
+]

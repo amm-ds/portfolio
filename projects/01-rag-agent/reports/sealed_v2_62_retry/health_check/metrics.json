@@ -1,0 +1,142 @@
+{
+  "detail": {
+    "heldout": {
+      "n_questions": 1,
+      "composition": {
+        "unanswerable/abstain": 1
+      },
+      "retrieval": {
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "mrr@5": 0.0,
+        "n_questions": 1,
+        "random_recall@5": 0.0,
+        "random_mrr@5": 0.0,
+        "delta_mrr@5_vs_random": 0.0
+      },
+      "rag": {
+        "n_questions": 0,
+        "faithfulness": NaN,
+        "answer_relevance": NaN,
+        "context_recall": NaN
+      },
+      "faithfulness": {
+        "mean": NaN,
+        "ci95": [
+          NaN,
+          NaN
+        ]
+      },
+      "taxonomy": {
+        "counts": {
+          "correct": 1
+        },
+        "correct_share": 1.0,
+        "correct_share_ci95": [
+          1.0,
+          1.0
+        ]
+      },
+      "abstention": {
+        "n_unanswerable": 1,
+        "n_answerable": 0,
+        "refusal_accuracy": 1.0,
+        "refusal_accuracy_ci95": [
+          1.0,
+          1.0
+        ],
+        "cite_when_expected": NaN,
+        "cite_when_expected_ci95": [
+          NaN,
+          NaN
+        ],
+        "false_abstention_rate": NaN,
+        "false_abstention_rate_ci95": [
+          NaN,
+          NaN
+        ]
+      },
+      "verify": {
+        "enabled": true,
+        "min_support": 0.6,
+        "max_repair_calls": 2,
+        "n_answers_verified": 1,
+        "n_verify_abstentions": 0,
+        "n_verify_skipped": 1,
+        "n_verifier_failures": 0,
+        "total_repair_calls": 0,
+        "mean_support_fraction": null,
+        "mean_verify_latency_s": 0.0,
+        "verify_latency_share_of_answer": 0.0,
+        "diagnose_mech": false,
+        "n_drafted": 0,
+        "n_mechanical_fail": 0,
+        "n_judged": 0,
+        "n_judge_supported": 0,
+        "n_surviving": 0,
+        "n_dropped": 0,
+        "n_verification_error": 0,
+        "n_accepted_original": 0,
+        "n_accepted_repaired": 0,
+        "n_dropped_original": 0,
+        "n_dropped_repaired": 0,
+        "claim_retention_rate": null,
+        "claim_repair_rate": null,
+        "claim_drop_rate": null,
+        "mechanical_false_rejections": 0
+      },
+      "ops": {
+        "backend": "env:kimi-for-coding",
+        "p50_latency_s": 226.39554637507536,
+        "p95_latency_s": 226.39554637507536
+      },
+      "meter": {
+        "active": true,
+        "model": "kimi-for-coding",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
+        "phases": {
+          "agent": {
+            "calls": 1,
+            "input_tokens": 1501414,
+            "output_tokens": 4128,
+            "cached_input_tokens": 1435136,
+            "spend_usd": 0.513331
+          },
+          "judge": {
+            "calls": 2,
+            "input_tokens": 1369,
+            "output_tokens": 799,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.004565
+          },
+          "verify": {
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.0
+          },
+          "ragas": {
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.0
+          }
+        },
+        "total": {
+          "calls": 3,
+          "input_tokens": 1502783,
+          "output_tokens": 4927,
+          "cached_input_tokens": 1435136,
+          "spend_usd": 0.517896
+        },
+        "ledger_spend_usd": 0.517896,
+        "budget_usd": 0.7
+      },
+      "traces_path": "/tmp/g4_health/question_traces_heldout.json",
+      "note": "sealed held-out set, reported separately from the tuning set; verify-on pass without RAGAS to bound hosted cost"
+    }
+  },
+  "ragas_version": "0.3.1"
+}
