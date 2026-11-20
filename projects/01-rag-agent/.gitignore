@@ -76,6 +76,9 @@ data/*
 # …and its 62-question held-out complement (g4-heldout-62 handoff; same
 # rules: defined and hashed before any run, disjoint from the 58, union 120).
 !data/golden_sealed_v2_62.json
+# …and the amendment-2 retry subset: the 34 provider-failed questions of the
+# 62 (indices 26-35, 37-42, 44-61), fixed and hashed before the retry run.
+!data/golden_sealed_v2_62_retry.json
 # …and the verifier challenger's fixed dev/test split of the calibration claims
 # (committed before any scoring; the claims.jsonl it splits is regenerable via
 # scripts/build_calibration_set.py and stays ignored, as before). NOTE: these
