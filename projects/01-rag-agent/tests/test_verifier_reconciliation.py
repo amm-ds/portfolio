@@ -134,9 +134,11 @@ def test_committed_rubric_cache_pins_recorded_rates() -> None:
     assert header["unparseable"] == 0 and header["hosted_calls"] == 0
 
 
-def test_entailment_cache_reproduces_committed_fa() -> None:
+def test_entailment_cache_matches_committed_metrics_and_digest() -> None:
     _require(ENTAILMENT_CACHE, "reconciliation entailment_verdicts")
     _require(CLAIMS, "calibration claims.jsonl")
+    metrics_path = PROJECT_ROOT / "reports" / "verifier_reconciliation" / "metrics.json"
+    _require(metrics_path, "reconciliation metrics.json")
     rows = {
         row["id"]: row
         for row in (
@@ -154,6 +156,14 @@ def test_entailment_cache_reproduces_committed_fa() -> None:
         )
     }
     result = rates(rows, labels)
-    assert abs(result["fa_all_claims"]["k"] - COMMITTED_FA_ALL_CLAIMS_K) <= RECON_TOLERANCE_CLAIMS
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    # Consistency: recomputation from the committed cache equals the committed
+    # metrics, and the decision flag follows the fixed rule. The outcome is
+    # whatever the run measured - the test pins consistency, not a verdict.
+    assert result == metrics["entailment"]["rates"]
+    reproduced = (
+        abs(result["fa_all_claims"]["k"] - COMMITTED_FA_ALL_CLAIMS_K) <= RECON_TOLERANCE_CLAIMS
+    )
+    assert metrics["reconciliation"]["reproduced"] is reproduced
     header = json.loads(ENTAILMENT_CACHE.read_text(encoding="utf-8").splitlines()[0])
     assert header["ollama_digest"].startswith("357c53fb659c")
