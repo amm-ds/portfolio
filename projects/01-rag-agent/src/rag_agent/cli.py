@@ -16,7 +16,7 @@ from portfolio_core.llm import LLMProviderUnavailableError
 from portfolio_core.llm_budget import BudgetExceededError
 from portfolio_core.logging import get_logger
 
-from rag_agent.agent import agent_usage_limits, build_agent
+from rag_agent.agent import agent_usage_limits, build_agent, reset_top_k_clamps
 from rag_agent.config import RAGConfig
 from rag_agent.corpus import load_corpus, prepare_client_corpus
 from rag_agent.corpus import prepare_corpus as prepare_corpus_impl
@@ -458,6 +458,7 @@ def chat(
         if prompt_text.strip() in {":quit", ":q", "exit", "quit"}:
             typer.echo("bye")
             return
+        reset_top_k_clamps()  # G4 fix: per-turn clamp counter (chat parity with eval)
         result = agent.run_sync(
             prompt_text, deps=retriever, usage_limits=agent_usage_limits(config)
         )

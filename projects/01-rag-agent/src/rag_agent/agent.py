@@ -12,6 +12,7 @@ when neither provider is available, :class:`portfolio_core.llm.LLMProviderUnavai
 raises with setup guidance, and ``chat``/``evaluate`` surface that message.
 """
 
+from contextvars import ContextVar
 from typing import Any
 
 from portfolio_core.llm import build_model
@@ -27,6 +28,30 @@ from rag_agent.provider import model_settings_for_provider
 from rag_agent.schemas import AnalysisResult, Citation
 
 logger = get_logger(__name__)
+
+_TOP_K_MIN = 1
+_TOP_K_MAX = 10
+# Per-answer count of clamped search_documents calls (G4 fix). A ContextVar
+# keeps the counter correct under concurrency; the eval loop resets it
+# before each question.
+_top_k_clamps: ContextVar[int] = ContextVar("rag_agent_top_k_clamps", default=0)
+
+
+def reset_top_k_clamps() -> None:
+    _top_k_clamps.set(0)
+
+
+def top_k_clamps() -> int:
+    """Clamped search_documents calls since the last reset (per-answer)."""
+    return _top_k_clamps.get()
+
+
+def clamp_top_k(top_k: int) -> int:
+    """Clamp a model-requested top_k to [1, 10]; count every clamp."""
+    clamped = max(_TOP_K_MIN, min(_TOP_K_MAX, top_k))
+    if clamped != top_k:
+        _top_k_clamps.set(_top_k_clamps.get() + 1)
+    return clamped
 
 
 def agent_usage_limits(config: RAGConfig) -> UsageLimits:
@@ -44,6 +69,7 @@ def agent_usage_limits(config: RAGConfig) -> UsageLimits:
         input_tokens_limit=config.agent_input_tokens_limit,
         total_tokens_limit=4_000_000,
     )
+
 
 SYSTEM_PROMPT = """You are a meticulous research assistant over a curated Wikipedia corpus.
 
@@ -107,7 +133,7 @@ def build_agent(config: RAGConfig, model: Model | None = None) -> Agent[Retrieve
         ctx: RunContext[Retriever], query: str, top_k: int = 5
     ) -> list[Citation]:
         """Search the corpus for passages relevant to ``query``; returns ranked citations."""
-        return ctx.deps.search(query, top_k=top_k)
+        return ctx.deps.search(query, top_k=clamp_top_k(top_k))
 
     @agent.tool
     async def read_excerpt(ctx: RunContext[Retriever], citation_id: str) -> str:

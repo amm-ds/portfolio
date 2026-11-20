@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 
     from pydantic_ai.models import Model
 
-from rag_agent.agent import agent_usage_limits, build_agent
+from rag_agent.agent import agent_usage_limits, build_agent, reset_top_k_clamps, top_k_clamps
 from rag_agent.config import RAGConfig, RetrievalBest
 from rag_agent.corpus import load_corpus
 from rag_agent.figures import (
@@ -642,6 +642,7 @@ def run_rag_eval(
         output_retries = 0
         error = ""
         usage_limit_hit: str | None = None
+        reset_top_k_clamps()  # G4 fix: per-answer clamp counter
         try:
             result, output_retries, error, usage_limit_hit = answer_with_output_retries(
                 agent, question.question, retriever, config
@@ -653,6 +654,7 @@ def run_rag_eval(
                 output_tokens.append(int(result.usage.output_tokens))
         except BudgetExceededError:  # the cap stops the run, never a per-question trace
             raise
+        n_top_k_clamps = top_k_clamps()
         latencies.append(time.perf_counter() - start)
 
         # Wave 14 / R6: verify-then-answer — deterministic span checks, then
@@ -684,6 +686,7 @@ def run_rag_eval(
                         marker in error for marker in ("UsageLimitExceeded", "BudgetExceeded")
                     ),
                     usage_limit_hit=usage_limit_hit,
+                    top_k_clamps=n_top_k_clamps,
                 )
             )
             continue
@@ -730,6 +733,7 @@ def run_rag_eval(
                 claim_states=_claim_states(vreport),
                 answer=summary,
                 claims=claim_texts,
+                top_k_clamps=n_top_k_clamps,
             )
         )
         if question.expected_behavior == "answer":

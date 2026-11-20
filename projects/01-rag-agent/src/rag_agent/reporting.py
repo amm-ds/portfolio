@@ -87,6 +87,9 @@ class QuestionTrace:
     claims: list[dict[str, str]] | None = None  # [{claim, evidence_span, label, state}]
     # G4 fix (2026-11-20): which usage limit terminated the answer, if any.
     usage_limit_hit: str | None = None
+    # G4 fix (2026-11-20): search_documents calls whose model-chosen top_k
+    # was clamped to [1, 10] during this answer.
+    top_k_clamps: int | None = None
 
 
 def is_abstention(summary: str, confidence: float) -> bool:
@@ -570,6 +573,8 @@ def write_question_traces(
             row["claims"] = t.claims
         if t.usage_limit_hit is not None:
             row["usage_limit_hit"] = t.usage_limit_hit
+        if t.top_k_clamps is not None:
+            row["top_k_clamps"] = t.top_k_clamps
         rows.append(row)
     out = path or config.reports_dir / "question_traces.json"
     out.parent.mkdir(parents=True, exist_ok=True)
