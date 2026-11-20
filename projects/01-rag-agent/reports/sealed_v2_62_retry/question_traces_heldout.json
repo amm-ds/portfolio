@@ -1,0 +1,1101 @@
+[
+  {
+    "question": "Which Swedish diplomat serving as a United Nations mediator was assassinated in 1948 while trying to broker an Arab-Israeli truce?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "top_rank": null,
+    "retrieved_relevant": false,
+    "cited_relevant": false,
+    "faithfulness": 0.2,
+    "abstained": true,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.3571,
+    "gate_max_similarity": 0.2857,
+    "evidence_score": 0.3286,
+    "n_surviving_claims": 0,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": null,
+    "answer": "I could not find any evidence in the retrieved corpus passages to answer this question. The searches returned only unrelated material (aviation incidents, football, climate, etc.), with no mention of the Swedish diplomat, the 1948 assassination, or the Arab-Israeli truce mediation.",
+    "claims": []
+  },
+  {
+    "question": "Under Singapore's Protection from Online Falsehoods and Manipulation Act, what must a person served with a correction direction do, and what are the penalties for non-compliance?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "top_rank": null,
+    "retrieved_relevant": false,
+    "cited_relevant": false,
+    "faithfulness": 0.85,
+    "abstained": true,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.3333,
+    "gate_max_similarity": 0.1333,
+    "evidence_score": 0.2533,
+    "n_surviving_claims": 0,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": null,
+    "answer": "I could not find any evidence in the available corpus about Singapore's Protection from Online Falsehoods and Manipulation Act (POFMA), including what a person served with a correction direction must do or the penalties for non-compliance. The retrieved passages concern unrelated topics (aviation, climate change, machine learning, renewable energy).",
+    "claims": []
+  },
+  {
+    "question": "Which space telescope, launched in December 2021 as the successor to the Hubble Space Telescope, operates near the second Sun-Earth Lagrange point?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "top_rank": null,
+    "retrieved_relevant": false,
+    "cited_relevant": false,
+    "faithfulness": 0.0,
+    "abstained": true,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.5,
+    "gate_max_similarity": 0.2857,
+    "evidence_score": 0.4143,
+    "n_surviving_claims": 0,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": null,
+    "answer": "The retrieved corpus contains no relevant evidence to answer this question. Multiple searches for the James Webb Space Telescope, its December 2021 launch, its role as Hubble's successor, and its operation near the second Sun-Earth Lagrange point returned only unrelated articles (e.g., UP Aerospace, space-based solar power, Martian climate). I cannot provide a grounded answer from the available evidence.",
+    "claims": []
+  },
+  {
+    "question": "How long were home rooftop solar panels installed in the United Kingdom in 2022 estimated to take to pay back their cost?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.0,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "unsupported-claim",
+    "error": "",
+    "gate_coverage": 0.9286,
+    "gate_max_similarity": 0.8571,
+    "evidence_score": 0.9,
+    "n_surviving_claims": 1,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 1
+    },
+    "answer": "Home rooftop solar panels installed in the United Kingdom in 2022 were estimated to take ten to twenty years to pay back their cost.",
+    "claims": [
+      {
+        "claim": "Home rooftop solar panels installed in the United Kingdom in 2022 were estimated to take ten to twenty years to pay back their cost.",
+        "evidence_span": "mechanical; judge: The evidence states in the UK context: 'Home rooftop solar panels installed in 2022 were estimated to pay back their cost in ten to twenty years.' This directly entails the entity (home rooftop solar panels), location (United Kingdom, per passage context), date (installed in 2022), estimate qualifier, and the ten-to-twenty-year payback period. 'Take ten to twenty years to pay back their cost' is a reasonable rewording of 'pay back their cost in ten to twenty years.'",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "Why does Columbus, Ohio receive relatively light winter snowfall?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.55,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 1.0,
+    "gate_max_similarity": 0.8571,
+    "evidence_score": 0.9429,
+    "n_surviving_claims": 2,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 2
+    },
+    "answer": "Columbus, Ohio receives relatively light winter snowfall because the city is not in the typical path of strong winter lows, such as the Nor'easters that strike cities farther east. Columbus is also too far south and west for lake-effect snow from Lake Erie to have much effect, although the lakes to the North contribute to long stretches of cloudy spells in winter.",
+    "claims": [
+      {
+        "claim": "Columbus, Ohio receives relatively light winter snowfall because the city is not in the typical path of strong winter lows, such as the Nor'easters that strike cities farther east.",
+        "evidence_span": "mechanical; judge: The evidence states: 'Winter snowfall is relatively light, since the city is not in the typical path of strong winter lows, such as the Nor'easters that strike cities farther east.' This directly supports every part of the claim, including the causal relation, the entity assignment, and the comparison to cities farther east.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "Columbus is also too far south and west for lake-effect snow from Lake Erie to have much effect, although the lakes to the North contribute to long stretches of cloudy spells in winter.",
+        "evidence_span": "mechanical; judge: The evidence states: 'It is also too far south and west for lake-effect snow from Lake Erie to have much effect, although the lakes to the North contribute to long stretches of cloudy spells in winter.' This directly supports every part of the claim, including the directional qualifiers, the lake-effect snow source (Lake Erie), and the cloudy-spell contribution.",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "During which period was the Volga Hydroelectric Station the largest power station in the world?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.0,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "unsupported-claim",
+    "error": "",
+    "gate_coverage": 0.8571,
+    "gate_max_similarity": 0.8571,
+    "evidence_score": 0.8571,
+    "n_surviving_claims": 1,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 1
+    },
+    "answer": "The Volga Hydroelectric Station was the largest power station in the world between 1960 and 1963.",
+    "claims": [
+      {
+        "claim": "The Volga Hydroelectric Station was the largest power station in the world between 1960 and 1963.",
+        "evidence_span": "mechanical; judge: The evidence explicitly states 'It was the largest powerstation in the world between 1960 and 1963,' directly entailing the entity, the superlative, and the exact time period.",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "Which architect designed the Royal Greenhouses of Laeken, and on behalf of which king?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.5,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 1.0,
+    "gate_max_similarity": 0.8571,
+    "evidence_score": 0.9429,
+    "n_surviving_claims": 1,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 1
+    },
+    "answer": "The Royal Greenhouses of Laeken were designed by architect Alphonse Balat, who was commissioned by King Leopold II of Belgium.",
+    "claims": [
+      {
+        "claim": "The Royal Greenhouses of Laeken were designed by architect Alphonse Balat, who was commissioned by King Leopold II of Belgium.",
+        "evidence_span": "mechanical; judge: The evidence states that King Leopold II changed the gardens of the Royal Palace of Laeken and 'commissioned his architect Alphonse Balat.' It says Balat's plans surpassed prior achievements and the realization came through close consultation between Balat and the king, supporting that Balat designed the greenhouses and was commissioned by Leopold II. The evidence identifies him as 'King Leopold II' in the context of the Royal Palace of Laeken; the claim's addition 'of Belgium' is a reasonable identification consistent with the named king and palace, and the core relations\u2014Balat as architect/designer and Leopold II as commissioner\u2014are explicitly entailed.",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "On what dates was the Climate Change Coalition registered and deregistered as an Australian political party?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.6,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.8889,
+    "gate_max_similarity": 0.8889,
+    "evidence_score": 0.8889,
+    "n_surviving_claims": 1,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 1
+    },
+    "answer": "The Climate Change Coalition was registered as a political party with the Australian Electoral Commission (AEC) on 4 September 2007 and deregistered on 25 March 2010.",
+    "claims": [
+      {
+        "claim": "The Climate Change Coalition was registered as a political party with the Australian Electoral Commission (AEC) on 4 September 2007 and deregistered on 25 March 2010.",
+        "evidence_span": "mechanical; judge: The evidence explicitly states: 'The CCC was registered as a political party with the Australian Electoral Commission (AEC) on 4 September 2007 and deregistered on 25 March 2010.' The CCC is identified as the Climate Change Coalition earlier in the passage. Both dates, the registration body, and the entity assignment are directly entailed.",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "By roughly what percentage have human-caused emissions increased atmospheric carbon dioxide above pre-industrial levels?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": false,
+    "faithfulness": 0.1,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "unsupported-claim",
+    "error": "",
+    "gate_coverage": 0.8462,
+    "gate_max_similarity": 0.7692,
+    "evidence_score": 0.8154,
+    "n_surviving_claims": 1,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 1
+    },
+    "answer": "Human-caused emissions have increased atmospheric carbon dioxide by roughly 48% above pre-industrial (1750) levels, as of 2019.",
+    "claims": [
+      {
+        "claim": "Human-caused emissions have increased atmospheric carbon dioxide by roughly 48% above pre-industrial (1750) levels, as of 2019.",
+        "evidence_span": "mechanical; judge: The evidence states that in 2019, the concentrations of carbon dioxide had increased by about 48% since 1750, and attributes this increase to human activity since the Industrial Revolution, mainly extracting and burning fossil fuels. This fully entails the claim's percentage, baseline date, reference year, causal attribution, and entity (carbon dioxide).",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "How was the large black algal bloom nicknamed 'the blob' in the Chukchi Sea first detected in July 2009?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.7,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.8333,
+    "gate_max_similarity": 0.8333,
+    "evidence_score": 0.8333,
+    "n_surviving_claims": 3,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 3
+    },
+    "answer": "The blob was first discovered by a civilian boat from Wainwright, which spotted the large black algal mass floating in the Chukchi Sea between Wainwright and Utqia\u0121vik in July 2009. The boat's crew reported it to the U.S. Coast Guard out of concern that it could have been an oil spill. Subsequent analysis of samples taken by the North Slope Borough government and sent to a lab in Anchorage determined it was a type of marine alga.",
+    "claims": [
+      {
+        "claim": "The blob was first discovered by a civilian boat from Wainwright, which spotted the large black algal mass floating in the Chukchi Sea between Wainwright and Utqia\u0121vik in July 2009.",
+        "evidence_span": "mechanical; judge: The evidence states the blob was a large black algal bloom first spotted floating in the Chukchi Sea between Wainwright and Utqia\u0121vik in July 2009, and that the mass was first discovered by a civilian boat from Wainwright.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "The boat's crew reported it to the U.S. Coast Guard out of concern that it could have been an oil spill.",
+        "evidence_span": "mechanical; judge: The evidence says the mass was reported to the U.S. Coast Guard for concerns that it could have been an oil spill. The only minor nuance is that the evidence says 'a civilian boat from Wainwright' reported it rather than explicitly 'the boat's crew', but this is a reasonable rewording of the same fact.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "Subsequent analysis of samples taken by the North Slope Borough government and sent to a lab in Anchorage determined it was a type of marine alga.",
+        "evidence_span": "mechanical; judge: The evidence directly states that analysis of samples taken by the North Slope Borough government and sent to a lab in Anchorage determined that it was a type of marine alga.",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "The Ames Hydroelectric Generating Plant and the Chivilingo Hydroelectric Plant both began operating in the 1890s \u2014 what was each built to power?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.5,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.75,
+    "gate_max_similarity": 0.5833,
+    "evidence_score": 0.6833,
+    "n_surviving_claims": 2,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 2
+    },
+    "answer": "The Ames Hydroelectric Generating Plant was built to power the Gold King Mine, with its water-driven generator connected by a transmission line to a second alternator used as a motor up at the mine to drive the mining operation. The Chivilingo Hydroelectric Plant was built to power the Lota undersea coal mine operated by the Compa\u00f1\u00eda Explotadora de Lota y Coronel, with alternating current transferred to the undersea mine via a 10 kilovolt transmission line.",
+    "claims": [
+      {
+        "claim": "The Ames Hydroelectric Generating Plant was built to power the Gold King Mine, with its water-driven generator connected by a transmission line to a second alternator used as a motor up at the mine to drive the mining operation.",
+        "evidence_span": "mechanical; judge: The evidence states that the Ames plant had one alternator set up in the valley as a generator driven by water, connected by a transmission line to a second alternator used as a motor up at the Gold King Mine to drive the mining operation. This directly supports every part of the claim.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "The Chivilingo Hydroelectric Plant was built to power the Lota undersea coal mine operated by the Compa\u00f1\u00eda Explotadora de Lota y Coronel, with alternating current transferred to the undersea mine via a 10 kilovolt transmission line.",
+        "evidence_span": "mechanical; judge: The evidence states that feasibility studies were performed for the Lota undersea coal mine operated by the Compa\u00f1\u00eda Explotadora de Lota y Coronel, and that the resultant alternating current power was transferred to the undersea mine via a 10 kilovolt transmission line. All parts of the claim are entailed.",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "How much wind power capacity had Scotland installed by Q1 2023, and what share of total UK renewable generation did Scotland produce in 2020?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.5,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.9286,
+    "gate_max_similarity": 0.6429,
+    "evidence_score": 0.8143,
+    "n_surviving_claims": 2,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 2
+    },
+    "answer": "By Q1 2023, Scotland had installed 11,482 megawatts (MW) of wind power capacity. At the start of 2020, Scotland produced approximately 25% of total UK renewable generation.",
+    "claims": [
+      {
+        "claim": "By Q1 2023, Scotland had installed 11,482 megawatts (MW) of wind power capacity.",
+        "evidence_span": "mechanical; judge: The evidence states: 'Wind power is the fastest-growing renewable energy technology in Scotland, with 11,482 megawatts (MW) of installed wind power capacity by Q1 2023.' This directly matches the claim's number (11,482 MW), date (Q1 2023), and entity (Scotland) for installed wind power capacity.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "At the start of 2020, Scotland produced approximately 25% of total UK renewable generation.",
+        "evidence_span": "mechanical; judge: The evidence states: 'At the start of 2020, Scotland had 11.8 gigawatts (GW) of installed renewable electricity capacity which produced approximately 25% of total UK renewable generation (119,335GWh).' This directly matches the claim's time (start of 2020), entity (Scotland), value (approximately 25%), and reference (total UK renewable generation).",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "In the biosynthetic pathway to chlorophylls, which enzyme reduces a vinyl group to an ethyl group, and which enzyme converts protochlorophyllide to chlorophyllide a?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.65,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.9091,
+    "gate_max_similarity": 0.9091,
+    "evidence_score": 0.9091,
+    "n_surviving_claims": 3,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 2,
+      "accepted_repaired": 1
+    },
+    "answer": "The enzyme that reduces a vinyl group to an ethyl group is divinyl chlorophyllide a 8-vinyl-reductase. The enzyme that converts protochlorophyllide to chlorophyllide a is protochlorophyllide reductase, which reduces the pyrrole ring D via the reaction protochlorophyllide + NADPH + H+ \u2192 chlorophyllide a + NADP+. There is an alternative enzyme, ferredoxin:protochlorophyllide reductase (ATP-dependent), that is not dependent on light.",
+    "claims": [
+      {
+        "claim": "The enzyme that reduces a vinyl group to an ethyl group is divinyl chlorophyllide a 8-vinyl-reductase.",
+        "evidence_span": "mechanical; judge: The evidence explicitly names 'divinyl chlorophyllide a 8-vinyl-reductase' and states it 'in all cases reduces a single specific vinyl group to an ethyl group.' Both the enzyme identity and the vinyl-to-ethyl reduction are directly stated.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "The enzyme that converts protochlorophyllide to chlorophyllide a is protochlorophyllide reductase, which reduces the pyrrole ring D via the reaction protochlorophyllide + NADPH + H+ \u2192 chlorophyllide a + NADP+.",
+        "evidence_span": "mechanical; judge: The evidence states 'the pyrrole ring D is reduced by the enzyme protochlorophyllide reductase' followed by the reaction 'protochlorophyllide + NADPH + H+ \u2192 chlorophyllide a + NADP+.' The enzyme name, the pyrrole ring D reduction, and the exact reaction are all directly entailed.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "There is an alternative enzyme, ferredoxin:protochlorophyllide reductase (ATP-dependent), that is not dependent on light.",
+        "evidence_span": "repair: The evidence states: 'there is an alternative enzyme, Ferredoxin:protochlorophyllide reductase (ATP-dependent), that uses reduced ferredoxin as its cofactor and is not dependent on light'. This directly entails the existence of the named alternative enzyme, its ATP-dependent designation, and its lack of light dependence.",
+        "label": "supported",
+        "state": "accepted_repaired"
+      }
+    ]
+  },
+  {
+    "question": "What is the maximum administrative fine that can be imposed under the GDPR for serious data-protection violations?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "top_rank": null,
+    "retrieved_relevant": false,
+    "cited_relevant": false,
+    "faithfulness": 1.0,
+    "abstained": true,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.3333,
+    "gate_max_similarity": 0.2222,
+    "evidence_score": 0.2889,
+    "n_surviving_claims": 0,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": null,
+    "answer": "The retrieved corpus contains no relevant evidence about the GDPR or the maximum administrative fine for serious data-protection violations, so I cannot answer this question from the available sources.",
+    "claims": []
+  },
+  {
+    "question": "Which Alpine principality counts Vaduz as its capital?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "top_rank": null,
+    "retrieved_relevant": false,
+    "cited_relevant": false,
+    "faithfulness": 1.0,
+    "abstained": true,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.0,
+    "gate_max_similarity": 0.0,
+    "evidence_score": 0.0,
+    "n_surviving_claims": 0,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": null,
+    "answer": "The retrieved corpus does not contain any relevant evidence about Vaduz or Liechtenstein, so I cannot answer from the available sources.",
+    "claims": []
+  },
+  {
+    "question": "For what contribution did Maryam Mirzakhani receive the Fields Medal?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "top_rank": null,
+    "retrieved_relevant": false,
+    "cited_relevant": false,
+    "faithfulness": 0.9,
+    "abstained": true,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.1667,
+    "gate_max_similarity": 0.1667,
+    "evidence_score": 0.1667,
+    "n_surviving_claims": 0,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": null,
+    "answer": "I could not find any information about Maryam Mirzakhani or the reason she received the Fields Medal in the retrieved corpus. The search results returned passages on unrelated topics (computer vision, aviation, climate, renewable energy), with no relevant evidence about this mathematician or her award.",
+    "claims": []
+  },
+  {
+    "question": "What is algaemia, and which genus of algae most commonly causes it?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 1.0,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 1.0,
+    "gate_max_similarity": 0.6,
+    "evidence_score": 0.84,
+    "n_surviving_claims": 2,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 2
+    },
+    "answer": "Algaemia is a secondary term that refers to the emerging condition in which green algae enter the bloodstream. Members of the genus Prototheca are the most common algae that leads to algaemia.",
+    "claims": [
+      {
+        "claim": "Algaemia is a secondary term that refers to the emerging condition in which green algae enter the bloodstream.",
+        "evidence_span": "mechanical; judge: The evidence states verbatim: 'Algaemia is a secondary term that refers to the emerging condition in which green algae enter the bloodstream.' Every part of the claim (secondary term, emerging condition, green algae entering bloodstream) is directly entailed.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "Members of the genus Prototheca are the most common algae that leads to algaemia.",
+        "evidence_span": "mechanical; judge: The evidence states: 'Members of the genus Prototheca are the most common algae that leads to algaemia.' The genus assignment (Prototheca) and the superlative (most common) are both directly stated in the evidence.",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "What is AIML, and which natural-language software agent was it originally created to power?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.85,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.875,
+    "gate_max_similarity": 0.625,
+    "evidence_score": 0.775,
+    "n_surviving_claims": 3,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 2,
+      "accepted_repaired": 1
+    },
+    "answer": "AIML (Artificial Intelligence Markup Language) is an XML dialect for creating natural-language software agents. The XML dialect called AIML was developed by Richard Wallace and a worldwide free software community between 1995 and 2002, and AIML formed the basis for what was initially a highly extended Eliza called \"A.L.I.C.E.\" (\"Artificial Linguistic Internet Computer Entity\"). A.L.I.C.E. won the annual Loebner Prize Competition in Artificial Intelligence three times and was the Chatterbox Challenge Champion in 2004.",
+    "claims": [
+      {
+        "claim": "AIML (Artificial Intelligence Markup Language) is an XML dialect for creating natural-language software agents.",
+        "evidence_span": "mechanical; judge: Evidence states: 'Artificial Intelligence Markup Language (AIML) is an XML dialect for creating natural language software agents.' This directly matches the claim, including the expansion of the acronym, the XML dialect characterization, and the purpose of creating natural-language software agents.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "The XML dialect called AIML was developed by Richard Wallace and a worldwide free software community between 1995 and 2002, and AIML formed the basis for what was initially a highly extended Eliza called \"A.L.I.C.E.\" (\"Artificial Linguistic Internet Computer Entity\").",
+        "evidence_span": "repair: The evidence explicitly states that the XML dialect AIML was developed by Richard Wallace and a worldwide free software community between 1995 and 2002, and that AIML formed the basis for what was initially a highly extended Eliza called \"A.L.I.C.E.\" (\"Artificial Linguistic Internet Computer Entity\"). All parts of the claim are directly entailed.",
+        "label": "supported",
+        "state": "accepted_repaired"
+      },
+      {
+        "claim": "A.L.I.C.E. won the annual Loebner Prize Competition in Artificial Intelligence three times and was the Chatterbox Challenge Champion in 2004.",
+        "evidence_span": "mechanical; judge: Evidence states: A.L.I.C.E. 'won the annual Loebner Prize Competition in Artificial Intelligence three times, and was also the Chatterbox Challenge Champion in 2004.' This directly matches the claim, including the number of Loebner Prize wins (three times), the name of the competition, and the Chatterbox Challenge Champion title with the year 2004.",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "How do photosynthesis systems non-destructively measure photosynthetic rates in the field?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.1,
+    "abstained": true,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "empty-answer",
+    "error": "",
+    "gate_coverage": 0.875,
+    "gate_max_similarity": 0.75,
+    "evidence_score": 0.825,
+    "n_surviving_claims": 3,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 3,
+      "dropped_repaired": 2,
+      "dropped_original": 1
+    },
+    "answer": "The retrieved passages do not contain enough reliable evidence to answer this question confidently.",
+    "claims": [
+      {
+        "claim": "Photosynthesis systems measure photosynthetic rates non-destructively in the field by enclosing a leaf in a chamber and measuring its gas exchange as a proxy for photosynthetic rate.",
+        "evidence_span": "mechanical; judge: The evidence states photosynthesis systems are designed for non-destructive measurement of photosynthetic rates in the field; that the leaf to be analysed is placed in the leaf chamber; and that the exchange of CO2 and water vapor is measured as a proxy of photosynthetic rate. All parts are entailed.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "The basic components of a photosynthesis system are the leaf chamber, an infrared gas analyzer (IRGA), batteries, and a console with keyboard, display and memory.",
+        "evidence_span": "mechanical; judge: The evidence states: 'The basic components of a photosynthetic system are the leaf chamber, infrared gas analyzer (IRGA), batteries and a console with keyboard, display and memory.' This matches the claim verbatim in substance.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "In an \u2018open system\u2019, air is continuously passed through the leaf chamber to maintain CO2 in the leaf chamber at a steady concentration; the outgoing air has a lower CO2 concentration and a higher H2O concentration than the air entering the chamber, and the rate of CO2 uptake is used to assess the rate of photosynthetic carbon assimilation, while the rate of water loss is used to assess the rate of transpiration.",
+        "evidence_span": "repair failed span checks: number '2' not present in any span",
+        "label": "unsupported",
+        "state": "dropped_repaired"
+      },
+      {
+        "claim": "In a 'closed system', the same atmosphere is continuously measured over a period of time to establish rates of change in the parameters, with CO2 concentration decreasing and water vapor concentration increasing.",
+        "evidence_span": "repair failed span checks: number '2' not present in any span",
+        "label": "unsupported",
+        "state": "dropped_repaired"
+      },
+      {
+        "claim": "Modern systems may also measure leaf temperature, chamber air temperature, PAR, and atmospheric pressure, and can calculate water use efficiency, stomatal conductance, intrinsic water use efficiency, and sub-stomatal CO2 concentration.",
+        "evidence_span": "number '2' not present in any span",
+        "label": "unsupported",
+        "state": "dropped_original"
+      },
+      {
+        "claim": "A complementary non-destructive technique is chlorophyll fluorescence, which is light re-emitted by chlorophyll molecules and used as an indicator of photosynthetic energy conversion.",
+        "evidence_span": "mechanical; judge: The evidence states chlorophyll fluorescence is light re-emitted by chlorophyll molecules during return from excited to non-excited states, and is used as an indicator of photosynthetic energy conversion. It also describes fluorescence, photosynthesis, and non-photochemical quenching as complementary processes. The 'non-destructive' qualifier is supported by the overall context of the passage describing non-destructive measurement methods; fluorescence measurement does not destroy the sample. All parts are entailed.",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "Which organization declared Lake Winnipeg the most threatened lake in the world in 2013, and for what reason?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.1,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "unsupported-claim",
+    "error": "",
+    "gate_coverage": 0.75,
+    "gate_max_similarity": 0.75,
+    "evidence_score": 0.75,
+    "n_surviving_claims": 1,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 1
+    },
+    "answer": "In 2013, Lake Winnipeg was declared the most threatened lake in the world by the Global Nature Fund, due to excessive levels of phosphorus.",
+    "claims": [
+      {
+        "claim": "In 2013, Lake Winnipeg was declared the most threatened lake in the world by the Global Nature Fund, due to excessive levels of phosphorus.",
+        "evidence_span": "mechanical; judge: The evidence states verbatim: \"In 2013, Lake Winnipeg was declared the most threatened lake in the world by the Global Nature Fund, due to excessive levels of phosphorus.\" Every element (date 2013, entity Lake Winnipeg, declaration most threatened lake in the world, organization Global Nature Fund, and reason excessive phosphorus levels) is directly entailed.",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "What component did Bernard Widrow and Ted Hoff's ADALINE use to emulate the synapses of an artificial neuron?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.1,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "unsupported-claim",
+    "error": "",
+    "gate_coverage": 0.9167,
+    "gate_max_similarity": 0.75,
+    "evidence_score": 0.85,
+    "n_surviving_claims": 1,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 1
+    },
+    "answer": "Bernard Widrow and Ted Hoff's ADALINE used electrochemical cells called memistors (memory resistors) to emulate the synapses of an artificial neuron.",
+    "claims": [
+      {
+        "claim": "Bernard Widrow and Ted Hoff's ADALINE used electrochemical cells called memistors (memory resistors) to emulate the synapses of an artificial neuron.",
+        "evidence_span": "mechanical; judge: The evidence states: 'In the 1960s Bernard Widrow and Ted Hoff developed ADALINE (Adaptive Linear Neuron) which used electrochemical cells called memistors (memory resistors) to emulate synapses of an artificial neuron.' This directly entails every part of the claim: the developers (Bernard Widrow and Ted Hoff), the system (ADALINE), the component (electrochemical cells called memistors/memory resistors), and its function (to emulate the synapses of an artificial neuron).",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "Who introduced the rectifier (ReLU) activation function, and in what year?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.1,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "unsupported-claim",
+    "error": "",
+    "gate_coverage": 0.8333,
+    "gate_max_similarity": 0.8333,
+    "evidence_score": 0.8333,
+    "n_surviving_claims": 1,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 1
+    },
+    "answer": "The rectifier (ReLU) activation function was introduced by Kunihiko Fukushima in 1969, in the context of visual feature extraction in hierarchical neural networks.",
+    "claims": [
+      {
+        "claim": "The rectifier (ReLU) activation function was introduced by Kunihiko Fukushima in 1969, in the context of visual feature extraction in hierarchical neural networks.",
+        "evidence_span": "mechanical; judge: The evidence states: 'This activation function was introduced by Kunihiko Fukushima in 1969 in the context of visual feature extraction in hierarchical neural networks.' This directly entails every part of the claim: the entity (Kunihiko Fukushima), the date (1969), the function (rectifier/ReLU activation function), and the context (visual feature extraction in hierarchical neural networks).",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "In neural networks, how does dilution differ from dropout?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.9,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.8,
+    "gate_max_similarity": 0.8,
+    "evidence_score": 0.8,
+    "n_surviving_claims": 5,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 4,
+      "accepted_repaired": 1,
+      "dropped_repaired": 1
+    },
+    "answer": "Dilution and dropout are both regularization techniques for reducing overfitting in artificial neural networks by preventing complex co-adaptations on training data, and both trigger the same type of regularization. Dilution refers to thinning weights, while dropout refers to randomly \"dropping out\", or omitting, units (both hidden and visible) during the training process of a neural network. Dropout is a special case of the previous weight equation, where the equation is adjusted to remove a whole row in the vector matrix, and not only random weights. Dilution is usually split into weak dilution (a small fraction of removed connections) and strong dilution (a large fraction of removed connections). The dropout technique was first introduced under that name by Geoffrey Hinton et al. in 2012, and Google holds the patent for it.",
+    "claims": [
+      {
+        "claim": "Dilution and dropout are both regularization techniques for reducing overfitting in artificial neural networks by preventing complex co-adaptations on training data, and both trigger the same type of regularization.",
+        "evidence_span": "mechanical; judge: The evidence states: 'Dilution and dropout (also called DropConnect) are regularization techniques for reducing overfitting in artificial neural networks by preventing complex co-adaptations on training data... Both trigger the same type of regularization.' Every part of this claim is directly entailed.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "Dilution refers to thinning weights, while dropout refers to randomly \"dropping out\", or omitting, units (both hidden and visible) during the training process of a neural network.",
+        "evidence_span": "mechanical; judge: The evidence states: 'Dilution refers to thinning weights, while dropout refers to randomly \"dropping out\", or omitting, units (both hidden and visible) during the training process of a neural network.' This is a direct match.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "Dropout is a special case of the previous weight equation, where the equation is adjusted to remove a whole row in the vector matrix, and not only random weights.",
+        "evidence_span": "repair: The evidence states under 'Dropout': 'Dropout is a special case of the previous weight equation (), where the aforementioned equation is adjusted to remove a whole row in the vector matrix, and not only random weights.' This directly entails the claim.",
+        "label": "supported",
+        "state": "accepted_repaired"
+      },
+      {
+        "claim": "Dilution is usually split into weak dilution (a small fraction of removed connections) and strong dilution (a large fraction of removed connections).",
+        "evidence_span": "mechanical; judge: The evidence states: 'Dilution is usually split in weak dilution and strong dilution. Weak dilution describes the process in which the finite fraction of removed connections is small, and strong dilution refers to when this fraction is large.' All parts are entailed.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "Both dilution and dropout are iterative processes in which the network continues to learn after the technique is applied, unlike random pruning of weights, which is typically a non-recurring one-way operation where the network is pruned and then kept if it is an improvement over the previous model.",
+        "evidence_span": "repair failed span checks: span negated but claim is affirmative",
+        "label": "unsupported",
+        "state": "dropped_repaired"
+      },
+      {
+        "claim": "The dropout technique was first introduced under that name by Geoffrey Hinton et al. in 2012, and Google holds the patent for it.",
+        "evidence_span": "mechanical; judge: The evidence states: 'this technique was first introduced with the name dropout by Geoffrey Hinton, et al. in 2012. Google currently holds the patent for the dropout technique.' Both parts are directly entailed.",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "What distinctive organelle characterises the protist group Kinetoplastida?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 0.9,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.6667,
+    "gate_max_similarity": 0.6667,
+    "evidence_score": 0.6667,
+    "n_surviving_claims": 1,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 1
+    },
+    "answer": "The distinctive organelle that characterises the protist group Kinetoplastida is the kinetoplast \u2014 a granule containing a large mass of DNA, from which the group takes its name.",
+    "claims": [
+      {
+        "claim": "The distinctive organelle that characterises the protist group Kinetoplastida is the kinetoplast \u2014 a granule containing a large mass of DNA, from which the group takes its name.",
+        "evidence_span": "mechanical; judge: The evidence states that Kinetoplastida is a group of flagellated protists 'characterised by the presence of a distinctive organelle called the kinetoplast (hence the name), a granule containing a large mass of DNA.' This directly supports the kinetoplast as the distinctive organelle, that it is a granule containing a large mass of DNA, and that the group takes its name from it ('hence the name').",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "Which publisher founded both the International Journal of Pattern Recognition and Artificial Intelligence and the International Journal on Artificial Intelligence Tools?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 1.0,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.8,
+    "gate_max_similarity": 0.7,
+    "evidence_score": 0.76,
+    "n_surviving_claims": 3,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 2,
+      "accepted_repaired": 1
+    },
+    "answer": "The International Journal of Pattern Recognition and Artificial Intelligence was founded in 1987 and is published by World Scientific. The International Journal on Artificial Intelligence Tools was founded in 1992 and is published by World Scientific. World Scientific publishes both the International Journal of Pattern Recognition and Artificial Intelligence and the International Journal on Artificial Intelligence Tools.",
+    "claims": [
+      {
+        "claim": "The International Journal of Pattern Recognition and Artificial Intelligence was founded in 1987 and is published by World Scientific.",
+        "evidence_span": "mechanical; judge: The evidence explicitly states this journal 'was founded in 1987 and is published by World Scientific,' matching every part of the claim.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "The International Journal on Artificial Intelligence Tools was founded in 1992 and is published by World Scientific.",
+        "evidence_span": "mechanical; judge: The evidence explicitly states this journal 'was founded in 1992 and is published by World Scientific,' matching every part of the claim.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "World Scientific publishes both the International Journal of Pattern Recognition and Artificial Intelligence and the International Journal on Artificial Intelligence Tools.",
+        "evidence_span": "repair: The first passage states the International Journal of Pattern Recognition and Artificial Intelligence 'is published by World Scientific,' and the second passage states the International Journal on Artificial Intelligence Tools 'is published by World Scientific.' Both parts of the conjunction are directly entailed.",
+        "label": "supported",
+        "state": "accepted_repaired"
+      }
+    ]
+  },
+  {
+    "question": "From what algal sources were the bacteria Mesonia algae and Winogradskyella algae each isolated?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 1.0,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.875,
+    "gate_max_similarity": 0.5,
+    "evidence_score": 0.725,
+    "n_surviving_claims": 2,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 2
+    },
+    "answer": "Mesonia algae was isolated from the alga Acrosiphonia sonderi. Winogradskyella algae was isolated from a brown alga near the Kuril Islands.",
+    "claims": [
+      {
+        "claim": "Mesonia algae was isolated from the alga Acrosiphonia sonderi.",
+        "evidence_span": "mechanical; judge: The evidence states Mesonia algae 'has been isolated from the alga Acrosiphonia sonderi,' matching every part of the claim.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "Winogradskyella algae was isolated from a brown alga near the Kuril Islands.",
+        "evidence_span": "mechanical; judge: The evidence states Winogradskyella algae 'has been isolated from a brown alga near the Kuril Islands,' matching every part of the claim.",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "By what systematic enzyme names are Photosystem II and Photosystem I also known?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "top_rank": 1,
+    "retrieved_relevant": true,
+    "cited_relevant": true,
+    "faithfulness": 1.0,
+    "abstained": false,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.75,
+    "gate_max_similarity": 0.625,
+    "evidence_score": 0.7,
+    "n_surviving_claims": 2,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": {
+      "accepted_original": 2
+    },
+    "answer": "Photosystem II is also known by the systematic enzyme name water-plastoquinone oxidoreductase. Photosystem I is also known as plastocyanin\u2013ferredoxin oxidoreductase.",
+    "claims": [
+      {
+        "claim": "Photosystem II is also known by the systematic enzyme name water-plastoquinone oxidoreductase.",
+        "evidence_span": "mechanical; judge: The evidence explicitly states 'Photosystem II (or water-plastoquinone oxidoreductase) is the first protein complex...' which directly supports the claim that Photosystem II is also known by this systematic enzyme name.",
+        "label": "supported",
+        "state": "accepted_original"
+      },
+      {
+        "claim": "Photosystem I is also known as plastocyanin\u2013ferredoxin oxidoreductase.",
+        "evidence_span": "mechanical; judge: The evidence explicitly states 'Photosystem I (PSI, or plastocyanin\u2013ferredoxin oxidoreductase) is one of two photosystems...' which directly supports the claim that Photosystem I is also known by this systematic enzyme name.",
+        "label": "supported",
+        "state": "accepted_original"
+      }
+    ]
+  },
+  {
+    "question": "What were the main provisions of the European Union's AI Act adopted in 2024?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "top_rank": null,
+    "retrieved_relevant": false,
+    "cited_relevant": false,
+    "faithfulness": 0.0,
+    "abstained": true,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.5556,
+    "gate_max_similarity": 0.4444,
+    "evidence_score": 0.5111,
+    "n_surviving_claims": 0,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": null,
+    "answer": "The retrieved corpus does not contain relevant evidence about the European Union's AI Act adopted in 2024 or its main provisions. Multiple search queries returned only tangentially related articles (e.g., on AI ethics, AI associations, and EU renewable energy) with no substantive information about the AI Act itself. Therefore, I cannot answer this question from the available evidence.",
+    "claims": []
+  },
+  {
+    "question": "Who designed the Burj Khalifa, and in what year was the tower completed?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "top_rank": null,
+    "retrieved_relevant": false,
+    "cited_relevant": false,
+    "faithfulness": 1.0,
+    "abstained": true,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.5,
+    "gate_max_similarity": 0.5,
+    "evidence_score": 0.5,
+    "n_surviving_claims": 0,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": null,
+    "answer": "I could not find any information about the Burj Khalifa in the retrieved corpus. Multiple searches returned no relevant passages about the tower's architect or completion year, so I cannot answer this question from the available evidence.",
+    "claims": []
+  },
+  {
+    "question": "What was the name of the dog launched aboard Sputnik 2 in 1957?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "top_rank": null,
+    "retrieved_relevant": false,
+    "cited_relevant": false,
+    "faithfulness": 1.0,
+    "abstained": true,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.4286,
+    "gate_max_similarity": 0.2857,
+    "evidence_score": 0.3714,
+    "n_surviving_claims": 0,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": null,
+    "answer": "I could not find any evidence in the retrieved corpus about the dog launched aboard Sputnik 2 in 1957. The search results returned unrelated articles about aviation, algae, and other topics, with no mention of Sputnik 2, Laika, or Soviet space program.",
+    "claims": []
+  },
+  {
+    "question": "In what year did India's Chandrayaan-3 spacecraft land on the Moon?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "top_rank": null,
+    "retrieved_relevant": false,
+    "cited_relevant": false,
+    "faithfulness": 0.0,
+    "abstained": true,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.875,
+    "gate_max_similarity": 0.375,
+    "evidence_score": 0.675,
+    "n_surviving_claims": 0,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": null,
+    "answer": "I could not find any relevant evidence in the retrieved corpus about Chandrayaan-3 or its landing on the Moon.",
+    "claims": []
+  },
+  {
+    "question": "Which novel won the Booker Prize in 2023, and who wrote it?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "top_rank": null,
+    "retrieved_relevant": false,
+    "cited_relevant": false,
+    "faithfulness": 0.2,
+    "abstained": true,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.1667,
+    "gate_max_similarity": 0.1667,
+    "evidence_score": 0.1667,
+    "n_surviving_claims": 0,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": null,
+    "answer": "The retrieved corpus does not contain any relevant evidence about the 2023 Booker Prize or its winning novel and author. The search results returned unrelated articles about climate change, machine learning competitions, aviation, and music albums, with no mention of the Booker Prize. Therefore, I cannot answer this question from the available evidence.",
+    "claims": []
+  },
+  {
+    "question": "What was the largest iceberg ever recorded, and from which ice shelf did it calve?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "top_rank": null,
+    "retrieved_relevant": false,
+    "cited_relevant": false,
+    "faithfulness": 1.0,
+    "abstained": true,
+    "format_ok": true,
+    "output_retries": 0,
+    "verdict": "correct",
+    "error": "",
+    "gate_coverage": 0.5714,
+    "gate_max_similarity": 0.2857,
+    "evidence_score": 0.4571,
+    "n_surviving_claims": 0,
+    "budget_terminated": false,
+    "gate_refused": false,
+    "claim_states": null,
+    "answer": "I cannot answer this question because the retrieved evidence does not contain any information about the largest iceberg ever recorded or the ice shelf it calved from. The search results returned passages about ice algae, climate systems, and other unrelated topics, but nothing about specific icebergs or ice shelves.",
+    "claims": []
+  }
+]
