@@ -98,3 +98,9 @@ data/calibration/answers.jsonl
 # …and the owner's continuation subset: the 33 still-unfetched questions of
 # the 62 (indices 27-35, 37-42, 44-61), fixed and hashed before the run.
 !data/golden_sealed_v2_62_retry2.json
+
+# …and the G4 agent-loop-bounds local reproduction input (three questions
+# from the sealed sets; derived, fixed and hashed before the repro run).
+!data/golden_agent_loop_local_repro.json
+# …and its reports (local mechanism check + hosted re-measure).
+!/reports/agent_loop_bounds/
