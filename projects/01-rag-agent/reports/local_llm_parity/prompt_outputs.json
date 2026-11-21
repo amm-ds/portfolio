@@ -1,0 +1,212 @@
+[
+  {
+    "id": "p00",
+    "prompt": "When did the Eysturoyartunnilin, the subsea tunnel linking Streymoy and Eysturoy in the Faroe Islands and containing the world's first underwater roundabout, open to traffic?",
+    "exact_match": false,
+    "mlx": {
+      "text": "The Eysturoyartunnilin opened to traffic on **29 December 2020**.\n\nThis tunnel, which connects the capital island of Streymoy (specifically the area near Tórshavn) with the island of Eysturoy, is notable for containing the world's first underwater roundabout, located at the tunnel's midpoint beneath the sea.",
+      "finish_reason": "stop",
+      "completion_tokens": 79,
+      "elapsed_s": 3.35,
+      "tok_per_s": 23.58,
+      "thinking": "disabled"
+    },
+    "ollama": {
+      "text": "The Eysturoyartunnilin opened to traffic on **29 December 2020**.\n\nThis tunnel connects the capital island of Streymoy (specifically the village of Hvalvík) with the island of Eysturoy (specifically the town of Runavík). It is notable for containing the world's first underwater roundabout, located in a chamber beneath the sea floor between the two islands.",
+      "finish_reason": "stop",
+      "completion_tokens": 90,
+      "elapsed_s": 1.21,
+      "tok_per_s": 98.46,
+      "thinking": "disabled"
+    }
+  },
+  {
+    "id": "p01",
+    "prompt": "What does the number of membranes surrounding the chloroplasts of Archaeplastida suggest about how those chloroplasts were acquired?",
+    "exact_match": false,
+    "mlx": {
+      "text": "The presence of **two membranes** surrounding the chloroplasts of Archaeplastida (which includes glaucophytes, red algae, and green algae/plants) suggests that these chloroplasts were acquired through **primary endosymbiosis**.\n\nHere is the detailed reasoning:\n\n1.  **Primary Endosymbiosis**: This process involves a heterotrophic eukaryotic host cell engulfing a free-living, photosynthetic cyanobacterium.\n2.  **Membrane Origin**:\n    *   The **inner membrane** of the chloroplast is derived from the original plasma membrane of the engulfed cyanobacterium.\n    *   The **outer membrane** is derived from the host cell’s phagosomal (or vacuolar) membrane, which surrounded the engulfed bacterium.\n3.  **Contrast with Secondary/Secondary Endosymbiosis**:\n    *   Chloroplasts in other lineages (e.g., euglenids, diatoms, dinoflagellates) often have **three or four membranes**. This indicates **secondary** (or tertiary) endosymbiosis, where a eukaryotic cell engulfed another eukaryotic cell that already possessed a primary plastid. The extra membranes represent the plasma membranes of the engulfed eukaryote and its original plastid.\n\nTherefore, the **two-membrane structure** is a key piece of evidence that Archaeplastida chloroplasts originated directly from a cyanobacterial ancestor via primary endosymbiosis, rather than through the engulfment of another eukaryote.",
+      "finish_reason": "stop",
+      "completion_tokens": 332,
+      "elapsed_s": 3.34,
+      "tok_per_s": 99.39,
+      "thinking": "disabled"
+    },
+    "ollama": {
+      "text": "The fact that chloroplasts in Archaeplastida (which includes red algae, green algae, and land plants) are surrounded by **two membranes** suggests that they were acquired through **primary endosymbiosis**.\n\nHere is the detailed reasoning:\n\n1.  **Primary Endosymbiosis**: The two membranes correspond to the original plasma membranes of the engulfed cyanobacterium (the inner membrane) and the host’s phagosomal vacuole membrane (the outer membrane). This indicates that a eukaryotic host cell directly engulfed a free-living photosynthetic cyanobacterium, which was then retained as an endosymbiont.\n\n2.  **Contrast with Secondary/Complex Endosymbiosis**: Chloroplasts in other groups (such as euglenids, diatoms, or dinoflagellates) are often surrounded by three or four membranes. These additional membranes represent the plasma membrane of the engulfed eukaryotic alga (which itself had a two-membrane chloroplast from primary endosymbiosis) plus the phagosomal membrane of the new host. The presence of only two membranes in Archaeplastida distinguishes their origin as direct, primary events rather than secondary acquisitions involving another eukaryote.\n\n3.  **Monophyletic Origin**: The uniformity of this two-membrane structure across all Archaeplastida suggests that they share a single common ancestor in which this primary endosymbiotic event occurred once, and all subsequent lineages inherited it from that ancestor.\n\n**Conclusion:**\nThe two membranes indicate that the chloroplasts of Archaeplastida originated via **primary endosymbiosis**, where a eukaryotic host directly engulfed a cyanobacterium.",
+      "finish_reason": "stop",
+      "completion_tokens": 362,
+      "elapsed_s": 3.66,
+      "tok_per_s": 102.74,
+      "thinking": "disabled"
+    }
+  },
+  {
+    "id": "p02",
+    "prompt": "How does the fixed-wing squadron composition of Marine Aircraft Group 13 differ from that of Marine Aircraft Group 14?",
+    "exact_match": false,
+    "mlx": {
+      "text": "To answer this question precisely, we must look at the current operational structure of the United States Marine Corps (USMC) as of 2024–2025, specifically within the 2nd Marine Aircraft Wing (MAW), which commands both Marine Aircraft Group 13 (MAG-13) and Marine Aircraft Group 14 (MAG-14).\n\n### Core Difference: Fixed-Wing Composition\n\nThe fundamental difference lies in the **type of fixed-wing aircraft** assigned to each group:\n\n*   **Marine Aircraft Group 13 (MAG-13)** is a **fixed-wing attack and reconnaissance** group. It operates **AV-8B Harrier II** and **F-35B Lightning II** aircraft.\n*   **Marine Aircraft Group 14 (MAG-14)** is a **fixed-wing fighter** group. It operates **F/A-18D Hornet** aircraft.\n\n### Detailed Breakdown\n\n#### 1. Marine Aircraft Group 13 (MAG-13)\n*   **Primary Mission:** Close Air Support (CAS), Air Interdiction (AI), and Armed Reconnaissance.\n*   **Fixed-Wing Aircraft:**\n    *   **AV-8B Harrier II:** A vertical/short takeoff and landing (V/STOL) attack aircraft.\n    *   **F-35B Lightning II:** A fifth-generation stealth V/STOL multirole fighter. MAG-13 is the first Marine Corps unit to fully transition to the F-35B.\n*   **Squadron Composition (Typical):**\n    *   **VMFA(AW)-224:** \"Night Witches\" – F-35B squadron (transitioning from AV-8B).\n    *   **VMFA-214:** \"Blue Diamonds\" – F-35B squadron.\n    *   **VMFA-232:** \"Jolly Rogers\" – F-35B squadron.\n    *   **VMM-261:** \"Red Tails\" – *Note: This is a tiltrotor (MV-22) squadron, not fixed-wing.*\n    *   **HMLA-367:** \"Flying Tigers\" – AH-1Z Viper and OA-1K Mohawk (helicopter/light attack, not fixed-wing).\n   ",
+      "finish_reason": "length",
+      "completion_tokens": 512,
+      "elapsed_s": 5.27,
+      "tok_per_s": 97.13,
+      "thinking": "disabled"
+    },
+    "ollama": {
+      "text": "Marine Aircraft Group 13 (MAG-13) and Marine Aircraft Group 14 (MAG-14) are both part of the United States Marine Corps' 2nd Marine Aircraft Wing, but they differ significantly in their fixed-wing squadron composition due to their distinct operational roles and locations.\n\n### **Marine Aircraft Group 13 (MAG-13)**\n*   **Location:** Marine Corps Air Station Cherry Point, North Carolina.\n*   **Primary Role:** MAG-13 is a **fixed-wing heavy** group, primarily focused on strike and close air support missions. It serves as the primary fixed-wing component for the 2nd Marine Aircraft Wing’s expeditionary operations.\n*   **Fixed-Wing Squadron Composition (as of recent years):**\n    *   **Marine Fighter Attack Squadron 121 (VMFA-121)** – F-35C Lightning II (Transitioning from F/A-18A/C)\n    *   **Marine Fighter Attack Squadron 232 (VMFA-232)** – F-35B Lightning II\n    *   **Marine Fighter Attack Squadron 314 (VMFA-314)** – F-35B Lightning II\n    *   **Marine Fighter Attack Squadron 531 (VMFA-531)** – F/A-18A/C Hornet *(Note: VMFA-531 was disestablished in 2023; its squadrons were realigned. As of 2024–2025, MAG-13 is transitioning to all-F-35B operations with the addition of VMFA-232 and VMFA-314 remaining, and potentially new allocations. However, historically and in recent transition phases, it has included both F/A-18 and F-35 squadrons.)*\n    *   **Correction/Update:** As of 2024–2025, MAG-13 is undergoing a major realignment to become an **all-F-35B** group. The current confirmed fixed-wing squadrons are:\n        *   **VMFA-232** (F-35B)\n        *   **VMFA-314** (F-35B)\n        *   **VMFA-531** was disestablished in",
+      "finish_reason": "stop",
+      "completion_tokens": 512,
+      "elapsed_s": 5.25,
+      "tok_per_s": 100.03,
+      "thinking": "disabled"
+    }
+  },
+  {
+    "id": "p03",
+    "prompt": "In epipolar geometry, what constraint does the fundamental matrix impose on the point x' corresponding to a point x in a stereo image pair?",
+    "exact_match": false,
+    "mlx": {
+      "text": "In epipolar geometry, the fundamental matrix $F$ imposes the **epipolar constraint** on corresponding points $x$ and $x'$ in a stereo image pair.\n\n### The Constraint Equation\n\nFor a point $x$ in the first image and its corresponding point $x'$ in the second image, the fundamental matrix $F$ (a $3 \\times 3$ matrix of rank 2) satisfies the following equation:\n\n$$\nx'^T F x = 0\n$$\n\n### Geometric Interpretation\n\nThis algebraic constraint has a specific geometric meaning:\n\n1.  **Epipolar Line**: Given a point $x$ in the first image, the corresponding point $x'$ in the second image must lie on a specific line called the **epipolar line** $l'$.\n2.  **Calculation of the Epipolar Line**: The epipolar line $l'$ in the second image corresponding to point $x$ is computed as:\n    $$\n    l' = F x\n    $$\n3.  **Incidence Condition**: Since $x'$ must lie on $l'$, the dot product of $x'$ and $l'$ must be zero:\n    $$\n    x'^T l' = x'^T (F x) = 0\n    $$\n\n### Key Properties\n\n*   **Correspondence Reduction**: The constraint reduces the search for the corresponding point $x'$ from the entire 2D image plane to a 1D line (the epipolar line). This is crucial for efficient stereo matching.\n*   **Rank Constraint**: The fundamental matrix $F$ has rank 2, which implies that $\\det(F) = 0$. This reflects the fact that the epipoles (the projections of the camera centers into the respective images) lie on all epipolar lines.\n*   **No Metric Information**: Unlike the essential matrix $E$, the fundamental matrix does not assume calibrated cameras. It is defined for uncalibrated stereo pairs and accounts for intrinsic parameters implicitly.\n\n### Summary\n\nThe fundamental matrix $F$ imposes the **epipolar constraint** $x'^T F x = 0$, which ensures that the corresponding point $x'$ lies on the epipolar line $l' = Fx$ in the second image.",
+      "finish_reason": "stop",
+      "completion_tokens": 486,
+      "elapsed_s": 5.17,
+      "tok_per_s": 94.05,
+      "thinking": "disabled"
+    },
+    "ollama": {
+      "text": "In epipolar geometry, the fundamental matrix $F$ imposes the **epipolar constraint** (also known as the coplanarity constraint).\n\n### The Constraint Equation\nFor a point $x$ in one image and its corresponding point $x'$ in the other image (represented in homogeneous coordinates), the fundamental matrix $F$ satisfies:\n\n$$ x'^T F x = 0 $$\n\n### Geometric Interpretation\nThis equation implies that the corresponding point $x'$ must lie on a specific line in the second image called the **epipolar line** ($l'$).\n\n1.  **Epipolar Line**: The point $x$ defines an epipolar plane (formed by the baseline connecting the two camera centers and the point $x$ in 3D space). The intersection of this epipolar plane with the second image plane is a line, denoted as $l'$.\n2.  **Constraint on $x'$**: The corresponding point $x'$ must lie on this line $l'$. Mathematically, the epipolar line $l'$ in the second image is computed as:\n    $$ l' = F x $$\n3.  **Symmetry**: Conversely, the point $x$ in the first image must lie on the epipolar line $l$ in the first image corresponding to $x'$, where $l = F^T x'$.\n\n### Key Properties\n*   **Dimensionality Reduction**: The constraint reduces the search for the correspondence of a point from the entire 2D image plane to a 1D line (the epipolar line). This is crucial for efficient stereo matching.\n*   **Rank Condition**: The fundamental matrix $F$ is a $3 \\times 3$ matrix with rank 2 and 7 degrees of freedom (requiring at least 7 or 8 point correspondences to solve, depending on the algorithm).\n*   **Essential Matrix Relation**: If the intrinsic camera parameters are known, $F$ can be decomposed into the essential matrix $E$ and the intrinsics $K$: $F = K'^{-T} E K^{-1}$.\n\n### Summary\nThe fundamental matrix imposes the constraint that **the corresponding point $x'$ lies on the epipolar line $l' = Fx$ in the second image**, ensuring that both points and the two camera centers are coplanar.",
+      "finish_reason": "stop",
+      "completion_tokens": 502,
+      "elapsed_s": 5.71,
+      "tok_per_s": 90.0,
+      "thinking": "disabled"
+    }
+  },
+  {
+    "id": "p04",
+    "prompt": "What obligations does the EU Artificial Intelligence Act place on providers of general-purpose AI models?",
+    "exact_match": false,
+    "mlx": {
+      "text": "The EU Artificial Intelligence Act (AI Act) imposes a specific set of obligations on providers of **general-purpose AI models** (GPAIMs). These obligations are designed to ensure transparency, safety, and accountability, with additional, stricter requirements for models that pose \"systemic risks.\"\n\nHere is a breakdown of the obligations:\n\n### 1. Obligations for All General-Purpose AI Models\nAll providers of general-purpose AI models must comply with the following:\n\n*   **Technical Documentation:** Providers must draw up technical documentation and ensure it is up to date. This includes information on the model’s training process, data sources, and performance metrics.\n*   **Information to Providers of AI Systems and Deployers:** Providers must supply sufficient information to allow providers of AI systems and deployers to comply with their own obligations under the AI Act (e.g., transparency and risk assessment duties).\n*   **Respect for EU Copyright Law:** Providers must implement a policy to comply with EU copyright law, including:\n    *   Identifying and respecting training data subject to copyright exceptions or limitations.\n    *   Ensuring that the model does not output content that infringes EU copyright law.\n*   **Transparency and Disclosure:**\n    *   Providers must make publicly available a **sufficiently detailed summary** about the content used for training the model.\n    *   They must inform users that they are interacting with an AI system (transparency obligation).\n    *   They must ensure that the model is capable of detecting the output of copyrighted works, if applicable.\n\n### 2. Additional Obligations for General-Purpose AI Models with \"Systemic Risk\"\nProviders of GPAIMs that are determined to pose **systemic risks** (typically based on factors like the number of compute units used for training, e.g., >10^25 floating-point operations) face stricter requirements:\n\n*   **Model Evaluation:** Conduct appropriate scientific model evaluations to assess and mitigate systemic risks.\n*   **Cybersecurity:** Ensure adequate levels of cybersecurity protection for the model.\n*   **Reporting Serious Incidents:** Report to the European Commission any serious incidents or modifications of the model that may pose a direct or indirect risk of harm or danger to health, safety, or fundamental rights.\n*   **Model Evaluation and Testing:** Perform model evaluations and adversarial testing to identify and mitigate systemic risks before placing the model on the market.\n*   **Log and Record Keeping:** Keep logs of the",
+      "finish_reason": "length",
+      "completion_tokens": 512,
+      "elapsed_s": 5.48,
+      "tok_per_s": 93.4,
+      "thinking": "disabled"
+    },
+    "ollama": {
+      "text": "The EU Artificial Intelligence Act (AI Act) imposes specific obligations on providers of **general-purpose AI models** (GPAIs), with a tiered approach that distinguishes between all GPAI providers and those providing \"systemic\" models (those with high-impact capabilities).\n\nHere are the key obligations:\n\n### 1. Obligations for All General-Purpose AI Model Providers\nThese apply to any provider of a general-purpose AI model, regardless of its impact level.\n\n*   **Technical Documentation:** Prepare comprehensive technical documentation that is up-to-date and allows competent national authorities to assess compliance with the AI Act. This includes details on training data, design choices, and performance metrics.\n*   **Information to Provide to Integrators:** Supply sufficient information (e.g., capabilities, limitations, intended purpose) to allow downstream providers or users to integrate the model safely and comply with their own obligations under the AI Act.\n*   **Respect for EU Copyright Law:** Implement a policy to respect EU copyright law when training models, including making publicly available a **sufficiently detailed summary** about the content used for training. This summary must include information on the nature of the copyrighted works and the relevant rights held by third parties.\n*   **Transparency (Output Disclosure):** Ensure that outputs generated by the model are disclosed as AI-generated where appropriate. This includes labeling synthetic media (e.g., deepfakes) to prevent deception, unless it is legally required or clearly obvious in context.\n\n### 2. Additional Obligations for Providers of Systemic General-Purpose AI Models\nProviders of GPAIs that are deemed to have **systemic risks** (typically those with high-impact capabilities, such as large-scale models evaluated against specific benchmarks) must comply with all the above obligations plus the following:\n\n*   **Model Evaluation:** Conduct appropriate scientific testing and evaluation (\"model evaluation\") to assess and mitigate systemic risks. This includes assessing the model’s performance across relevant metrics and domains.\n*   **Assessment of Systemic Risks:** Evaluate and mitigate potential systemic risks at the EU level, including:\n    *   Cybersecurity vulnerabilities.\n    *   Risks to public health, safety, public security, fundamental rights, democratic processes, electoral processes, and human dignity.\n*   **Incident Reporting:** Report serious incidents and possible corrective measures taken to the European Commission and relevant national authorities within 24 hours of becoming aware of them.\n*   **Code of Practice Compliance:** Comply with a harmon",
+      "finish_reason": "stop",
+      "completion_tokens": 512,
+      "elapsed_s": 5.33,
+      "tok_per_s": 98.42,
+      "thinking": "disabled"
+    }
+  },
+  {
+    "id": "p05",
+    "prompt": "How did the Alpha 2000 light aircraft come to be manufactured in New Zealand after being designed and built in France?",
+    "exact_match": false,
+    "mlx": {
+      "text": "The Alpha 2000 light aircraft came to be manufactured in New Zealand through a specific sequence of corporate restructuring, legal disputes, and strategic licensing agreements involving the original French designer, **Jean-Paul Faure**, and the New Zealand company **Aero Alpha Ltd**.\n\nHere is the step-by-step process of how this transition occurred:\n\n### 1. Original Design and French Production\n*   **Designer:** The Alpha 2000 was designed by French engineer **Jean-Paul Faure**.\n*   **Initial Manufacturer:** It was originally produced in France by **Aero Design** (later known as **Aero Alpha**).\n*   **Certification:** The aircraft received its type certificate from the French civil aviation authority (DGAC) in the early 1990s.\n\n### 2. Financial and Legal Troubles in France\n*   **Company Collapse:** The original French manufacturing company, **Aero Design**, encountered severe financial difficulties and legal issues in the mid-1990s.\n*   **Bankruptcy:** The company went into liquidation/bankruptcy around 1995–1996. This left the type certificate in a precarious state and halted production.\n\n### 3. Acquisition of Rights by New Zealand Interests\n*   **Aero Alpha Ltd:** A New Zealand company, **Aero Alpha Ltd** (based in Christchurch), acquired the rights to manufacture and market the Alpha 2000.\n*   **Key Figures:** The initiative was led by **John G. H. (Jack) H. Smith** and other New Zealand aviation enthusiasts and investors who saw potential in the aircraft’s design (a high-wing, strut-braced monoplane with a pusher engine configuration).\n*   **Legal Resolution:** There were complex legal negotiations to resolve the intellectual property and type certificate issues stemming from the French company’s collapse. Eventually, the rights were successfully transferred to the New Zealand entity.\n\n### 4. Local Manufacturing and Certification\n*   **Establishment of Production:** Aero Alpha Ltd established a manufacturing facility in **Christchurch, New Zealand**.\n*   **Local Sourcing:** The company sourced materials and components locally where possible, adapting the supply chain to New Zealand standards.\n*   **Civil Aviation Authority (CAA) Approval:** The New Zealand Civil Aviation Authority (CAA) worked with Aero Alpha Ltd to ensure the aircraft met New Zealand airworthiness standards. The aircraft was certified under the",
+      "finish_reason": "length",
+      "completion_tokens": 512,
+      "elapsed_s": 5.44,
+      "tok_per_s": 94.04,
+      "thinking": "disabled"
+    },
+    "ollama": {
+      "text": "The story of the **Alpha 2000** (specifically the **Aero Alpha 2000**) is a case of international collaboration driven by market demand, regulatory hurdles, and manufacturing capacity rather than a simple relocation of the original design. It did not \"come to be manufactured in New Zealand\" because the French company moved there, but rather through a specific licensing and assembly agreement.\n\nHere’s how it happened:\n\n### 1. Origin in France\nThe **Aero Alpha 2000** was designed and initially built by **Aero SpA**, an Italian aircraft manufacturer (not French). *Correction*: The premise that it was designed and built in **France** is incorrect. The Alpha 2000 was an **Italian** design by **Aero SpA** of Milan, Italy. It first flew in 1987.\n\n*(Note: If you are referring to a different aircraft, such as the **Robin DR400/500** series which had significant French origins and New Zealand presence, that is a different story. However, the Alpha 2000 is distinctly Italian. I will proceed with the factual history of the Aero Alpha 2000.)*\n\n### 2. Why New Zealand?\nNew Zealand became a key market for light aircraft in the late 1980s and early 1990s due to:\n- A growing general aviation sector.\n- Favorable geography for recreational flying.\n- Lack of domestic light aircraft manufacturing capability.\n\n### 3. The Role of **Aero Alpha** and **New Zealand Distributors**\nThe Aero Alpha 2000 was never mass-produced in New Zealand as a primary manufacturing hub. Instead:\n- **Importation**: The aircraft was imported into New Zealand by licensed distributors.\n- **Kit Assembly/Local Support**: Some light aircraft are sold as kits or require local assembly for certification. In New Zealand, the **Civil Aviation Authority (CAA)** requires aircraft to meet specific airworthiness standards. Distributors often handled final inspection, registration, and support locally.\n\n### 4. Key Misconception Clarification\nThere is **no evidence** that the Alpha 2000 was \"manufactured in New Zealand\" in the sense of large-scale production. The aircraft remained an Italian product. However:\n- **Local Assembly/Kitting**: It is possible that some units were shipped as kits",
+      "finish_reason": "stop",
+      "completion_tokens": 512,
+      "elapsed_s": 5.45,
+      "tok_per_s": 96.36,
+      "thinking": "disabled"
+    }
+  },
+  {
+    "id": "p06",
+    "prompt": "In which journal is the annual State of the Climate report published, and which agency primarily leads it?",
+    "exact_match": false,
+    "mlx": {
+      "text": "The annual State of the Climate report is published in the journal **Bulletin of the American Meteorological Society (BAMS)**.\n\nThe report is primarily led by the **National Oceanic and Atmospheric Administration (NOAA)**, specifically through its National Centers for Environmental Information (NCEI). It is a collaborative effort involving numerous international and national agencies, but NOAA serves as the lead agency for the U.S. contribution and overall coordination.",
+      "finish_reason": "stop",
+      "completion_tokens": 86,
+      "elapsed_s": 1.18,
+      "tok_per_s": 72.9,
+      "thinking": "disabled"
+    },
+    "ollama": {
+      "text": "The annual **State of the Climate** report is published in the journal **Bulletin of the American Meteorological Society (BAMS)**.\n\nThe report is primarily led by the **National Oceanic and Atmospheric Administration (NOAA)**, specifically through its National Centers for Environmental Information (NCEI). It is a collaborative effort involving hundreds of scientists from around the world, but NOAA serves as the lead agency for the global report.",
+      "finish_reason": "stop",
+      "completion_tokens": 85,
+      "elapsed_s": 1.03,
+      "tok_per_s": 95.5,
+      "thinking": "disabled"
+    }
+  },
+  {
+    "id": "p07",
+    "prompt": "What was the deadliest aviation crash of 2006, and how many people were killed?",
+    "exact_match": false,
+    "mlx": {
+      "text": "The deadliest aviation crash of 2006 was **Aeroflot Flight 821** (also known as the 2006 Perm air disaster).\n\n*   **Date:** September 9, 2006\n*   **Aircraft:** Tupolev Tu-204-100\n*   **Location:** Perm, Russia\n*   **Fatalities:** **88 people** were killed (all 83 passengers and 5 crew members on board).\n\nThis was the deadliest commercial aviation accident in 2006. The crash occurred when the aircraft crashed into a hillside near Perm while attempting to land, due to a combination of pilot error and possible technical issues with the aircraft's navigation systems.",
+      "finish_reason": "stop",
+      "completion_tokens": 159,
+      "elapsed_s": 1.69,
+      "tok_per_s": 94.01,
+      "thinking": "disabled"
+    },
+    "ollama": {
+      "text": "The deadliest aviation crash of 2006 was **Adam Air Flight 574**.\n\n*   **Date:** January 1, 2007 (Note: While the flight departed in late December 2006, it crashed on January 1, 2007. However, most historical records classify it under the 2007 calendar year. Let's re-verify the deadliest crash strictly within the **calendar year of 2006**.)\n\nLet's correct the timeline:\n\nThe deadliest aviation crash that occurred **within the calendar year 2006** was **Saha Airlines Flight 171**? No, that was later. Let's look at major 2006 crashes.\n\n1.  **Adam Air Flight 574**: Crashed on **January 1, 2007**. (Not in 2006).\n2.  **Gol Transportes Aéreos Flight 1907**: Crashed on **September 29, 2006**.\n    *   Aircraft: Boeing 737-800 (Gol) collided with an Embraer Legacy 600 (private jet).\n    *   Fatalities: All 154 people on the Gol flight died. The private jet landed safely. Total deaths: **154**.\n3.  **Air France Flight 358**: Crashed on **August 2, 2006**.\n    *   Fatalities: 0 (all 309 survived).\n4.  **Lion Air Flight 538**: Crashed on **September 17, 2006**.\n    *   Fatalities: 25.\n5.  **Saha Airlines Flight**? No.\n6.  **Kish Air Flight 7170**: Crashed on **January 11, 2009**.\n\nLet's check for any other major crashes in 2006.\n\n*   **Gol Transportes Aéreos Flight 1907** (September 29, 2006): 154 fatalities.\n*   **Adam Air Flight 574** is often mistakenly cited because it happened right at the turn of the year, but it is technically a 2007 crash.\n\nIs there any",
+      "finish_reason": "stop",
+      "completion_tokens": 512,
+      "elapsed_s": 6.4,
+      "tok_per_s": 81.76,
+      "thinking": "disabled"
+    }
+  },
+  {
+    "id": "p08",
+    "prompt": "In one sentence, what causes the seasons on Earth?",
+    "exact_match": false,
+    "mlx": {
+      "text": "The seasons on Earth are caused by the tilt of Earth's rotational axis relative to its orbit around the Sun, which results in varying angles of sunlight and day lengths throughout the year.",
+      "finish_reason": "stop",
+      "completion_tokens": 37,
+      "elapsed_s": 0.7,
+      "tok_per_s": 53.19,
+      "thinking": "disabled"
+    },
+    "ollama": {
+      "text": "The seasons on Earth are caused by the tilt of Earth's rotational axis relative to its orbit around the Sun, which results in varying angles and durations of sunlight reaching different parts of the planet throughout the year.",
+      "finish_reason": "stop",
+      "completion_tokens": 42,
+      "elapsed_s": 0.57,
+      "tok_per_s": 96.68,
+      "thinking": "disabled"
+    }
+  },
+  {
+    "id": "p09",
+    "prompt": "List three greenhouse gases in a single sentence.",
+    "exact_match": false,
+    "mlx": {
+      "text": "Carbon dioxide, methane, and nitrous oxide are three primary greenhouse gases.",
+      "finish_reason": "stop",
+      "completion_tokens": 16,
+      "elapsed_s": 0.25,
+      "tok_per_s": 64.93,
+      "thinking": "disabled"
+    },
+    "ollama": {
+      "text": "Carbon dioxide, methane, and nitrous oxide are three major greenhouse gases.",
+      "finish_reason": "stop",
+      "completion_tokens": 16,
+      "elapsed_s": 0.31,
+      "tok_per_s": 98.54,
+      "thinking": "disabled"
+    }
+  }
+]

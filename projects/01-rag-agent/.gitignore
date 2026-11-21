@@ -60,3 +60,7 @@ data/*
 # …and its fixed 58-question subset (r3-sealed-v2-58 handoff; same rules).
 !data/golden_sealed_v2_58.json
 !data/golden_sealed_v2_58.sha256.json
+
+# …and the local LLM parity check (MLX vs Ollama outputs; same
+# committed-evidence role).
+!/reports/local_llm_parity/

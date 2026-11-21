@@ -1,0 +1,9 @@
+{
+  "generated_at": "2026-11-21T12:29:05.256680+00:00",
+  "system_prompt": "You are a meticulous research assistant. Answer precisely.",
+  "max_tokens": 512,
+  "temperature": 0,
+  "mlx_model": "mlx-community/Qwen3.6-35B-A3B-4bit",
+  "ollama_model": "qwen3.6:35b-a3b-q4_K_M",
+  "exact_match_rate": 0.0
+}

@@ -1,0 +1,90 @@
+[
+  {
+    "backend": "mlx",
+    "case": "search_a",
+    "question": "What does the number of membranes surrounding the chloroplasts of Archaeplastida",
+    "search_documents_calls": 1,
+    "read_excerpt_calls": 1,
+    "schema_valid": false,
+    "summary_prefix": null,
+    "elapsed_s": 27.83,
+    "error": "UnexpectedModelBehavior: Model token limit (provider default) exceeded before any response was generated. Increase the `max_tokens` model setting, or simplify the prompt to result in a shorter respons"
+  },
+  {
+    "backend": "mlx",
+    "case": "search_b",
+    "question": "Why are propylene glycol-based fluids more common than ethylene glycol-based flu",
+    "search_documents_calls": 1,
+    "read_excerpt_calls": 1,
+    "schema_valid": false,
+    "summary_prefix": null,
+    "elapsed_s": 16.81,
+    "error": "UnexpectedModelBehavior: Model token limit (provider default) exceeded before any response was generated. Increase the `max_tokens` model setting, or simplify the prompt to result in a shorter respons"
+  },
+  {
+    "backend": "mlx",
+    "case": "search_c",
+    "question": "How many members did the Aircraft Identity Corps have by the end of World War II",
+    "search_documents_calls": 1,
+    "read_excerpt_calls": 1,
+    "schema_valid": false,
+    "summary_prefix": null,
+    "elapsed_s": 15.57,
+    "error": "UnexpectedModelBehavior: Model token limit (provider default) exceeded before any response was generated. Increase the `max_tokens` model setting, or simplify the prompt to result in a shorter respons"
+  },
+  {
+    "backend": "mlx",
+    "case": "read_excerpt",
+    "question": "In which journal is the annual State of the Climate report published, and which ",
+    "search_documents_calls": 1,
+    "read_excerpt_calls": 1,
+    "schema_valid": false,
+    "summary_prefix": null,
+    "elapsed_s": 18.68,
+    "error": "UnexpectedModelBehavior: Model token limit (provider default) exceeded before any response was generated. Increase the `max_tokens` model setting, or simplify the prompt to result in a shorter respons"
+  },
+  {
+    "backend": "ollama",
+    "case": "search_a",
+    "question": "What does the number of membranes surrounding the chloroplasts of Archaeplastida",
+    "search_documents_calls": 0,
+    "read_excerpt_calls": 0,
+    "schema_valid": true,
+    "summary_prefix": "The chloroplasts of Archaeplastida are surrounded by two membranes, which indicates that they were acquired through prim",
+    "elapsed_s": 11.04,
+    "error": null
+  },
+  {
+    "backend": "ollama",
+    "case": "search_b",
+    "question": "Why are propylene glycol-based fluids more common than ethylene glycol-based flu",
+    "search_documents_calls": 0,
+    "read_excerpt_calls": 0,
+    "schema_valid": true,
+    "summary_prefix": "Propylene glycol-based fluids are more commonly used than ethylene glycol-based fluids in aircraft deicing primarily due",
+    "elapsed_s": 25.78,
+    "error": null
+  },
+  {
+    "backend": "ollama",
+    "case": "search_c",
+    "question": "How many members did the Aircraft Identity Corps have by the end of World War II",
+    "search_documents_calls": 0,
+    "read_excerpt_calls": 0,
+    "schema_valid": true,
+    "summary_prefix": "By the end of World War II, the Aircraft Identity Corps had over 100 members.",
+    "elapsed_s": 7.52,
+    "error": null
+  },
+  {
+    "backend": "ollama",
+    "case": "read_excerpt",
+    "question": "In which journal is the annual State of the Climate report published, and which ",
+    "search_documents_calls": 0,
+    "read_excerpt_calls": 0,
+    "schema_valid": true,
+    "summary_prefix": "The provided text does not contain information about the journal or agency for the annual State of the Climate report.",
+    "elapsed_s": 5.2,
+    "error": null
+  }
+]
