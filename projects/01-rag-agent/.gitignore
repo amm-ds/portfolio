@@ -104,3 +104,7 @@ data/calibration/answers.jsonl
 !data/golden_agent_loop_local_repro.json
 # …and its reports (local mechanism check + hosted re-measure).
 !/reports/agent_loop_bounds/
+
+# …and the Phase 0 judge reproduction (two unmodified calibrate_judge
+# runs relocated here; same committed-evidence role).
+!/reports/judge_reproduction/
