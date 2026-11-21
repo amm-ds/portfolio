@@ -168,7 +168,9 @@ class RAGConfig(PortfolioBaseModel):
     # loop. A model turn re-sends the full transcript, so without these the
     # loop could grow without bound (measured: 1.5M input tokens on one
     # sealed-v2 question, two answers aborted at the 4M total-token ceiling).
-    agent_tool_calls_limit: int = Field(default=8, ge=1)
+    # Amendment 3 (2026-11-21): tool-call limit raised 8 -> 16 after the
+    # limit-8 re-measure terminated 17 of 120 answers at the bound.
+    agent_tool_calls_limit: int = Field(default=16, ge=1)
     agent_request_limit: int = Field(default=12, ge=1)
     agent_input_tokens_limit: int = Field(default=200_000, ge=1_000)
 

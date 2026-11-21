@@ -41,7 +41,7 @@ def test_agent_usage_limits_read_from_config() -> None:
     config = RAGConfig()
     limits = agent_usage_limits(config)
     assert isinstance(limits, UsageLimits)
-    assert limits.tool_calls_limit == 8
+    assert limits.tool_calls_limit == 16  # Amendment 3 (2026-11-21): raised from 8
     assert limits.request_limit == 12
     assert limits.input_tokens_limit == 200_000
     assert limits.total_tokens_limit == 4_000_000
