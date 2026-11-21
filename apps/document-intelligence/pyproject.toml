@@ -23,6 +23,7 @@ dev = [
     "httpx>=0.28",
     "mypy>=1.13",
     "pytest>=8.3",
+    "pytest-cov>=7.1.0",
     "ruff>=0.8",
 ]
 
@@ -64,6 +65,8 @@ module = ["boto3.*", "botocore.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-addopts = "-q"
+# D5/D6 (owner-approved 2026-11-21): coverage floor set to the step-1 measured
+# value rounded down to one decimal (see collaboration/reviews/20261119-apps-rag-pass-audit).
+addopts = "-q --cov=document_intelligence --cov-report=term --cov-fail-under=84.5"
 testpaths = ["tests"]
 pythonpath = ["."]

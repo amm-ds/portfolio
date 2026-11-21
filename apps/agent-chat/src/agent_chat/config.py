@@ -67,6 +67,9 @@ class Settings(BaseSettings):
     run_timeout_s: float = Field(default=180.0, gt=0)
     ingest_roots: list[Path] = Field(default_factory=lambda: [Path("docs")])
     fetch_url_enabled: bool = False
+    # In-process per-key limit on the paid endpoints (chat, ingest); not
+    # shared across replicas. 0 disables the limiter.
+    rate_limit_per_minute: int = Field(default=30, ge=0)
 
     # --- skills ------------------------------------------------------------
     skills_dir: Path = Path(__file__).resolve().parent / "skills"

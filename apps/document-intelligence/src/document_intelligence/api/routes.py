@@ -24,6 +24,7 @@ from document_intelligence.analysis.export import (
     page_payload,
 )
 from document_intelligence.api.identity import Identity
+from document_intelligence.api.rate_limit import rate_limit
 from document_intelligence.api.schemas import (
     AnalysisResponse,
     QueueResponse,
@@ -51,6 +52,7 @@ State = Annotated[AppState, Depends(state)]
 async def upload(
     identity: Identity,
     app: State,
+    _limit: Annotated[None, Depends(rate_limit)],
     file: Annotated[UploadFile, File(description="Born-digital document PDF")],
 ) -> UploadResponse:
     content = await file.read(app.settings.max_upload_bytes + 1)
@@ -111,7 +113,12 @@ def analysis(document_id: UUID, identity: Identity, app: State) -> AnalysisRespo
 
 
 @router.post("/{document_id}/reanalyze", response_model=Job, status_code=202)
-def reanalyze(document_id: UUID, identity: Identity, app: State) -> Job:
+def reanalyze(
+    document_id: UUID,
+    identity: Identity,
+    app: State,
+    _limit: Annotated[None, Depends(rate_limit)],
+) -> Job:
     return app.service.reanalyze(identity.tenant_id, document_id, identity.actor_id)
 
 
@@ -122,6 +129,7 @@ async def page_chat(
     body: PageChatRequest,
     identity: Identity,
     app: State,
+    _limit: Annotated[None, Depends(rate_limit)],
 ) -> PageChatResponse:
     return await app.service.chat(identity.tenant_id, document_id, page, list(body.messages))
 

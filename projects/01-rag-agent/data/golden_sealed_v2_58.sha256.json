@@ -1,0 +1,12 @@
+{
+  "file": "data/golden_sealed_v2_58.json",
+  "sha256": "266d2ef3e5d26176d6b22ade3464984fba48ce89e297ce670c4c0b554420fb17",
+  "n_questions": 58,
+  "sealed_at_utc": "2026-11-19T18:05:00Z",
+  "source": {
+    "file": "data/golden_sealed_v2.json",
+    "sha256": "616973ba390fdc1f8c9bf0b53fcf8e1b9bd24f5e93b563184bbc2ca9f8ce54e2"
+  },
+  "subset_rule": "zero-based list indices 0, 2, 4, ..., 114 (even indices below 115); original order; entries unchanged",
+  "note": "Fixed and hashed before any evaluation run, per the r3-sealed-v2-58 handoff."
+}

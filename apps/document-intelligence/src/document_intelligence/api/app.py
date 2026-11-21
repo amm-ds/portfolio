@@ -19,6 +19,7 @@ from document_intelligence.analysis.service import (
     DocumentNotFoundError,
     PageNotFoundError,
 )
+from document_intelligence.api.rate_limit import RateLimiter
 from document_intelligence.api.routes import router
 from document_intelligence.api.schemas import HealthResponse, LivenessResponse
 from document_intelligence.api.state import AppState
@@ -102,6 +103,10 @@ def create_app(
         service=service,
         page_chat=resolved_page_chat,
         clock=resolved_clock,
+        rate_limiter=RateLimiter(
+            per_minute=resolved_settings.rate_limit_per_minute,
+            window_s=60.0,
+        ),
     )
 
     @asynccontextmanager
@@ -170,6 +175,7 @@ def create_app(
         return JSONResponse(
             content=error_body(request, f"http_{exc.status_code}", str(exc.detail)),
             status_code=exc.status_code,
+            headers=exc.headers,
         )
 
     @app.exception_handler(RequestValidationError)
@@ -187,6 +193,14 @@ def create_app(
         return JSONResponse(
             content=error_body(request, "internal_error", "Internal server error"),
             status_code=500,
+        )
+
+    @app.exception_handler(404)
+    async def not_found_handler(request: Request, exc: Exception) -> JSONResponse:
+        """Unmatched routes: same envelope, not Starlette's bare 404."""
+        return JSONResponse(
+            content=error_body(request, "http_404", "Not Found"),
+            status_code=404,
         )
 
     return app

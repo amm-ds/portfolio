@@ -1,0 +1,551 @@
+[
+  {
+    "question": "What does the number of membranes surrounding the chloroplasts of Archaeplastida suggest about how those chloroplasts were acquired?",
+    "relevant_titles": [
+      "Archaeplastida"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "In which journal is the annual State of the Climate report published, and which agency primarily leads it?",
+    "relevant_titles": [
+      "State of the Climate"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Why are propylene glycol-based fluids more common than ethylene glycol-based fluids in aircraft deicing?",
+    "relevant_titles": [
+      "Aircraft deicing fluid"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Which two AV-8B Harrier squadrons are subordinate to Marine Aircraft Group 14?",
+    "relevant_titles": [
+      "Marine Aircraft Group 14"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What factors limited the Japanese aircraft carrier Unryū to operations in Japanese waters after her mid-1944 commissioning?",
+    "relevant_titles": [
+      "Japanese aircraft carrier Unryū"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "How many members did the Aircraft Identity Corps have by the end of World War II?",
+    "relevant_titles": [
+      "Aircraft Identity Corps"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What distinction does the Everson Evo III hold in New Zealand aviation?",
+    "relevant_titles": [
+      "Everson aircraft and automobiles"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What concern about Australia's industrial capability led to the establishment of the Commonwealth Aircraft Corporation in 1936?",
+    "relevant_titles": [
+      "Commonwealth Aircraft Corporation"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Which aircraft is the centerpiece attraction of the Sullenberger Aviation Museum?",
+    "relevant_titles": [
+      "Sullenberger Aviation Museum"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "How did the Alpha 2000 light aircraft come to be manufactured in New Zealand after being designed and built in France?",
+    "relevant_titles": [
+      "Robin Aircraft",
+      "Apex Aircraft",
+      "Alpha Aviation"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Which city has the colder winter climate on average, Milwaukee or Minneapolis–Saint Paul?",
+    "relevant_titles": [
+      "Climate of Milwaukee",
+      "Climate of Minneapolis–Saint Paul"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "How do the albums Climate of Hunter and The Doughnut in Granny's Greenhouse differ in their performing artists and career context?",
+    "relevant_titles": [
+      "Climate of Hunter",
+      "The Doughnut in Granny's Greenhouse"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "How does the Basel III liquidity coverage ratio differ from the net stable funding ratio?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Basel III",
+      "liquidity",
+      "funding ratio"
+    ]
+  },
+  {
+    "question": "What caused the blowout on the Deepwater Horizon drilling rig in 2010?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Macondo",
+      "drilling rig"
+    ]
+  },
+  {
+    "question": "What role does quantum entanglement play in quantum key distribution?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "key distribution",
+      "Bell inequality"
+    ]
+  },
+  {
+    "question": "What recognition did the Central Electricity Authority give to Tata Power for operating the Bhira facility in 2007, and for what achievement?",
+    "relevant_titles": [
+      "Bhira Hydroelectric Project"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "The construction of which Swedish hydroelectric power station led to the founding of the Kungliga Vattenfallsstyrelsen, the forerunner of Vattenfall?",
+    "relevant_titles": [
+      "Olidan Hydroelectric Power Station"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Lake Norman, the reservoir created by Cowans Ford Dam, was named in honor of which former Duke Power president?",
+    "relevant_titles": [
+      "Cowans Ford Hydroelectric Station"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "According to Betz's law, what maximum fraction of the wind's kinetic energy can a hypothetical ideal wind-energy extraction machine capture?",
+    "relevant_titles": [
+      "Wind turbine design"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Besides the hydrolysis of chlorophyll, what other reactions does the enzyme chlorophyllase catalyze?",
+    "relevant_titles": [
+      "Chlorophyllase"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Who was the first editor-in-chief of the Journal of Machine Learning Research?",
+    "relevant_titles": [
+      "Journal of Machine Learning Research"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "The random neural network is linked to which model of queueing networks?",
+    "relevant_titles": [
+      "Random neural network"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Which company announced in October 2021 that it had acquired complete control of Renewable Energy Corporation from China National Bluestar Group, and for what price?",
+    "relevant_titles": [
+      "Renewable Energy Corporation"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Under mid-range scenarios of future warming, only what percentage of current ectotherm locations are within 50 km of a place that could serve as an equally suitable habitat at the end of this century?",
+    "relevant_titles": [
+      "Extinction risk from climate change"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "McKay Creek Power Station is one of four stations in which hydroelectric scheme — the largest in the Australian state of Victoria — and which company owns that scheme today?",
+    "relevant_titles": [
+      "McKay Creek Hydroelectric Power Station",
+      "Kiewa Hydroelectric Scheme"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "How do chlorophyllin and the enzyme chlorophyllase each relate chemically to chlorophyll?",
+    "relevant_titles": [
+      "Chlorophyllin",
+      "Chlorophyllase"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "The Climate Registry was established in 2007 to continue the work of which earlier California emissions registry, and how do the two organizations differ in geographic governance?",
+    "relevant_titles": [
+      "The Climate Registry",
+      "California Climate Action Registry"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What maximum penalties can Germany's Network Enforcement Act (NetzDG) impose on social media platforms that systematically fail to remove illegal content?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "NetzDG",
+      "Network Enforcement",
+      "illegal content"
+    ]
+  },
+  {
+    "question": "Who composed the score for Christopher Nolan's 2023 film Oppenheimer, and which previous Nolan collaboration had the composer worked on?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Oppenheimer",
+      "Göransson",
+      "Nolan"
+    ]
+  },
+  {
+    "question": "What commitments on pathogen surveillance does the WHO Pandemic Accord, adopted at the World Health Assembly, require of member states?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Pandemic Accord",
+      "World Health Assembly",
+      "Pandemic Treaty"
+    ]
+  },
+  {
+    "question": "What share of Juneau's electricity supply did the Snettisham hydroelectric plant provide as of December 2017?",
+    "relevant_titles": [
+      "Snettisham hydroelectric power plant"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What is the combined capacity of the three major offshore wind projects planned in Estonia?",
+    "relevant_titles": [
+      "Wind power in Estonia"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "How many tornadoes does Texas average per year, and what rank does that give the state?",
+    "relevant_titles": [
+      "Climate of Texas"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Which facility did the Chivilingo hydroelectric plant serve with alternating current when it came online in 1897?",
+    "relevant_titles": [
+      "Chivilingo Hydroelectric Plant"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "By what margin of votes did the US House of Representatives establish the Select Committee on Energy Independence and Global Warming in 2007?",
+    "relevant_titles": [
+      "United States House Select Committee on Energy Independence and Global Warming"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "In the first half of 2021, what share of Germany's electricity was generated by wind, and which source generated more?",
+    "relevant_titles": [
+      "Wind power in Germany"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "On what date did Portugal's last coal power plant close?",
+    "relevant_titles": [
+      "Renewable energy in Portugal"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What is the prize value of the David E. Rumelhart prize, and what kind of contribution does it recognize?",
+    "relevant_titles": [
+      "Competitions and prizes in artificial intelligence"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Into which two broad categories do modern climate classification methods fall?",
+    "relevant_titles": [
+      "Climate classification"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Pink algae and Shewanella algae are both misnomers — what kind of organism is each?",
+    "relevant_titles": [
+      "Pink algae",
+      "Shewanella algae"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "How did wind power's share of electricity generation in 2020 differ between Denmark and Portugal?",
+    "relevant_titles": [
+      "Wind power in Denmark",
+      "Wind power in Portugal"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "How do graph cuts and triangulation differ in the computer vision problems they solve?",
+    "relevant_titles": [
+      "Graph cuts in computer vision",
+      "Triangulation (computer vision)"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What was the moment magnitude of the September 2023 earthquake whose epicentre lay near Marrakesh?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Marrakesh",
+      "Agadir"
+    ]
+  },
+  {
+    "question": "Which peak is the highest in the Karakoram mountain range?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Karakoram",
+      "K2"
+    ]
+  },
+  {
+    "question": "Which Norwegian explorer led the first expedition to reach the geographic South Pole?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Amundsen",
+      "Roald"
+    ]
+  },
+  {
+    "question": "What kind of organism is Globia algae, and to which family does it belong?",
+    "relevant_titles": [
+      "Globia algae"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "In artificial intelligence, what is a percept sequence?",
+    "relevant_titles": [
+      "Percept (artificial intelligence)"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Which laboratory founded in 1966 developed Shakey, the first general-purpose mobile robot?",
+    "relevant_titles": [
+      "Artificial Intelligence Center"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Where is Algae Lake located, and from what source was it first mapped?",
+    "relevant_titles": [
+      "Algae Lake"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What does the situated approach in artificial intelligence prioritize over abstract reasoning?",
+    "relevant_titles": [
+      "Situated approach (artificial intelligence)"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What is the oldest documented use of microalgae as a food source?",
+    "relevant_titles": [
+      "Culture of microalgae in hatcheries"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What is the key difference between a behavior tree and a hierarchical state machine?",
+    "relevant_titles": [
+      "Behavior tree (artificial intelligence, robotics and control)"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What was the 2021 impact factor of IEEE Transactions on Neural Networks and Learning Systems?",
+    "relevant_titles": [
+      "IEEE Transactions on Neural Networks and Learning Systems"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What is the storage polysaccharide of yellow-green algae?",
+    "relevant_titles": [
+      "Yellow-green algae"
+    ],
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Which two books on North American algae did Frank Shipley Collins publish, and in what years?",
+    "relevant_titles": [
+      "The Green Algae of North America",
+      "Working Key to the Genera of North American Algae"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Which two enzymes catalyse the interconversion of chlorophyll a and chlorophyll b in the chlorophyll cycle?",
+    "relevant_titles": [
+      "Chlorophyllide-a oxygenase",
+      "Chlorophyll(ide) b reductase"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "What mechanism does an algae scrubber use to remove undesirable chemicals from aquarium water, and how does that contrast with how an algaecide acts?",
+    "relevant_titles": [
+      "Algae scrubber",
+      "Algaecide"
+    ],
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "absent_terms": []
+  },
+  {
+    "question": "Who was the first woman to win the Fields Medal, and in what year?",
+    "relevant_titles": [],
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "absent_terms": [
+      "Fields Medal",
+      "Mirzakhani"
+    ]
+  }
+]

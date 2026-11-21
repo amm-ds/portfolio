@@ -1,0 +1,7 @@
+{
+  "file": "data/golden_sealed_v2.json",
+  "sha256": "616973ba390fdc1f8c9bf0b53fcf8e1b9bd24f5e93b563184bbc2ca9f8ce54e2",
+  "n_questions": 120,
+  "sealed_at_utc": "2026-11-19T17:20:00Z",
+  "note": "Authored offline from the committed corpus; fixed and hashed BEFORE any evaluation run. Mix: 68 single_hop/answer, 24 multi_hop/answer, 28 unanswerable/abstain."
+}

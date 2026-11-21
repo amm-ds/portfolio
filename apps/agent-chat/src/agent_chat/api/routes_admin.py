@@ -9,6 +9,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
+from agent_chat.api.rate_limit import rate_limit
 from agent_chat.api.security import require_api_key
 from agent_chat.api.state import AppState
 from agent_chat.models import primary_model_name
@@ -64,6 +65,7 @@ async def ingest_documents(
     body: IngestRequest,
     request: Request,
     _: None = Depends(require_api_key),
+    _limit: None = Depends(rate_limit),
 ) -> dict[str, int]:
     """Chunk + embed + index markdown/txt files (server-side paths)."""
     state: AppState = request.app.state.agent_chat
