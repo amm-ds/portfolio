@@ -125,6 +125,22 @@ cap exhaustion (a code change for a separate handoff). Per-question
 comparisons for all 120 rows are committed in the run's traces;
 `reports/agent_loop_bounds/sealed_v2_120/` holds metrics + traces.
 
+## S1 follow-up (owner-approved 2026-11-21): hosted-call hygiene
+
+Root cause of the step-6 incident: pydantic-settings loads the CWD-relative
+`.env` — including the untracked `projects/01-rag-agent/.env` (predating this
+work) — even when the operator unsets shell variables; the earlier attempt's
+`unset` never reached `Settings`. The step-6 hosted incident spend is
+recorded here per the plan: **$0.0196 cloud-equivalent** (q58_23 $0.0099,
+q58_35 $0.0097, q62_26 $0.0000 on the meter), kimi-for-coding, on 2026-11-20.
+
+Guard shipped: `projects/01-rag-agent/scripts/run_local_eval.sh` exports
+empty `LLM_API_KEY`/`LLM_BASE_URL` (which beat the `.env` file in
+pydantic-settings precedence and make `is_hosted_active()` false) and execs
+the CLI — every local evaluate/chat run sets the endpoint explicitly to
+local. `calibrate_judge.py` was already immune (forced-local `Settings`
+kwargs).
+
 ## Deviations
 
 1. ~$0.0196 accidental hosted spend during step 6 (project `.env` incident,
