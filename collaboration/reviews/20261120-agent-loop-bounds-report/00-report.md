@@ -141,6 +141,22 @@ the CLI — every local evaluate/chat run sets the endpoint explicitly to
 local. `calibrate_judge.py` was already immune (forced-local `Settings`
 kwargs).
 
+## S3 follow-up (Amendment 3, 2026-11-21): limit-16 re-measure aborted at the stop
+
+Config `agent_tool_calls_limit=16` committed at `6a1e6bf`. The 120-question
+re-measure (`reports/agent_loop_bounds/sealed_v2_120_limit16/`, ledger stop
+$1.00, hard cap $1.20) tripped the stop at **$1.001784** cumulative
+(~03:32 into the run) and the CLI's write-at-end behaviour committed no
+artifacts. The limit-16 configuration costs materially more per pathological
+question (up to 16 tool calls with full-transcript re-sends); extrapolating
+the spend curve, a full 120 needs roughly $1.5-1.8, above the approved stop.
+Per the amendment's stop condition this run is reported as aborted with
+completed items uncommitted. Owner decision required: a higher stop (the
+measured cost of a full limit-16 pass), or accept the limit-8 measurement
+(`5c7f41b`: 17 budget-terminated, criterion 3 failed) as the quality-cost
+record. The empty `sealed_v2_120_limit16` folder was not created; nothing
+was committed for the run.
+
 ## Deviations
 
 1. ~$0.0196 accidental hosted spend during step 6 (project `.env` incident,
@@ -152,3 +168,5 @@ kwargs).
    handoff (uncommitted project-02 working-tree edits; see Gates).
 4. Judge/verify call sites were listed in step 1 but left on
    `budget_limits()` per the standing no-change constraint.
+5. Amendment 3's re-measure aborted at the $1.00 stop with no committed
+   artifacts (write-at-end); see the S3 follow-up above.
