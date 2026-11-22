@@ -1,0 +1,60 @@
+{
+  "seed": 42,
+  "model": "qwen3.6:35b-a3b-q4_K_M",
+  "targets": {
+    "single_hop": 68,
+    "multi_hop": 24,
+    "unanswerable": 28
+  },
+  "thresholds": {
+    "jaccard_max": 0.4,
+    "cosine_max": 0.85,
+    "sealed_title_overlap_max": 0.05
+  },
+  "prompts_sha256": {
+    "single_hop": "a4f2e116f7d20e36dee39c8a5f6f205859390a60e59b70526aaeb611875e2df2",
+    "multi_hop": "ab72cf509af445486c5d3332a093b40bf105b763b75dd1d926d04f1746ac3da8",
+    "unanswerable": "d0abdfc6583e80376e5b90d5d249e090bdc7379daa418f58d0983cea0ee206b2",
+    "answerability": "e73d3c03c86bcb1b445670d02a41b1fc40ab2359b6c77d96c77438ea347b3626"
+  },
+  "existing_questions_checked": 538,
+  "attempts": [
+    {
+      "slot": "unanswerable_17",
+      "attempt": 1,
+      "problems": [
+        "jaccard 0.412 vs existing"
+      ]
+    },
+    {
+      "slot": "unanswerable_23",
+      "attempt": 1,
+      "problems": [
+        "jaccard 0.875 vs existing",
+        "cosine 0.993 vs existing"
+      ]
+    },
+    {
+      "slot": "unanswerable_27",
+      "attempt": 1,
+      "problems": [
+        "exact duplicate",
+        "jaccard 1.000 vs existing",
+        "cosine 1.000 vs existing"
+      ]
+    }
+  ],
+  "answerability_check": {
+    "n_answerable": 92,
+    "answerable_from_gold": 89,
+    "note": "answerable-from-non-gold-chunks rate not measured here (no retrieval in this script); no drops on that figure"
+  },
+  "title_overlap": {
+    "unique_gold_titles": 97,
+    "in_sealed_120": 0,
+    "share": 0.0
+  },
+  "request_hosts": [
+    "localhost"
+  ]
+}

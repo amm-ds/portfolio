@@ -1,0 +1,1 @@
+{"prompt_sha256": "c1425b49313165a690621bd290012a0fdf0dd38f3862e32f62832591ada73707", "response": "{\n\"question\": \"Which skyscraper holds the record for the tallest building in Southeast Asia as of 2024?\",\n\"absent_terms\": [\n\"tallest building\",\n\"Southeast Asia\",\n\"skyscraper\"\n]\n}"}

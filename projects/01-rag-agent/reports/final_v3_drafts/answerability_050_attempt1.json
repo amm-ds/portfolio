@@ -1,0 +1,1 @@
+{"prompt_sha256": "d27726235b7c7a3291a04f447f86425a1640db2d2053f0ab9167f3c7cbf659b3", "response": "{\"answerable\": \"YES\", \"reason\": \"The provided chunk explicitly states that the command-line tools for Waffles are written in C++.\"}"}

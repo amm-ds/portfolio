@@ -1,0 +1,1 @@
+{"prompt_sha256": "56c98ac4840362c54f9aa7a57166d14bd37b2f655c2d32a8e50926fdce87e5fe", "response": "{\"question\": \"Which three performance guarantees does the text state are not assured for MLC across a range of operating conditions?\", \"answer\": \"Convergence, optimality, and robustness\"}"}

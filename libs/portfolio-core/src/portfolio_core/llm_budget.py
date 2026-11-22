@@ -191,9 +191,16 @@ class SpendLedger:
 
     budget_usd: Decimal
     warn_at: tuple[float, ...] = (0.5, 0.9)
+    initial_spend_usd: Decimal = Decimal("0")
     spend_usd: Decimal = Decimal("0")
     records: list[UsdRecord] = field(default_factory=list)
     _warned: set[float] = field(default_factory=set)
+
+    def __post_init__(self) -> None:
+        # Resume support (phase0-infra, 2026-11-22): a run continued from a
+        # checkpoint starts its cumulative spend at the prior run's total so
+        # the cap applies to the whole run, not one process.
+        self.spend_usd = self.initial_spend_usd
 
     def record(self, model_name: str, usage: Any, settings: Settings | None = None) -> UsdRecord:
         """Meter one usage object, enforce the cap, emit threshold log lines."""
@@ -236,12 +243,22 @@ class SpendLedger:
 _ledger: SpendLedger | None = None
 
 
-def get_ledger(settings: Settings | None = None) -> SpendLedger:
-    """Process-wide :class:`SpendLedger` singleton, budgeted from Settings."""
+def get_ledger(
+    settings: Settings | None = None, seed_usd: "float | Decimal | None" = None
+) -> SpendLedger:
+    """Process-wide :class:`SpendLedger` singleton, budgeted from Settings.
+
+    ``seed_usd`` pre-loads cumulative spend from a prior checkpoint (resume);
+    default ``None`` keeps the fresh-process behaviour. Only applied when the
+    singleton is constructed.
+    """
     global _ledger
     if _ledger is None:
         s = settings or get_settings()
-        _ledger = SpendLedger(budget_usd=Decimal(str(s.llm_cost_limit_usd)))
+        initial = Decimal("0") if seed_usd is None else Decimal(str(seed_usd))
+        _ledger = SpendLedger(
+            budget_usd=Decimal(str(s.llm_cost_limit_usd)), initial_spend_usd=initial
+        )
     return _ledger
 
 

@@ -528,35 +528,49 @@ def rebuild_report_from_artifacts(config: RAGConfig) -> Path:
     return config.reports_dir / "report.html"
 
 
+def trace_to_row(t: QuestionTrace) -> dict[str, Any]:
+    """Serialize one trace exactly as ``write_question_traces`` does."""
+    row: dict[str, Any] = {
+        "question": t.question,
+        "category": t.category,
+        "expected_behavior": t.expected_behavior,
+        "top_rank": t.top_rank,
+        "retrieved_relevant": t.retrieved_relevant,
+        "cited_relevant": t.cited_relevant,
+        "faithfulness": t.faithfulness,
+        "abstained": t.abstained,
+        "format_ok": t.format_ok,
+        "output_retries": t.output_retries,
+        "verdict": classify_question(t),
+        "error": t.error,
+        "gate_coverage": t.gate_coverage,
+        "gate_max_similarity": t.gate_max_similarity,
+        "evidence_score": t.evidence_score,
+        "n_surviving_claims": t.n_surviving_claims,
+        "budget_terminated": t.budget_terminated,
+        "gate_refused": t.gate_refused,
+        "claim_states": t.claim_states,
+    }
+    answer = getattr(t, "answer", None)
+    if answer is not None:
+        row["answer"] = answer
+    claims = getattr(t, "claims", None)
+    if claims is not None:
+        row["claims"] = claims
+    usage_limit_hit = getattr(t, "usage_limit_hit", None)
+    if usage_limit_hit is not None:
+        row["usage_limit_hit"] = usage_limit_hit
+    top_k_clamps = getattr(t, "top_k_clamps", None)
+    if top_k_clamps is not None:
+        row["top_k_clamps"] = top_k_clamps
+    return row
+
+
 def write_question_traces(
     config: RAGConfig, traces: list[QuestionTrace], path: Path | None = None
 ) -> Path:
     """Persist a per-question trace table (tuning set, or the held-out set)."""
-    rows = [
-        {
-            "question": t.question,
-            "category": t.category,
-            "expected_behavior": t.expected_behavior,
-            "top_rank": t.top_rank,
-            "retrieved_relevant": t.retrieved_relevant,
-            "cited_relevant": t.cited_relevant,
-            "faithfulness": t.faithfulness,
-            "abstained": t.abstained,
-            "format_ok": t.format_ok,
-            "output_retries": t.output_retries,
-            "verdict": classify_question(t),
-            "error": t.error,
-            # R6: evidence-gate signals + claim accounting (None when not applicable)
-            "gate_coverage": t.gate_coverage,
-            "gate_max_similarity": t.gate_max_similarity,
-            "evidence_score": t.evidence_score,
-            "n_surviving_claims": t.n_surviving_claims,
-            "budget_terminated": t.budget_terminated,
-            "gate_refused": t.gate_refused,
-            "claim_states": t.claim_states,
-        }
-        for t in traces
-    ]
+    rows = [trace_to_row(t) for t in traces]
     out = path or config.reports_dir / "question_traces.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")

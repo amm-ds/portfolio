@@ -1,0 +1,1 @@
+{"prompt_sha256": "c92827eaeea6647629088fa68e25a82aa73b8232d1db816dc024d37feea130c2", "response": "{\"question\": \"How do individual neural units in a TDNN gather input to support contextual modeling at each layer?\", \"answer\": \"From activations or features at the layer below, combined with a pattern of unit output and its context.\"}"}

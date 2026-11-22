@@ -1,0 +1,33 @@
+{
+  "source": "src/rag_agent/eval_questions.json",
+  "source_sha256": "fe6b2529e07682f5ee42c72898bd6069cc697154bda43325c8985774b5d2eabd",
+  "seed": 42,
+  "counts": {
+    "single_hop": 12,
+    "multi_hop": 4,
+    "unanswerable": 4
+  },
+  "ids": [
+    1,
+    2,
+    3,
+    4,
+    6,
+    9,
+    12,
+    13,
+    14,
+    15,
+    16,
+    23,
+    28,
+    29,
+    33,
+    34,
+    35,
+    47,
+    55,
+    61
+  ],
+  "note": "20 questions is too few for F1 decisions: retrieval recall@5 and MRR are the decision metrics until dev reaches 65. dev_v1 is drawn from the tuning set, which chose the retrieval config (params.yaml retrieval_best); dev results are not clean for those choices - only final_v3 gives an unbiased number."
+}

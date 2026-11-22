@@ -9,7 +9,7 @@ Typical session (from the project directory)::
 """
 
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from portfolio_core.llm import LLMProviderUnavailableError
@@ -199,6 +199,58 @@ def _validate_sealed_pass_options(
         raise typer.BadParameter("--heldout-file requires --heldout")
 
 
+def _heldout_checkpoint(config: Any) -> tuple[Any, "set[str] | None", str]:
+    """Sealed-guard + manifest + checkpoint open for an ``evaluate --heldout`` run."""
+    import hashlib
+    import os
+    import re
+
+    from portfolio_core.config import get_settings
+
+    from rag_agent.judge import RUBRIC_SYSTEM_PROMPT
+    from rag_agent.runner import (
+        RUNS_ROOT,
+        SEALED_SET,
+        Checkpoint,
+        RunManifest,
+        config_hash,
+        git_commit,
+        git_dirty,
+        make_run_id,
+        seed_spend_from_manifest,
+        verify_set_sha,
+    )
+
+    set_path = config.heldout_questions_path
+    set_sha = verify_set_sha(set_path)
+    split = re.sub(r"^golden_", "", set_path.stem)
+    section = "heldout" if set_path.name == SEALED_SET else split
+    if section != "heldout" and config.reports_dir == Path("reports"):
+        raise typer.BadParameter(
+            f"{split} runs must pass --reports-dir (dev/final never write the "
+            "shared reports/metrics.json)"
+        )
+    if os.environ.get("RAG_CHECKPOINT", "1") == "0":
+        return None, None, section
+    best = config.retrieval_best
+    manifest = RunManifest(
+        run_id=make_run_id(section, set_sha),
+        config_hash=config_hash(config),
+        commit=git_commit(),
+        dirty=git_dirty(),
+        split=split,
+        set_sha256=set_sha,
+        index_id=(
+            f"{best.embedding_slug}:{best.chunk_size}+rerank:{best.rerank}" if best else "unknown"
+        ),
+        judge_model=get_settings().llm_model or "unknown",
+        judge_prompt_hash=hashlib.sha256(RUBRIC_SYSTEM_PROMPT.encode("utf-8")).hexdigest()[:16],
+    )
+    checkpoint = Checkpoint.open(RUNS_ROOT / manifest.run_id, manifest)
+    seed_spend_from_manifest(checkpoint)
+    return checkpoint, checkpoint.completed, section
+
+
 @app.command()
 def evaluate(
     ragas: Annotated[
@@ -317,12 +369,24 @@ def evaluate(
             if not heldout_file.exists():
                 raise typer.BadParameter(f"--heldout-file not found: {heldout_file}")
             config.heldout_questions_path = heldout_file
+        checkpoint = None
+        skip_hashes = None
+        section = "heldout"
+        if heldout:
+            checkpoint, skip_hashes, section = _heldout_checkpoint(config)
         if stress:
             _run_stress_pass(config, stress_file, stress_tag)
             return
-        runner = run_heldout_evaluation if heldout else run_citation_evaluation
         try:
-            payload = runner(config)
+            if heldout:
+                payload = run_heldout_evaluation(
+                    config,
+                    checkpoint=checkpoint,
+                    skip_hashes=skip_hashes,
+                    section=section,
+                )
+            else:
+                payload = run_citation_evaluation(config)
         except LLMProviderUnavailableError as exc:
             typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
             raise typer.Exit(code=1) from exc
