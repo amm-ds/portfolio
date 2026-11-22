@@ -1,0 +1,12 @@
+# Step 3 sweep: bge-small embeddings (HF cache) on the baseline chunking.
+# BGE queries get the instruction prefix via query_embed_fn (see measure_retrieval.py).
+name: embed_bge
+chunk_size: 200
+chunk_overlap: 40
+chunk_mode: size
+embedding_model: BAAI/bge-small-en-v1.5
+embedding_kind: local
+reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2
+top_k: 3
+measure_k: 5
+rerank_multiplier: 5

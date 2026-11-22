@@ -1,0 +1,13 @@
+# Step 3 sweep: qwen3-embedding via local Ollama — Revision-1-documented
+# substitution for intfloat/e5-small-v2 (not in the local HF cache; downloads
+# prohibited by the local-only rule). Recorded in experiment_log.json + close-out.
+name: embed_qwen3
+chunk_size: 200
+chunk_overlap: 40
+chunk_mode: size
+embedding_model: qwen3-embedding:0.6b
+embedding_kind: ollama
+reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2
+top_k: 3
+measure_k: 5
+rerank_multiplier: 5

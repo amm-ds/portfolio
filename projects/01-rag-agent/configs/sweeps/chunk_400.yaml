@@ -1,0 +1,11 @@
+# Step 3 sweep: chunk size 400 (overlap 40, size mode) — one change vs baseline.
+name: chunk_400
+chunk_size: 400
+chunk_overlap: 40
+chunk_mode: size
+embedding_model: sentence-transformers/all-MiniLM-L6-v2
+embedding_kind: local
+reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2
+top_k: 3
+measure_k: 5
+rerank_multiplier: 5
