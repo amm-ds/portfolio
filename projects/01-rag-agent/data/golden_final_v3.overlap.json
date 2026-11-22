@@ -56,5 +56,25 @@
   },
   "request_hosts": [
     "localhost"
-  ]
+  ],
+  "final_set_check": {
+    "applies_to": "golden_final_v3.json as accepted 2026-11-22 (sha256 in golden_final_v3.sha256.json)",
+    "exact_duplicates_within_set": 0,
+    "jaccard_pairs_within_set_ge_0_4": 0,
+    "jaccard_pairs_vs_existing_ge_0_4": 0,
+    "cosine_pairs_within_set_ge_0_85": 0,
+    "cosine_pairs_vs_existing_ge_0_85": 0,
+    "max_cosine_within_set": 0.76,
+    "max_cosine_vs_existing": 0.76,
+    "sealed_120_unique_title_overlap": "0 of 97",
+    "unanswerable_corpus_substring_hits": 0,
+    "existing_sets_checked": [
+      "src/rag_agent/eval_questions.json",
+      "data/golden_heldout.json",
+      "data/golden_sealed_v2.json",
+      "data/golden_sealed_v2_58.json",
+      "data/golden_stress_*.json"
+    ],
+    "notes": "Unanswerable slots 102,105,106,107,108,109,111,112,114,116,117,118,119 were redrafted under the tightened prompt; 112 and 114 were redrafted again to remove duplicates; slot 119 redrafted after 3 more attempts. Answerability figures above (89 of 92) cover the original answerable items, which were not changed."
+  }
 }

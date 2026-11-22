@@ -1272,14 +1272,14 @@
     "gold_chunk_ids": []
   },
   {
-    "question": "Which skyscraper holds the record for the tallest building in Southeast Asia as of 2024?",
+    "question": "Which two Austrian mountaineers successfully reached the peak of Mount Everest without supplemental oxygen during the 1978 Polish-Austrian expedition?",
     "category": "unanswerable",
     "expected_behavior": "abstain",
     "relevant_titles": [],
     "absent_terms": [
-      "tallest building",
-      "Southeast Asia",
-      "skyscraper"
+      "Reinhold Messner",
+      "Peter Habeler",
+      "1978 Polish-Austrian expedition"
     ],
     "gold_chunk_ids": []
   },
@@ -1308,62 +1308,59 @@
     "gold_chunk_ids": []
   },
   {
-    "question": "What is the approximate diameter of Charon, Pluto's largest moon?",
+    "question": "Which Berber confederation historically controlled the trans-Saharan caravan routes connecting Timbuktu to Sijilmasa?",
     "category": "unanswerable",
     "expected_behavior": "abstain",
     "relevant_titles": [],
     "absent_terms": [
-      "Charon",
-      "diameter",
-      "Pluto"
+      "Timbuktu",
+      "Sijilmasa"
     ],
     "gold_chunk_ids": []
   },
   {
-    "question": "What is the name of the famous chess opening named after England's capital city that begins with 1.d4 followed by Bf4?",
+    "question": "Who authored the Statutes of 1268 governing the Parisian Bakers' Guild?",
     "category": "unanswerable",
     "expected_behavior": "abstain",
     "relevant_titles": [],
     "absent_terms": [
-      "London System",
-      "chess opening",
-      "d4"
+      "Parisian Bakers' Guild",
+      "Statutes of 1268"
     ],
     "gold_chunk_ids": []
   },
   {
-    "question": "What were the primary ocean temperature thresholds and long-term ecological impacts of the 2016 mass coral bleaching event on the Great Barrier Reef?",
+    "question": "What is the time recorded by Eliud Kipchoge for the men's marathon at the Tokyo 2020 Olympics?",
     "category": "unanswerable",
     "expected_behavior": "abstain",
     "relevant_titles": [],
     "absent_terms": [
-      "Great Barrier Reef",
-      "coral bleaching",
-      "2016 mass bleaching event"
+      "Eliud Kipchoge",
+      "Tokyo 2020"
     ],
     "gold_chunk_ids": []
   },
   {
-    "question": "Which team won the penalty shootout against Argentina in the final of the 2022 FIFA World Cup?",
+    "question": "Under the International Whaling Commission's management plan, what is the current annual catch limit for bowhead whales allocated to the Alaska Native subsistence harvest?",
     "category": "unanswerable",
     "expected_behavior": "abstain",
     "relevant_titles": [],
     "absent_terms": [
-      "Argentina",
-      "penalty shootout",
-      "France"
+      "International Whaling Commission",
+      "bowhead whales",
+      "Alaska Native subsistence harvest"
     ],
     "gold_chunk_ids": []
   },
   {
-    "question": "Which species of glass frog endemic to Madagascar is currently classified as critically endangered?",
+    "question": "Which Venetian glassmaker is credited with perfecting the avventurina glass technique using gold chloride?",
     "category": "unanswerable",
     "expected_behavior": "abstain",
     "relevant_titles": [],
     "absent_terms": [
-      "glass frog",
-      "Madagascar",
-      "critically endangered"
+      "avventurina glass",
+      "gold chloride",
+      "Murano"
     ],
     "gold_chunk_ids": []
   },
@@ -1380,26 +1377,25 @@
     "gold_chunk_ids": []
   },
   {
-    "question": "What is the scientific classification and current conservation status of the golden mantella frog found in Madagascar?",
+    "question": "Which Grand Vizier under Sultan Murad IV was primarily responsible for enforcing the strict crackdown on coffeehouses in Constantinople during the 1620s?",
     "category": "unanswerable",
     "expected_behavior": "abstain",
     "relevant_titles": [],
     "absent_terms": [
-      "Golden mantella",
-      "Madagascar",
-      "Conservation status"
+      "Kuyucu Murad Pasha",
+      "Sultan Murad IV",
+      "Constantinople"
     ],
     "gold_chunk_ids": []
   },
   {
-    "question": "What is the annual electricity generation capacity of the Sihwa Lake Tidal Power Station in South Korea?",
+    "question": "Which variation of the Sicilian Defense is named after Miguel Najdorf and features the move ...a6 on Black's fifth turn?",
     "category": "unanswerable",
     "expected_behavior": "abstain",
     "relevant_titles": [],
     "absent_terms": [
-      "Sihwa Lake Tidal Power Station",
-      "tidal energy",
-      "South Korea"
+      "Sicilian Defense",
+      "Miguel Najdorf"
     ],
     "gold_chunk_ids": []
   },
@@ -1416,15 +1412,13 @@
     "gold_chunk_ids": []
   },
   {
-    "question": "What is the average annual distance an Arctic tern travels during its pole-to-pole migration, and which major ocean currents does it typically follow?",
+    "question": "What is the name of the golden roof structure located on top of the Potala Palace?",
     "category": "unanswerable",
     "expected_behavior": "abstain",
     "relevant_titles": [],
     "absent_terms": [
-      "Arctic tern",
-      "migratory route",
-      "ocean currents",
-      "annual distance"
+      "Potala Palace",
+      "golden roof"
     ],
     "gold_chunk_ids": []
   },
@@ -1441,50 +1435,49 @@
     "gold_chunk_ids": []
   },
   {
-    "question": "What was the total length in kilometers of the Roman aqueduct system that supplied water to ancient Lugdunum (modern Lyon) in Gaul?",
+    "question": "Which specific aircraft model, equipped with skis and reinforced landing gear, is used to support the 'Polar Bridge' logistics operation delivering fuel and supplies to the Amundsen-Scott South Pole Station?",
     "category": "unanswerable",
     "expected_behavior": "abstain",
     "relevant_titles": [],
     "absent_terms": [
-      "Lugdunum",
-      "Roman aqueduct",
-      "Gaul"
+      "Amundsen-Scott South Pole Station",
+      "LC-130 Hercules",
+      "Polar Bridge"
     ],
     "gold_chunk_ids": []
   },
   {
-    "question": "What specific chemical compounds do giant tube worms rely on for chemosynthesis near deep-sea hydrothermal vents?",
+    "question": "What was the estimated financial loss to the Icelandic agricultural sector caused by ash deposition during the 2010 Eyjafjallajökull eruption?",
     "category": "unanswerable",
     "expected_behavior": "abstain",
     "relevant_titles": [],
     "absent_terms": [
-      "chemosynthesis",
-      "giant tube worms",
-      "hydrothermal vents"
+      "Eyjafjallajökull",
+      "Icelandic agricultural sector",
+      "2010 Eyjafjallajökull eruption"
     ],
     "gold_chunk_ids": []
   },
   {
-    "question": "Which international organization leads the Global Snow Leopard & Ecosystem Protection Program aimed at securing viable populations of snow leopards in their natural range?",
+    "question": "What percentage tax did the Sasanian Empire levy on silk imports passing through Ctesiphon?",
     "category": "unanswerable",
     "expected_behavior": "abstain",
     "relevant_titles": [],
     "absent_terms": [
-      "snow leopard",
-      "Global Snow Leopard & Ecosystem Protection Program",
-      "conservation"
+      "Sasanian Empire",
+      "Ctesiphon"
     ],
     "gold_chunk_ids": []
   },
   {
-    "question": "What proportion of Iceland's GDP is derived from its sovereign wealth fund versus its tourism industry?",
+    "question": "How does the Kenya Coffee Directorate calculate the minimum export price for Arabica beans sold through the Nairobi Coffee Exchange auction system?",
     "category": "unanswerable",
     "expected_behavior": "abstain",
     "relevant_titles": [],
     "absent_terms": [
-      "Iceland",
-      "sovereign wealth fund",
-      "tourism revenue"
+      "Kenya Coffee Directorate",
+      "Nairobi Coffee Exchange",
+      "minimum export price"
     ],
     "gold_chunk_ids": []
   }
