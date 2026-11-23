@@ -39,7 +39,7 @@ Full roadmap: `collaboration/designs/20261123-portfolio-release-roadmap/01-maste
 |---|---|---|
 | **Wave 1** | Finalize RAG 01 (Phase E `final_v3` F1 `0.9091` + Wave 1C docs/story/cardCopy committed) | **DONE (pending optional human owner 30-sample sign-off)** |
 | **Wave 2** | UI light-mode green alignment (cards + `Send inquiry` / `Unlock` buttons), Contact disclaimer simplification, About/Home/Services/Projects cards pass | **DONE & COMMITTED** |
-| **Wave 3** | All 13 projects: standardized ad-hoc roadmaps (`Data` $\to$ `Training` $\to$ `Evaluation` $\to$ `Production` $\to$ `Next`), language pass, and Demand Forecasting 02 erratic-series error reduction | **PLANNED** |
+| **Wave 3** | All 13 projects: standardized ad-hoc roadmaps (`Data` $\to$ `Training` $\to$ `Evaluation` $\to$ `Production` $\to$ `Next`), language pass, and Demand Forecasting 02 erratic-series error reduction | **READY FOR KIMI (`20261123-wave3-roadmaps-language-and-m5`)** |
 | **Wave 4** | Apps alignment (`agent-chat` & `document-intelligence`: code, infra, articles, language) | **PLANNED** |
 | **Wave 5** | Backend deployment readiness (`showcase-api` + `deploy/`) & public-repo documentation cleanup | **PLANNED** |
 
