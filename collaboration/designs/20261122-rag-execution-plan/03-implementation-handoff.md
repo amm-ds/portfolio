@@ -173,11 +173,19 @@ The step 1 run under Revision 3 produced 150 labelled claims. Its 75 unsupported
 7. **Stop conditions added:** any negative drafted without a local model; any non-localhost host other than the Kimi host named in Revision 3; any step-1 spend past $3.00.
 8. **Revision 1 and 3 still apply.** Nothing is staged or committed. Gates as before.
 
-## Revision 5 (designer, 2026-11-23): fix negative drafting 8-gram check and retry non-determinism
+## Revision 5 (designer, 2026-11-23): fix negative drafting 8-gram check, caching, and retry non-determinism
 
-Revision 4's execution hit an impasse in `build_judge_calibration_v3.py`: candidate negatives were checked against an 8-gram set that included their *own* source claim. Because one-detail negative construction preserves the rest of the sentence, any source sentence longer than 8 words collided with itself. Furthermore, retry attempts were bitwise identical due to static `temperature: 0` and seed.
+Revision 4's execution hit an impasse in `build_judge_calibration_v3.py`:
+- Candidate negatives were checked against a global 8-gram set that included their *own* source claim (and 6 duplicate supported claims in `superseded_v2a/judge_v2_claims.json`). Because one-detail negative construction preserves the rest of the sentence, any source sentence longer than 8 words collided with itself.
+- `changed_term_ok` used raw substring matching (`term.lower() in chunk_text.lower()`), falsely rejecting words like `"complete"` when `"incomplete"` appeared in the chunk, and `_NUMBER_FULL` rejected numbers with units/symbols like `"25%"`.
+- Retry attempts 2 and 3 used identical prompts with `temperature: 0` and static `SEED`, producing identical outputs.
 
-1. **8-gram scope:** When checking candidate negative `i`, test against the 8-grams of all *other* claims (supported items `j != i` and accepted negatives `k != i`). Do not check candidate `i` against its own source claim `supported_items[i]`.
-2. **Retry variation:** On attempts 2 and 3, vary generation seed (`seed = SEED + attempt`) and use slight temperature (`temperature = 0.2 * attempt`) to allow exploration of alternative phrasing if an attempt is rejected.
-3. **Execution order:** Kimi resolves these two items in `build_judge_calibration_v3.py`, runs the drafting script locally, and proceeds with the Revision 3/4 labelling workflow (`kimi-for-coding` within the $3.00 spend cap).
-4. **Gates:** Project 01 gates pass before reporting.
+Apply these 5 exact fixes to `projects/01-rag-agent/scripts/build_judge_calibration_v3.py`:
+
+1. **Reuse cached `attempt1` drafts:** In `generate(prompt, slot, attempt, temperature=0.0, seed=SEED)`, compute `prompt_sha = hashlib.sha256(prompt.encode()).hexdigest()`. If `(DRAFTS / f"{slot}_attempt{attempt}.json")` already exists and its JSON `"prompt_sha256"` equals `prompt_sha` and `"response"` is non-empty, append `"localhost"` to `HOSTS` and return the cached `"response"` immediately without calling Ollama. (This reuses the 45+ already-generated `attempt1` drafts in <1 second.)
+2. **8-gram scope by claim text (excluding self):** For item `i` with source claim `item["claim"]`, define `src_grams = token8(item["claim"])`. Build `other_supported_grams` from all `supported_items` whose `claim != item["claim"]`. Reject on 8-gram collision only when `(token8(negative) - src_grams) & (other_supported_grams | accepted_neg_grams)` is non-empty, and when accepted add `(token8(negative) - src_grams)` to `accepted_neg_grams`.
+3. **Word-boundary & digit-aware `changed_term_ok`:**
+   - Check presence in `chunk_text` with word boundaries when `term` starts/ends with alphanumeric characters (`re.search(rf"\b{re.escape(term.lower())}\b", chunk_text.lower())`), so `"complete"` does not match `"incomplete"`.
+   - Allow short numeric terms containing any digit (`len(term) < 4 and not re.search(r"\d", term)`) so `"25%"` or `"4°C"` pass.
+4. **Retry variation and failure feedback:** On attempts 2 and 3, append `\n\nNote: previous attempt failed check ({last_reason}). Change a DIFFERENT detail (date, number, comparison, or attribute) using a word/number that does NOT appear anywhere in the passage.` to the prompt, and call `generate` with `temperature=round(0.25 * (attempt - 1), 2)` and `seed=SEED + attempt`.
+5. **Execution order:** Interrupt any stuck Revision 4 run of `build_judge_calibration_v3.py`, apply the 5 fixes above, run `HF_HUB_OFFLINE=1 uv run python scripts/build_judge_calibration_v3.py`, then run `uv run python scripts/label_judge_calibration_v2.py` (`kimi-for-coding` within the $3.00 hard cap) to produce `data/judge_v2_claims.json`, `data/judge_v2_claims.sha256.json`, and unlabelled `reports/judge_calibration_v2/owner_sample.json` (30 items, seed 44, including `chunk_text`). Run project 01 gates (`ruff`, `mypy`, `pytest --cov`) and report results.
