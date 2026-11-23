@@ -31,6 +31,7 @@ Status: approved roadmap (Wave 1 RAG finalization in progress; Waves 2–5 queue
 1. **UI Light-Mode Green Alignment (`apps/showcase-web/src/styles/`):**
    - In `:root[data-theme="light"]` (`tokens-base.css:97-105`), text and components use `--accent-bright: #0f766e` while card left borders (`tokens-base.css:385`, `demos.css:446`, `pages.css:568`, `story.css:226,314`) and clickable buttons (`pages.css:71,547`, `demos.css:40`) use `--accent: #14b8a6`.
    - Align card left borders and clickable primary/action buttons (`Send inquiry`, `Unlock`, demo buttons) in light mode to use `--accent-bright` (`#0f766e`) with `#ffffff` button ink so all light-mode greens match the contrast-safe text/component green.
+   - Apply the `Send inquiry` card standard (`border-left: 3px solid var(--card-accent)`) uniformly across all cards (`.study-card`, `.channel-card`, `.card`, service/about/story cards) so every card shares the same left-accent green rail.
 2. **Contact Disclaimer Simplification (`apps/showcase-web/src/components/ChannelCards.tsx:152-157`):**
    - Replace the verbose 4-line privacy/security-boundary paragraph with a crisp 1–2 line notice (e.g., *"Enter your email or phone to unlock (retained ~30 days to track inquiries; [request deletion](mailto:...))."*).
 3. **Home, Services, About & Projects Page Pass (`Home.tsx`, `Services.tsx`, `About.tsx`, `ProjectsIndex.tsx`, `cardCopy.ts`):**
