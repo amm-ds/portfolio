@@ -1,0 +1,19 @@
+{
+  "index": 44,
+  "chunk_id": "aviation-000#c011",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 296,
+    "output_tokens": 140,
+    "reasoning_tokens": 86
+  },
+  "cost_usd_est": "0.000856",
+  "cumulative_usd_est": "0.030819",
+  "latency_s": 3.03,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage directly states the Flettner airplane uses a rotating cylinder and obtains lift from the Magnus effect, matching every element of the claim.\"}",
+  "label": "supported",
+  "reason": "The passage directly states the Flettner airplane uses a rotating cylinder and obtains lift from the Magnus effect, matching every element of the claim."
+}

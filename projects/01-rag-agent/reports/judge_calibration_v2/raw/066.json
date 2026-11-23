@@ -1,0 +1,19 @@
+{
+  "index": 66,
+  "chunk_id": "photosynthesis-057#c005",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 427,
+    "output_tokens": 76,
+    "reasoning_tokens": 39
+  },
+  "cost_usd_est": "0.000552",
+  "cumulative_usd_est": "0.045119",
+  "latency_s": 2.3,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says several months, not a few days.\"}",
+  "label": "unsupported",
+  "reason": "Passage says several months, not a few days."
+}

@@ -1,0 +1,19 @@
+{
+  "index": 113,
+  "chunk_id": "aviation-122#c008",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 474,
+    "output_tokens": 59,
+    "reasoning_tokens": 9
+  },
+  "cost_usd_est": "0.000531",
+  "cumulative_usd_est": "0.075349",
+  "latency_s": 2.64,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage states Wilbur wrote to the Smithsonian in May 1899 requesting information and publications about aeronautics.\"}",
+  "label": "supported",
+  "reason": "Passage states Wilbur wrote to the Smithsonian in May 1899 requesting information and publications about aeronautics."
+}

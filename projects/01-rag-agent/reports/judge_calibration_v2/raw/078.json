@@ -1,0 +1,19 @@
+{
+  "index": 78,
+  "chunk_id": "aviation-002#c004",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 479,
+    "output_tokens": 86,
+    "reasoning_tokens": 36
+  },
+  "cost_usd_est": "0.000644",
+  "cumulative_usd_est": "0.053557",
+  "latency_s": 2.36,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states carriers should exceed 30 knots to evade nuclear submarines; claim says less than 30.\"}",
+  "label": "unsupported",
+  "reason": "Passage states carriers should exceed 30 knots to evade nuclear submarines; claim says less than 30."
+}

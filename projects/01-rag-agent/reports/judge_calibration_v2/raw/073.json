@@ -1,0 +1,19 @@
+{
+  "index": 73,
+  "chunk_id": "aviation-122#c012",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 314,
+    "output_tokens": 98,
+    "reasoning_tokens": 53
+  },
+  "cost_usd_est": "0.000527",
+  "cumulative_usd_est": "0.050356",
+  "latency_s": 3.76,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"unsupported\",\"reason\":\"Date mismatch: evidence says July 27, 1899, not August 12, 1899.\"}",
+  "label": "unsupported",
+  "reason": "Date mismatch: evidence says July 27, 1899, not August 12, 1899."
+}

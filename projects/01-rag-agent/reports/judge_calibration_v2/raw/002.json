@@ -1,0 +1,19 @@
+{
+  "index": 2,
+  "chunk_id": "machine-learning-080#c003",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 461,
+    "output_tokens": 74,
+    "reasoning_tokens": 29
+  },
+  "cost_usd_est": "0.000757",
+  "cumulative_usd_est": "0.002278",
+  "latency_s": 2.41,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states researchers agree on CAP depth higher than 2, not higher than 3.\"}",
+  "label": "unsupported",
+  "reason": "Passage states researchers agree on CAP depth higher than 2, not higher than 3."
+}

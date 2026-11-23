@@ -5,6 +5,7 @@ import json
 import pytest
 from portfolio_core.llm import mock_model_for_tests
 from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart
 from pydantic_ai.models.function import FunctionModel
 from rag_agent.agent import build_agent
 from rag_agent.config import RAGConfig
@@ -53,3 +54,56 @@ def test_agent_rejects_invalid_canned_output(config: RAGConfig, retriever: Retri
     agent = build_agent(config, model=canned_model(bad))
     with pytest.raises(UnexpectedModelBehavior, match="output retries"):
         agent.run_sync("anything", deps=retriever)
+
+
+def test_agent_usage_limits_applies_configured_rails(config: RAGConfig) -> None:
+    from rag_agent.agent import agent_usage_limits
+
+    limits = agent_usage_limits(config)
+    assert limits.request_limit == 12
+    assert limits.tool_calls_limit == 16
+    assert limits.input_tokens_limit == 200_000
+
+    custom = config.model_copy(
+        update={
+            "agent_request_limit": 3,
+            "agent_tool_calls_limit": 5,
+            "agent_input_tokens_limit": 9_000,
+        }
+    )
+    limits = agent_usage_limits(custom)
+    assert limits.request_limit == 3
+    assert limits.tool_calls_limit == 5
+    assert limits.input_tokens_limit == 9_000
+
+
+def test_search_documents_top_k_is_clamped(config: RAGConfig, retriever: Retriever) -> None:
+    """A model asking for top_k=50 must reach retrieval clamped to 10."""
+    seen: list[int] = []
+    original = retriever.search
+
+    def recording_search(query: str, top_k: int | None = None) -> list:
+        seen.append(top_k if top_k is not None else -1)
+        return original(query, top_k=top_k)
+
+    retriever.search = recording_search  # type: ignore[method-assign]
+
+    calls = {"n": 0}
+
+    def tool_calling_model(messages: list, info: object) -> list:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return ModelResponse(
+                parts=[
+                    ToolCallPart(
+                        tool_name="search_documents",
+                        args={"query": "climate", "top_k": 50},
+                    )
+                ]
+            )
+        return ModelResponse(parts=[TextPart(CANNED_ANALYSIS_JSON)])
+
+    agent = build_agent(config, model=FunctionModel(tool_calling_model))
+    result = agent.run_sync("climate?", deps=retriever)
+    assert isinstance(result.output, AnalysisResult)
+    assert seen and all(k == 10 for k in seen)

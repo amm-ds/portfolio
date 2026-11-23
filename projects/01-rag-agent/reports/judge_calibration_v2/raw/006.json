@@ -1,0 +1,19 @@
+{
+  "index": 6,
+  "chunk_id": "photosynthesis-042#c005",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 410,
+    "output_tokens": 84,
+    "reasoning_tokens": 40
+  },
+  "cost_usd_est": "0.000746",
+  "cumulative_usd_est": "0.005030",
+  "latency_s": 2.99,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says fluorescence measures the efficiency, not the accuracy, of PSII photochemistry.\"}",
+  "label": "unsupported",
+  "reason": "Passage says fluorescence measures the efficiency, not the accuracy, of PSII photochemistry."
+}

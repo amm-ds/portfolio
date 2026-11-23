@@ -1,0 +1,19 @@
+{
+  "index": 77,
+  "chunk_id": "machine-learning-121#c009",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 405,
+    "output_tokens": 54,
+    "reasoning_tokens": 16
+  },
+  "cost_usd_est": "0.000621",
+  "cumulative_usd_est": "0.052913",
+  "latency_s": 2.52,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states feasible means polynomial time, not exponential time.\"}",
+  "label": "unsupported",
+  "reason": "Passage states feasible means polynomial time, not exponential time."
+}

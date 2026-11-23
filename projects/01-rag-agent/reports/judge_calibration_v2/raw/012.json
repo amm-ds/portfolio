@@ -1,0 +1,19 @@
+{
+  "index": 12,
+  "chunk_id": "photosynthesis-057#c003",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 535,
+    "output_tokens": 66,
+    "reasoning_tokens": 19
+  },
+  "cost_usd_est": "0.000799",
+  "cumulative_usd_est": "0.009552",
+  "latency_s": 3.03,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says the first free oxygen is 'sometimes' called the oxygen catastrophe, not 'always'.\"}",
+  "label": "unsupported",
+  "reason": "Passage says the first free oxygen is 'sometimes' called the oxygen catastrophe, not 'always'."
+}

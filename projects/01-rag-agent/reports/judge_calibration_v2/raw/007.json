@@ -1,0 +1,19 @@
+{
+  "index": 7,
+  "chunk_id": "renewable-energy-055#c010",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 416,
+    "output_tokens": 66,
+    "reasoning_tokens": 23
+  },
+  "cost_usd_est": "0.000680",
+  "cumulative_usd_est": "0.005710",
+  "latency_s": 2.99,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states that about 80 per cent of EU citizens support wind power.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states that about 80 per cent of EU citizens support wind power."
+}

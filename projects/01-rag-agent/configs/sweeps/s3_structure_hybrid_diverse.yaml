@@ -1,0 +1,15 @@
+# SOTA ladder S3: S2 + per-article diversity cap (max 2 chunks per article in
+# the top-k, score-order backfill).
+name: s3_structure_hybrid_diverse
+chunk_size: 200
+chunk_overlap: 40
+chunk_mode: structure
+embedding_model: sentence-transformers/all-MiniLM-L6-v2
+embedding_kind: local
+reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2
+top_k: 3
+measure_k: 5
+rerank_multiplier: 6
+fusion_rrf: true
+rrf_pool_size: 50
+max_per_article: 2

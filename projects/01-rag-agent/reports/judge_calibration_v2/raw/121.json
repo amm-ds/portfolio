@@ -1,0 +1,19 @@
+{
+  "index": 121,
+  "chunk_id": "aviation-011#c006",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 488,
+    "output_tokens": 78,
+    "reasoning_tokens": 30
+  },
+  "cost_usd_est": "0.000800",
+  "cumulative_usd_est": "0.080402",
+  "latency_s": 2.11,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage states R101 crashed in 1930 and used the Beardmore Tornado aero diesel engine.\"}",
+  "label": "supported",
+  "reason": "Passage states R101 crashed in 1930 and used the Beardmore Tornado aero diesel engine."
+}

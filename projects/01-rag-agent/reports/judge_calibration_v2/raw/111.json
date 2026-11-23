@@ -1,0 +1,19 @@
+{
+  "index": 111,
+  "chunk_id": "climate-032#c011",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 387,
+    "output_tokens": 58,
+    "reasoning_tokens": 18
+  },
+  "cost_usd_est": "0.000440",
+  "cumulative_usd_est": "0.074453",
+  "latency_s": 3.45,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"The passage states global emissions rose 39%, not 45%.\"}",
+  "label": "unsupported",
+  "reason": "The passage states global emissions rose 39%, not 45%."
+}

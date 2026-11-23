@@ -1,0 +1,19 @@
+{
+  "index": 49,
+  "chunk_id": "photosynthesis-000#c000",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 436,
+    "output_tokens": 62,
+    "reasoning_tokens": 17
+  },
+  "cost_usd_est": "0.000684",
+  "cumulative_usd_est": "0.033933",
+  "latency_s": 2.17,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states algae is an informal term, contradicting the claim of 'formal term'\"}",
+  "label": "unsupported",
+  "reason": "Passage states algae is an informal term, contradicting the claim of 'formal term'"
+}

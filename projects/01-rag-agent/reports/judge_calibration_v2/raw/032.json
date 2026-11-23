@@ -1,0 +1,19 @@
+{
+  "index": 32,
+  "chunk_id": "climate-003#c008",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 315,
+    "output_tokens": 156,
+    "reasoning_tokens": 105
+  },
+  "cost_usd_est": "0.000760",
+  "cumulative_usd_est": "0.022763",
+  "latency_s": 5.28,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says insurance and livelihood diversification increase resilience, not diminish it; 'diminish resilience' directly contradicts the evidence.\"}",
+  "label": "unsupported",
+  "reason": "Passage says insurance and livelihood diversification increase resilience, not diminish it; 'diminish resilience' directly contradicts the evidence."
+}

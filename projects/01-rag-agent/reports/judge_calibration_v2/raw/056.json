@@ -1,0 +1,19 @@
+{
+  "index": 56,
+  "chunk_id": "aviation-000#c009",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 318,
+    "output_tokens": 54,
+    "reasoning_tokens": 8
+  },
+  "cost_usd_est": "0.000534",
+  "cumulative_usd_est": "0.038684",
+  "latency_s": 2.35,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states compound rotorcraft are nowadays classified as powered lift types and not as rotorcraft.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states compound rotorcraft are nowadays classified as powered lift types and not as rotorcraft."
+}

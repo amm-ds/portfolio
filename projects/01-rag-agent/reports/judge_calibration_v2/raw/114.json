@@ -1,0 +1,19 @@
+{
+  "index": 114,
+  "chunk_id": "climate-011#c013",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 443,
+    "output_tokens": 80,
+    "reasoning_tokens": 29
+  },
+  "cost_usd_est": "0.000763",
+  "cumulative_usd_est": "0.076112",
+  "latency_s": 2.91,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states the reduction was observed from 1961 to 1990, not 1970 to 2000.\"}",
+  "label": "unsupported",
+  "reason": "Passage states the reduction was observed from 1961 to 1990, not 1970 to 2000."
+}

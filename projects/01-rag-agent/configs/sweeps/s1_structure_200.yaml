@@ -1,0 +1,14 @@
+# SOTA ladder S1: structure-aware chunking at the production size (200/40),
+# dense MiniLM + ms-marco rerank, no fusion, no diversity cap.
+name: s1_structure_200
+chunk_size: 200
+chunk_overlap: 40
+chunk_mode: structure
+embedding_model: sentence-transformers/all-MiniLM-L6-v2
+embedding_kind: local
+reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2
+top_k: 3
+measure_k: 5
+rerank_multiplier: 5
+fusion_rrf: false
+rrf_pool_size: 50

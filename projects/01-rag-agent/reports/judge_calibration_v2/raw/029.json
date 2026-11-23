@@ -1,0 +1,19 @@
+{
+  "index": 29,
+  "chunk_id": "climate-048#c005",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 319,
+    "output_tokens": 58,
+    "reasoning_tokens": 18
+  },
+  "cost_usd_est": "0.000551",
+  "cumulative_usd_est": "0.020702",
+  "latency_s": 3.01,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states ski races on the Fourth of July, not August.\"}",
+  "label": "unsupported",
+  "reason": "Passage states ski races on the Fourth of July, not August."
+}

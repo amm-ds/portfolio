@@ -1,0 +1,19 @@
+{
+  "index": 88,
+  "chunk_id": "machine-learning-121#c009",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 405,
+    "output_tokens": 48,
+    "reasoning_tokens": 10
+  },
+  "cost_usd_est": "0.000418",
+  "cumulative_usd_est": "0.060046",
+  "latency_s": 1.66,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states this feasibility criterion for computational learning theory.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states this feasibility criterion for computational learning theory."
+}

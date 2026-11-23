@@ -1,0 +1,19 @@
+{
+  "index": 47,
+  "chunk_id": "aviation-059#c008",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 311,
+    "output_tokens": 59,
+    "reasoning_tokens": 13
+  },
+  "cost_usd_est": "0.000368",
+  "cumulative_usd_est": "0.032691",
+  "latency_s": 2.72,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states the 717 is the last commercial airplane produced at Boeing's Long Beach facility.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states the 717 is the last commercial airplane produced at Boeing's Long Beach facility."
+}

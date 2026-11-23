@@ -2,6 +2,7 @@
 
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
@@ -100,3 +101,47 @@ def test_embed_fn_shape_mismatch_raises_loudly(config: RAGConfig, index_dir: Pat
     retriever = Retriever.from_index_dir(config, index_dir, bad_shape_embed)
     with pytest.raises(EmbeddingModelError, match="shape"):
         retriever.search("query")
+
+
+def test_chunk_articles_structure_mode_prefixes_title(articles: list[Article]) -> None:
+    chunks = chunk_articles(articles, size=50, overlap=10, chunk_mode="structure")
+    plain = chunk_articles(articles, size=50, overlap=10, chunk_mode="size")
+    assert len(chunks) == len(plain)
+    for chunk, plain_chunk in zip(chunks, plain, strict=True):
+        assert chunk.chunk_id == plain_chunk.chunk_id
+        assert chunk.text.startswith(f"{chunk.title}\n\n")
+        body = chunk.text.removeprefix(f"{chunk.title}\n\n")
+        assert len(body.split()) <= 50
+
+
+def _retriever_with(
+    config: RAGConfig, index_dir: Path, embed_fn: EmbedFn, **updates: Any
+) -> Retriever:
+    cfg = config.model_copy(update=updates)
+    return Retriever.from_index_dir(cfg, index_dir, embed_fn, None)
+
+
+def test_search_fusion_rrf_combines_dense_and_bm25(
+    config: RAGConfig, index_dir: Path, embed_fn: EmbedFn
+) -> None:
+    retriever = _retriever_with(config, index_dir, embed_fn, fusion_rrf=True, rrf_pool_size=10)
+    assert retriever._bm25 is None  # lazy
+    citations = retriever.search("climate aviation", top_k=4)
+    assert retriever._bm25 is not None  # built on first fused search
+    assert 0 < len(citations) <= 4
+    assert all(isinstance(c, Citation) for c in citations)
+    assert all(retriever.get_chunk(c.chunk_id) is not None for c in citations)
+
+
+def test_search_max_per_article_caps_with_backfill(
+    config: RAGConfig, index_dir: Path, embed_fn: EmbedFn
+) -> None:
+    retriever = _retriever_with(config, index_dir, embed_fn, max_per_article=2)
+    citations = retriever.search("climate", top_k=5)
+    assert len(citations) == 5  # backfill reaches the requested depth
+    counts: dict[str, int] = {}
+    for citation in citations:
+        chunk = retriever.get_chunk(citation.chunk_id)
+        assert chunk is not None
+        counts[chunk.article_id] = counts.get(chunk.article_id, 0) + 1
+    assert all(n <= 2 for n in counts.values())

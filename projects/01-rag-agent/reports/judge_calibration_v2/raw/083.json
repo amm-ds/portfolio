@@ -1,0 +1,19 @@
+{
+  "index": 83,
+  "chunk_id": "renewable-energy-050#c006",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 463,
+    "output_tokens": 58,
+    "reasoning_tokens": 18
+  },
+  "cost_usd_est": "0.000695",
+  "cumulative_usd_est": "0.057328",
+  "latency_s": 2.14,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states PTU is 15 minutes, not 30.\"}",
+  "label": "unsupported",
+  "reason": "Passage states PTU is 15 minutes, not 30."
+}

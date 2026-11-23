@@ -1,0 +1,19 @@
+{
+  "index": 94,
+  "chunk_id": "machine-learning-040#c006",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 464,
+    "output_tokens": 70,
+    "reasoning_tokens": 34
+  },
+  "cost_usd_est": "0.000565",
+  "cumulative_usd_est": "0.063643",
+  "latency_s": 2.86,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says individualized pricing, not uniform pricing.\"}",
+  "label": "unsupported",
+  "reason": "Passage says individualized pricing, not uniform pricing."
+}

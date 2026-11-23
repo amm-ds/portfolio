@@ -1,0 +1,19 @@
+{
+  "index": 57,
+  "chunk_id": "aviation-000#c011",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 296,
+    "output_tokens": 46,
+    "reasoning_tokens": 12
+  },
+  "cost_usd_est": "0.000301",
+  "cumulative_usd_est": "0.038985",
+  "latency_s": 2.48,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says rotating cylinder, not stationary\"}",
+  "label": "unsupported",
+  "reason": "Passage says rotating cylinder, not stationary"
+}

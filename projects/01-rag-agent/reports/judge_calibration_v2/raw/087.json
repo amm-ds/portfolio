@@ -1,0 +1,19 @@
+{
+  "index": 87,
+  "chunk_id": "machine-learning-040#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 372,
+    "output_tokens": 93,
+    "reasoning_tokens": 52
+  },
+  "cost_usd_est": "0.000565",
+  "cumulative_usd_est": "0.059628",
+  "latency_s": 3.51,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"unsupported\",\"reason\":\"Passage states facial recognition has a 99% accuracy rate, not 95%.\"}",
+  "label": "unsupported",
+  "reason": "Passage states facial recognition has a 99% accuracy rate, not 95%."
+}

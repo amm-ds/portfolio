@@ -97,6 +97,9 @@ class SweepConfig:
     top_k: int = 3  # production serving slice (params.yaml retrieval_best)
     measure_k: int = MEASURE_K
     rerank_multiplier: int = 5
+    fusion_rrf: bool = False
+    rrf_pool_size: int = 50
+    max_per_article: int | None = None
     name: str = "baseline"
 
     def candidates(self) -> int:
@@ -120,7 +123,9 @@ def parse_args(argv: list[str] | None = None) -> tuple[str, Path | None]:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--split", required=True, choices=["dev_v1", "dev_40", "dev_65", "final_v3"]
+        "--split",
+        required=True,
+        choices=["dev_v1", "dev_40", "dev_65", "heldout_55", "final_v3"],
     )
     parser.add_argument("--config", type=Path, default=None, help="sweep config yaml")
     args = parser.parse_args(argv)
@@ -302,7 +307,14 @@ def make_reranker(cfg: SweepConfig) -> Any:
 
 
 def assemble_retriever(cfg: SweepConfig, index: Any, chunks: list[ChunkRecord]) -> Retriever:
-    rag_config = load_config()
+    rag_config = load_config().model_copy(
+        update={
+            "chunk_mode": cfg.chunk_mode,
+            "fusion_rrf": cfg.fusion_rrf,
+            "rrf_pool_size": cfg.rrf_pool_size,
+            "max_per_article": cfg.max_per_article,
+        }
+    )
     retriever = Retriever(
         rag_config,
         index,
@@ -397,6 +409,29 @@ def load_items(split: str, articles: list[Any]) -> tuple[list[Item], str, str]:
         ]
         return items, sha256_file(path), "golden_final_v3.json (exact gold_chunk_ids)"
 
+    if split == "heldout_55":
+        path = ROOT / "data" / "golden_heldout.json"
+        raw = json.loads(path.read_text("utf-8"))
+        items = []
+        for r in raw:
+            titles = r.get("relevant_titles") or []
+            resolved = {title_to_id[t] for t in titles if t in title_to_id}
+            if r.get("expected_behavior", "answer") == "answer" and not resolved:
+                raise SystemExit(
+                    f"heldout question has no resolvable gold titles: {r['question']!r}"
+                )
+            items.append(
+                Item(
+                    question=r["question"],
+                    category=r.get("category", "single_hop"),
+                    behavior=r.get("expected_behavior", "answer"),
+                    gold_article_ids=resolved,
+                    gold_chunk_ids=set(r.get("gold_chunk_ids", [])),
+                    absent_terms=list(r.get("absent_terms", [])),
+                )
+            )
+        return items, sha256_file(path), "golden_heldout.json (article-level gold)"
+
     tuning = load_tuning()
     ids, note = select_dev_ids(tuning, split)
     items = []
@@ -472,6 +507,10 @@ def measure(retriever: Retriever, items: list[Item], cfg: SweepConfig) -> dict[s
                 total += chunk.token_count
         return total
 
+    hop_all: list[int] = []  # all gold articles retrieved in top-5 (0/1)
+    hop_cov: list[float] = []  # fraction of gold articles covered
+    hop_chunk_cov: list[float] = []  # fraction of exact gold chunks covered
+
     for item in answerable:
         citations = retriever.search(item.question, top_k=cfg.measure_k)
         ranked = [c.chunk_id for c in citations]
@@ -481,9 +520,36 @@ def measure(retriever: Retriever, items: list[Item], cfg: SweepConfig) -> dict[s
         ranks.append(rank)
         tokens5.append(token_total(ranked))
         tokens3.append(token_total(ranked[: cfg.top_k]))
-        slice_ = slices.setdefault(item.category, {"n": 0, "hits5": 0, "ranks": []})
+
+        articles_top5 = {
+            c.article_id for cid in ranked[:5] if (c := retriever.get_chunk(cid)) is not None
+        }
+        all5 = 1 if item.gold_article_ids and item.gold_article_ids <= articles_top5 else 0
+        cov = (
+            len(articles_top5 & item.gold_article_ids) / max(1, len(item.gold_article_ids))
+            if item.gold_article_ids
+            else 0.0
+        )
+        chunk_cov = (
+            len(set(ranked[:5]) & item.gold_chunk_ids) / len(item.gold_chunk_ids)
+            if item.gold_chunk_ids
+            else None
+        )
+        hop_all.append(all5)
+        hop_cov.append(cov)
+        if chunk_cov is not None:
+            hop_chunk_cov.append(chunk_cov)
+
+        slice_ = slices.setdefault(
+            item.category,
+            {"n": 0, "hits5": 0, "ranks": [], "all5": [], "cov": [], "chunk_cov": []},
+        )
         slice_["n"] += 1
         slice_["ranks"].append(rank)
+        slice_["all5"].append(all5)
+        slice_["cov"].append(cov)
+        if chunk_cov is not None:
+            slice_["chunk_cov"].append(chunk_cov)
         if rank is not None and rank <= 5:
             slice_["hits5"] += 1
 
@@ -504,6 +570,11 @@ def measure(retriever: Retriever, items: list[Item], cfg: SweepConfig) -> dict[s
         "recall_at_5": hits5 / n if n else 0.0,
         "recall_at_5_wilson95": list(wilson(hits5, n)),
         "mrr_at_5": mrr,
+        "all_articles_at_5": sum(hop_all) / n if n else 0.0,
+        "article_coverage_at_5": sum(hop_cov) / n if n else 0.0,
+        "gold_chunk_coverage_at_5": (
+            sum(hop_chunk_cov) / len(hop_chunk_cov) if hop_chunk_cov else None
+        ),
         "mean_context_tokens_top3": sum(tokens3) / n if n else 0.0,
         "mean_context_tokens_top5": sum(tokens5) / n if n else 0.0,
         "slices": {
@@ -512,6 +583,11 @@ def measure(retriever: Retriever, items: list[Item], cfg: SweepConfig) -> dict[s
                 "recall_at_5": s["hits5"] / s["n"] if s["n"] else 0.0,
                 "mrr_at_5": (
                     sum(1.0 / r for r in s["ranks"] if r is not None) / s["n"] if s["n"] else 0.0
+                ),
+                "all_articles_at_5": sum(s["all5"]) / s["n"] if s["n"] else 0.0,
+                "article_coverage_at_5": sum(s["cov"]) / s["n"] if s["n"] else 0.0,
+                "gold_chunk_coverage_at_5": (
+                    sum(s["chunk_cov"]) / len(s["chunk_cov"]) if s["chunk_cov"] else None
                 ),
             }
             for name, s in sorted(slices.items())
@@ -627,6 +703,9 @@ def main() -> int:
             "recall_at_5": metrics["recall_at_5"],
             "recall_at_5_wilson95": metrics["recall_at_5_wilson95"],
             "mrr_at_5": metrics["mrr_at_5"],
+            "all_articles_at_5": metrics["all_articles_at_5"],
+            "article_coverage_at_5": metrics["article_coverage_at_5"],
+            "gold_chunk_coverage_at_5": metrics["gold_chunk_coverage_at_5"],
             "mean_context_tokens_top3": metrics["mean_context_tokens_top3"],
             "mean_context_tokens_top5": metrics["mean_context_tokens_top5"],
             "report_path": str(out.relative_to(ROOT)),
@@ -635,11 +714,12 @@ def main() -> int:
         }
     )
     logger.info(
-        "%s/%s recall@5 %.4f MRR@5 %.4f (n=%d) hosts=%s",
+        "%s/%s recall@5 %.4f MRR@5 %.4f all-articles@5 %.4f (n=%d) hosts=%s",
         cfg.name,
         split,
         metrics["recall_at_5"],
         metrics["mrr_at_5"],
+        metrics["all_articles_at_5"],
         metrics["n_answerable"],
         hosts,
     )

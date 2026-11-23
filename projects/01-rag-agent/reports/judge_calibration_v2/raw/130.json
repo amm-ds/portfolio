@@ -1,0 +1,19 @@
+{
+  "index": 130,
+  "chunk_id": "aviation-122#c010",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 386,
+    "output_tokens": 93,
+    "reasoning_tokens": 54
+  },
+  "cost_usd_est": "0.000579",
+  "cumulative_usd_est": "0.086132",
+  "latency_s": 3.76,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says a long inner-tube box, not short.\"}",
+  "label": "unsupported",
+  "reason": "Passage says a long inner-tube box, not short."
+}

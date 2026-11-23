@@ -1,0 +1,19 @@
+{
+  "index": 115,
+  "chunk_id": "climate-003#c007",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 294,
+    "output_tokens": 119,
+    "reasoning_tokens": 74
+  },
+  "cost_usd_est": "0.000591",
+  "cumulative_usd_est": "0.076703",
+  "latency_s": 4.05,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states green garden spaces can reduce heat stress and food insecurity for low-income neighbourhoods.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states green garden spaces can reduce heat stress and food insecurity for low-income neighbourhoods."
+}

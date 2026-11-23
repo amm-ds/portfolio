@@ -1,0 +1,19 @@
+{
+  "index": 76,
+  "chunk_id": "machine-learning-075#c001",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 445,
+    "output_tokens": 63,
+    "reasoning_tokens": 21
+  },
+  "cost_usd_est": "0.000697",
+  "cumulative_usd_est": "0.052292",
+  "latency_s": 2.73,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says 'approximate dynamic programming,' not 'computational dynamic programming.'\"}",
+  "label": "unsupported",
+  "reason": "Passage says 'approximate dynamic programming,' not 'computational dynamic programming.'"
+}

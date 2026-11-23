@@ -1,0 +1,19 @@
+{
+  "index": 141,
+  "chunk_id": "aviation-004#c005",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 445,
+    "output_tokens": 70,
+    "reasoning_tokens": 27
+  },
+  "cost_usd_est": "0.000546",
+  "cumulative_usd_est": "0.091908",
+  "latency_s": 2.77,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage states hobbyists travel long distances to view remains of aircraft withdrawn from use.\"}",
+  "label": "supported",
+  "reason": "Passage states hobbyists travel long distances to view remains of aircraft withdrawn from use."
+}

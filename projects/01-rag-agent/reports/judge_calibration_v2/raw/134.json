@@ -1,0 +1,19 @@
+{
+  "index": 134,
+  "chunk_id": "climate-003#c003",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 498,
+    "output_tokens": 67,
+    "reasoning_tokens": 6
+  },
+  "cost_usd_est": "0.000587",
+  "cumulative_usd_est": "0.088229",
+  "latency_s": 2.6,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage states exactly: 'As of 2022, the level of warming is 1.2°C (2.2°F) above levels before the industrial revolution.'\"}",
+  "label": "supported",
+  "reason": "Passage states exactly: 'As of 2022, the level of warming is 1.2°C (2.2°F) above levels before the industrial revolution.'"
+}

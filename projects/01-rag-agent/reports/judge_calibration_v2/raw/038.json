@@ -1,0 +1,19 @@
+{
+  "index": 38,
+  "chunk_id": "renewable-energy-025#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 450,
+    "output_tokens": 113,
+    "reasoning_tokens": 68
+  },
+  "cost_usd_est": "0.000902",
+  "cumulative_usd_est": "0.026924",
+  "latency_s": 4.01,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states Japan passed its Basic Space Law in 2008, not 2012.\"}",
+  "label": "unsupported",
+  "reason": "Passage states Japan passed its Basic Space Law in 2008, not 2012."
+}

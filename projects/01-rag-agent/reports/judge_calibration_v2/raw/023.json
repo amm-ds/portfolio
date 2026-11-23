@@ -1,0 +1,19 @@
+{
+  "index": 23,
+  "chunk_id": "machine-learning-121#c003",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 336,
+    "output_tokens": 51,
+    "reasoning_tokens": 10
+  },
+  "cost_usd_est": "0.000540",
+  "cumulative_usd_est": "0.016840",
+  "latency_s": 2.2,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states machine learning grew out of the quest for artificial intelligence.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states machine learning grew out of the quest for artificial intelligence."
+}

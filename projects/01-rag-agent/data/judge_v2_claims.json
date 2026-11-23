@@ -1,0 +1,884 @@
+[
+  {
+    "claim": "The goal of a reinforcement learning agent is to learn a policy that minimizes the expected cumulative reward.",
+    "chunk_id": "machine-learning-075#c002",
+    "chunk_text": "The purpose of reinforcement learning is for the agent to learn an optimal, or nearly-optimal, policy that maximizes the \"reward function\" or other user-provided reinforcement signal that accumulates from the immediate rewards. This is similar to processes that appear to occur in animal psychology. For example, biological brains are hardwired to interpret signals such as pain and hunger as negative reinforcements, and interpret pleasure and food intake as positive reinforcements. In some circumstances, animals can learn to engage in behaviors that optimize these rewards. This suggests that animals are capable of reinforcement learning.\n\nA basic reinforcement learning agent AI interacts with its environment in discrete time steps. At each time , the agent receives the current state  and reward . It then chooses an action  from the set of available actions, which is subsequently sent to the environment. The environment moves to a new state  and the reward  associated with the transition  is determined. The goal of a reinforcement learning agent is to learn a policy: ,  that maximizes the expected cumulative reward.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Shop mechanic Charles Taylor built the Wright brothers' first airplane engine in close collaboration with them.",
+    "chunk_id": "aviation-122#c002",
+    "chunk_text": "The brothers gained the mechanical skills essential to their success by working for years in their Dayton, Ohio-based shop with printing presses, bicycles, motors, and other machinery. Their work with bicycles, in particular, influenced their belief that an unstable vehicle such as a flying machine could be controlled and balanced with practice. This was a trend, as many other aviation pioneers were also dedicated cyclists and involved in the bicycle business in various ways. From 1900 until their first powered flights in late 1903, the brothers conducted extensive glider tests that also developed their skills as pilots. Their shop mechanic Charles Taylor became an important part of the team, building their first airplane engine in close collaboration with the brothers.\n\nThe Wright brothers' status as inventors of the airplane has been subject to counter-claims by various parties. Much controversy persists over the many competing claims of early aviators. Edward Roach, historian for the Dayton Aviation Heritage National Historical Park, argues that they were excellent self-taught engineers who could run a small company, but they did not have the business skills or temperament to dominate the growing aviation industry.\n\nChildhood",
+    "kind": "supported"
+  },
+  {
+    "claim": "Most researchers agree that deep learning involves CAP depth higher than 3.",
+    "chunk_id": "machine-learning-080#c003",
+    "chunk_text": "The word \"deep\" in \"deep learning\" refers to the number of layers through which the data is transformed. More precisely, deep learning systems have a substantial credit assignment path (CAP) depth. The CAP is the chain of transformations from input to output. CAPs describe potentially causal connections between input and output. For a feedforward neural network, the depth of the CAPs is that of the network and is the number of hidden layers plus one (as the output layer is also parameterized). For recurrent neural networks, in which a signal may propagate through a layer more than once, the CAP depth is potentially unlimited. No universally agreed-upon threshold of depth divides shallow learning from deep learning, but most researchers agree that deep learning involves CAP depth higher than 2. CAP of depth 2 has been shown to be a universal approximator in the sense that it can emulate any function. Beyond that, more layers do not add to the function approximator ability of the network. Deep models (CAP > 2) are able to extract better features than shallow models and hence, extra layers help in learning the features effectively.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Marine mollusks Elysia viridis and Elysia chlorotica survive solely by photosynthesis for several months at a time.",
+    "chunk_id": "photosynthesis-057#c005",
+    "chunk_text": "Timeline of photosynthesis on Earth\n\nSymbiosis and the origin of chloroplasts\n\nSeveral groups of animals have formed symbiotic relationships with photosynthetic algae. These are most common in corals, sponges and sea anemones. It is presumed that this is due to the particularly simple body plans and large surface areas of these animals compared to their volumes. In addition, a few marine mollusks Elysia viridis and Elysia chlorotica also maintain a symbiotic relationship with chloroplasts they capture from the algae in their diet and then store in their bodies. This allows the mollusks to survive solely by photosynthesis for several months at a time. Some of the genes from the plant cell nucleus have even been transferred to the slugs, so that the chloroplasts can be supplied with proteins that they need to survive.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Amplified warming in the Arctic has contributed to melting permafrost, glacial retreat, and sea ice loss.",
+    "chunk_id": "climate-011#c001",
+    "chunk_text": "Climate change is causing a range of increasing impacts on the environment. Deserts are expanding, while heat waves and wildfires are becoming more common. Amplified warming in the Arctic has contributed to melting permafrost, glacial retreat and sea ice loss. Higher temperatures are also causing more intense storms, droughts, and other weather extremes. Rapid environmental change in mountains, coral reefs, and the Arctic is forcing many species to relocate or become extinct. Even if efforts to minimise future warming are successful, some effects will continue for centuries. These include ocean heating, ocean acidification and sea level rise.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Human-induced surface-level air warming by 2010–2019 compared to levels in 1850–1900 has a best estimate of 1.15°C.",
+    "chunk_id": "climate-000#c000",
+    "chunk_text": "Efforts to scientifically ascertain and attribute mechanisms responsible for recent global warming and related climate changes on Earth have found that the main driver is elevated levels of greenhouse gases produced by human activities, with natural forces adding variability. The likely range of human-induced surface-level air warming by 2010–2019 compared to levels in 1850–1900 is 0.8 °C to 1.3 °C, with a best estimate of 1.07 °C.  This is close to the observed overall warming during that time of 0.9 °C to 1.2 °C, while temperature changes during that time were likely only ±0.1 °C due to natural forcings and ±0.2 °C due to variability in the climate.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Chlorophyll fluorescence can measure the accuracy of PSII photochemistry.",
+    "chunk_id": "photosynthesis-042#c005",
+    "chunk_text": "Whilst  gives an estimation of the efficiency,  and  tell us which processes which have altered the efficiency. Closure of reaction centers as a result of a high intensity light will alter the value of . Changes in the efficiency of non-photochemical quenching will alter the ratio .\n\nApplications of the Theory\n\nPSII yield as a measure of photosynthesis \nChlorophyll fluorescence appears to be a measure of photosynthesis, but this is an over-simplification. Fluorescence can measure the efficiency of PSII photochemistry, which can be used to estimate the rate of linear electron transport by multiplying by the light intensity. However, researchers generally mean carbon fixation when they refer to photosynthesis. Electron transport and CO2 fixation can correlate well, but may not correlate in the field due to processes such as photorespiration, nitrogen metabolism and the Mehler reaction.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "About 80 per cent of EU citizens support wind power.",
+    "chunk_id": "renewable-energy-055#c010",
+    "chunk_text": "Public opinion\nRecent public opinion surveys about wind power at both the EU and the country level shows that wind energy, being a clean and renewable energy source, is traditionally linked to very strong and stable levels of public support. About 80 per cent of EU citizens support wind power. Despite overwhelming popular support in the abstract, wind farm projects at times raise local opposition, especially in locations closer to populations or to woodland wildlife. For instance, a wind project in Ripfjallet, Sweden in 2020 has been opposed by a group of local residents who wish to maintain the historical landscape. They succeeded in arranging a local referendum scheduled for 22 June 2020 to determine the future of the project. In Germany, a government agency found that there were 325 active lawsuits against wind projects as of January 2020, often on the basis of protecting ecology and wildlife.\n\nStatistics\n\nInstalled wind power capacity",
+    "kind": "supported"
+  },
+  {
+    "claim": "Kelps, a type of brown algae, may reach 30 m in length.",
+    "chunk_id": "photosynthesis-000#c010",
+    "chunk_text": "In three lines, even higher levels of organization have been reached, with full tissue differentiation. These are the brown algae,—some of which may reach 50 m in length (kelps)—the red algae, and the green algae. The most complex forms are found among the charophyte algae (see Charales and Charophyta), in a lineage that eventually led to the higher land plants. The innovation that defines these nonalgal plants is the presence of female reproductive organs with protective cell layers that protect the zygote and developing embryo. Hence, the land plants are referred to as the Embryophytes.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "By the beginning of March 2022, the UK had 11,091 wind turbines and over 30 GW capacity.",
+    "chunk_id": "renewable-energy-055#c007",
+    "chunk_text": "Wind power generates about 10% of Turkey's electricity, mainly in the west in the Aegean and Marmara regions, and is gradually becoming a larger share of renewable energy in the country. , Turkey has 11 gigawatts (GW) of wind turbines. The Energy Ministry plans to have almost 30 GW by 2035.\n\nUnited Kingdom\n\nBy the beginning of March 2022, the UK had 11,091 wind turbines with a total installed capacity of over 24.6gigawatts (GW): 14.1GW of onshore capacity and 10.4GW of offshore capacity, the sixth largest capacity of any country in 2019.\n\n1.8 GW of new wind power capacity was brought online during 2012, a 30% increase of the total UK installed capacity. 2012 was a significant year for the offshore wind industry with 4 large wind farms becoming operational with over 1.1 GW of generating capability coming on stream.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Wilbur discovered wing-warping by twisting a long inner-tube box at a bicycle shop.",
+    "chunk_id": "aviation-122#c010",
+    "chunk_text": "On the basis of observation, Wilbur concluded that birds changed the angle of the ends of their wings to make their bodies roll right or left. The brothers decided this would also be a good way for a flying machine to turn – to \"bank\" or \"lean\" into the turn just like a bird – and just like a person riding a bicycle, an experience with which they were thoroughly familiar. Equally important, they hoped this method would enable recovery when the wind tilted the machine to one side (lateral balance). They puzzled over how to achieve the same effect with man-made wings and eventually discovered wing-warping when Wilbur idly twisted a long inner-tube box at the bicycle shop.",
+    "kind": "supported"
+  },
+  {
+    "claim": "C4 alone arose 62 times in 18 different plant families.",
+    "chunk_id": "photosynthesis-057#c010",
+    "chunk_text": "These two pathways, with the same effect on RuBisCO, evolved a number of times independently – indeed, C4 alone arose 62 times in 18 different plant families.  A number of 'pre-adaptations' seem to have paved the way for C4, leading to its clustering in certain clades: it has most frequently developed in plants that already had features such as extensive vascular bundle sheath tissue. Whole-genome and individual gene duplication are also associated with C4 evolution. Many potential evolutionary pathways resulting in the  phenotype are possible and have been characterised using Bayesian inference, confirming that non-photosynthetic adaptations often provide evolutionary stepping stones for the further evolution of .\n\nThe C4 construction is most famously used by a subset of grasses, while CAM is employed by many succulents and cacti. The trait appears to have emerged during the Oligocene, around ; however, they did not become ecologically significant until the Miocene, . Remarkably, some charcoalified fossils preserve tissue organised into the Kranz anatomy, with intact bundle sheath cells, allowing the presence C4 metabolism to be identified without doubt at this time. Isotopic markers are used to deduce their distribution and significance.",
+    "kind": "supported"
+  },
+  {
+    "claim": "The first appearance of free oxygen in the atmosphere is always referred to as the oxygen catastrophe.",
+    "chunk_id": "photosynthesis-057#c003",
+    "chunk_text": "The first oxygenic photosynthetic organisms are proposed to be -dependent. It is also suggested photosynthesis originated under sunlight, using  emitted by volcanoes and hydrothermal vents which ended the need for scarce H2 emitted by alkaline hydrothermal vents. Oxygenic photosynthesis uses water as an electron donor, which is oxidized to molecular oxygen () in the photosynthetic reaction center. The biochemical capacity for oxygenic photosynthesis evolved in a common ancestor of extant cyanobacteria. The first appearance of free oxygen in the atmosphere is sometimes referred to as the oxygen catastrophe. The geological record indicates that this transforming event took place during the Paleoproterozoic era at least 2450–2320 million years ago (Ma), and, it is speculated, much earlier. A clear paleontological window on cyanobacterial evolution opened about 2000 Ma, revealing an already-diverse biota of blue-greens. Cyanobacteria remained principal primary producers throughout the Proterozoic Eon (2500–543 Ma), in part because the redox structure of the oceans favored photoautotrophs capable of nitrogen fixation. Green algae joined blue-greens as major primary producers on continental shelves near the end of the Proterozoic, but only with the Mesozoic (251–65 Ma) radiations of dinoflagellates, coccolithophorids, and diatoms did primary production in marine shelf waters take modern form.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Insurance and livelihood diversification increase resilience and decrease vulnerability.",
+    "chunk_id": "climate-003#c008",
+    "chunk_text": "Ecosystem-based adaptation is one way to reduce vulnerability to climate hazards. For instance, mangroves have the ability to dampen storm energy. So they can help prevent flooding. In this way, protection of the mangrove ecosystem can be a form of adaptation. Insurance and livelihood diversification increase resilience and decrease vulnerability. Other ways to decrease vulnerability include strengthening social protection and building infrastructure more resistant to hazards.\n\nIncrease adaptive capacity",
+    "kind": "supported"
+  },
+  {
+    "claim": "Throughout the 19th century, most classifications treated cyanophytes and chlorophytes as divisions or classes of algae.",
+    "chunk_id": "photosynthesis-000#c007",
+    "chunk_text": "Throughout the 20th century, most classifications treated the following groups as divisions or classes of algae: cyanophytes, rhodophytes, chrysophytes, xanthophytes, bacillariophytes, phaeophytes, pyrrhophytes (cryptophytes and dinophytes), euglenophytes, and chlorophytes. Later, many new groups were discovered (e.g., Bolidophyceae), and others were splintered from older groups: charophytes and glaucophytes (from chlorophytes), many heterokontophytes (e.g., synurophytes from chrysophytes, or eustigmatophytes from xanthophytes), haptophytes (from chrysophytes), and chlorarachniophytes (from xanthophytes).\n\nWith the abandonment of plant-animal dichotomous classification, most groups of algae (sometimes all) were included in Protista, later also abandoned in favour of Eukaryota. However, as a legacy of the older plant life scheme, some groups that were also treated as protozoans in the past still have duplicated classifications (see ambiregnal protists).",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The thermohaline circulation transports heat from the tropics to the polar regions.",
+    "chunk_id": "climate-016#c006",
+    "chunk_text": "More energy reaches the tropics than the polar regions and the subsequent temperature difference drives the global circulation of the atmosphere and oceans. Air rises when it warms, flows polewards and sinks again when it cools, returning to the equator. Due to the conservation of angular momentum, the Earth's rotation diverts the air to the right in the Northern Hemisphere and to the left in the Southern hemisphere, thus forming distinct atmospheric cells. Monsoons, seasonal changes in wind and precipitation that occur mostly in the tropics, form due to the fact that land masses heat up more easily than the ocean. The temperature difference induces a pressure difference between land and ocean, driving a steady wind.\n\nOcean water that has more salt has a higher density and differences in density play an important role in ocean circulation. The thermohaline circulation transports heat from the tropics to the polar regions. Ocean circulation is further driven by the interaction with wind. The salt component also influences the freezing point temperature. Vertical movements can bring up colder water to the surface in a process called upwelling, which cools down the air above.",
+    "kind": "supported"
+  },
+  {
+    "claim": "The Boeing 717 is the first commercial airplane produced at Boeing's facility in Long Beach, California.",
+    "chunk_id": "aviation-059#c008",
+    "chunk_text": "Boeing delivers the last two Boeing 717 airliners produced; the customers receiving them are AirTran Airways and Midwest Airlines. Boeing had manufactured 156 Boeing 717s before ceasing production in April 2006 due to slow sales. The Boeing 717 is the last commercial airplane produced at Boeing's facility in Long Beach, California.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Kelps, a type of brown algae, may reach 50 m in length.",
+    "chunk_id": "photosynthesis-000#c010",
+    "chunk_text": "In three lines, even higher levels of organization have been reached, with full tissue differentiation. These are the brown algae,—some of which may reach 50 m in length (kelps)—the red algae, and the green algae. The most complex forms are found among the charophyte algae (see Charales and Charophyta), in a lineage that eventually led to the higher land plants. The innovation that defines these nonalgal plants is the presence of female reproductive organs with protective cell layers that protect the zygote and developing embryo. Hence, the land plants are referred to as the Embryophytes.",
+    "kind": "supported"
+  },
+  {
+    "claim": "FlightAware and Flightradar24 allow spotters to track and locate specific aircraft from all across the world.",
+    "chunk_id": "aviation-004#c001",
+    "chunk_text": "The development of technology and global resources enabled a revolution in plane-spotting. Point and shoot cameras, DSLRs & walkie talkies significantly changed the hobby. With the help of the internet, websites such as FlightAware and Flightradar24 have made it possible for spotters to track and locate specific aircraft from all across the world. Websites specifically for aircraft, such as airliners.net, and social networking services, such as Twitter, Facebook and Instagram, allow spotters to record their sightings and upload their photos or see pictures of aircraft spotted by other people worldwide.\n\nTechniques",
+    "kind": "supported"
+  },
+  {
+    "claim": "The energy sector typically contributes over 90% of emissions and 25% of all GHG emissions in developed countries.",
+    "chunk_id": "climate-032#c008",
+    "chunk_text": "As production-based emissions accounting is currently favoured in policy terms, its methodology is well established. Emissions are calculated not directly but indirectly from fossil fuel usage and other relevant processes such as industry and agriculture according to 2006 guidelines issued by the IPCC for GHG reporting. The guidelines span numerous methodologies dependent on the level of sophistication (Tiers 1–3 in Table 2). The simplest methodology combines the extent of human activity with a coefficient quantifying the emissions from that activity, known as an ‘emission factor’. For example, to estimate emissions from the energy sector (typically contributing over 90% of  emissions and 75% of all GHG emissions in developed countries) the quantity of fuels combusted is combined with an emission factor - the level of sophistication increasing with the accuracy and complexity of the emission factor. Table 2 outlines how the UK implements these guidelines to estimate some of its emissions-producing activities.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The United States Navy operates 13 large nuclear-powered fleet carriers that carry around 80 fighters each.",
+    "chunk_id": "aviation-002#c003",
+    "chunk_text": "As of , there are 47 active aircraft carriers in the world operated by fourteen navies. The United States Navy has 11 large nuclear-powered fleet carriers—carrying around 80 fighters each—the largest carriers in the world; the total combined deck space is over twice that of all other nations combined. As well as the aircraft carrier fleet, the US Navy has nine amphibious assault ships used primarily for helicopters, although these also each carry up to 20 vertical or short take-off and landing (V/STOL) fighter jets and are similar in size to medium-sized fleet carriers. The United Kingdom, India and China each operate two aircraft carriers. France and Russia each operate a single aircraft carrier with a capacity of 30 to 60 fighters. Italy operates two light V/STOL carriers and Spain operates one V/STOL aircraft-carrying assault ship. Helicopter carriers are operated by Japan (4, two of which are being converted to operate V/STOL fighters), France (3), Australia (2), Egypt (2), South Korea (2), China (3), Thailand (1) and Brazil (1). Future aircraft carriers are under construction or in planning by China, France, India, Russia, South Korea, Turkey, and the US.\n\nTypes of carriers",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Amplified warming in the Arctic has contributed to melting permafrost, glacial advance, and sea ice loss.",
+    "chunk_id": "climate-011#c001",
+    "chunk_text": "Climate change is causing a range of increasing impacts on the environment. Deserts are expanding, while heat waves and wildfires are becoming more common. Amplified warming in the Arctic has contributed to melting permafrost, glacial retreat and sea ice loss. Higher temperatures are also causing more intense storms, droughts, and other weather extremes. Rapid environmental change in mountains, coral reefs, and the Arctic is forcing many species to relocate or become extinct. Even if efforts to minimise future warming are successful, some effects will continue for centuries. These include ocean heating, ocean acidification and sea level rise.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The United States Navy operates 11 large nuclear-powered fleet carriers that carry around 80 fighters each.",
+    "chunk_id": "aviation-002#c003",
+    "chunk_text": "As of , there are 47 active aircraft carriers in the world operated by fourteen navies. The United States Navy has 11 large nuclear-powered fleet carriers—carrying around 80 fighters each—the largest carriers in the world; the total combined deck space is over twice that of all other nations combined. As well as the aircraft carrier fleet, the US Navy has nine amphibious assault ships used primarily for helicopters, although these also each carry up to 20 vertical or short take-off and landing (V/STOL) fighter jets and are similar in size to medium-sized fleet carriers. The United Kingdom, India and China each operate two aircraft carriers. France and Russia each operate a single aircraft carrier with a capacity of 30 to 60 fighters. Italy operates two light V/STOL carriers and Spain operates one V/STOL aircraft-carrying assault ship. Helicopter carriers are operated by Japan (4, two of which are being converted to operate V/STOL fighters), France (3), Australia (2), Egypt (2), South Korea (2), China (3), Thailand (1) and Brazil (1). Future aircraft carriers are under construction or in planning by China, France, India, Russia, South Korea, Turkey, and the US.\n\nTypes of carriers",
+    "kind": "supported"
+  },
+  {
+    "claim": "Machine learning grew out of the quest for artificial intelligence.",
+    "chunk_id": "machine-learning-121#c003",
+    "chunk_text": "As a scientific endeavor, machine learning grew out of the quest for artificial intelligence (AI). In the early days of AI as an academic discipline, some researchers were interested in having machines learn from data. They attempted to approach the problem with various symbolic methods, as well as what were then termed \"neural networks\"; these were mostly perceptrons and other models that were later found to be reinventions of the generalized linear models of statistics. Probabilistic reasoning was also employed, especially in automated medical diagnosis.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Delhi's monsoon season starts in late June and lasts until early October.",
+    "chunk_id": "climate-054#c000",
+    "chunk_text": "The climate of Delhi is an overlap between monsoon-influenced humid subtropical (Köppen climate classification Cwa) and semi-arid (Köppen climate classification BSh), with high variation between summer and winter temperatures and precipitation. Delhi's version of a humid subtropical climate is markedly different from many other humid subtropical cities such as São Paulo, Houston, and Brisbane in that the city features dust storms (something more commonly seen in a desert climate) and wildfire haze (something seen in a Mediterranean climate) due to its semi-arid climate.\n\nSummer starts in early April and peaks in late May or early June, with average temperatures near  although occasional heat waves can result in highs close to  on some days and therefore higher apparent temperature. The monsoon starts in late June and lasts until mid-September, with about  of rain. The average temperatures are around , although they can vary from around  on rainy days to  during dry spells. The monsoons recede in late September, and the post-monsoon season continues till late October, with average temperatures sliding from .",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Livestock production occupies 50% of all land used for agriculture worldwide.",
+    "chunk_id": "climate-000#c008",
+    "chunk_text": "A second reason that climate change has been attributed to land use is that the terrestrial albedo is often altered by use, which leads to radiative forcing. This effect is more significant locally than globally.\n\nLivestock and land use\nWorldwide, livestock production occupies 70% of all land used for agriculture, or 30% of the ice-free land surface of the Earth.\nMore than 18% of anthropogenic greenhouse gas emissions are attributed to livestock and livestock-related activities such as deforestation and increasingly fuel-intensive farming practices. Specific attributions to the livestock sector include:\n 9% of global anthropogenic carbon dioxide emissions\n 35–40% of global anthropogenic methane emissions (chiefly due to enteric fermentation and manure)\n 64% of global anthropogenic nitrous oxide emissions, chiefly due to fertilizer use.\n\nAerosols\nWith virtual certainty, scientific consensus has attributed various forms of climate change, chiefly cooling effects, to aerosols, which are small particles or droplets suspended in the atmosphere.\nKey sources to which anthropogenic aerosols are attributed include:\n\nbiomass burning such as slash-and-burn deforestation. Aerosols produced are primarily black carbon.\n industrial air pollution, which produces soot and airborne sulfates, nitrates, and ammonium\n dust produced by land use effects such as desertification\n\nAttribution of 20th-century climate change",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Facial recognition systems have a 99% accuracy rate.",
+    "chunk_id": "machine-learning-040#c002",
+    "chunk_text": "AI has been used to automatically translate spoken language and textual content, in products such as Microsoft Translator, Google Translate and DeepL Translator. Additionally, research and development are in progress to decode and conduct animal communication.\n\nFacial recognition and image labeling\n\nAI has been used in facial recognition systems, with a 99% accuracy rate. Some examples are Apple's Face ID and Android's Face Unlock, which are used to secure mobile devices.\n\nImage labeling has been used by Google to detect products in photos and to allow people to search based on a photo. Image labeling has also been demonstrated to generate speech to describe images to blind people.  Facebook's DeepFace identifies human faces in digital images.\n\nGames",
+    "kind": "supported"
+  },
+  {
+    "claim": "Emissions slowed since 2015 as a result of the global financial crisis.",
+    "chunk_id": "climate-032#c006",
+    "chunk_text": "Although this may seem the rational choice for consumers when considering local pollutants, consumers are inescapably affected by global pollutants such as GHG, irrespective of where production occurs. Although emissions have slowed since 2007 as a result of the global financial crisis, the longer-term trend of increased emissions is likely to resume.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Machine learning grew out of the quest for robotics.",
+    "chunk_id": "machine-learning-121#c003",
+    "chunk_text": "As a scientific endeavor, machine learning grew out of the quest for artificial intelligence (AI). In the early days of AI as an academic discipline, some researchers were interested in having machines learn from data. They attempted to approach the problem with various symbolic methods, as well as what were then termed \"neural networks\"; these were mostly perceptrons and other models that were later found to be reinventions of the generalized linear models of statistics. Probabilistic reasoning was also employed, especially in automated medical diagnosis.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Annual ski races are held on the Fourth of August in some high mountain areas.",
+    "chunk_id": "climate-048#c005",
+    "chunk_text": "The high mountains, including the Sierra Nevada, the Cascade Range, and the Klamath Mountains, have a mountain climate with snow in winter and mild to moderate heat in summer. Ski resorts at Lake Tahoe, Mammoth Lakes, and Mount Shasta routinely receive over  of snow in a season, and some years, substantially more – leading, for example, to annual ski races on the Fourth of July.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "An ontology is the set of rules, relations, concepts, and properties used by a particular domain of knowledge.",
+    "chunk_id": "machine-learning-000#c002",
+    "chunk_text": "Many of these algorithms are insufficient for solving large reasoning problems because they experience a \"combinatorial explosion\": they became exponentially slower as the problems grew larger.\nEven humans rarely use the step-by-step deduction that early AI research could model. They solve most of their problems using fast, intuitive judgments.\nAccurate and efficient reasoning is an unsolved problem.\n\nKnowledge representation\n\nKnowledge representation and knowledge engineering allow AI programs to answer questions intelligently and make deductions about real-world facts. Formal knowledge representations are used in content-based indexing and retrieval, scene interpretation, clinical decision support, knowledge discovery (mining \"interesting\" and actionable inferences from large databases), and other areas.\n\nA knowledge base is a body of knowledge represented in a form that can be used by a program. An ontology is the set of objects, relations, concepts, and properties used by a particular domain of knowledge. Knowledge bases need to represent things such as:\nobjects, properties, categories and relations between objects;",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Human-induced surface-level air warming by 2010–2019 compared to levels in 1850–1900 has a best estimate of 1.07°C.",
+    "chunk_id": "climate-000#c000",
+    "chunk_text": "Efforts to scientifically ascertain and attribute mechanisms responsible for recent global warming and related climate changes on Earth have found that the main driver is elevated levels of greenhouse gases produced by human activities, with natural forces adding variability. The likely range of human-induced surface-level air warming by 2010–2019 compared to levels in 1850–1900 is 0.8 °C to 1.3 °C, with a best estimate of 1.07 °C.  This is close to the observed overall warming during that time of 0.9 °C to 1.2 °C, while temperature changes during that time were likely only ±0.1 °C due to natural forcings and ±0.2 °C due to variability in the climate.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Insurance and livelihood diversification diminish resilience and decrease vulnerability.",
+    "chunk_id": "climate-003#c008",
+    "chunk_text": "Ecosystem-based adaptation is one way to reduce vulnerability to climate hazards. For instance, mangroves have the ability to dampen storm energy. So they can help prevent flooding. In this way, protection of the mangrove ecosystem can be a form of adaptation. Insurance and livelihood diversification increase resilience and decrease vulnerability. Other ways to decrease vulnerability include strengthening social protection and building infrastructure more resistant to hazards.\n\nIncrease adaptive capacity",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Amplified warming in the Arctic has contributed to melting permafrost, glacial retreat, and sea ice loss.",
+    "chunk_id": "climate-011#c001",
+    "chunk_text": "Climate change is causing a range of increasing impacts on the environment. Deserts are expanding, while heat waves and wildfires are becoming more common. Amplified warming in the Arctic has contributed to melting permafrost, glacial retreat and sea ice loss. Higher temperatures are also causing more intense storms, droughts, and other weather extremes. Rapid environmental change in mountains, coral reefs, and the Arctic is forcing many species to relocate or become extinct. Even if efforts to minimise future warming are successful, some effects will continue for centuries. These include ocean heating, ocean acidification and sea level rise.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Multi-Regional Input-Output models trace products across production cycles to calculate emissions allocated to initial producers.",
+    "chunk_id": "climate-032#c009",
+    "chunk_text": "Consumption-based accounting \nConsumption-based emissions accounting has an equally established methodology using Input-Output Tables. These \"display the interconnection between different sectors of production and allow for a tracing of the production and consumption in an economy\" and were originally created for national economies. However, as production has become increasingly international and the import/export market between nations has flourished, Multi-Regional Input-Output (MRIO) models have been developed. The unique feature of MRIO is allowing a product to be traced across its production cycle, \"quantifying the contributions to the value of the product from different economic sectors in various countries represented in the model. It hence offers a description of the global supply chains of products consumed\". From this, assuming regional- and industry-specific data for CO2 emissions per unit of output are available, the total amount of emissions for the product can be calculated, and therefore the amount of emissions the final consumer is allocated responsibility for.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Adaptation actions are classified into four categories: economic and financial, institutional, behavioural and cultural, and nature-based options.",
+    "chunk_id": "climate-003#c000",
+    "chunk_text": "Climate change adaptation is the process of adjusting to the effects of climate change. These can be both current or expected impacts. Adaptation aims to moderate or avoid harm for people. It also aims to exploit opportunities. Humans may also intervene to help adjustment for natural systems. There are many adaptation strategies or options. They can help manage impacts and risks to people and nature. We can classify adaptation actions in four ways. These are infrastructural and technological; institutional; behavioural and cultural; and nature-based options.\n\nThe need for adaptation varies from place to place. It depends on the risk to human or ecological systems. Adaptation is particularly important in developing countries. This is because developing countries are most vulnerable to climate change. So they bear the brunt of the effects of climate change. Adaptation needs are high for food and water. They are high for other sectors that are important for economic output, jobs and incomes.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Palm Springs averages high, low, and mean temperatures of 75°F, 50°F, and 63°F from November to April.",
+    "chunk_id": "climate-048#c002",
+    "chunk_text": "During the cooler winter months (October–March), the Coachella Valley regularly has the warmest winter temperatures out of any place west of the Rocky Mountains. East Los Angeles, the Gateway Cities, and parts of the San Gabriel Valley average the warmest winter high temps () in all of the western U.S., and Santa Monica averages the warmest winter lows () in all of the western U.S. Palm Springs, a city in the Coachella Valley, averages high/low/mean temperatures of 75 °F/50 °F/63 °F, (24 °C/10 °C/17 °C) respectively during the period of cooler weather from November to April.\n\nThe extreme southwest, around San Diego, has a subtropical semi-arid or steppe climate (Koppen BSh) as winters are drier there.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Wilbur wrote to the Smithsonian Institution in June 1899 requesting information about aeronautics.",
+    "chunk_id": "aviation-122#c008",
+    "chunk_text": "Wilbur said, \"Lilienthal was without question the greatest of the precursors, and the world owes to him a great debt.\" In May 1899 Wilbur wrote a letter to the Smithsonian Institution requesting information and publications about aeronautics. Drawing on the work of Sir George Cayley, Chanute, Lilienthal, Leonardo da Vinci, and Langley, they began their mechanical aeronautical experimentation that year.\n\nThe Wright brothers always presented a unified image to the public, sharing equally in the credit for their invention. Biographers note that Wilbur took the initiative in 1899–1900, writing of \"my\" machine and \"my\" plans before Orville became deeply involved when the first person singular became the plural \"we\" and \"our\". Author James Tobin asserts, \"it is impossible to imagine Orville, bright as he was, supplying the driving force that started their work and kept it going from the back room of a store in Ohio to conferences with capitalists, presidents, and kings. Will did that. He was the leader, from the beginning to the end.\"\n\nIdeas about control",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "In 2012, Japan passed its Basic Space Law which established space solar power as a national goal.",
+    "chunk_id": "renewable-energy-025#c002",
+    "chunk_text": "In 2008, Japan passed its Basic Space Law which established space solar power as a national goal. JAXA has a roadmap to commercial SBSP.\n\nIn 2015, the China Academy for Space Technology (CAST) showcased its roadmap at the International Space Development Conference. In February 2019, Science and Technology Daily (科技日报, Keji Ribao), the official newspaper of the Ministry of Science and Technology of the People's Republic of China, reported that construction of a testing base had started in Chongqing's Bishan District. CAST vice-president Li Ming was quoted as saying China expects to be the first nation to build a working space solar power station with practical value. Chinese scientists were reported as planning to launch several small- and medium-sized space power stations between 2021 and 2025. In December 2019, Xinhua News Agency reported that China plans to launch a 200-tonne SBSP station capable of generating megawatts (MW) of electricity to Earth by 2035.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "An ontology is the set of objects, relations, concepts, and properties used by a particular domain of knowledge.",
+    "chunk_id": "machine-learning-000#c002",
+    "chunk_text": "Many of these algorithms are insufficient for solving large reasoning problems because they experience a \"combinatorial explosion\": they became exponentially slower as the problems grew larger.\nEven humans rarely use the step-by-step deduction that early AI research could model. They solve most of their problems using fast, intuitive judgments.\nAccurate and efficient reasoning is an unsolved problem.\n\nKnowledge representation\n\nKnowledge representation and knowledge engineering allow AI programs to answer questions intelligently and make deductions about real-world facts. Formal knowledge representations are used in content-based indexing and retrieval, scene interpretation, clinical decision support, knowledge discovery (mining \"interesting\" and actionable inferences from large databases), and other areas.\n\nA knowledge base is a body of knowledge represented in a form that can be used by a program. An ontology is the set of objects, relations, concepts, and properties used by a particular domain of knowledge. Knowledge bases need to represent things such as:\nobjects, properties, categories and relations between objects;",
+    "kind": "supported"
+  },
+  {
+    "claim": "Machine learning focuses on prediction based on known properties, while data mining focuses on discovering previously unknown properties in the data.",
+    "chunk_id": "machine-learning-121#c005",
+    "chunk_text": "Data mining \nMachine learning and data mining often employ the same methods and overlap significantly, but while machine learning focuses on prediction, based on known properties learned from the training data, data mining focuses on the discovery of (previously) unknown properties in the data (this is the analysis step of knowledge discovery in databases). Data mining uses many machine learning methods, but with different goals; on the other hand, machine learning also employs data mining methods as \"unsupervised learning\" or as a preprocessing step to improve learner accuracy. Much of the confusion between these two research communities (which do often have separate conferences and separate journals, ECML PKDD being a major exception) comes from the basic assumptions they work with: in machine learning, performance is usually evaluated with respect to the ability to reproduce known knowledge, while in knowledge discovery and data mining (KDD) the key task is the discovery of previously unknown knowledge. Evaluated with respect to known knowledge, an uninformed (unsupervised) method will easily be outperformed by other supervised methods, while in a typical KDD task, supervised methods cannot be used due to the unavailability of training data.",
+    "kind": "supported"
+  },
+  {
+    "claim": "The mesophytic ecosystem is also known as a semi-evergreen forest.",
+    "chunk_id": "climate-046#c001",
+    "chunk_text": "Hygrophytic ecosystems occur when there is a short dry period with a few rain showers. The soil in this ecosystem holds adequate water for plant growth. Most of the tropical marine ecosystems are close to true rain forests.\n\nMesophytic ecosystem\n\nThe mesophytic ecosystem is also known as a semi-evergreen forest. It is found where there is a long dry season that has little rainfall. There is less vegetation than in a rainforest. There are only two tree stories; trees shed their leaves or have very small leaves. This provides the plants a way to conserve moisture.\n\nThere are fewer epiphytes than a rain forest has as the canopy is dry. In the dry season the ground is covered by leaves that will not decay until the soil is moist. The trees often flower during the dry season and start to grow during the wet season. The soil is usually latasol.\n\nXerophytic ecosystem \nThe xerophytic ecosystem is also known as dry woodland. It is found in areas of rain shadow in the tropical marine climate. This ecosystem often develops soils that drain quickly.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Green garden spaces can reduce heat stress and food insecurity for high-income neighbourhoods.",
+    "chunk_id": "climate-003#c007",
+    "chunk_text": "Sensitivity to climate change could be reduced by for example increasing the storage capacity of a reservoir, or planting crops that are more resistant to climate variability. It is also possible to reduce vulnerability in towns and cities with green garden spaces. These can reduce heat stress and food insecurity for low-income neighbourhoods.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Amplified warming in the Arctic has contributed to freezing permafrost, glacial retreat, and sea ice loss.",
+    "chunk_id": "climate-011#c001",
+    "chunk_text": "Climate change is causing a range of increasing impacts on the environment. Deserts are expanding, while heat waves and wildfires are becoming more common. Amplified warming in the Arctic has contributed to melting permafrost, glacial retreat and sea ice loss. Higher temperatures are also causing more intense storms, droughts, and other weather extremes. Rapid environmental change in mountains, coral reefs, and the Arctic is forcing many species to relocate or become extinct. Even if efforts to minimise future warming are successful, some effects will continue for centuries. These include ocean heating, ocean acidification and sea level rise.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The Flettner airplane obtains lift from the Magnus effect using a rotating cylinder.",
+    "chunk_id": "aviation-000#c011",
+    "chunk_text": "The Flettner airplane uses a rotating cylinder, obtaining lift from the Magnus effect. The FanWing uses a cross-flow fan, while the mechanically more complex cyclogyro comprises multiple wings which rotate together around a central axis. The ornithopter obtains thrust by flapping its wings.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Hobbyists may travel short distances to view the remains of withdrawn aircraft.",
+    "chunk_id": "aviation-004#c005",
+    "chunk_text": "Ancillary activities might include listening-in to air traffic control transmissions (using radio scanners, where that is legal), liaising with other \"spotters\" to clear up uncertainties as to what aircraft have been seen at specific times or in particular places. Several internet mailing list groups have been formed to help communicate aircraft seen at airports, queries and anomalies. These groups can cater to certain regions, certain aircraft types, or may appeal to a wider audience. The result is that information on aircraft movements can be delivered worldwide in a real-time fashion to spotters.\n\nThe hobbyist might travel long distances to visit different airports, to see an unusual aircraft, or to view the remains of aircraft withdrawn from use. Air shows usually draw large numbers of spotters as they are opportunities to enter airfields and air bases worldwide that are usually closed to the public and to see displayed aircraft at close range. Some aircraft may be placed in the care of museums (see Aviation archaeology) – or perhaps be cannibalized in order to repair a similar aircraft already preserved.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "A 2020 review found that algae applications could play an important role in carbon sequestration.",
+    "chunk_id": "photosynthesis-000#c003",
+    "chunk_text": "Because of the wide range of types of algae, they have increasing different industrial and traditional applications in human society. Traditional seaweed farming practices have existed for thousands of years and have strong traditions in East Asia food cultures. More modern algaculture applications extend the food traditions for other applications include cattle feed, using algae for bioremediation or pollution control, transforming sunlight into algae fuels or other chemicals used in industrial processes, and in medical and scientific applications. A 2020 review found that these applications of algae could play an important role in carbon sequestration in order to mitigate climate change while providing lucrative value-added products for global economies.\n\nEtymology and study\nThe singular  is the Latin word for 'seaweed' and retains that meaning in English. The etymology is obscure. Although some speculate that it is related to Latin , 'be cold', no reason is known to associate seaweed with temperature. A more likely source is , 'binding, entwining'.",
+    "kind": "supported"
+  },
+  {
+    "claim": "The Boeing 717 is the last commercial airplane produced at Boeing's facility in Long Beach, California.",
+    "chunk_id": "aviation-059#c008",
+    "chunk_text": "Boeing delivers the last two Boeing 717 airliners produced; the customers receiving them are AirTran Airways and Midwest Airlines. Boeing had manufactured 156 Boeing 717s before ceasing production in April 2006 due to slow sales. The Boeing 717 is the last commercial airplane produced at Boeing's facility in Long Beach, California.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Throughout the 20th century, most classifications treated cyanophytes and chlorophytes as divisions or classes of algae.",
+    "chunk_id": "photosynthesis-000#c007",
+    "chunk_text": "Throughout the 20th century, most classifications treated the following groups as divisions or classes of algae: cyanophytes, rhodophytes, chrysophytes, xanthophytes, bacillariophytes, phaeophytes, pyrrhophytes (cryptophytes and dinophytes), euglenophytes, and chlorophytes. Later, many new groups were discovered (e.g., Bolidophyceae), and others were splintered from older groups: charophytes and glaucophytes (from chlorophytes), many heterokontophytes (e.g., synurophytes from chrysophytes, or eustigmatophytes from xanthophytes), haptophytes (from chrysophytes), and chlorarachniophytes (from xanthophytes).\n\nWith the abandonment of plant-animal dichotomous classification, most groups of algae (sometimes all) were included in Protista, later also abandoned in favour of Eukaryota. However, as a legacy of the older plant life scheme, some groups that were also treated as protozoans in the past still have duplicated classifications (see ambiregnal protists).",
+    "kind": "supported"
+  },
+  {
+    "claim": "Algae is a formal term for a large and diverse group of photosynthetic, eukaryotic organisms.",
+    "chunk_id": "photosynthesis-000#c000",
+    "chunk_text": "Algae (, ; : alga ) is an informal term for a large and diverse group of photosynthetic, eukaryotic organisms. It is a polyphyletic grouping that includes species from multiple distinct clades. Included organisms range from unicellular microalgae, such as Chlorella, Prototheca and the diatoms, to multicellular forms, such as the giant kelp, a large brown alga which may grow up to  in length. Most are aquatic and lack many of the distinct cell and tissue types, such as stomata, xylem and phloem that are found in land plants. The largest and most complex marine algae are called seaweeds, while the most complex freshwater forms are the Charophyta, a division of green algae which includes, for example, Spirogyra and stoneworts. Algae that are carried by water are plankton, specifically phytoplankton.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Pit connections and pit plugs are unique features of red algae that form during incomplete cytokinesis following mitosis.",
+    "chunk_id": "photosynthesis-028#c009",
+    "chunk_text": "Pit connections\nPit connections and pit plugs are unique and distinctive features of red algae that form during the process of cytokinesis following mitosis. In red algae, cytokinesis is incomplete. Typically, a small pore is left in the middle of the newly formed partition. The pit connection is formed where the daughter cells remain in contact.\n\nShortly after the pit connection is formed, cytoplasmic continuity is blocked by the generation of a pit plug, which is deposited in the wall gap that connects the cells.\n\nConnections between cells having a common parent cell are called primary pit connections. Because apical growth is the norm in red algae, most cells have two primary pit connections, one to each adjacent cell.\n\nConnections that exist between cells not sharing a common parent cell are labelled secondary pit connections. These connections are formed when an unequal cell division produced a nucleated daughter cell that then fuses to an adjacent cell. Patterns of secondary pit connections can be seen in the order Ceramiales.",
+    "kind": "supported"
+  },
+  {
+    "claim": "The Algenol system commercialized by BioFields in Puerto Libertad, Sonora, Mexico uses seawater and industrial exhaust to produce biodiesel.",
+    "chunk_id": "photosynthesis-016#c010",
+    "chunk_text": "Methane\nMethane, the main constituent of natural gas can be produced from algae in various methods, namely gasification, pyrolysis and anaerobic digestion. In gasification and pyrolysis methods methane is extracted under high temperature and pressure. Anaerobic digestion is a straightforward method involved in decomposition of algae into simple components then transforming it into fatty acids using microbes like acidogenic bacteria followed by removing any solid particles and finally adding methanogenic archaea to release a gas mixture containing methane. A number of studies have successfully shown that biomass from microalgae can be converted into biogas via anaerobic digestion. Therefore, in order to improve the overall energy balance of microalgae cultivation operations, it has been proposed to recover the energy contained in waste biomass via anaerobic digestion to methane for generating electricity.\n\nEthanol\nThe Algenol system which is being commercialized by BioFields in Puerto Libertad, Sonora, Mexico utilizes seawater and industrial exhaust to produce ethanol. Porphyridium cruentum also have shown to be potentially suitable for ethanol production due to its capacity for accumulating large amount of carbohydrates.\n\nGreen diesel",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Cyclically braking is usually not applied on large, grid-connected wind turbines.",
+    "chunk_id": "renewable-energy-042#c009",
+    "chunk_text": "Yawing \nLarge turbines are typically actively controlled to face the wind direction measured by a wind vane situated on the back of the nacelle. By minimizing the yaw angle (the misalignment between wind and turbine pointing direction), power output is maximized and non-symmetrical loads minimized. However, since wind direction varies, the turbine does not strictly follow the wind and experiences a small yaw angle on average. The power output losses can be approximated to fall with (cos(yaw angle))3. Particularly at low-to-medium wind speeds, yawing can significantly reduce output, with wind common variations reaching 30°. At high wind speeds, wind direction is less variable.\n\nElectrical braking\n\nBraking a small turbine can be done by dumping energy from the generator into a resistor bank, converting kinetic energy into heat. This method is useful if the kinetic load on the generator is suddenly reduced or is too small to keep the turbine speed within its allowed limit.\n\nCyclically braking slows the blades, which increases the stalling effect and reducing efficiency. Rotation can be kept at a safe speed in faster winds while maintaining (nominal) power output. This method is usually not applied on large, grid-connected wind turbines.",
+    "kind": "supported"
+  },
+  {
+    "claim": "FlightAware and Flightradar24 allow spotters to track and locate specific commercial helicopters from all across the world.",
+    "chunk_id": "aviation-004#c001",
+    "chunk_text": "The development of technology and global resources enabled a revolution in plane-spotting. Point and shoot cameras, DSLRs & walkie talkies significantly changed the hobby. With the help of the internet, websites such as FlightAware and Flightradar24 have made it possible for spotters to track and locate specific aircraft from all across the world. Websites specifically for aircraft, such as airliners.net, and social networking services, such as Twitter, Facebook and Instagram, allow spotters to record their sightings and upload their photos or see pictures of aircraft spotted by other people worldwide.\n\nTechniques",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Blue-green algae, also known as cyanobacteria, are classified as prokaryotic photoautotrophs due to their lack of a nucleus.",
+    "chunk_id": "photosynthesis-031#c002",
+    "chunk_text": "Metabolism of microalgae \nAlgae are primarily eukaryotic photoautotrophic organisms which perform oxygenic photosynthesis. These types of algae are classified by their light-harvesting pigments which give them their color. The green algae species, also known as Chlorophyta, are often used in bioreactors due to their high growth rate and ability to withstand a variety of environments. Blue-green algae, also known as cyanobacteria, are classified as prokaryotic photoautotrophs due to their lack of a nucleus. Light provides essential energy the cell needs to metabolize , nitrogen, phosphorus and other essential nutrients. The wavelengths and intensities of light are very important factors. Available  is also an important factor for growth and due to the lower concentration in our atmosphere, supplementary  can be added as seen with the bubble column PBR below. Microalgae also possess the ability to take up excess nitrogen and phosphorus under starvation conditions, which are essential for lipid and amino acid synthesis. Higher temperatures and a pH above 7 and below 9 are also common factors. Each of these factors may vary from species to species so it is important to have the correct environmental conditions while designing bioreactors of any sort.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Algae is an informal term for a large and diverse group of photosynthetic, eukaryotic organisms.",
+    "chunk_id": "photosynthesis-000#c000",
+    "chunk_text": "Algae (, ; : alga ) is an informal term for a large and diverse group of photosynthetic, eukaryotic organisms. It is a polyphyletic grouping that includes species from multiple distinct clades. Included organisms range from unicellular microalgae, such as Chlorella, Prototheca and the diatoms, to multicellular forms, such as the giant kelp, a large brown alga which may grow up to  in length. Most are aquatic and lack many of the distinct cell and tissue types, such as stomata, xylem and phloem that are found in land plants. The largest and most complex marine algae are called seaweeds, while the most complex freshwater forms are the Charophyta, a division of green algae which includes, for example, Spirogyra and stoneworts. Algae that are carried by water are plankton, specifically phytoplankton.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Compound rotorcraft are nowadays classified as powered lift types instead of rotorcraft.",
+    "chunk_id": "aviation-000#c009",
+    "chunk_text": "Compound rotorcraft have wings that provide some or all of the lift in forward flight. They are nowadays classified as powered lift types and not as rotorcraft. Tiltrotor aircraft (such as the Bell Boeing V-22 Osprey), tiltwing, tail-sitter, and coleopter aircraft have their rotors/propellers horizontal for vertical flight and vertical for forward flight.\n\nOther methods of lift",
+    "kind": "supported"
+  },
+  {
+    "claim": "The Flettner airplane obtains lift from the Magnus effect using a stationary cylinder.",
+    "chunk_id": "aviation-000#c011",
+    "chunk_text": "The Flettner airplane uses a rotating cylinder, obtaining lift from the Magnus effect. The FanWing uses a cross-flow fan, while the mechanically more complex cyclogyro comprises multiple wings which rotate together around a central axis. The ornithopter obtains thrust by flapping its wings.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The Wright brothers cited Otto Lilienthal's death as the point when their serious interest in flight research began.",
+    "chunk_id": "aviation-122#c007",
+    "chunk_text": "Capitalizing on the national bicycle craze (spurred by the invention of the safety bicycle and its substantial advantages over the penny-farthing design), in December 1892 the brothers opened a repair and sales shop (the Wright Cycle Exchange, later the Wright Cycle Company) and in 1896 began manufacturing their own brand. They used this endeavor to fund their growing interest in flight. In the early or mid-1890s they saw newspaper or magazine articles and probably photographs of the dramatic glides by Otto Lilienthal in Germany.\n\n1896 brought three important aeronautical events. In May, Smithsonian Institution Secretary Samuel Langley successfully flew an unmanned steam-powered fixed-wing model aircraft. In mid-year, Chicago engineer and aviation authority Octave Chanute brought together several men who tested various types of gliders over the sand dunes along the shore of Lake Michigan. In August, Lilienthal was killed in the plunge of his glider. These events lodged in the minds of the brothers, especially Lilienthal's death. The Wright brothers later cited his death as the point when their serious interest in flight research began.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Cyclically braking is usually not applied on offshore, grid-connected wind turbines.",
+    "chunk_id": "renewable-energy-042#c009",
+    "chunk_text": "Yawing \nLarge turbines are typically actively controlled to face the wind direction measured by a wind vane situated on the back of the nacelle. By minimizing the yaw angle (the misalignment between wind and turbine pointing direction), power output is maximized and non-symmetrical loads minimized. However, since wind direction varies, the turbine does not strictly follow the wind and experiences a small yaw angle on average. The power output losses can be approximated to fall with (cos(yaw angle))3. Particularly at low-to-medium wind speeds, yawing can significantly reduce output, with wind common variations reaching 30°. At high wind speeds, wind direction is less variable.\n\nElectrical braking\n\nBraking a small turbine can be done by dumping energy from the generator into a resistor bank, converting kinetic energy into heat. This method is useful if the kinetic load on the generator is suddenly reduced or is too small to keep the turbine speed within its allowed limit.\n\nCyclically braking slows the blades, which increases the stalling effect and reducing efficiency. Rotation can be kept at a safe speed in faster winds while maintaining (nominal) power output. This method is usually not applied on large, grid-connected wind turbines.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "About 90 per cent of EU citizens support wind power.",
+    "chunk_id": "renewable-energy-055#c010",
+    "chunk_text": "Public opinion\nRecent public opinion surveys about wind power at both the EU and the country level shows that wind energy, being a clean and renewable energy source, is traditionally linked to very strong and stable levels of public support. About 80 per cent of EU citizens support wind power. Despite overwhelming popular support in the abstract, wind farm projects at times raise local opposition, especially in locations closer to populations or to woodland wildlife. For instance, a wind project in Ripfjallet, Sweden in 2020 has been opposed by a group of local residents who wish to maintain the historical landscape. They succeeded in arranging a local referendum scheduled for 22 June 2020 to determine the future of the project. In Germany, a government agency found that there were 325 active lawsuits against wind projects as of January 2020, often on the basis of protecting ecology and wildlife.\n\nStatistics\n\nInstalled wind power capacity",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Aircraft carriers should have a speed of more than 30 knots to evade nuclear submarines.",
+    "chunk_id": "aviation-002#c004",
+    "chunk_text": "General features Speed is a crucial attribute for aircraft carriers, as they need to be able to be deployed quickly anywhere in the world and have to be fast enough to evade detection and targeting from enemy forces. A high speed also increases the \"wind over the deck\", boosting the lift available for fixed-wing aircraft to carry fuel and ammunition. In order to evade nuclear submarines, the carriers should have a speed of more than 30 knots. Aircraft carriers are among the largest types of warships due to their need for ample deck space. An aircraft carrier must be able to perform increasingly diverse mission sets. Diplomacy, power projection, quick crisis response force, land attack from the sea, sea base for helicopter and amphibious assault forces, anti-surface warfare (ASUW), Defensive Counter Air (DCA), and humanitarian aid disaster relief (HADR) are some of the missions the aircraft carrier is expected to accomplish. Traditionally an aircraft carrier is supposed to be one ship that can perform at least power projection and sea control missions. An aircraft carrier must be able to efficiently operate an air combat group. This means it should handle fixed-wing jets as well as helicopters.",
+    "kind": "supported"
+  },
+  {
+    "claim": "The goal of a reinforcement learning agent is to learn a policy that maximizes the expected cumulative reward.",
+    "chunk_id": "machine-learning-075#c002",
+    "chunk_text": "The purpose of reinforcement learning is for the agent to learn an optimal, or nearly-optimal, policy that maximizes the \"reward function\" or other user-provided reinforcement signal that accumulates from the immediate rewards. This is similar to processes that appear to occur in animal psychology. For example, biological brains are hardwired to interpret signals such as pain and hunger as negative reinforcements, and interpret pleasure and food intake as positive reinforcements. In some circumstances, animals can learn to engage in behaviors that optimize these rewards. This suggests that animals are capable of reinforcement learning.\n\nA basic reinforcement learning agent AI interacts with its environment in discrete time steps. At each time , the agent receives the current state  and reward . It then chooses an action  from the set of available actions, which is subsequently sent to the environment. The environment moves to a new state  and the reward  associated with the transition  is determined. The goal of a reinforcement learning agent is to learn a policy: ,  that maximizes the expected cumulative reward.",
+    "kind": "supported"
+  },
+  {
+    "claim": "AI-based buying and selling platforms estimate individualized demand and supply curves to enable individualized pricing.",
+    "chunk_id": "machine-learning-040#c006",
+    "chunk_text": "Banks use AI to organize operations, for bookkeeping, investing in stocks, and managing properties. AI can react to changes when business is not taking place. AI is used to combat fraud and financial crimes by monitoring behavioral patterns for any abnormal changes or anomalies.\n\nThe use of AI in applications such as online trading and decision making has changed major economic theories. For example, AI-based buying and selling platforms estimate individualized demand and supply curves and thus enable individualized pricing. AI machines reduce information asymmetry in the market and thus make markets more efficient. The application of artificial intelligence in the financial industry can alleviate the financing constraints of non-state-owned enterprises. Especially for smaller and more innovative enterprises.\n\nTrading and investment \nAlgorithmic trading involves the use of AI systems to make trading decisions at speeds orders of magnitude greater than any human is capable of, making millions of trades in a day without human intervention. Such high-frequency trading represents a fast-growing sector. Many banks, funds, and proprietary trading firms now have entire portfolios that are AI-managed. Automated trading systems are typically used by large institutional investors but include smaller firms trading with their own AI systems.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Palm Springs averages high, low, and mean temperatures of 74°F, 50°F, and 63°F from November to April.",
+    "chunk_id": "climate-048#c002",
+    "chunk_text": "During the cooler winter months (October–March), the Coachella Valley regularly has the warmest winter temperatures out of any place west of the Rocky Mountains. East Los Angeles, the Gateway Cities, and parts of the San Gabriel Valley average the warmest winter high temps () in all of the western U.S., and Santa Monica averages the warmest winter lows () in all of the western U.S. Palm Springs, a city in the Coachella Valley, averages high/low/mean temperatures of 75 °F/50 °F/63 °F, (24 °C/10 °C/17 °C) respectively during the period of cooler weather from November to April.\n\nThe extreme southwest, around San Diego, has a subtropical semi-arid or steppe climate (Koppen BSh) as winters are drier there.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The Éolienne Bollée is an example of a Conventional Wind Turbine.",
+    "chunk_id": "renewable-energy-043#c002",
+    "chunk_text": "A research project, the ducted rotor consists of a turbine inside a duct that flares at the back. They are also referred as Diffuser-Augmented Wind Turbines (i.e. DAWT). Its main advantage is that it can operate in a wide range of winds and generate a higher power per unit of rotor area. Another advantage is that the generator operates at a high rotation rate, so it doesn't require a bulky gearbox, allowing the mechanical portion to be smaller and lighter. A disadvantage is that (apart from the gearbox) it is more complicated than the unducted rotor and the duct's weight increases tower weight. The Éolienne Bollée is an example of a DAWT.\n\nCo-axial, multi-rotor",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Marine mollusks Elysia viridis and Elysia chlorotica survive solely by photosynthesis for a few days at a time.",
+    "chunk_id": "photosynthesis-057#c005",
+    "chunk_text": "Timeline of photosynthesis on Earth\n\nSymbiosis and the origin of chloroplasts\n\nSeveral groups of animals have formed symbiotic relationships with photosynthetic algae. These are most common in corals, sponges and sea anemones. It is presumed that this is due to the particularly simple body plans and large surface areas of these animals compared to their volumes. In addition, a few marine mollusks Elysia viridis and Elysia chlorotica also maintain a symbiotic relationship with chloroplasts they capture from the algae in their diet and then store in their bodies. This allows the mollusks to survive solely by photosynthesis for several months at a time. Some of the genes from the plant cell nucleus have even been transferred to the slugs, so that the chloroplasts can be supplied with proteins that they need to survive.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "On July 27, 1899, the brothers put wing warping to the test by building and flying a biplane kite.",
+    "chunk_id": "aviation-122#c012",
+    "chunk_text": "On July 27, 1899, the brothers put wing warping to the test by building and flying a biplane kite with a  wingspan, and a curved wing with a  chord. When the wings were warped, or twisted, the trailing edge that was warped down produced more lift than th",
+    "kind": "supported"
+  },
+  {
+    "claim": "As of 2022, warming is 1.5°C above levels before the industrial revolution.",
+    "chunk_id": "climate-003#c003",
+    "chunk_text": "Scientific research into climate change adaptation generally starts with analyses of the likely effects of climate change on people, ecosystems and the environment. These impacts cover its effects on lives, livelihoods, health and well-being, ecosystems and species, economic, social and cultural assets, and infrastructure.  Impacts may include changed agricultural yields, increased floods, and droughts or coral reef bleaching. Analysis of such impacts is an important step in understanding current and future adaptation needs and options.\n\nAs of 2022, the level of warming is 1.2°C (2.2°F) above levels before the industrial revolution. It is on track to increase to 2.5 to 2.9°C (4.5 to 5.2°F) by the end of the century. This is causing a variety of secondary effects.\n\nMany negative effects of climate change involve changes in extremes or the way conditions vary rather than changes in average conditions. For example, the average sea level in a port might not be as important as the height of water during a storm surge. That is because a storm surge can cause flooding. The average rainfall in an area might not be as important as how frequent and severe droughts and extreme precipitation events become.\n\nDisaster risks, response and preparedness",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Affective computing comprises systems that recognize, interpret, process, or simulate human feeling, emotion, and mood.",
+    "chunk_id": "machine-learning-000#c009",
+    "chunk_text": "Affective computing is an interdisciplinary umbrella that comprises systems that recognize, interpret, process or simulate human feeling, emotion and mood.\nFor example, some virtual assistants are programmed to speak conversationally or even to banter humorously; it makes them appear more sensitive to the emotional dynamics of human interaction, or to otherwise facilitate human–computer interaction.\nHowever, this tends to give naïve users an unrealistic conception of how intelligent existing computer agents actually are. Moderate successes related to affective computing include textual sentiment analysis and, more recently, multimodal sentiment analysis, wherein AI classifies the affects displayed by a videotaped subject.\n\nGeneral intelligence\n\nA machine with artificial general intelligence should be able to solve a wide variety of problems with breadth and versatility similar to human intelligence.\n\nTools \nAI research uses a wide variety of tools to accomplish the goals above.\n\nSearch and optimization \nAI can solve many problems by intelligently searching through many possible solutions. There are two very different kinds of search used in AI: state space search and local search.",
+    "kind": "supported"
+  },
+  {
+    "claim": "In 1999, NASA initiated its Space Solar Power Exploratory Research and Technology program to evaluate studies of general feasibility and design requirements.",
+    "chunk_id": "renewable-energy-025#c007",
+    "chunk_text": "In 1999, NASA initiated its Space Solar Power Exploratory Research and Technology program (SERT) for the following purposes:\n Perform design studies of selected flight demonstration concepts.\n Evaluate studies of the general feasibility, design, and requirements.\n Create conceptual designs of subsystems that make use of advanced SSP technologies to benefit future space or terrestrial applications.\n Formulate a preliminary plan of action for the U.S. (working with international partners) to undertake an aggressive technology initiative.\n Construct technology development and demonstration roadmaps for critical space solar power (SSP) elements.",
+    "kind": "supported"
+  },
+  {
+    "claim": "For a given wind speed, turbine mass is approximately proportional to the cube of its blade-length.",
+    "chunk_id": "renewable-energy-042#c011",
+    "chunk_text": "For a given wind speed, turbine mass is approximately proportional to the cube of its blade-length. Wind power intercepted is proportional to the square of blade-length. The maximum blade-length of a turbine is limited by strength, stiffness, and transport considerations.\n\nLabor and maintenance costs increase slower than turbine size, so to minimize costs, wind farm turbines are basically limited by the strength of materials, and siting requirements.\n\nLow temperature \nUtility-scale wind turbine generators have minimum temperature operating limits that apply in areas with temperatures below . Turbines must be protected from ice accumulation that can make anemometer readings inaccurate and which, in certain turbine control designs, can cause high structure loads and damage. Some turbine manufacturers offer low-temperature packages at extra cost, which include internal heaters, different lubricants, and different alloys for structural elements. If low-temperatures are combined with a low-wind condition, the turbine requires an external supply of power, equivalent to a few percent of it",
+    "kind": "supported"
+  },
+  {
+    "claim": "Machine learning focuses on classification based on known properties, while data mining focuses on discovering previously unknown properties in the data.",
+    "chunk_id": "machine-learning-121#c005",
+    "chunk_text": "Data mining \nMachine learning and data mining often employ the same methods and overlap significantly, but while machine learning focuses on prediction, based on known properties learned from the training data, data mining focuses on the discovery of (previously) unknown properties in the data (this is the analysis step of knowledge discovery in databases). Data mining uses many machine learning methods, but with different goals; on the other hand, machine learning also employs data mining methods as \"unsupervised learning\" or as a preprocessing step to improve learner accuracy. Much of the confusion between these two research communities (which do often have separate conferences and separate journals, ECML PKDD being a major exception) comes from the basic assumptions they work with: in machine learning, performance is usually evaluated with respect to the ability to reproduce known knowledge, while in knowledge discovery and data mining (KDD) the key task is the discovery of previously unknown knowledge. Evaluated with respect to known knowledge, an uninformed (unsupervised) method will easily be outperformed by other supervised methods, while in a typical KDD task, supervised methods cannot be used due to the unavailability of training data.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "On August 12, 1899, the brothers put wing warping to the test by building and flying a biplane kite.",
+    "chunk_id": "aviation-122#c012",
+    "chunk_text": "On July 27, 1899, the brothers put wing warping to the test by building and flying a biplane kite with a  wingspan, and a curved wing with a  chord. When the wings were warped, or twisted, the trailing edge that was warped down produced more lift than th",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "By the beginning of March 2022, the UK had 11,091 wind turbines and over 24.6 GW capacity.",
+    "chunk_id": "renewable-energy-055#c007",
+    "chunk_text": "Wind power generates about 10% of Turkey's electricity, mainly in the west in the Aegean and Marmara regions, and is gradually becoming a larger share of renewable energy in the country. , Turkey has 11 gigawatts (GW) of wind turbines. The Energy Ministry plans to have almost 30 GW by 2035.\n\nUnited Kingdom\n\nBy the beginning of March 2022, the UK had 11,091 wind turbines with a total installed capacity of over 24.6gigawatts (GW): 14.1GW of onshore capacity and 10.4GW of offshore capacity, the sixth largest capacity of any country in 2019.\n\n1.8 GW of new wind power capacity was brought online during 2012, a 30% increase of the total UK installed capacity. 2012 was a significant year for the offshore wind industry with 4 large wind farms becoming operational with over 1.1 GW of generating capability coming on stream.",
+    "kind": "supported"
+  },
+  {
+    "claim": "There are two main complementary ways of measuring GHG emissions: production-based and consumption-based.",
+    "chunk_id": "climate-032#c007",
+    "chunk_text": "Today, much international effort is put into slowing the anthropogenic release of GHG and resulting climate change. In order to set benchmarks and emissions targets for - as well as monitor and evaluate the progress of - international and regional policies, the accurate measurement of each country's NEI becomes imperative.\n\nMeasuring GHG emissions \nThere are two main, conflicting ways of measuring GHG emissions: production-based (also known as territorial-based) and consumption-based.\n\nProduction-based accounting",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "In operations research and control literature, reinforcement learning is called computational dynamic programming or neuro-dynamic programming.",
+    "chunk_id": "machine-learning-075#c001",
+    "chunk_text": "Due to its generality, reinforcement learning is studied in many disciplines, such as game theory, control theory, operations research, information theory, simulation-based optimization, multi-agent systems, swarm intelligence, and statistics. In the operations research and control literature, reinforcement learning is called approximate dynamic programming, or neuro-dynamic programming. The problems of interest in reinforcement learning have also been studied in the theory of optimal control, which is concerned mostly with the existence and characterization of optimal solutions, and algorithms for their exact computation, and less with learning or approximation, particularly in the absence of a mathematical model of the environment. In economics and game theory, reinforcement learning may be used to explain how equilibrium may arise under bounded rationality.\n\nBasic reinforcement learning is modeled as a Markov decision process:\n\na set of environment and agent states, ;\n a set of actions, , of the agent;\n , the probability of transition (at time ) from state  to state  under action .\n , the immediate reward after transition from  to  with action .",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "In computational learning theory, a computation is considered feasible if it can be done in exponential time.",
+    "chunk_id": "machine-learning-121#c009",
+    "chunk_text": "For the best performance in the context of generalization, the complexity of the hypothesis should match the complexity of the function underlying the data. If the hypothesis is less complex than the function, then the model has under fitted the data. If the complexity of the model is increased in response, then the training error decreases. But if the hypothesis is too complex, then the model is subject to overfitting and generalization will be poorer.\n\nIn addition to performance bounds, learning theorists study the time complexity and feasibility of learning. In computational learning theory, a computation is considered feasible if it can be done in polynomial time. There are two kinds of time complexity results: Positive results show that a certain class of functions can be learned in polynomial time. Negative results show that certain classes cannot be learned in polynomial time.\n\nApproaches",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Aircraft carriers should have a speed of less than 30 knots to evade nuclear submarines.",
+    "chunk_id": "aviation-002#c004",
+    "chunk_text": "General features Speed is a crucial attribute for aircraft carriers, as they need to be able to be deployed quickly anywhere in the world and have to be fast enough to evade detection and targeting from enemy forces. A high speed also increases the \"wind over the deck\", boosting the lift available for fixed-wing aircraft to carry fuel and ammunition. In order to evade nuclear submarines, the carriers should have a speed of more than 30 knots. Aircraft carriers are among the largest types of warships due to their need for ample deck space. An aircraft carrier must be able to perform increasingly diverse mission sets. Diplomacy, power projection, quick crisis response force, land attack from the sea, sea base for helicopter and amphibious assault forces, anti-surface warfare (ASUW), Defensive Counter Air (DCA), and humanitarian aid disaster relief (HADR) are some of the missions the aircraft carrier is expected to accomplish. Traditionally an aircraft carrier is supposed to be one ship that can perform at least power projection and sea control missions. An aircraft carrier must be able to efficiently operate an air combat group. This means it should handle fixed-wing jets as well as helicopters.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Affective computing comprises systems that recognize, interpret, process, or simulate animal feeling, emotion, and mood.",
+    "chunk_id": "machine-learning-000#c009",
+    "chunk_text": "Affective computing is an interdisciplinary umbrella that comprises systems that recognize, interpret, process or simulate human feeling, emotion and mood.\nFor example, some virtual assistants are programmed to speak conversationally or even to banter humorously; it makes them appear more sensitive to the emotional dynamics of human interaction, or to otherwise facilitate human–computer interaction.\nHowever, this tends to give naïve users an unrealistic conception of how intelligent existing computer agents actually are. Moderate successes related to affective computing include textual sentiment analysis and, more recently, multimodal sentiment analysis, wherein AI classifies the affects displayed by a videotaped subject.\n\nGeneral intelligence\n\nA machine with artificial general intelligence should be able to solve a wide variety of problems with breadth and versatility similar to human intelligence.\n\nTools \nAI research uses a wide variety of tools to accomplish the goals above.\n\nSearch and optimization \nAI can solve many problems by intelligently searching through many possible solutions. There are two very different kinds of search used in AI: state space search and local search.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The thermohaline circulation transports freshwater from the tropics to the polar regions.",
+    "chunk_id": "climate-016#c006",
+    "chunk_text": "More energy reaches the tropics than the polar regions and the subsequent temperature difference drives the global circulation of the atmosphere and oceans. Air rises when it warms, flows polewards and sinks again when it cools, returning to the equator. Due to the conservation of angular momentum, the Earth's rotation diverts the air to the right in the Northern Hemisphere and to the left in the Southern hemisphere, thus forming distinct atmospheric cells. Monsoons, seasonal changes in wind and precipitation that occur mostly in the tropics, form due to the fact that land masses heat up more easily than the ocean. The temperature difference induces a pressure difference between land and ocean, driving a steady wind.\n\nOcean water that has more salt has a higher density and differences in density play an important role in ocean circulation. The thermohaline circulation transports heat from the tropics to the polar regions. Ocean circulation is further driven by the interaction with wind. The salt component also influences the freezing point temperature. Vertical movements can bring up colder water to the surface in a process called upwelling, which cools down the air above.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "A glider designed by George Cayley carried out the first true manned, controlled flight in 1863.",
+    "chunk_id": "aviation-000#c006",
+    "chunk_text": "A pure rocket is not usually regarded as an aerodyne because it does not depend on the air for its lift (and can even fly into space); however, many aerodynamic lift vehicles have been powered or assisted by rocket motors. Rocket-powered missiles that obtain aerodynamic lift at very high speed due to airflow over their bodies are a marginal case.\n\nFixed-wing\n\nThe forerunner of the fixed-wing aircraft is the kite. Whereas a fixed-wing aircraft relies on its forward speed to create airflow over the wings, a kite is tethered to the ground and relies on the wind blowing over its wings to provide lift. Kites were the first kind of aircraft to fly and were invented in China around 500 BC. Much aerodynamic research was done with kites before test aircraft, wind tunnels, and computer modelling programs became available.\n\nThe first heavier-than-air craft capable of controlled free-flight were gliders. A glider designed by George Cayley carried out the first true manned, controlled flight in 1853. The first powered and controllable fixed-wing aircraft (the airplane or aeroplane) was invented by Wilbur and Orville Wright.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The Paris Agreement requires countries to keep global temperature rise this century to exactly 1.5°C above pre-industrial levels.",
+    "chunk_id": "climate-003#c005",
+    "chunk_text": "Aims \nFor humans, adaptation aims to moderate or avoid harm, and to exploit opportunities. For natural systems, humans may intervene to help adjustment.\n\nPolicy aims \nThe Paris Agreement of 2015 requires countries to keep global temperature rise this century to less than 2°C above pre-industrial levels, and to pursue efforts to limit the temperature increase to 1.5°C. Even if greenhouse gas emissions are stopped relatively soon, global warming and its effects will last many years. This is due to the inertia of the climate system. So both carbon neutrality (\"net zero\") and adaptation are necessary.\n\nThe Global Goal on Adaptation was also established under the Paris Agreement. The specific targets and indicators for the Global Goal are in development as of 2023. It will support the long-term adaptation goals of the governments that are parties to the agreement. It also aims to fund support for the most vulnerable countries’ adaptation needs in the context of the 1.5/2°C goal. It has three core components. These are reducing vulnerability to climate change, enhancing adaptive capacity, and strengthening resilience.\n\nReduce risk factors: vulnerability and exposure",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The Program Time Unit on the balancing market is of 30 minutes.",
+    "chunk_id": "renewable-energy-050#c006",
+    "chunk_text": "In order to illustrate this electricity market mechanism, consider the Dutch electricity market. Market participants, referred to as Program Responsible Parties (PRPs), submit their price-quantity bids before 11 am for the delivery period covering the following day from midnight to midnight. The Program Time Unit (PTU) on the balancing market is of 15 minutes. Balancing of the 15-minute averaged power is required from all electrical producers and consumers connected to the grid, who for this purpose may be organised in sub-sets. Since these sub-sets are referred to as Programmes, balancing on the 15-minute scale is referred to as Programme Balance. Programme Balance now is maintained by using the production schedules issued the day before delivery and measurement reports (distributed the day after delivery). When the measured power is not equal to the scheduled power, the Programme Imbalance is the difference between the realised sum of production and consumption and the forecast sum of production and consumption. If only production from wind energy is taken into account, Programme Imbalance reduces to realised wind production minus forecast wind production. The programme imbalance is the wind production forecast error.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The forecast length of most operational numerical weather prediction models is between 48 and 172 hours ahead.",
+    "chunk_id": "renewable-energy-050#c010",
+    "chunk_text": "Prediction of meteorological variables Wind power generation is directly linked to weather conditions and thus the first aspect of wind power forecasting is the prediction of future values of the necessary weather variables at the level of the wind farm. This is done by using numerical weather prediction (NWP) models. Such models are based on equations governing the motions and forces affecting motion of fluids. From the knowledge of the actual state of the atmosphere, the system of equations allows to estimate what the evolution of state variables, e. g. temperature, velocity, humidity and pressure, will be at a series of grid points. The meteorological variables that are needed as input for wind power prediction obviously include wind speed and direction, but also possibly temperature, pressure and humidity. The distance between grid points is called the spatial resolution of the NWPs. The mesh typically has spacing that varies between few kilometers and up to 50 kilometers for mesoscale models. Regarding the time axis, the forecast length of most of the operational models today is between 48 and 172 hours ahead, which is in adequacy with the requirements for the wind power application.",
+    "kind": "supported"
+  },
+  {
+    "claim": "In 2005, NASA initiated its Space Solar Power Exploratory Research and Technology program to evaluate studies of general feasibility and design requirements.",
+    "chunk_id": "renewable-energy-025#c007",
+    "chunk_text": "In 1999, NASA initiated its Space Solar Power Exploratory Research and Technology program (SERT) for the following purposes:\n Perform design studies of selected flight demonstration concepts.\n Evaluate studies of the general feasibility, design, and requirements.\n Create conceptual designs of subsystems that make use of advanced SSP technologies to benefit future space or terrestrial applications.\n Formulate a preliminary plan of action for the U.S. (working with international partners) to undertake an aggressive technology initiative.\n Construct technology development and demonstration roadmaps for critical space solar power (SSP) elements.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The United States Navy operates 11 large nuclear-powered fleet carriers that carry around 60 fighters each.",
+    "chunk_id": "aviation-002#c003",
+    "chunk_text": "As of , there are 47 active aircraft carriers in the world operated by fourteen navies. The United States Navy has 11 large nuclear-powered fleet carriers—carrying around 80 fighters each—the largest carriers in the world; the total combined deck space is over twice that of all other nations combined. As well as the aircraft carrier fleet, the US Navy has nine amphibious assault ships used primarily for helicopters, although these also each carry up to 20 vertical or short take-off and landing (V/STOL) fighter jets and are similar in size to medium-sized fleet carriers. The United Kingdom, India and China each operate two aircraft carriers. France and Russia each operate a single aircraft carrier with a capacity of 30 to 60 fighters. Italy operates two light V/STOL carriers and Spain operates one V/STOL aircraft-carrying assault ship. Helicopter carriers are operated by Japan (4, two of which are being converted to operate V/STOL fighters), France (3), Australia (2), Egypt (2), South Korea (2), China (3), Thailand (1) and Brazil (1). Future aircraft carriers are under construction or in planning by China, France, India, Russia, South Korea, Turkey, and the US.\n\nTypes of carriers",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Facial recognition systems have a 95% accuracy rate.",
+    "chunk_id": "machine-learning-040#c002",
+    "chunk_text": "AI has been used to automatically translate spoken language and textual content, in products such as Microsoft Translator, Google Translate and DeepL Translator. Additionally, research and development are in progress to decode and conduct animal communication.\n\nFacial recognition and image labeling\n\nAI has been used in facial recognition systems, with a 99% accuracy rate. Some examples are Apple's Face ID and Android's Face Unlock, which are used to secure mobile devices.\n\nImage labeling has been used by Google to detect products in photos and to allow people to search based on a photo. Image labeling has also been demonstrated to generate speech to describe images to blind people.  Facebook's DeepFace identifies human faces in digital images.\n\nGames",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "In computational learning theory, a computation is considered feasible if it can be done in polynomial time.",
+    "chunk_id": "machine-learning-121#c009",
+    "chunk_text": "For the best performance in the context of generalization, the complexity of the hypothesis should match the complexity of the function underlying the data. If the hypothesis is less complex than the function, then the model has under fitted the data. If the complexity of the model is increased in response, then the training error decreases. But if the hypothesis is too complex, then the model is subject to overfitting and generalization will be poorer.\n\nIn addition to performance bounds, learning theorists study the time complexity and feasibility of learning. In computational learning theory, a computation is considered feasible if it can be done in polynomial time. There are two kinds of time complexity results: Positive results show that a certain class of functions can be learned in polynomial time. Negative results show that certain classes cannot be learned in polynomial time.\n\nApproaches",
+    "kind": "supported"
+  },
+  {
+    "claim": "Compound rotorcraft are nowadays classified as powered lift types instead of rotorcraft.",
+    "chunk_id": "aviation-000#c009",
+    "chunk_text": "Compound rotorcraft have wings that provide some or all of the lift in forward flight. They are nowadays classified as powered lift types and not as rotorcraft. Tiltrotor aircraft (such as the Bell Boeing V-22 Osprey), tiltwing, tail-sitter, and coleopter aircraft have their rotors/propellers horizontal for vertical flight and vertical for forward flight.\n\nOther methods of lift",
+    "kind": "supported"
+  },
+  {
+    "claim": "Global emissions rose 39% between 1990 and 2008.",
+    "chunk_id": "climate-032#c011",
+    "chunk_text": "Table 3 also shows how these processes of production, consumption and trade have changed from 1990 (commonly chosen for baseline levels) to 2008. Global emissions have risen 39%, but in the same period developed countries seem to have stabilized their domestic emissions, whereas developing countries’ domestic emissions have doubled. This ‘stabilization’ is arguably misleading, however, if the increased trade from developing to developed countries is considered. This has increased from 0.4 Gt CO2 to 1.6 Gt CO2 - a 17%/year average growth meaning 16 Gt CO2 have been traded from developing to developed countries between 1990 and 2008. Assuming a proportion of the increased production in dev",
+    "kind": "supported"
+  },
+  {
+    "claim": "A 2015 review found that algae applications could play an important role in carbon sequestration.",
+    "chunk_id": "photosynthesis-000#c003",
+    "chunk_text": "Because of the wide range of types of algae, they have increasing different industrial and traditional applications in human society. Traditional seaweed farming practices have existed for thousands of years and have strong traditions in East Asia food cultures. More modern algaculture applications extend the food traditions for other applications include cattle feed, using algae for bioremediation or pollution control, transforming sunlight into algae fuels or other chemicals used in industrial processes, and in medical and scientific applications. A 2020 review found that these applications of algae could play an important role in carbon sequestration in order to mitigate climate change while providing lucrative value-added products for global economies.\n\nEtymology and study\nThe singular  is the Latin word for 'seaweed' and retains that meaning in English. The etymology is obscure. Although some speculate that it is related to Latin , 'be cold', no reason is known to associate seaweed with temperature. A more likely source is , 'binding, entwining'.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Algal turfs are thick, carpet-like beds of seaweed that are usually more than 30 cm tall.",
+    "chunk_id": "photosynthesis-000#c011",
+    "chunk_text": "Turfs\nThe term algal turf is commonly used but poorly defined. Algal turfs are thick, carpet-like beds of seaweed that retain sediment and compete with foundation species like corals and kelps, and they are usually less than 15 cm tall. Such a turf may consist of one or more species, and will generally cover an area in the order of a square metre or more. Some common characteristics are listed:\n Algae that form aggregations that have been described as turfs include diatoms, cyanobacteria, chlorophytes, phaeophytes and rhodophytes. Turfs are often composed of numerous species at a wide range of spatial scales, but monospecific turfs are frequently reported.\n Turfs can be morphologically highly variable over geographic scales and even within species on local scales and can be difficult to",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Machine learning is the study of programs that can improve their performance on a given task automatically.",
+    "chunk_id": "machine-learning-000#c006",
+    "chunk_text": "A Markov decision process has a transition model that describes the probability that a particular action will change the state in a particular way, and a reward function that supplies the utility of each state and the cost of each action. A policy associates a decision with each possible state. The policy could be calculated (e.g. by iteration), be heuristic, or it can be learned.\n\nGame theory describes rational behavior of multiple interacting agents, and is used in AI programs that make decisions that involve other agents.\n\nLearning \nMachine learning is the study of programs that can improve their performance on a given task automatically.\nIt has been a part of AI from the beginning.",
+    "kind": "supported"
+  },
+  {
+    "claim": "AI-based buying and selling platforms estimate individualized demand and supply curves to enable uniform pricing.",
+    "chunk_id": "machine-learning-040#c006",
+    "chunk_text": "Banks use AI to organize operations, for bookkeeping, investing in stocks, and managing properties. AI can react to changes when business is not taking place. AI is used to combat fraud and financial crimes by monitoring behavioral patterns for any abnormal changes or anomalies.\n\nThe use of AI in applications such as online trading and decision making has changed major economic theories. For example, AI-based buying and selling platforms estimate individualized demand and supply curves and thus enable individualized pricing. AI machines reduce information asymmetry in the market and thus make markets more efficient. The application of artificial intelligence in the financial industry can alleviate the financing constraints of non-state-owned enterprises. Especially for smaller and more innovative enterprises.\n\nTrading and investment \nAlgorithmic trading involves the use of AI systems to make trading decisions at speeds orders of magnitude greater than any human is capable of, making millions of trades in a day without human intervention. Such high-frequency trading represents a fast-growing sector. Many banks, funds, and proprietary trading firms now have entire portfolios that are AI-managed. Automated trading systems are typically used by large institutional investors but include smaller firms trading with their own AI systems.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "A glider designed by George Cayley carried out the first true manned, controlled flight in 1853.",
+    "chunk_id": "aviation-000#c006",
+    "chunk_text": "A pure rocket is not usually regarded as an aerodyne because it does not depend on the air for its lift (and can even fly into space); however, many aerodynamic lift vehicles have been powered or assisted by rocket motors. Rocket-powered missiles that obtain aerodynamic lift at very high speed due to airflow over their bodies are a marginal case.\n\nFixed-wing\n\nThe forerunner of the fixed-wing aircraft is the kite. Whereas a fixed-wing aircraft relies on its forward speed to create airflow over the wings, a kite is tethered to the ground and relies on the wind blowing over its wings to provide lift. Kites were the first kind of aircraft to fly and were invented in China around 500 BC. Much aerodynamic research was done with kites before test aircraft, wind tunnels, and computer modelling programs became available.\n\nThe first heavier-than-air craft capable of controlled free-flight were gliders. A glider designed by George Cayley carried out the first true manned, controlled flight in 1853. The first powered and controllable fixed-wing aircraft (the airplane or aeroplane) was invented by Wilbur and Orville Wright.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Adaptation actions are classified into three categories: infrastructural and technological, institutional, behavioural and cultural, and nature-based options.",
+    "chunk_id": "climate-003#c000",
+    "chunk_text": "Climate change adaptation is the process of adjusting to the effects of climate change. These can be both current or expected impacts. Adaptation aims to moderate or avoid harm for people. It also aims to exploit opportunities. Humans may also intervene to help adjustment for natural systems. There are many adaptation strategies or options. They can help manage impacts and risks to people and nature. We can classify adaptation actions in four ways. These are infrastructural and technological; institutional; behavioural and cultural; and nature-based options.\n\nThe need for adaptation varies from place to place. It depends on the risk to human or ecological systems. Adaptation is particularly important in developing countries. This is because developing countries are most vulnerable to climate change. So they bear the brunt of the effects of climate change. Adaptation needs are high for food and water. They are high for other sectors that are important for economic output, jobs and incomes.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "In operations research and control literature, reinforcement learning is called approximate dynamic programming or neuro-dynamic programming.",
+    "chunk_id": "machine-learning-075#c001",
+    "chunk_text": "Due to its generality, reinforcement learning is studied in many disciplines, such as game theory, control theory, operations research, information theory, simulation-based optimization, multi-agent systems, swarm intelligence, and statistics. In the operations research and control literature, reinforcement learning is called approximate dynamic programming, or neuro-dynamic programming. The problems of interest in reinforcement learning have also been studied in the theory of optimal control, which is concerned mostly with the existence and characterization of optimal solutions, and algorithms for their exact computation, and less with learning or approximation, particularly in the absence of a mathematical model of the environment. In economics and game theory, reinforcement learning may be used to explain how equilibrium may arise under bounded rationality.\n\nBasic reinforcement learning is modeled as a Markov decision process:\n\na set of environment and agent states, ;\n a set of actions, , of the agent;\n , the probability of transition (at time ) from state  to state  under action .\n , the immediate reward after transition from  to  with action .",
+    "kind": "supported"
+  },
+  {
+    "claim": "Modern large wind turbines operate at variable speeds.",
+    "chunk_id": "renewable-energy-042#c007",
+    "chunk_text": "Generator torque \nModern large wind turbines operate at variable speeds. When wind speed falls below the turbine's rated speed, generator torque is used to control the rotor speed to capture as much power as possible. The most power is captured when the tip speed ratio is held constant at its optimum value (typically 6 or 7). This means that rotor speed increases proportional to wind speed. The difference between the aerodynamic torque captured by the blades and the applied generator torque controls the rotor speed. If the generator torque is lower, the rotor accelerates, and if the generator torque is higher, the rotor slows. Below rated wind speed, the generator torque control is active while the blade pitch is typically held at the constant angle that captures the most power, fairly flat to the wind. Above rated wind speed, the generator torque is typically held constant while the blade pitch is adjusted accordingly.\n\nOne technique to control a permanent magnet synchronous motor is field-oriented control. Field-oriented control is a closed loop strategy composed of two current controllers (an inner loop and cascading outer loop) necessary for controlling the torque, and one speed controller.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Livestock production occupies 70% of all land used for agriculture worldwide.",
+    "chunk_id": "climate-000#c008",
+    "chunk_text": "A second reason that climate change has been attributed to land use is that the terrestrial albedo is often altered by use, which leads to radiative forcing. This effect is more significant locally than globally.\n\nLivestock and land use\nWorldwide, livestock production occupies 70% of all land used for agriculture, or 30% of the ice-free land surface of the Earth.\nMore than 18% of anthropogenic greenhouse gas emissions are attributed to livestock and livestock-related activities such as deforestation and increasingly fuel-intensive farming practices. Specific attributions to the livestock sector include:\n 9% of global anthropogenic carbon dioxide emissions\n 35–40% of global anthropogenic methane emissions (chiefly due to enteric fermentation and manure)\n 64% of global anthropogenic nitrous oxide emissions, chiefly due to fertilizer use.\n\nAerosols\nWith virtual certainty, scientific consensus has attributed various forms of climate change, chiefly cooling effects, to aerosols, which are small particles or droplets suspended in the atmosphere.\nKey sources to which anthropogenic aerosols are attributed include:\n\nbiomass burning such as slash-and-burn deforestation. Aerosols produced are primarily black carbon.\n industrial air pollution, which produces soot and airborne sulfates, nitrates, and ammonium\n dust produced by land use effects such as desertification\n\nAttribution of 20th-century climate change",
+    "kind": "supported"
+  },
+  {
+    "claim": "Shop mechanic Charles Taylor built the Wright brothers' second airplane engine in close collaboration with them.",
+    "chunk_id": "aviation-122#c002",
+    "chunk_text": "The brothers gained the mechanical skills essential to their success by working for years in their Dayton, Ohio-based shop with printing presses, bicycles, motors, and other machinery. Their work with bicycles, in particular, influenced their belief that an unstable vehicle such as a flying machine could be controlled and balanced with practice. This was a trend, as many other aviation pioneers were also dedicated cyclists and involved in the bicycle business in various ways. From 1900 until their first powered flights in late 1903, the brothers conducted extensive glider tests that also developed their skills as pilots. Their shop mechanic Charles Taylor became an important part of the team, building their first airplane engine in close collaboration with the brothers.\n\nThe Wright brothers' status as inventors of the airplane has been subject to counter-claims by various parties. Much controversy persists over the many competing claims of early aviators. Edward Roach, historian for the Dayton Aviation Heritage National Historical Park, argues that they were excellent self-taught engineers who could run a small company, but they did not have the business skills or temperament to dominate the growing aviation industry.\n\nChildhood",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Algal turfs are thick, carpet-like beds of seaweed that are usually less than 15 cm tall.",
+    "chunk_id": "photosynthesis-000#c011",
+    "chunk_text": "Turfs\nThe term algal turf is commonly used but poorly defined. Algal turfs are thick, carpet-like beds of seaweed that retain sediment and compete with foundation species like corals and kelps, and they are usually less than 15 cm tall. Such a turf may consist of one or more species, and will generally cover an area in the order of a square metre or more. Some common characteristics are listed:\n Algae that form aggregations that have been described as turfs include diatoms, cyanobacteria, chlorophytes, phaeophytes and rhodophytes. Turfs are often composed of numerous species at a wide range of spatial scales, but monospecific turfs are frequently reported.\n Turfs can be morphologically highly variable over geographic scales and even within species on local scales and can be difficult to",
+    "kind": "supported"
+  },
+  {
+    "claim": "Emissions grew at 1.0% yr−1 throughout the 1990s and accelerated to 3.4% yr−1 between 2000 and 2008.",
+    "chunk_id": "climate-032#c005",
+    "chunk_text": "It is now overwhelmingly accepted that the release of GHG, predominantly from the anthropogenic burning of fossil fuels and the release of direct emissions from agricultural activities, is accelerating the growth of these gases in the atmosphere resulting in climate change. Over the last few decades emissions have grown at an increasing rate from 1. 0% yr−1 throughout the 1990s to 3. 4% yr−1 between 2000 and 2008. These increases have been driven not only by a growing global population and per-capita GDP, but also by global increases in the energy intensity of GDP (energy per unit GDP) and the carbon intensity of energy (emissions per unit energy). These drivers are most apparent in developing markets (Kyoto non-Annex B countries), but what is less apparent is that a substantial fraction of the growth in these countries is to satisfy the demand of consumers in developed countries (Kyoto Annex B countries). This is exaggerated by a process known as Carbon Leakage whereby Annex B countries decrease domestic production in place of increased importation of products from non-Annex B countries where emission policies are less strict.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Pit connections and pit plugs are unique features of red algae that form during complete cytokinesis following mitosis.",
+    "chunk_id": "photosynthesis-028#c009",
+    "chunk_text": "Pit connections\nPit connections and pit plugs are unique and distinctive features of red algae that form during the process of cytokinesis following mitosis. In red algae, cytokinesis is incomplete. Typically, a small pore is left in the middle of the newly formed partition. The pit connection is formed where the daughter cells remain in contact.\n\nShortly after the pit connection is formed, cytoplasmic continuity is blocked by the generation of a pit plug, which is deposited in the wall gap that connects the cells.\n\nConnections between cells having a common parent cell are called primary pit connections. Because apical growth is the norm in red algae, most cells have two primary pit connections, one to each adjacent cell.\n\nConnections that exist between cells not sharing a common parent cell are labelled secondary pit connections. These connections are formed when an unequal cell division produced a nucleated daughter cell that then fuses to an adjacent cell. Patterns of secondary pit connections can be seen in the order Ceramiales.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "There are two main conflicting ways of measuring GHG emissions: production-based and consumption-based.",
+    "chunk_id": "climate-032#c007",
+    "chunk_text": "Today, much international effort is put into slowing the anthropogenic release of GHG and resulting climate change. In order to set benchmarks and emissions targets for - as well as monitor and evaluate the progress of - international and regional policies, the accurate measurement of each country's NEI becomes imperative.\n\nMeasuring GHG emissions \nThere are two main, conflicting ways of measuring GHG emissions: production-based (also known as territorial-based) and consumption-based.\n\nProduction-based accounting",
+    "kind": "supported"
+  },
+  {
+    "claim": "The Algenol system commercialized by BioFields in Puerto Libertad, Sonora, Mexico uses seawater and industrial exhaust to produce ethanol.",
+    "chunk_id": "photosynthesis-016#c010",
+    "chunk_text": "Methane\nMethane, the main constituent of natural gas can be produced from algae in various methods, namely gasification, pyrolysis and anaerobic digestion. In gasification and pyrolysis methods methane is extracted under high temperature and pressure. Anaerobic digestion is a straightforward method involved in decomposition of algae into simple components then transforming it into fatty acids using microbes like acidogenic bacteria followed by removing any solid particles and finally adding methanogenic archaea to release a gas mixture containing methane. A number of studies have successfully shown that biomass from microalgae can be converted into biogas via anaerobic digestion. Therefore, in order to improve the overall energy balance of microalgae cultivation operations, it has been proposed to recover the energy contained in waste biomass via anaerobic digestion to methane for generating electricity.\n\nEthanol\nThe Algenol system which is being commercialized by BioFields in Puerto Libertad, Sonora, Mexico utilizes seawater and industrial exhaust to produce ethanol. Porphyridium cruentum also have shown to be potentially suitable for ethanol production due to its capacity for accumulating large amount of carbohydrates.\n\nGreen diesel",
+    "kind": "supported"
+  },
+  {
+    "claim": "Adaptation actions are classified into four categories: infrastructural and technological, institutional, behavioural and cultural, and nature-based options.",
+    "chunk_id": "climate-003#c000",
+    "chunk_text": "Climate change adaptation is the process of adjusting to the effects of climate change. These can be both current or expected impacts. Adaptation aims to moderate or avoid harm for people. It also aims to exploit opportunities. Humans may also intervene to help adjustment for natural systems. There are many adaptation strategies or options. They can help manage impacts and risks to people and nature. We can classify adaptation actions in four ways. These are infrastructural and technological; institutional; behavioural and cultural; and nature-based options.\n\nThe need for adaptation varies from place to place. It depends on the risk to human or ecological systems. Adaptation is particularly important in developing countries. This is because developing countries are most vulnerable to climate change. So they bear the brunt of the effects of climate change. Adaptation needs are high for food and water. They are high for other sectors that are important for economic output, jobs and incomes.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Multi-Regional Input-Output models trace products across production cycles to calculate emissions allocated to final consumers.",
+    "chunk_id": "climate-032#c009",
+    "chunk_text": "Consumption-based accounting \nConsumption-based emissions accounting has an equally established methodology using Input-Output Tables. These \"display the interconnection between different sectors of production and allow for a tracing of the production and consumption in an economy\" and were originally created for national economies. However, as production has become increasingly international and the import/export market between nations has flourished, Multi-Regional Input-Output (MRIO) models have been developed. The unique feature of MRIO is allowing a product to be traced across its production cycle, \"quantifying the contributions to the value of the product from different economic sectors in various countries represented in the model. It hence offers a description of the global supply chains of products consumed\". From this, assuming regional- and industry-specific data for CO2 emissions per unit of output are available, the total amount of emissions for the product can be calculated, and therefore the amount of emissions the final consumer is allocated responsibility for.",
+    "kind": "supported"
+  },
+  {
+    "claim": "The energy sector typically contributes over 90% of emissions and 75% of all GHG emissions in developed countries.",
+    "chunk_id": "climate-032#c008",
+    "chunk_text": "As production-based emissions accounting is currently favoured in policy terms, its methodology is well established. Emissions are calculated not directly but indirectly from fossil fuel usage and other relevant processes such as industry and agriculture according to 2006 guidelines issued by the IPCC for GHG reporting. The guidelines span numerous methodologies dependent on the level of sophistication (Tiers 1–3 in Table 2). The simplest methodology combines the extent of human activity with a coefficient quantifying the emissions from that activity, known as an ‘emission factor’. For example, to estimate emissions from the energy sector (typically contributing over 90% of  emissions and 75% of all GHG emissions in developed countries) the quantity of fuels combusted is combined with an emission factor - the level of sophistication increasing with the accuracy and complexity of the emission factor. Table 2 outlines how the UK implements these guidelines to estimate some of its emissions-producing activities.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Delhi's monsoon season starts in late June and lasts until mid-September.",
+    "chunk_id": "climate-054#c000",
+    "chunk_text": "The climate of Delhi is an overlap between monsoon-influenced humid subtropical (Köppen climate classification Cwa) and semi-arid (Köppen climate classification BSh), with high variation between summer and winter temperatures and precipitation. Delhi's version of a humid subtropical climate is markedly different from many other humid subtropical cities such as São Paulo, Houston, and Brisbane in that the city features dust storms (something more commonly seen in a desert climate) and wildfire haze (something seen in a Mediterranean climate) due to its semi-arid climate.\n\nSummer starts in early April and peaks in late May or early June, with average temperatures near  although occasional heat waves can result in highs close to  on some days and therefore higher apparent temperature. The monsoon starts in late June and lasts until mid-September, with about  of rain. The average temperatures are around , although they can vary from around  on rainy days to  during dry spells. The monsoons recede in late September, and the post-monsoon season continues till late October, with average temperatures sliding from .",
+    "kind": "supported"
+  },
+  {
+    "claim": "The mesophytic ecosystem is also known as a deciduous forest.",
+    "chunk_id": "climate-046#c001",
+    "chunk_text": "Hygrophytic ecosystems occur when there is a short dry period with a few rain showers. The soil in this ecosystem holds adequate water for plant growth. Most of the tropical marine ecosystems are close to true rain forests.\n\nMesophytic ecosystem\n\nThe mesophytic ecosystem is also known as a semi-evergreen forest. It is found where there is a long dry season that has little rainfall. There is less vegetation than in a rainforest. There are only two tree stories; trees shed their leaves or have very small leaves. This provides the plants a way to conserve moisture.\n\nThere are fewer epiphytes than a rain forest has as the canopy is dry. In the dry season the ground is covered by leaves that will not decay until the soil is moist. The trees often flower during the dry season and start to grow during the wet season. The soil is usually latasol.\n\nXerophytic ecosystem \nThe xerophytic ecosystem is also known as dry woodland. It is found in areas of rain shadow in the tropical marine climate. This ecosystem often develops soils that drain quickly.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Global emissions rose 45% between 1990 and 2008.",
+    "chunk_id": "climate-032#c011",
+    "chunk_text": "Table 3 also shows how these processes of production, consumption and trade have changed from 1990 (commonly chosen for baseline levels) to 2008. Global emissions have risen 39%, but in the same period developed countries seem to have stabilized their domestic emissions, whereas developing countries’ domestic emissions have doubled. This ‘stabilization’ is arguably misleading, however, if the increased trade from developing to developed countries is considered. This has increased from 0.4 Gt CO2 to 1.6 Gt CO2 - a 17%/year average growth meaning 16 Gt CO2 have been traded from developing to developed countries between 1990 and 2008. Assuming a proportion of the increased production in dev",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The United States Navy operates 11 large nuclear-powered fleet carriers that carry around 80 fighters each.",
+    "chunk_id": "aviation-002#c003",
+    "chunk_text": "As of , there are 47 active aircraft carriers in the world operated by fourteen navies. The United States Navy has 11 large nuclear-powered fleet carriers—carrying around 80 fighters each—the largest carriers in the world; the total combined deck space is over twice that of all other nations combined. As well as the aircraft carrier fleet, the US Navy has nine amphibious assault ships used primarily for helicopters, although these also each carry up to 20 vertical or short take-off and landing (V/STOL) fighter jets and are similar in size to medium-sized fleet carriers. The United Kingdom, India and China each operate two aircraft carriers. France and Russia each operate a single aircraft carrier with a capacity of 30 to 60 fighters. Italy operates two light V/STOL carriers and Spain operates one V/STOL aircraft-carrying assault ship. Helicopter carriers are operated by Japan (4, two of which are being converted to operate V/STOL fighters), France (3), Australia (2), Egypt (2), South Korea (2), China (3), Thailand (1) and Brazil (1). Future aircraft carriers are under construction or in planning by China, France, India, Russia, South Korea, Turkey, and the US.\n\nTypes of carriers",
+    "kind": "supported"
+  },
+  {
+    "claim": "Wilbur wrote to the Smithsonian Institution in May 1899 requesting information about aeronautics.",
+    "chunk_id": "aviation-122#c008",
+    "chunk_text": "Wilbur said, \"Lilienthal was without question the greatest of the precursors, and the world owes to him a great debt.\" In May 1899 Wilbur wrote a letter to the Smithsonian Institution requesting information and publications about aeronautics. Drawing on the work of Sir George Cayley, Chanute, Lilienthal, Leonardo da Vinci, and Langley, they began their mechanical aeronautical experimentation that year.\n\nThe Wright brothers always presented a unified image to the public, sharing equally in the credit for their invention. Biographers note that Wilbur took the initiative in 1899–1900, writing of \"my\" machine and \"my\" plans before Orville became deeply involved when the first person singular became the plural \"we\" and \"our\". Author James Tobin asserts, \"it is impossible to imagine Orville, bright as he was, supplying the driving force that started their work and kept it going from the back room of a store in Ohio to conferences with capitalists, presidents, and kings. Will did that. He was the leader, from the beginning to the end.\"\n\nIdeas about control",
+    "kind": "supported"
+  },
+  {
+    "claim": "From 1970 to 2000, a gradual reduction in the amount of sunlight reaching the Earth's surface was observed.",
+    "chunk_id": "climate-011#c013",
+    "chunk_text": "Despite the contribution of deforestation to greenhouse gas emissions, the Earth's land surface, particularly its forests, remain a significant carbon sink for . Land-surface sink processes, such as carbon fixation in the soil and photosynthesis, remove about 29% of annual global  emissions. The ocean also serves as a significant carbon sink via a two-step process. First,  dissolves in the surface water. Afterwards, the ocean's overturning circulation distributes it deep into the ocean's interior, where it accumulates over time as part of the carbon cycle. Over the last two decades, the world's oceans have absorbed 20 to 30% of emitted .\n\nAerosols and clouds \nAir pollution, in the form of aerosols, affects the climate on a large scale. Aerosols scatter and absorb solar radiation. From 1961 to 1990, a gradual reduction in the amount of sunlight reaching the Earth's surface was observed. This phenomenon is popularly known as global dimmin",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Green garden spaces can reduce heat stress and food insecurity for low-income neighbourhoods.",
+    "chunk_id": "climate-003#c007",
+    "chunk_text": "Sensitivity to climate change could be reduced by for example increasing the storage capacity of a reservoir, or planting crops that are more resistant to climate variability. It is also possible to reduce vulnerability in towns and cities with green garden spaces. These can reduce heat stress and food insecurity for low-income neighbourhoods.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Adaptation actions are classified into four categories: infrastructural and technological, institutional, behavioural and cultural, and nature-based options.",
+    "chunk_id": "climate-003#c000",
+    "chunk_text": "Climate change adaptation is the process of adjusting to the effects of climate change. These can be both current or expected impacts. Adaptation aims to moderate or avoid harm for people. It also aims to exploit opportunities. Humans may also intervene to help adjustment for natural systems. There are many adaptation strategies or options. They can help manage impacts and risks to people and nature. We can classify adaptation actions in four ways. These are infrastructural and technological; institutional; behavioural and cultural; and nature-based options.\n\nThe need for adaptation varies from place to place. It depends on the risk to human or ecological systems. Adaptation is particularly important in developing countries. This is because developing countries are most vulnerable to climate change. So they bear the brunt of the effects of climate change. Adaptation needs are high for food and water. They are high for other sectors that are important for economic output, jobs and incomes.",
+    "kind": "supported"
+  },
+  {
+    "claim": "The Wright brothers cited Otto Lilienthal's death as the point when their serious interest in flight research ended.",
+    "chunk_id": "aviation-122#c007",
+    "chunk_text": "Capitalizing on the national bicycle craze (spurred by the invention of the safety bicycle and its substantial advantages over the penny-farthing design), in December 1892 the brothers opened a repair and sales shop (the Wright Cycle Exchange, later the Wright Cycle Company) and in 1896 began manufacturing their own brand. They used this endeavor to fund their growing interest in flight. In the early or mid-1890s they saw newspaper or magazine articles and probably photographs of the dramatic glides by Otto Lilienthal in Germany.\n\n1896 brought three important aeronautical events. In May, Smithsonian Institution Secretary Samuel Langley successfully flew an unmanned steam-powered fixed-wing model aircraft. In mid-year, Chicago engineer and aviation authority Octave Chanute brought together several men who tested various types of gliders over the sand dunes along the shore of Lake Michigan. In August, Lilienthal was killed in the plunge of his glider. These events lodged in the minds of the brothers, especially Lilienthal's death. The Wright brothers later cited his death as the point when their serious interest in flight research began.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The Paris Agreement requires countries to keep global temperature rise this century to less than 2°C above pre-industrial levels.",
+    "chunk_id": "climate-003#c005",
+    "chunk_text": "Aims \nFor humans, adaptation aims to moderate or avoid harm, and to exploit opportunities. For natural systems, humans may intervene to help adjustment.\n\nPolicy aims \nThe Paris Agreement of 2015 requires countries to keep global temperature rise this century to less than 2°C above pre-industrial levels, and to pursue efforts to limit the temperature increase to 1.5°C. Even if greenhouse gas emissions are stopped relatively soon, global warming and its effects will last many years. This is due to the inertia of the climate system. So both carbon neutrality (\"net zero\") and adaptation are necessary.\n\nThe Global Goal on Adaptation was also established under the Paris Agreement. The specific targets and indicators for the Global Goal are in development as of 2023. It will support the long-term adaptation goals of the governments that are parties to the agreement. It also aims to fund support for the most vulnerable countries’ adaptation needs in the context of the 1.5/2°C goal. It has three core components. These are reducing vulnerability to climate change, enhancing adaptive capacity, and strengthening resilience.\n\nReduce risk factors: vulnerability and exposure",
+    "kind": "supported"
+  },
+  {
+    "claim": "Blue-green algae, also known as cyanobacteria, are classified as prokaryotic photoautotrophs due to their lack of mitochondria.",
+    "chunk_id": "photosynthesis-031#c002",
+    "chunk_text": "Metabolism of microalgae \nAlgae are primarily eukaryotic photoautotrophic organisms which perform oxygenic photosynthesis. These types of algae are classified by their light-harvesting pigments which give them their color. The green algae species, also known as Chlorophyta, are often used in bioreactors due to their high growth rate and ability to withstand a variety of environments. Blue-green algae, also known as cyanobacteria, are classified as prokaryotic photoautotrophs due to their lack of a nucleus. Light provides essential energy the cell needs to metabolize , nitrogen, phosphorus and other essential nutrients. The wavelengths and intensities of light are very important factors. Available  is also an important factor for growth and due to the lower concentration in our atmosphere, supplementary  can be added as seen with the bubble column PBR below. Microalgae also possess the ability to take up excess nitrogen and phosphorus under starvation conditions, which are essential for lipid and amino acid synthesis. Higher temperatures and a pH above 7 and below 9 are also common factors. Each of these factors may vary from species to species so it is important to have the correct environmental conditions while designing bioreactors of any sort.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The knowledge of the optimal action-value function partially suffices to know how to act optimally.",
+    "chunk_id": "machine-learning-075#c009",
+    "chunk_text": "A policy that achieves these optimal values in each state is called optimal. Clearly, a policy that is optimal in this strong sense is also optimal in the sense that it maximizes the expected return , since , where  is a state randomly sampled from the distribution  of initial states (so ).\n\nAlthough state-values suffice to define optimality, it is useful to define action-values. Given a state , an action  and a policy , the action-value of the pair  under  is defined by\n\nwhere  now stands for the random return associated with first taking action  in state  and following , thereafter.\n\nThe theory of Markov decision processes states that if  is an optimal policy, we act optimally (take the optimal action) by choosing the action from  with the highest value at each state, . The action-value function of such an optimal policy () is called the optimal action-value function and is commonly denoted by . In summary, the knowledge of the optimal action-value function alone suffices to know how to act optimally.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The airship R101 crashed in 1930 and used the Beardmore Tornado aero diesel engine.",
+    "chunk_id": "aviation-011#c006",
+    "chunk_text": "Nevil Shute Norway wrote that the demonstration flight of the airship R100 was changed from India to Canada, \"when she got petrol engines, because it was thought that a flight to the tropics with petrol on board would be too hazardous. It is curious after over twenty years to recall how afraid everyone was of petrol in those days (c. 1929), because since then aeroplanes with petrol engines have done innumerable hours of flying in the tropics, and they don't burst into flames on every flight. I think the truth is that everyone was diesel-minded in those days; it seemed as if the diesel engine for aeroplanes was only just around the corner, with the promise of great fuel economy\".\n\nHence, the ill-fated diesel-engined R101 — which crashed in 1930 — was to fly to India, though her diesel engines had petrol starter engines, and there had only been time to replace one with a diesel starter engine. The R101 used the Beardmore Tornado aero diesel engine, with two of the five engines reversible by an adjustment to the camshaft. This engine was developed from an engine used in railcars.\n\nCertified engines",
+    "kind": "supported"
+  },
+  {
+    "claim": "Machine learning is the study of programs that can improve their performance on a given task manually.",
+    "chunk_id": "machine-learning-000#c006",
+    "chunk_text": "A Markov decision process has a transition model that describes the probability that a particular action will change the state in a particular way, and a reward function that supplies the utility of each state and the cost of each action. A policy associates a decision with each possible state. The policy could be calculated (e.g. by iteration), be heuristic, or it can be learned.\n\nGame theory describes rational behavior of multiple interacting agents, and is used in AI programs that make decisions that involve other agents.\n\nLearning \nMachine learning is the study of programs that can improve their performance on a given task automatically.\nIt has been a part of AI from the beginning.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The forecast length of most operational numerical weather prediction models is between 48 and 200 hours ahead.",
+    "chunk_id": "renewable-energy-050#c010",
+    "chunk_text": "Prediction of meteorological variables Wind power generation is directly linked to weather conditions and thus the first aspect of wind power forecasting is the prediction of future values of the necessary weather variables at the level of the wind farm. This is done by using numerical weather prediction (NWP) models. Such models are based on equations governing the motions and forces affecting motion of fluids. From the knowledge of the actual state of the atmosphere, the system of equations allows to estimate what the evolution of state variables, e. g. temperature, velocity, humidity and pressure, will be at a series of grid points. The meteorological variables that are needed as input for wind power prediction obviously include wind speed and direction, but also possibly temperature, pressure and humidity. The distance between grid points is called the spatial resolution of the NWPs. The mesh typically has spacing that varies between few kilometers and up to 50 kilometers for mesoscale models. Regarding the time axis, the forecast length of most of the operational models today is between 48 and 172 hours ahead, which is in adequacy with the requirements for the wind power application.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Modern large wind turbines operate at fixed speeds.",
+    "chunk_id": "renewable-energy-042#c007",
+    "chunk_text": "Generator torque \nModern large wind turbines operate at variable speeds. When wind speed falls below the turbine's rated speed, generator torque is used to control the rotor speed to capture as much power as possible. The most power is captured when the tip speed ratio is held constant at its optimum value (typically 6 or 7). This means that rotor speed increases proportional to wind speed. The difference between the aerodynamic torque captured by the blades and the applied generator torque controls the rotor speed. If the generator torque is lower, the rotor accelerates, and if the generator torque is higher, the rotor slows. Below rated wind speed, the generator torque control is active while the blade pitch is typically held at the constant angle that captures the most power, fairly flat to the wind. Above rated wind speed, the generator torque is typically held constant while the blade pitch is adjusted accordingly.\n\nOne technique to control a permanent magnet synchronous motor is field-oriented control. Field-oriented control is a closed loop strategy composed of two current controllers (an inner loop and cascading outer loop) necessary for controlling the torque, and one speed controller.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The airship R101 crashed in 1932 and used the Beardmore Tornado aero diesel engine.",
+    "chunk_id": "aviation-011#c006",
+    "chunk_text": "Nevil Shute Norway wrote that the demonstration flight of the airship R100 was changed from India to Canada, \"when she got petrol engines, because it was thought that a flight to the tropics with petrol on board would be too hazardous. It is curious after over twenty years to recall how afraid everyone was of petrol in those days (c. 1929), because since then aeroplanes with petrol engines have done innumerable hours of flying in the tropics, and they don't burst into flames on every flight. I think the truth is that everyone was diesel-minded in those days; it seemed as if the diesel engine for aeroplanes was only just around the corner, with the promise of great fuel economy\".\n\nHence, the ill-fated diesel-engined R101 — which crashed in 1930 — was to fly to India, though her diesel engines had petrol starter engines, and there had only been time to replace one with a diesel starter engine. The R101 used the Beardmore Tornado aero diesel engine, with two of the five engines reversible by an adjustment to the camshaft. This engine was developed from an engine used in railcars.\n\nCertified engines",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "C4 alone arose 45 times in 18 different plant families.",
+    "chunk_id": "photosynthesis-057#c010",
+    "chunk_text": "These two pathways, with the same effect on RuBisCO, evolved a number of times independently – indeed, C4 alone arose 62 times in 18 different plant families.  A number of 'pre-adaptations' seem to have paved the way for C4, leading to its clustering in certain clades: it has most frequently developed in plants that already had features such as extensive vascular bundle sheath tissue. Whole-genome and individual gene duplication are also associated with C4 evolution. Many potential evolutionary pathways resulting in the  phenotype are possible and have been characterised using Bayesian inference, confirming that non-photosynthetic adaptations often provide evolutionary stepping stones for the further evolution of .\n\nThe C4 construction is most famously used by a subset of grasses, while CAM is employed by many succulents and cacti. The trait appears to have emerged during the Oligocene, around ; however, they did not become ecologically significant until the Miocene, . Remarkably, some charcoalified fossils preserve tissue organised into the Kranz anatomy, with intact bundle sheath cells, allowing the presence C4 metabolism to be identified without doubt at this time. Isotopic markers are used to deduce their distribution and significance.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Research on climate change adaptation has been ongoing since the 1990s.",
+    "chunk_id": "climate-003#c002",
+    "chunk_text": "Definition \nThe IPCC defines climate change adaptation in this way:\n \"In human systems, as the process of adjustment to actual or expected climate and its effects in order to moderate harm or take advantage of beneficial opportunities.\"\n \"In natural systems, adaptation is the process of adjustment to actual climate and its effects; human intervention may facilitate this.\"\nAdaptation actions can be incremental  or transformative. Incremental actions  are actions that aim to maintain the essence and integrity of a system. Transformative actions are actions that change the fundamental attributes of a system in response to climate change and its impacts.\n\nUnderstanding the need \nResearch on climate change adaptation has been ongoing since the 1990s. The number and variety of subtopics has greatly increased since then. Adaptation has become an established policy area in the 2010s and since the Paris agreement, and an important topic for policy research.\n\nClimate change impacts research",
+    "kind": "supported"
+  },
+  {
+    "claim": "Emissions grew at 1.0% yr−1 throughout the 1990s and accelerated to 2.4% yr−1 between 2000 and 2008.",
+    "chunk_id": "climate-032#c005",
+    "chunk_text": "It is now overwhelmingly accepted that the release of GHG, predominantly from the anthropogenic burning of fossil fuels and the release of direct emissions from agricultural activities, is accelerating the growth of these gases in the atmosphere resulting in climate change. Over the last few decades emissions have grown at an increasing rate from 1. 0% yr−1 throughout the 1990s to 3. 4% yr−1 between 2000 and 2008. These increases have been driven not only by a growing global population and per-capita GDP, but also by global increases in the energy intensity of GDP (energy per unit GDP) and the carbon intensity of energy (emissions per unit energy). These drivers are most apparent in developing markets (Kyoto non-Annex B countries), but what is less apparent is that a substantial fraction of the growth in these countries is to satisfy the demand of consumers in developed countries (Kyoto Annex B countries). This is exaggerated by a process known as Carbon Leakage whereby Annex B countries decrease domestic production in place of increased importation of products from non-Annex B countries where emission policies are less strict.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "From 1961 to 1990, a gradual reduction in the amount of sunlight reaching the Earth's surface was observed.",
+    "chunk_id": "climate-011#c013",
+    "chunk_text": "Despite the contribution of deforestation to greenhouse gas emissions, the Earth's land surface, particularly its forests, remain a significant carbon sink for . Land-surface sink processes, such as carbon fixation in the soil and photosynthesis, remove about 29% of annual global  emissions. The ocean also serves as a significant carbon sink via a two-step process. First,  dissolves in the surface water. Afterwards, the ocean's overturning circulation distributes it deep into the ocean's interior, where it accumulates over time as part of the carbon cycle. Over the last two decades, the world's oceans have absorbed 20 to 30% of emitted .\n\nAerosols and clouds \nAir pollution, in the form of aerosols, affects the climate on a large scale. Aerosols scatter and absorb solar radiation. From 1961 to 1990, a gradual reduction in the amount of sunlight reaching the Earth's surface was observed. This phenomenon is popularly known as global dimmin",
+    "kind": "supported"
+  },
+  {
+    "claim": "Wilbur discovered wing-warping by twisting a short inner-tube box at a bicycle shop.",
+    "chunk_id": "aviation-122#c010",
+    "chunk_text": "On the basis of observation, Wilbur concluded that birds changed the angle of the ends of their wings to make their bodies roll right or left. The brothers decided this would also be a good way for a flying machine to turn – to \"bank\" or \"lean\" into the turn just like a bird – and just like a person riding a bicycle, an experience with which they were thoroughly familiar. Equally important, they hoped this method would enable recovery when the wind tilted the machine to one side (lateral balance). They puzzled over how to achieve the same effect with man-made wings and eventually discovered wing-warping when Wilbur idly twisted a long inner-tube box at the bicycle shop.",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "Research on climate change adaptation has been ongoing since the 2000s.",
+    "chunk_id": "climate-003#c002",
+    "chunk_text": "Definition \nThe IPCC defines climate change adaptation in this way:\n \"In human systems, as the process of adjustment to actual or expected climate and its effects in order to moderate harm or take advantage of beneficial opportunities.\"\n \"In natural systems, adaptation is the process of adjustment to actual climate and its effects; human intervention may facilitate this.\"\nAdaptation actions can be incremental  or transformative. Incremental actions  are actions that aim to maintain the essence and integrity of a system. Transformative actions are actions that change the fundamental attributes of a system in response to climate change and its impacts.\n\nUnderstanding the need \nResearch on climate change adaptation has been ongoing since the 1990s. The number and variety of subtopics has greatly increased since then. Adaptation has become an established policy area in the 2010s and since the Paris agreement, and an important topic for policy research.\n\nClimate change impacts research",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The Éolienne Bollée is an example of a Diffuser-Augmented Wind Turbine.",
+    "chunk_id": "renewable-energy-043#c002",
+    "chunk_text": "A research project, the ducted rotor consists of a turbine inside a duct that flares at the back. They are also referred as Diffuser-Augmented Wind Turbines (i.e. DAWT). Its main advantage is that it can operate in a wide range of winds and generate a higher power per unit of rotor area. Another advantage is that the generator operates at a high rotation rate, so it doesn't require a bulky gearbox, allowing the mechanical portion to be smaller and lighter. A disadvantage is that (apart from the gearbox) it is more complicated than the unducted rotor and the duct's weight increases tower weight. The Éolienne Bollée is an example of a DAWT.\n\nCo-axial, multi-rotor",
+    "kind": "supported"
+  },
+  {
+    "claim": "Throughout the 20th century, most classifications treated cyanophytes and chlorophytes as divisions or classes of algae.",
+    "chunk_id": "photosynthesis-000#c007",
+    "chunk_text": "Throughout the 20th century, most classifications treated the following groups as divisions or classes of algae: cyanophytes, rhodophytes, chrysophytes, xanthophytes, bacillariophytes, phaeophytes, pyrrhophytes (cryptophytes and dinophytes), euglenophytes, and chlorophytes. Later, many new groups were discovered (e.g., Bolidophyceae), and others were splintered from older groups: charophytes and glaucophytes (from chlorophytes), many heterokontophytes (e.g., synurophytes from chrysophytes, or eustigmatophytes from xanthophytes), haptophytes (from chrysophytes), and chlorarachniophytes (from xanthophytes).\n\nWith the abandonment of plant-animal dichotomous classification, most groups of algae (sometimes all) were included in Protista, later also abandoned in favour of Eukaryota. However, as a legacy of the older plant life scheme, some groups that were also treated as protozoans in the past still have duplicated classifications (see ambiregnal protists).",
+    "kind": "supported"
+  },
+  {
+    "claim": "As of 2022, warming is 1.2°C above levels before the industrial revolution.",
+    "chunk_id": "climate-003#c003",
+    "chunk_text": "Scientific research into climate change adaptation generally starts with analyses of the likely effects of climate change on people, ecosystems and the environment. These impacts cover its effects on lives, livelihoods, health and well-being, ecosystems and species, economic, social and cultural assets, and infrastructure.  Impacts may include changed agricultural yields, increased floods, and droughts or coral reef bleaching. Analysis of such impacts is an important step in understanding current and future adaptation needs and options.\n\nAs of 2022, the level of warming is 1.2°C (2.2°F) above levels before the industrial revolution. It is on track to increase to 2.5 to 2.9°C (4.5 to 5.2°F) by the end of the century. This is causing a variety of secondary effects.\n\nMany negative effects of climate change involve changes in extremes or the way conditions vary rather than changes in average conditions. For example, the average sea level in a port might not be as important as the height of water during a storm surge. That is because a storm surge can cause flooding. The average rainfall in an area might not be as important as how frequent and severe droughts and extreme precipitation events become.\n\nDisaster risks, response and preparedness",
+    "kind": "supported"
+  },
+  {
+    "claim": "Most researchers agree that deep learning involves CAP depth higher than 2.",
+    "chunk_id": "machine-learning-080#c003",
+    "chunk_text": "The word \"deep\" in \"deep learning\" refers to the number of layers through which the data is transformed. More precisely, deep learning systems have a substantial credit assignment path (CAP) depth. The CAP is the chain of transformations from input to output. CAPs describe potentially causal connections between input and output. For a feedforward neural network, the depth of the CAPs is that of the network and is the number of hidden layers plus one (as the output layer is also parameterized). For recurrent neural networks, in which a signal may propagate through a layer more than once, the CAP depth is potentially unlimited. No universally agreed-upon threshold of depth divides shallow learning from deep learning, but most researchers agree that deep learning involves CAP depth higher than 2. CAP of depth 2 has been shown to be a universal approximator in the sense that it can emulate any function. Beyond that, more layers do not add to the function approximator ability of the network. Deep models (CAP > 2) are able to extract better features than shallow models and hence, extra layers help in learning the features effectively.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Throughout the 20th century, most classifications treated cyanophytes and chlorophytes as divisions or classes of algae.",
+    "chunk_id": "photosynthesis-000#c007",
+    "chunk_text": "Throughout the 20th century, most classifications treated the following groups as divisions or classes of algae: cyanophytes, rhodophytes, chrysophytes, xanthophytes, bacillariophytes, phaeophytes, pyrrhophytes (cryptophytes and dinophytes), euglenophytes, and chlorophytes. Later, many new groups were discovered (e.g., Bolidophyceae), and others were splintered from older groups: charophytes and glaucophytes (from chlorophytes), many heterokontophytes (e.g., synurophytes from chrysophytes, or eustigmatophytes from xanthophytes), haptophytes (from chrysophytes), and chlorarachniophytes (from xanthophytes).\n\nWith the abandonment of plant-animal dichotomous classification, most groups of algae (sometimes all) were included in Protista, later also abandoned in favour of Eukaryota. However, as a legacy of the older plant life scheme, some groups that were also treated as protozoans in the past still have duplicated classifications (see ambiregnal protists).",
+    "kind": "supported"
+  },
+  {
+    "claim": "For a given wind speed, turbine mass is exactly proportional to the cube of its blade-length.",
+    "chunk_id": "renewable-energy-042#c011",
+    "chunk_text": "For a given wind speed, turbine mass is approximately proportional to the cube of its blade-length. Wind power intercepted is proportional to the square of blade-length. The maximum blade-length of a turbine is limited by strength, stiffness, and transport considerations.\n\nLabor and maintenance costs increase slower than turbine size, so to minimize costs, wind farm turbines are basically limited by the strength of materials, and siting requirements.\n\nLow temperature \nUtility-scale wind turbine generators have minimum temperature operating limits that apply in areas with temperatures below . Turbines must be protected from ice accumulation that can make anemometer readings inaccurate and which, in certain turbine control designs, can cause high structure loads and damage. Some turbine manufacturers offer low-temperature packages at extra cost, which include internal heaters, different lubricants, and different alloys for structural elements. If low-temperatures are combined with a low-wind condition, the turbine requires an external supply of power, equivalent to a few percent of it",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The knowledge of the optimal action-value function alone suffices to know how to act optimally.",
+    "chunk_id": "machine-learning-075#c009",
+    "chunk_text": "A policy that achieves these optimal values in each state is called optimal. Clearly, a policy that is optimal in this strong sense is also optimal in the sense that it maximizes the expected return , since , where  is a state randomly sampled from the distribution  of initial states (so ).\n\nAlthough state-values suffice to define optimality, it is useful to define action-values. Given a state , an action  and a policy , the action-value of the pair  under  is defined by\n\nwhere  now stands for the random return associated with first taking action  in state  and following , thereafter.\n\nThe theory of Markov decision processes states that if  is an optimal policy, we act optimally (take the optimal action) by choosing the action from  with the highest value at each state, . The action-value function of such an optimal policy () is called the optimal action-value function and is commonly denoted by . In summary, the knowledge of the optimal action-value function alone suffices to know how to act optimally.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Compound rotorcraft are historically classified as powered lift types instead of rotorcraft.",
+    "chunk_id": "aviation-000#c009",
+    "chunk_text": "Compound rotorcraft have wings that provide some or all of the lift in forward flight. They are nowadays classified as powered lift types and not as rotorcraft. Tiltrotor aircraft (such as the Bell Boeing V-22 Osprey), tiltwing, tail-sitter, and coleopter aircraft have their rotors/propellers horizontal for vertical flight and vertical for forward flight.\n\nOther methods of lift",
+    "kind": "unsupported"
+  },
+  {
+    "claim": "The Program Time Unit on the balancing market is of 15 minutes.",
+    "chunk_id": "renewable-energy-050#c006",
+    "chunk_text": "In order to illustrate this electricity market mechanism, consider the Dutch electricity market. Market participants, referred to as Program Responsible Parties (PRPs), submit their price-quantity bids before 11 am for the delivery period covering the following day from midnight to midnight. The Program Time Unit (PTU) on the balancing market is of 15 minutes. Balancing of the 15-minute averaged power is required from all electrical producers and consumers connected to the grid, who for this purpose may be organised in sub-sets. Since these sub-sets are referred to as Programmes, balancing on the 15-minute scale is referred to as Programme Balance. Programme Balance now is maintained by using the production schedules issued the day before delivery and measurement reports (distributed the day after delivery). When the measured power is not equal to the scheduled power, the Programme Imbalance is the difference between the realised sum of production and consumption and the forecast sum of production and consumption. If only production from wind energy is taken into account, Programme Imbalance reduces to realised wind production minus forecast wind production. The programme imbalance is the wind production forecast error.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Hobbyists may travel long distances to view the remains of withdrawn aircraft.",
+    "chunk_id": "aviation-004#c005",
+    "chunk_text": "Ancillary activities might include listening-in to air traffic control transmissions (using radio scanners, where that is legal), liaising with other \"spotters\" to clear up uncertainties as to what aircraft have been seen at specific times or in particular places. Several internet mailing list groups have been formed to help communicate aircraft seen at airports, queries and anomalies. These groups can cater to certain regions, certain aircraft types, or may appeal to a wider audience. The result is that information on aircraft movements can be delivered worldwide in a real-time fashion to spotters.\n\nThe hobbyist might travel long distances to visit different airports, to see an unusual aircraft, or to view the remains of aircraft withdrawn from use. Air shows usually draw large numbers of spotters as they are opportunities to enter airfields and air bases worldwide that are usually closed to the public and to see displayed aircraft at close range. Some aircraft may be placed in the care of museums (see Aviation archaeology) – or perhaps be cannibalized in order to repair a similar aircraft already preserved.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Chlorophyll fluorescence can measure the efficiency of PSII photochemistry.",
+    "chunk_id": "photosynthesis-042#c005",
+    "chunk_text": "Whilst  gives an estimation of the efficiency,  and  tell us which processes which have altered the efficiency. Closure of reaction centers as a result of a high intensity light will alter the value of . Changes in the efficiency of non-photochemical quenching will alter the ratio .\n\nApplications of the Theory\n\nPSII yield as a measure of photosynthesis \nChlorophyll fluorescence appears to be a measure of photosynthesis, but this is an over-simplification. Fluorescence can measure the efficiency of PSII photochemistry, which can be used to estimate the rate of linear electron transport by multiplying by the light intensity. However, researchers generally mean carbon fixation when they refer to photosynthesis. Electron transport and CO2 fixation can correlate well, but may not correlate in the field due to processes such as photorespiration, nitrogen metabolism and the Mehler reaction.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Annual ski races are held on the Fourth of July in some high mountain areas.",
+    "chunk_id": "climate-048#c005",
+    "chunk_text": "The high mountains, including the Sierra Nevada, the Cascade Range, and the Klamath Mountains, have a mountain climate with snow in winter and mild to moderate heat in summer. Ski resorts at Lake Tahoe, Mammoth Lakes, and Mount Shasta routinely receive over  of snow in a season, and some years, substantially more – leading, for example, to annual ski races on the Fourth of July.",
+    "kind": "supported"
+  },
+  {
+    "claim": "The first appearance of free oxygen in the atmosphere is sometimes referred to as the oxygen catastrophe.",
+    "chunk_id": "photosynthesis-057#c003",
+    "chunk_text": "The first oxygenic photosynthetic organisms are proposed to be -dependent. It is also suggested photosynthesis originated under sunlight, using  emitted by volcanoes and hydrothermal vents which ended the need for scarce H2 emitted by alkaline hydrothermal vents. Oxygenic photosynthesis uses water as an electron donor, which is oxidized to molecular oxygen () in the photosynthetic reaction center. The biochemical capacity for oxygenic photosynthesis evolved in a common ancestor of extant cyanobacteria. The first appearance of free oxygen in the atmosphere is sometimes referred to as the oxygen catastrophe. The geological record indicates that this transforming event took place during the Paleoproterozoic era at least 2450–2320 million years ago (Ma), and, it is speculated, much earlier. A clear paleontological window on cyanobacterial evolution opened about 2000 Ma, revealing an already-diverse biota of blue-greens. Cyanobacteria remained principal primary producers throughout the Proterozoic Eon (2500–543 Ma), in part because the redox structure of the oceans favored photoautotrophs capable of nitrogen fixation. Green algae joined blue-greens as major primary producers on continental shelves near the end of the Proterozoic, but only with the Mesozoic (251–65 Ma) radiations of dinoflagellates, coccolithophorids, and diatoms did primary production in marine shelf waters take modern form.",
+    "kind": "supported"
+  },
+  {
+    "claim": "In 2008, Japan passed its Basic Space Law which established space solar power as a national goal.",
+    "chunk_id": "renewable-energy-025#c002",
+    "chunk_text": "In 2008, Japan passed its Basic Space Law which established space solar power as a national goal. JAXA has a roadmap to commercial SBSP.\n\nIn 2015, the China Academy for Space Technology (CAST) showcased its roadmap at the International Space Development Conference. In February 2019, Science and Technology Daily (科技日报, Keji Ribao), the official newspaper of the Ministry of Science and Technology of the People's Republic of China, reported that construction of a testing base had started in Chongqing's Bishan District. CAST vice-president Li Ming was quoted as saying China expects to be the first nation to build a working space solar power station with practical value. Chinese scientists were reported as planning to launch several small- and medium-sized space power stations between 2021 and 2025. In December 2019, Xinhua News Agency reported that China plans to launch a 200-tonne SBSP station capable of generating megawatts (MW) of electricity to Earth by 2035.",
+    "kind": "supported"
+  },
+  {
+    "claim": "Emissions slowed since 2007 as a result of the global financial crisis.",
+    "chunk_id": "climate-032#c006",
+    "chunk_text": "Although this may seem the rational choice for consumers when considering local pollutants, consumers are inescapably affected by global pollutants such as GHG, irrespective of where production occurs. Although emissions have slowed since 2007 as a result of the global financial crisis, the longer-term trend of increased emissions is likely to resume.",
+    "kind": "supported"
+  }
+]

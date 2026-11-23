@@ -1,0 +1,19 @@
+{
+  "index": 45,
+  "chunk_id": "aviation-004#c005",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 445,
+    "output_tokens": 59,
+    "reasoning_tokens": 16
+  },
+  "cost_usd_est": "0.000681",
+  "cumulative_usd_est": "0.031500",
+  "latency_s": 2.41,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"The passage states hobbyists travel LONG distances to view withdrawn aircraft, not short distances.\"}",
+  "label": "unsupported",
+  "reason": "The passage states hobbyists travel LONG distances to view withdrawn aircraft, not short distances."
+}

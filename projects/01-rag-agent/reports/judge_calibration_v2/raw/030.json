@@ -1,0 +1,19 @@
+{
+  "index": 30,
+  "chunk_id": "machine-learning-000#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 436,
+    "output_tokens": 90,
+    "reasoning_tokens": 38
+  },
+  "cost_usd_est": "0.000796",
+  "cumulative_usd_est": "0.021498",
+  "latency_s": 2.41,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says objects, relations, concepts, and properties; claim replaces \\\"objects\\\" with \\\"rules\\\", which is not stated.\"}",
+  "label": "unsupported",
+  "reason": "Passage says objects, relations, concepts, and properties; claim replaces \"objects\" with \"rules\", which is not stated."
+}

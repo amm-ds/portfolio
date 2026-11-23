@@ -1,0 +1,19 @@
+{
+  "index": 31,
+  "chunk_id": "climate-000#c000",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 412,
+    "output_tokens": 68,
+    "reasoning_tokens": 6
+  },
+  "cost_usd_est": "0.000505",
+  "cumulative_usd_est": "0.022003",
+  "latency_s": 2.35,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states the best estimate of human-induced surface-level air warming by 2010–2019 compared to 1850–1900 is 1.07 °C.\"}",
+  "label": "supported",
+  "reason": "The passage states the best estimate of human-induced surface-level air warming by 2010–2019 compared to 1850–1900 is 1.07 °C."
+}

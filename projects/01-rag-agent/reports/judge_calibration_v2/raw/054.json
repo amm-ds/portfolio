@@ -1,0 +1,19 @@
+{
+  "index": 54,
+  "chunk_id": "photosynthesis-031#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 506,
+    "output_tokens": 69,
+    "reasoning_tokens": 10
+  },
+  "cost_usd_est": "0.000782",
+  "cumulative_usd_est": "0.037693",
+  "latency_s": 2.74,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states verbatim that blue-green algae (cyanobacteria) are classified as prokaryotic photoautotrophs due to their lack of a nucleus.\"}",
+  "label": "supported",
+  "reason": "The passage states verbatim that blue-green algae (cyanobacteria) are classified as prokaryotic photoautotrophs due to their lack of a nucleus."
+}

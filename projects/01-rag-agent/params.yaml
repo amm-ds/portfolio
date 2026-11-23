@@ -53,9 +53,19 @@ chunk_sizes:
   - 400
   - 800
 chunk_overlap: 40
+# Promoted 2026-11-23 (SOTA ladder S3, 20261123 handoff): structure-aware
+# chunking won the dev_65/heldout_55/final_v3 ladder with no slice regression
+# (final_v3 recall@5 0.9457 vs R0 0.9239, multi-hop 0.8333 vs 0.7917).
+chunk_mode: structure
 embedding_model: sentence-transformers/all-MiniLM-L6-v2
 reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2
 top_k: 5
+# Hybrid dense+BM25 fusion (RRF k=60) and per-article diversity, S3 winner.
+fusion_rrf: true
+rrf_pool_size: 50
+max_per_article: 2
+# S3 arm was measured with a 6x rerank candidate net; production matches it.
+rerank_multiplier: 6
 usd_per_mtok_input: 0.15
 usd_per_mtok_output: 0.60
 # Production retrieval config chosen by the wave-3 HPO sweep
@@ -66,6 +76,10 @@ retrieval_best:
   chunk_size: 200
   top_k: 3
   rerank: true
+  chunk_mode: structure
+  fusion_rrf: true
+  rrf_pool_size: 50
+  max_per_article: 2
 # Verify-then-answer loop (wave 14): claim-level entailment check of the
 # drafted answer against its cited chunks; unsupported claims are repaired or
 # dropped, and answers below the support floor fall back to abstention.

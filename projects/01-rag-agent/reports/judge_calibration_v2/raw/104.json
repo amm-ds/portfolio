@@ -1,0 +1,19 @@
+{
+  "index": 104,
+  "chunk_id": "climate-032#c007",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 332,
+    "output_tokens": 50,
+    "reasoning_tokens": 8
+  },
+  "cost_usd_est": "0.000353",
+  "cumulative_usd_est": "0.069870",
+  "latency_s": 1.83,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage directly states the two conflicting measurement methods as production-based and consumption-based.\"}",
+  "label": "supported",
+  "reason": "Passage directly states the two conflicting measurement methods as production-based and consumption-based."
+}

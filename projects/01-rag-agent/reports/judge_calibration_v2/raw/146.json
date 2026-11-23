@@ -1,0 +1,19 @@
+{
+  "index": 146,
+  "chunk_id": "climate-032#c006",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 301,
+    "output_tokens": 157,
+    "reasoning_tokens": 112
+  },
+  "cost_usd_est": "0.000750",
+  "cumulative_usd_est": "0.094784",
+  "latency_s": 2.72,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage directly states emissions slowed since 2007 as a result of the global financial crisis.\"}",
+  "label": "supported",
+  "reason": "The passage directly states emissions slowed since 2007 as a result of the global financial crisis."
+}

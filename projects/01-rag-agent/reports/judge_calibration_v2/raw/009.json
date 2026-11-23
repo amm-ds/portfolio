@@ -1,0 +1,19 @@
+{
+  "index": 9,
+  "chunk_id": "renewable-energy-055#c007",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 456,
+    "output_tokens": 64,
+    "reasoning_tokens": 20
+  },
+  "cost_usd_est": "0.000712",
+  "cumulative_usd_est": "0.007061",
+  "latency_s": 2.88,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states 24.6 GW total installed capacity, not over 30 GW.\"}",
+  "label": "unsupported",
+  "reason": "Passage states 24.6 GW total installed capacity, not over 30 GW."
+}

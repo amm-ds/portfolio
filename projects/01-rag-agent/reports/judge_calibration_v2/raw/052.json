@@ -1,0 +1,19 @@
+{
+  "index": 52,
+  "chunk_id": "renewable-energy-042#c009",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 484,
+    "output_tokens": 69,
+    "reasoning_tokens": 25
+  },
+  "cost_usd_est": "0.000760",
+  "cumulative_usd_est": "0.036490",
+  "latency_s": 2.7,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states cyclic braking is usually not applied on large, grid-connected wind turbines.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states cyclic braking is usually not applied on large, grid-connected wind turbines."
+}

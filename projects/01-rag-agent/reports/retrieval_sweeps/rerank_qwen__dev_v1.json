@@ -1,0 +1,59 @@
+{
+  "schema_version": "measure-retrieval-v1",
+  "generated_at": "2026-11-23T01:06:32.657650+00:00",
+  "step": "sweep",
+  "split": "dev_v1",
+  "config": {
+    "chunk_size": 200,
+    "chunk_overlap": 40,
+    "chunk_mode": "size",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "embedding_kind": "local",
+    "reranker_model": "Qwen/Qwen3-Reranker-0.6B",
+    "top_k": 3,
+    "measure_k": 5,
+    "rerank_multiplier": 5,
+    "name": "rerank_qwen"
+  },
+  "config_sha256": "e76bd4425e9228cacb0cabddbcbac10a0c0ecefc7e4bb62e4d029f959e96e31f",
+  "set_sha256": "ed9013955903caa98a0dc9eaf5a366e151288ff8457afc690e2bec8d7371f13c",
+  "set_note": "ids frozen in data/dev_v1.sha256.json; ids recorded in report",
+  "commit": "1663dd3b7ec86556894e466998451ad1978500b3",
+  "dirty": true,
+  "index_note": "sweep index under data/index/sweeps/",
+  "method": "retrieval-only; no LLM calls. Measurement ranks top_k=5 (25 candidates fetched = measure_k x rerank_multiplier, README '5xk'); production serving slice is top_k=3 \u2014 both token means reported. Dev gold is article-level (all chunks of relevant_titles articles); final_v3 gold is exact gold_chunk_ids.",
+  "rerank_review": {
+    "model": "Qwen/Qwen3-Reranker-0.6B",
+    "revision": "e61197ed45024b0ed8a2d74b80b4d909f1255473",
+    "trust_remote_code": false,
+    "review": "cached snapshot contains no remote-code files (no modeling_*.py/configuration_*.py); native transformers load"
+  },
+  "request_hosts": [],
+  "metrics": {
+    "n_answerable": 16,
+    "gold_modes": [
+      "article_level"
+    ],
+    "recall_at_5": 1.0,
+    "recall_at_5_wilson95": [
+      0.8063923194655637,
+      1.0
+    ],
+    "mrr_at_5": 0.921875,
+    "mean_context_tokens_top3": 455.0,
+    "mean_context_tokens_top5": 763.6875,
+    "slices": {
+      "multi_hop": {
+        "n": 4,
+        "recall_at_5": 1.0,
+        "mrr_at_5": 0.875
+      },
+      "single_hop": {
+        "n": 12,
+        "recall_at_5": 1.0,
+        "mrr_at_5": 0.9375
+      }
+    },
+    "n_abstain_false_evidence": 0
+  }
+}

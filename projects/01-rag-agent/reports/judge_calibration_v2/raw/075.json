@@ -1,0 +1,19 @@
+{
+  "index": 75,
+  "chunk_id": "climate-032#c007",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 332,
+    "output_tokens": 55,
+    "reasoning_tokens": 13
+  },
+  "cost_usd_est": "0.000552",
+  "cumulative_usd_est": "0.051595",
+  "latency_s": 2.59,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"The passage describes the two methods as 'conflicting,' not 'complementary.'\"}",
+  "label": "unsupported",
+  "reason": "The passage describes the two methods as 'conflicting,' not 'complementary.'"
+}

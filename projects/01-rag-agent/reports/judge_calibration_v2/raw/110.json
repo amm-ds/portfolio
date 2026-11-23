@@ -1,0 +1,19 @@
+{
+  "index": 110,
+  "chunk_id": "climate-046#c001",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 454,
+    "output_tokens": 106,
+    "reasoning_tokens": 62
+  },
+  "cost_usd_est": "0.000699",
+  "cumulative_usd_est": "0.074013",
+  "latency_s": 2.54,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"unsupported\",\"reason\":\"Passage says mesophytic ecosystem is also known as semi-evergreen forest, not deciduous forest.\"}",
+  "label": "unsupported",
+  "reason": "Passage says mesophytic ecosystem is also known as semi-evergreen forest, not deciduous forest."
+}

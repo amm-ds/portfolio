@@ -1,0 +1,19 @@
+{
+  "index": 58,
+  "chunk_id": "aviation-122#c007",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 471,
+    "output_tokens": 149,
+    "reasoning_tokens": 97
+  },
+  "cost_usd_est": "0.001067",
+  "cumulative_usd_est": "0.040052",
+  "latency_s": 3.08,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states the Wright brothers later cited Lilienthal's death as the point when their serious interest in flight research began.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states the Wright brothers later cited Lilienthal's death as the point when their serious interest in flight research began."
+}

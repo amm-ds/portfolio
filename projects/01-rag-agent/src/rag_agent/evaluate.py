@@ -43,7 +43,6 @@ import numpy as np
 import plotly.graph_objects as go
 from portfolio_core.llm_budget import (
     BudgetExceededError,
-    budget_limits,
     get_ledger,
 )
 from portfolio_core.logging import get_logger
@@ -55,7 +54,7 @@ from pydantic_ai.exceptions import UnexpectedModelBehavior, UsageLimitExceeded
 if TYPE_CHECKING:
     from pydantic_ai.models import Model
 
-from rag_agent.agent import build_agent
+from rag_agent.agent import agent_usage_limits, build_agent
 from rag_agent.config import RAGConfig, RetrievalBest
 from rag_agent.corpus import load_corpus
 from rag_agent.figures import (
@@ -173,6 +172,7 @@ def answer_with_output_retries(
     agent: Agent[Retriever, AnalysisResult],
     question: str,
     retriever: Retriever,
+    config: RAGConfig,
     max_retries: int = MAX_OUTPUT_RETRIES,
 ) -> tuple[AgentRunResult[AnalysisResult] | None, int, str]:
     """Run the agent with ≤ ``max_retries`` output-retries on invalid output.
@@ -192,7 +192,7 @@ def answer_with_output_retries(
                 question,
                 deps=retriever,
                 retries={"output": 0},  # retries are explicit and counted here
-                usage_limits=budget_limits(),
+                usage_limits=agent_usage_limits(config),
             )
             return result, retries, ""
         except BudgetExceededError:
@@ -690,7 +690,7 @@ def run_rag_eval(  # noqa: C901 - established per-question state machine;
         error = ""
         try:
             result, output_retries, error = answer_with_output_retries(
-                agent, question.question, retriever
+                agent, question.question, retriever, config
             )
             if result is not None:
                 output = result.output

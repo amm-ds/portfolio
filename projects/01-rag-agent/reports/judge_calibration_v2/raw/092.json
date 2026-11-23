@@ -1,0 +1,19 @@
+{
+  "index": 92,
+  "chunk_id": "photosynthesis-000#c011",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 416,
+    "output_tokens": 87,
+    "reasoning_tokens": 43
+  },
+  "cost_usd_est": "0.000764",
+  "cumulative_usd_est": "0.062460",
+  "latency_s": 3.46,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"unsupported\",\"reason\":\"Passage says turfs are usually less than 15 cm tall, not more than 30 cm.\"}",
+  "label": "unsupported",
+  "reason": "Passage says turfs are usually less than 15 cm tall, not more than 30 cm."
+}

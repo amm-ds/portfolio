@@ -1,0 +1,19 @@
+{
+  "index": 100,
+  "chunk_id": "aviation-122#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 465,
+    "output_tokens": 57,
+    "reasoning_tokens": 17
+  },
+  "cost_usd_est": "0.000514",
+  "cumulative_usd_est": "0.067163",
+  "latency_s": 2.3,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says Taylor built their FIRST airplane engine, not the second.\"}",
+  "label": "unsupported",
+  "reason": "Passage says Taylor built their FIRST airplane engine, not the second."
+}

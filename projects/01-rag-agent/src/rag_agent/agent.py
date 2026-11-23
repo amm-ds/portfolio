@@ -15,6 +15,7 @@ raises with setup guidance, and ``chat``/``evaluate`` surface that message.
 from typing import Any
 
 from portfolio_core.llm import build_model
+from portfolio_core.llm_budget import budget_limits
 from portfolio_core.logging import get_logger
 from pydantic_ai import Agent
 from pydantic_ai.models import Model
@@ -26,6 +27,33 @@ from rag_agent.provider import model_settings_for_provider
 from rag_agent.schemas import AnalysisResult, Citation
 
 logger = get_logger(__name__)
+
+
+def agent_usage_limits(config: RAGConfig) -> Any:
+    """UsageLimits for one evaluated question: platform budget limits plus the
+    bounded agent-loop rails (ported from agent-loop-bounds-2026-11-20).
+
+    Local Ollama has no hosted budget limits; the rails still apply so a
+    runaway tool loop stops deterministically in every environment.
+    """
+    from pydantic_ai.usage import UsageLimits
+
+    limits = budget_limits()
+    if limits is None:
+        return UsageLimits(
+            request_limit=config.agent_request_limit,
+            tool_calls_limit=config.agent_tool_calls_limit,
+            input_tokens_limit=config.agent_input_tokens_limit,
+        )
+    import dataclasses
+
+    return dataclasses.replace(
+        limits,
+        request_limit=config.agent_request_limit,
+        tool_calls_limit=config.agent_tool_calls_limit,
+        input_tokens_limit=config.agent_input_tokens_limit,
+    )
+
 
 SYSTEM_PROMPT = """You are a meticulous research assistant over a curated Wikipedia corpus.
 
@@ -88,8 +116,13 @@ def build_agent(config: RAGConfig, model: Model | None = None) -> Agent[Retrieve
     async def search_documents(
         ctx: RunContext[Retriever], query: str, top_k: int = 5
     ) -> list[Citation]:
-        """Search the corpus for passages relevant to ``query``; returns ranked citations."""
-        return ctx.deps.search(query, top_k=top_k)
+        """Search the corpus for passages relevant to ``query``; returns ranked citations.
+
+        ``top_k`` is clamped to 1..10 (agent-loop-bounds-2026-11-20): unbounded
+        values blow up the reranker candidate pool and the answer context.
+        """
+        k = max(1, min(top_k, 10))
+        return ctx.deps.search(query, top_k=k)
 
     @agent.tool
     async def read_excerpt(ctx: RunContext[Retriever], citation_id: str) -> str:

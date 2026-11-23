@@ -1,0 +1,19 @@
+{
+  "index": 60,
+  "chunk_id": "renewable-energy-055#c010",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 416,
+    "output_tokens": 58,
+    "reasoning_tokens": 16
+  },
+  "cost_usd_est": "0.000469",
+  "cumulative_usd_est": "0.041142",
+  "latency_s": 2.15,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states about 80 per cent support, not 90 per cent.\"}",
+  "label": "unsupported",
+  "reason": "Passage states about 80 per cent support, not 90 per cent."
+}

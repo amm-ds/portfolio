@@ -1,0 +1,54 @@
+{
+  "schema_version": "measure-retrieval-v1",
+  "generated_at": "2026-11-22T23:37:32.210586+00:00",
+  "step": "sweep",
+  "split": "dev_v1",
+  "config": {
+    "chunk_size": 200,
+    "chunk_overlap": 40,
+    "chunk_mode": "size",
+    "embedding_model": "BAAI/bge-small-en-v1.5",
+    "embedding_kind": "local",
+    "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    "top_k": 3,
+    "measure_k": 5,
+    "rerank_multiplier": 5,
+    "name": "embed_bge"
+  },
+  "config_sha256": "cfbd607e8b37dc80cc203d4ae63a364a6759da333919d3ceffbe96a505280ed4",
+  "set_sha256": "ed9013955903caa98a0dc9eaf5a366e151288ff8457afc690e2bec8d7371f13c",
+  "set_note": "ids frozen in data/dev_v1.sha256.json; ids recorded in report",
+  "commit": "1663dd3b7ec86556894e466998451ad1978500b3",
+  "dirty": true,
+  "index_note": "sweep index under data/index/sweeps/",
+  "method": "retrieval-only; no LLM calls. Measurement ranks top_k=5 (25 candidates fetched = measure_k x rerank_multiplier, README '5xk'); production serving slice is top_k=3 \u2014 both token means reported. Dev gold is article-level (all chunks of relevant_titles articles); final_v3 gold is exact gold_chunk_ids.",
+  "rerank_review": null,
+  "request_hosts": [],
+  "metrics": {
+    "n_answerable": 16,
+    "gold_modes": [
+      "article_level"
+    ],
+    "recall_at_5": 1.0,
+    "recall_at_5_wilson95": [
+      0.8063923194655637,
+      1.0
+    ],
+    "mrr_at_5": 0.921875,
+    "mean_context_tokens_top3": 475.6875,
+    "mean_context_tokens_top5": 800.875,
+    "slices": {
+      "multi_hop": {
+        "n": 4,
+        "recall_at_5": 1.0,
+        "mrr_at_5": 0.8125
+      },
+      "single_hop": {
+        "n": 12,
+        "recall_at_5": 1.0,
+        "mrr_at_5": 0.9583333333333334
+      }
+    },
+    "n_abstain_false_evidence": 0
+  }
+}

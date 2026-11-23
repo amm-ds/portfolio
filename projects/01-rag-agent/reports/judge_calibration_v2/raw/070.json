@@ -1,0 +1,19 @@
+{
+  "index": 70,
+  "chunk_id": "renewable-energy-025#c007",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 362,
+    "output_tokens": 103,
+    "reasoning_tokens": 50
+  },
+  "cost_usd_est": "0.000774",
+  "cumulative_usd_est": "0.047976",
+  "latency_s": 3.82,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states NASA initiated SERT in 1999 and lists evaluating studies of general feasibility, design, and requirements as a purpose.\"}",
+  "label": "supported",
+  "reason": "The passage states NASA initiated SERT in 1999 and lists evaluating studies of general feasibility, design, and requirements as a purpose."
+}

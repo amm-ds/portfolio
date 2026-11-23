@@ -1,0 +1,19 @@
+{
+  "index": 69,
+  "chunk_id": "machine-learning-000#c009",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 451,
+    "output_tokens": 51,
+    "reasoning_tokens": 14
+  },
+  "cost_usd_est": "0.000655",
+  "cumulative_usd_est": "0.047202",
+  "latency_s": 2.37,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage's first sentence states this definition almost verbatim.\"}",
+  "label": "supported",
+  "reason": "The passage's first sentence states this definition almost verbatim."
+}

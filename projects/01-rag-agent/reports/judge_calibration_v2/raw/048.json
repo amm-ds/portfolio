@@ -1,0 +1,19 @@
+{
+  "index": 48,
+  "chunk_id": "photosynthesis-000#c007",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 497,
+    "output_tokens": 60,
+    "reasoning_tokens": 8
+  },
+  "cost_usd_est": "0.000558",
+  "cumulative_usd_est": "0.033249",
+  "latency_s": 2.35,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states that most 20th-century classifications treated cyanophytes and chlorophytes as divisions or classes of algae.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states that most 20th-century classifications treated cyanophytes and chlorophytes as divisions or classes of algae."
+}

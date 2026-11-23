@@ -1,0 +1,19 @@
+{
+  "index": 108,
+  "chunk_id": "climate-032#c008",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 431,
+    "output_tokens": 131,
+    "reasoning_tokens": 73
+  },
+  "cost_usd_est": "0.000776",
+  "cumulative_usd_est": "0.072742",
+  "latency_s": 2.58,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states the energy sector typically contributes over 90% of emissions and 75% of all GHG emissions in developed countries, matching the claim exactly.\"}",
+  "label": "supported",
+  "reason": "The passage states the energy sector typically contributes over 90% of emissions and 75% of all GHG emissions in developed countries, matching the claim exactly."
+}

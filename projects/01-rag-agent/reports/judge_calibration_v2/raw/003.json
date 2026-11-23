@@ -1,0 +1,19 @@
+{
+  "index": 3,
+  "chunk_id": "photosynthesis-057#c005",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 426,
+    "output_tokens": 65,
+    "reasoning_tokens": 9
+  },
+  "cost_usd_est": "0.000686",
+  "cumulative_usd_est": "0.002964",
+  "latency_s": 2.73,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage states these mollusks maintain symbiotic chloroplasts, allowing them to survive solely by photosynthesis for several months at a time.\"}",
+  "label": "supported",
+  "reason": "Passage states these mollusks maintain symbiotic chloroplasts, allowing them to survive solely by photosynthesis for several months at a time."
+}

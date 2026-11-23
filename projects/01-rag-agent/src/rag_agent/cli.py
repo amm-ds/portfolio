@@ -135,7 +135,9 @@ def build_index(
     articles = load_corpus(config)
     embedder = SentenceTransformerEmbedder(config.embedding_model)
     for size in sizes:
-        chunks = chunk_articles(articles, size=size, overlap=config.chunk_overlap)
+        chunks = chunk_articles(
+            articles, size=size, overlap=config.chunk_overlap, chunk_mode=config.chunk_mode
+        )
         path = build_index_impl(
             chunks, embedder, config.index_path(size), description=f"size={size}"
         )

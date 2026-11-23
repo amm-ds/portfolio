@@ -1,0 +1,19 @@
+{
+  "index": 19,
+  "chunk_id": "climate-032#c008",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 431,
+    "output_tokens": 63,
+    "reasoning_tokens": 18
+  },
+  "cost_usd_est": "0.000683",
+  "cumulative_usd_est": "0.014182",
+  "latency_s": 2.1,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states energy contributes 75% of all GHG emissions, not 25%.\"}",
+  "label": "unsupported",
+  "reason": "Passage states energy contributes 75% of all GHG emissions, not 25%."
+}

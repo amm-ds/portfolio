@@ -1,0 +1,19 @@
+{
+  "index": 95,
+  "chunk_id": "aviation-000#c006",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 475,
+    "output_tokens": 64,
+    "reasoning_tokens": 23
+  },
+  "cost_usd_est": "0.000552",
+  "cumulative_usd_est": "0.064195",
+  "latency_s": 2.46,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"supported\",\"reason\":\"The passage explicitly states this exact sentence about George Cayley's 1853 glider flight.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states this exact sentence about George Cayley's 1853 glider flight."
+}

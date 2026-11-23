@@ -1,0 +1,19 @@
+{
+  "index": 22,
+  "chunk_id": "aviation-002#c003",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 498,
+    "output_tokens": 57,
+    "reasoning_tokens": 10
+  },
+  "cost_usd_est": "0.000547",
+  "cumulative_usd_est": "0.016300",
+  "latency_s": 2.23,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage states the US Navy has 11 large nuclear-powered fleet carriers carrying around 80 fighters each.\"}",
+  "label": "supported",
+  "reason": "Passage states the US Navy has 11 large nuclear-powered fleet carriers carrying around 80 fighters each."
+}

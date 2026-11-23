@@ -1,0 +1,19 @@
+{
+  "index": 10,
+  "chunk_id": "aviation-122#c010",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 386,
+    "output_tokens": 124,
+    "reasoning_tokens": 72
+  },
+  "cost_usd_est": "0.000882",
+  "cumulative_usd_est": "0.007943",
+  "latency_s": 4.55,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage states they discovered wing-warping when Wilbur idly twisted a long inner-tube box at the bicycle shop.\"}",
+  "label": "supported",
+  "reason": "Passage states they discovered wing-warping when Wilbur idly twisted a long inner-tube box at the bicycle shop."
+}

@@ -1,0 +1,19 @@
+{
+  "index": 25,
+  "chunk_id": "climate-000#c008",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 516,
+    "output_tokens": 57,
+    "reasoning_tokens": 14
+  },
+  "cost_usd_est": "0.000744",
+  "cumulative_usd_est": "0.018430",
+  "latency_s": 2.61,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states livestock occupies 70% of agricultural land, not 50%.\"}",
+  "label": "unsupported",
+  "reason": "Passage states livestock occupies 70% of agricultural land, not 50%."
+}

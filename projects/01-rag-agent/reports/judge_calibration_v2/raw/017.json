@@ -1,0 +1,19 @@
+{
+  "index": 17,
+  "chunk_id": "photosynthesis-000#c010",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 367,
+    "output_tokens": 108,
+    "reasoning_tokens": 61
+  },
+  "cost_usd_est": "0.000620",
+  "cumulative_usd_est": "0.012880",
+  "latency_s": 3.49,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage states brown algae, some of which are kelps, may reach 50 m in length.\"}",
+  "label": "supported",
+  "reason": "Passage states brown algae, some of which are kelps, may reach 50 m in length."
+}

@@ -1,0 +1,19 @@
+{
+  "index": 135,
+  "chunk_id": "machine-learning-080#c003",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 461,
+    "output_tokens": 64,
+    "reasoning_tokens": 24
+  },
+  "cost_usd_est": "0.000538",
+  "cumulative_usd_est": "0.088767",
+  "latency_s": 2.64,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"supported\",\"reason\":\"The passage states that most researchers agree deep learning involves CAP depth higher than 2.\"}",
+  "label": "supported",
+  "reason": "The passage states that most researchers agree deep learning involves CAP depth higher than 2."
+}

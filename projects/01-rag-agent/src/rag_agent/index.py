@@ -15,7 +15,7 @@ import numpy as np
 from portfolio_core.logging import get_logger
 from pydantic import Field
 
-from rag_agent.chunking import chunk_by_size
+from rag_agent.chunking import chunk_by_size, chunk_by_structure
 from rag_agent.config import RAGConfig
 from rag_agent.schemas import Article, Chunk, Citation
 
@@ -58,11 +58,26 @@ class ChunkRecord(Chunk):
     topic: str = Field(min_length=1)
 
 
-def chunk_articles(articles: Sequence[Article], size: int, overlap: int) -> list[ChunkRecord]:
-    """Chunk every article at ``size``/``overlap`` and attach citation metadata."""
+def chunk_articles(
+    articles: Sequence[Article],
+    size: int,
+    overlap: int,
+    chunk_mode: str = "size",
+) -> list[ChunkRecord]:
+    """Chunk every article at ``size``/``overlap`` and attach citation metadata.
+
+    ``chunk_mode="structure"`` prefixes every chunk with the article title
+    (entities retrieve far better when the name is in the chunk text; the
+    corpus carries no section markers, verified across all articles).
+    """
     records: list[ChunkRecord] = []
     for article in articles:
-        chunks = chunk_by_size(article.text, article.article_id, size=size, overlap=overlap)
+        if chunk_mode == "structure":
+            chunks = chunk_by_structure(
+                article.text, article.article_id, article.title, size=size, overlap=overlap
+            )
+        else:
+            chunks = chunk_by_size(article.text, article.article_id, size=size, overlap=overlap)
         records.extend(
             ChunkRecord(
                 chunk_id=c.chunk_id,
@@ -200,6 +215,15 @@ class Retriever:
         # but not on indexed passages — hence a separate query encoder.
         self.query_embed_fn = query_embed_fn or embed_fn
         self._by_id = {c.chunk_id: c for c in self.chunks}
+        # Lazy hybrid fusion index (built only when fusion_rrf is enabled).
+        self._bm25: Any = None
+
+    def _bm25_index(self) -> Any:
+        if self._bm25 is None:
+            from rag_agent.lexical import Bm25Index
+
+            self._bm25 = Bm25Index(self.chunks)
+        return self._bm25
 
     @classmethod
     def from_index_dir(
@@ -228,12 +252,29 @@ class Retriever:
         return vector
 
     def search(self, query: str, top_k: int | None = None) -> list[Citation]:
-        """Return the ``top_k`` most relevant citations for ``query``."""
+        """Return the ``top_k`` most relevant citations for ``query``.
+
+        Candidate pipeline: dense FAISS top-``n_candidates`` (or an RRF fusion
+        of dense + BM25 over ``rrf_pool_size`` when ``config.fusion_rrf``),
+        optional cross-encoder rerank, then the per-article diversity cap
+        with score-order backfill when ``config.max_per_article`` is set.
+        """
         k = top_k or self.config.top_k
         n_candidates = min(len(self.chunks), k * self.config.rerank_multiplier)
         vector = self._embed_query(query)
-        _, ids = self.index.search(vector, n_candidates)
-        candidates = [self.chunks[int(i)] for i in ids[0] if int(i) >= 0]
+
+        if self.config.fusion_rrf:
+            from rag_agent.lexical import reciprocal_rank_fusion
+
+            pool = min(len(self.chunks), max(n_candidates, self.config.rrf_pool_size))
+            _, dense_ids = self.index.search(vector, pool)
+            dense = [self.chunks[int(i)].chunk_id for i in dense_ids[0] if int(i) >= 0]
+            bm25 = self._bm25_index().ranking(query)[:pool]
+            fused = reciprocal_rank_fusion([dense, bm25], k=60)
+            candidates = [self._by_id[cid] for cid in fused[:n_candidates] if cid in self._by_id]
+        else:
+            _, ids = self.index.search(vector, n_candidates)
+            candidates = [self.chunks[int(i)] for i in ids[0] if int(i) >= 0]
 
         if self.rerank_fn is not None and len(candidates) > k:
             scores = np.asarray(
@@ -242,7 +283,34 @@ class Retriever:
             order = np.argsort(-scores)
             candidates = [candidates[int(i)] for i in order]
 
+        if self.config.max_per_article and self.config.max_per_article > 0:
+            candidates = self._cap_per_article(candidates, k)
+
         return [self._to_citation(c) for c in candidates[:k]]
+
+    def _cap_per_article(self, candidates: list[ChunkRecord], k: int) -> list[ChunkRecord]:
+        """Per-article diversity cap with score-order backfill.
+
+        Accept chunks in reranked (score) order while an article is under the
+        cap; overflow chunks are deferred. If fewer than ``k`` were selected,
+        backfill from the deferred list in score order up to ``k`` so the
+        answer context always reaches the requested depth.
+        """
+        cap = self.config.max_per_article
+        if cap is None or cap < 1:
+            return candidates
+        counts: dict[str, int] = {}
+        selected: list[ChunkRecord] = []
+        deferred: list[ChunkRecord] = []
+        for chunk in candidates:
+            if counts.get(chunk.article_id, 0) < cap:
+                selected.append(chunk)
+                counts[chunk.article_id] = counts.get(chunk.article_id, 0) + 1
+            else:
+                deferred.append(chunk)
+        if len(selected) < k:
+            selected.extend(deferred[: k - len(selected)])
+        return selected
 
     def _to_citation(self, chunk: ChunkRecord) -> Citation:
         excerpt = chunk.text[: self.config.excerpt_chars].strip()

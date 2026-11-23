@@ -1,0 +1,19 @@
+{
+  "index": 103,
+  "chunk_id": "photosynthesis-028#c009",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 440,
+    "output_tokens": 63,
+    "reasoning_tokens": 26
+  },
+  "cost_usd_est": "0.000513",
+  "cumulative_usd_est": "0.069517",
+  "latency_s": 3.2,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states cytokinesis is incomplete, not complete.\"}",
+  "label": "unsupported",
+  "reason": "Passage states cytokinesis is incomplete, not complete."
+}

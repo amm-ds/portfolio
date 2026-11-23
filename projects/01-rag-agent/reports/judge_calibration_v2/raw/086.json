@@ -1,0 +1,19 @@
+{
+  "index": 86,
+  "chunk_id": "aviation-002#c003",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 498,
+    "output_tokens": 66,
+    "reasoning_tokens": 25
+  },
+  "cost_usd_est": "0.000583",
+  "cumulative_usd_est": "0.059063",
+  "latency_s": 2.79,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states the carriers carry around 80 fighters each, not 60\"}",
+  "label": "unsupported",
+  "reason": "Passage states the carriers carry around 80 fighters each, not 60"
+}

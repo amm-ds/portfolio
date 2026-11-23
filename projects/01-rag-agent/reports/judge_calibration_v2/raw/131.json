@@ -1,0 +1,19 @@
+{
+  "index": 131,
+  "chunk_id": "climate-003#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 418,
+    "output_tokens": 68,
+    "reasoning_tokens": 22
+  },
+  "cost_usd_est": "0.000511",
+  "cumulative_usd_est": "0.086643",
+  "latency_s": 1.93,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states adaptation research began in the 1990s, not the 2000s.\"}",
+  "label": "unsupported",
+  "reason": "Passage states adaptation research began in the 1990s, not the 2000s."
+}

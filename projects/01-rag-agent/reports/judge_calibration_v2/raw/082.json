@@ -1,0 +1,19 @@
+{
+  "index": 82,
+  "chunk_id": "climate-003#c005",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 475,
+    "output_tokens": 90,
+    "reasoning_tokens": 38
+  },
+  "cost_usd_est": "0.000835",
+  "cumulative_usd_est": "0.056633",
+  "latency_s": 2.3,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says less than 2°C and to pursue efforts toward 1.5°C, not exactly 1.5°C\"}",
+  "label": "unsupported",
+  "reason": "Passage says less than 2°C and to pursue efforts toward 1.5°C, not exactly 1.5°C"
+}

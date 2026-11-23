@@ -1,0 +1,19 @@
+{
+  "index": 5,
+  "chunk_id": "climate-000#c000",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 412,
+    "output_tokens": 70,
+    "reasoning_tokens": 25
+  },
+  "cost_usd_est": "0.000692",
+  "cumulative_usd_est": "0.004284",
+  "latency_s": 2.05,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states best estimate is 1.07°C, not 1.15°C.\"}",
+  "label": "unsupported",
+  "reason": "Passage states best estimate is 1.07°C, not 1.15°C."
+}

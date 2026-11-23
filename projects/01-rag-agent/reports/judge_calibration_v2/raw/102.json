@@ -1,0 +1,19 @@
+{
+  "index": 102,
+  "chunk_id": "climate-032#c005",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 492,
+    "output_tokens": 115,
+    "reasoning_tokens": 46
+  },
+  "cost_usd_est": "0.000952",
+  "cumulative_usd_est": "0.069004",
+  "latency_s": 2.83,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage states emissions grew from 1.0% yr−1 in the 1990s to 3.4% yr−1 between 2000 and 2008, matching the claim exactly.\"}",
+  "label": "supported",
+  "reason": "Passage states emissions grew from 1.0% yr−1 in the 1990s to 3.4% yr−1 between 2000 and 2008, matching the claim exactly."
+}

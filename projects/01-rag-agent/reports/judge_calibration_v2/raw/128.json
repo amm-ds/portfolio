@@ -1,0 +1,19 @@
+{
+  "index": 128,
+  "chunk_id": "climate-032#c005",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 492,
+    "output_tokens": 155,
+    "reasoning_tokens": 102
+  },
+  "cost_usd_est": "0.000933",
+  "cumulative_usd_est": "0.085033",
+  "latency_s": 4.48,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"The passage states 3.4% yr−1 between 2000 and 2008, not 2.4%.\"}",
+  "label": "unsupported",
+  "reason": "The passage states 3.4% yr−1 between 2000 and 2008, not 2.4%."
+}

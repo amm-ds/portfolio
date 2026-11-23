@@ -1,0 +1,39 @@
+{
+  "file": "judge_v2_claims.json",
+  "sha256": "80d9d693ebf03600f0e6c62e7becfd78620e22f9cb80eb20d0734cfde98acfde",
+  "revision": "4 (owner, 2026-11-23): one-detail same-subject negatives",
+  "supersedes": "reports/judge_calibration_v2/superseded_v2a/judge_v2_claims.sha256.json",
+  "n": 147,
+  "kind_counts": {
+    "supported": 75,
+    "unsupported": 72
+  },
+  "construction": {
+    "supported": "kept unchanged from the archived v2a set (75)",
+    "unsupported": "one negative per supported claim's chunk, drafted by the local model: same subject, exactly one changed detail (date, quantity, relation, comparison or attribute); changed term absent from the chunk (case-insensitive, 4+ chars or a number), >= 3 shared content words, no duplicates, no shared 8-token sequence with any other claim; 3 redrafts then dropped"
+  },
+  "negatives_dropped": 3,
+  "overlap_distribution_shared_content_words": {
+    "5": 2,
+    "6": 6,
+    "7": 5,
+    "8": 7,
+    "9": 5,
+    "10": 8,
+    "11": 19,
+    "12": 6,
+    "13": 4,
+    "14": 4,
+    "15": 2,
+    "16": 2,
+    "17": 2
+  },
+  "seed": 42,
+  "drafting_model": "qwen3.6:35b-a3b-q4_K_M",
+  "drafting_model_digest": "07d35212591fc27746f0a317c975a6d68754fb38e9053d82e25f06057af28522",
+  "sources": "supported claims from the archived v2a set (tuning-65/dev_v1 gold chunks only); no final_v3 or sealed-120 content",
+  "request_hosts": [
+    "localhost"
+  ],
+  "generated_at": "2026-11-23T13:00:55.275427+00:00"
+}

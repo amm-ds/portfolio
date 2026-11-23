@@ -1,0 +1,19 @@
+{
+  "index": 68,
+  "chunk_id": "climate-003#c003",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 498,
+    "output_tokens": 80,
+    "reasoning_tokens": 28
+  },
+  "cost_usd_est": "0.000818",
+  "cumulative_usd_est": "0.046547",
+  "latency_s": 2.19,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states 1.2°C above pre-industrial levels as of 2022, not 1.5°C.\"}",
+  "label": "unsupported",
+  "reason": "Passage states 1.2°C above pre-industrial levels as of 2022, not 1.5°C."
+}

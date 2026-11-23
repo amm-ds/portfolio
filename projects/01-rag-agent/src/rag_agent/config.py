@@ -6,6 +6,7 @@ and the DVC stages can mirror them 1:1.
 """
 
 from pathlib import Path
+from typing import Literal
 
 from portfolio_core.config import Settings as CoreSettings
 from portfolio_core.schemas import PortfolioBaseModel
@@ -113,6 +114,10 @@ class RetrievalBest(PortfolioBaseModel):
     chunk_size: int = Field(ge=1)
     top_k: int = Field(ge=1)
     rerank: bool = True
+    chunk_mode: Literal["size", "structure"] = "size"
+    fusion_rrf: bool = False
+    rrf_pool_size: int = Field(default=50, ge=5)
+    max_per_article: int | None = Field(default=None, ge=1)
 
 
 class VerifyConfig(PortfolioBaseModel):
@@ -157,12 +162,19 @@ class RAGConfig(PortfolioBaseModel):
 
     chunk_sizes: list[int] = Field(default_factory=lambda: [200, 400, 800])
     chunk_overlap: int = Field(default=40, ge=0)
+    chunk_mode: Literal["size", "structure"] = "size"
 
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     top_k: int = Field(default=5, ge=1, le=20)
     rerank_multiplier: int = Field(default=5, ge=1)
     excerpt_chars: int = Field(default=240, ge=40)
+    # SOTA ladder (20261123 handoff): hybrid dense+BM25 fusion via reciprocal
+    # rank fusion before reranking, and an optional per-article diversity cap
+    # in the final top-k. Defaults preserve the incumbent behaviour.
+    fusion_rrf: bool = False
+    rrf_pool_size: int = Field(default=50, ge=5)
+    max_per_article: int | None = Field(default=None, ge=1)
 
     corpus_path: Path = Path("data/raw/corpus.jsonl")
     contract_path: Path = Path("data/raw/dataset_contract.json")
@@ -183,6 +195,12 @@ class RAGConfig(PortfolioBaseModel):
     )
 
     verify: VerifyConfig = Field(default_factory=VerifyConfig)
+
+    # Bounded agent loop (ported from agent-loop-bounds-2026-11-20): hard rails
+    # on requests, tool calls and input tokens for one evaluated question.
+    agent_request_limit: int = Field(default=12, ge=1)
+    agent_tool_calls_limit: int = Field(default=16, ge=1)
+    agent_input_tokens_limit: int = Field(default=200_000, ge=1_000)
 
     @model_validator(mode="after")
     def _validate_overlap(self) -> "RAGConfig":

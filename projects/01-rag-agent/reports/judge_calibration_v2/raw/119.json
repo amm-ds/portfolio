@@ -1,0 +1,19 @@
+{
+  "index": 119,
+  "chunk_id": "photosynthesis-031#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 506,
+    "output_tokens": 80,
+    "reasoning_tokens": 24
+  },
+  "cost_usd_est": "0.000647",
+  "cumulative_usd_est": "0.078793",
+  "latency_s": 2.58,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage cites lack of a nucleus, not lack of mitochondria, as the reason cyanobacteria are prokaryotic photoautotrophs\"}",
+  "label": "unsupported",
+  "reason": "Passage cites lack of a nucleus, not lack of mitochondria, as the reason cyanobacteria are prokaryotic photoautotrophs"
+}
