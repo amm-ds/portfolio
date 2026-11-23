@@ -28,6 +28,7 @@ import json
 import logging
 import math
 import os
+from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -105,7 +106,7 @@ def summarize_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
             else:
                 fn += 1
         else:
-            if not abstained:
+            if not abstained and verdict not in ("budget-terminated", "format-failure"):
                 errors["wrong_abstention"] += 1
             if abstained and verdict == "correct":
                 tn += 1
@@ -145,7 +146,7 @@ def summarize(reports_dir: Path) -> dict[str, Any]:
     rows = load_rows(reports_dir)
     summary = summarize_rows(rows)
     summary["generated_at"] = datetime.now(UTC).isoformat()
-    summary["source_traces"] = str(reports_dir.relative_to(ROOT))
+    summary["source_traces"] = str(reports_dir)
     out = reports_dir / "f1_summary.json"
     out.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     append_log(
@@ -160,7 +161,7 @@ def summarize(reports_dir: Path) -> dict[str, Any]:
             "recall": summary["recall"],
             "overall_accuracy": summary["overall_accuracy"],
             "errors": summary["errors"],
-            "report_path": str(out.relative_to(ROOT)),
+            "report_path": str(out),
         }
     )
     logger.info(
@@ -174,7 +175,27 @@ def summarize(reports_dir: Path) -> dict[str, Any]:
     return summary
 
 
-def run_dev_v1() -> dict[str, Any]:
+def prune_checkpoint_for_retry(run_dir: Path, manifest: RunManifest) -> None:
+    """--retry-failed: keep only correct rows so the checkpoint re-runs failures."""
+    rows_path = run_dir / "rows.jsonl"
+    if rows_path.exists():
+        kept = [
+            line
+            for line in rows_path.read_text("utf-8").splitlines()
+            if line.strip() and json.loads(line).get("trace", {}).get("verdict") == "correct"
+        ]
+        rows_path.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+        logger.info("retry-failed: kept %d correct checkpoint rows", len(kept))
+    manifest_path = run_dir / "manifest.json"
+    prior = 0.0
+    if manifest_path.exists():
+        prior = json.loads(manifest_path.read_text("utf-8")).get("cumulative_spend_usd", 0.0)
+    manifest.cumulative_spend_usd = prior
+    run_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps(asdict(manifest), indent=2) + "\n", encoding="utf-8")
+
+
+def run_dev_v1(retry_failed: bool = False) -> dict[str, Any]:
     config = load_config()
     articles = load_corpus(config)
     tuning = load_questions(config, articles)
@@ -206,6 +227,8 @@ def run_dev_v1() -> dict[str, Any]:
         judge_model=os.environ.get("LLM_MODEL", "kimi-for-coding"),
         judge_prompt_hash=hashlib.sha256(RUBRIC_SYSTEM_PROMPT.encode("utf-8")).hexdigest()[:16],
     )
+    if retry_failed:
+        prune_checkpoint_for_retry(RUNS_ROOT / manifest.run_id, manifest)
     checkpoint = Checkpoint.open(RUNS_ROOT / manifest.run_id, manifest)
     seed_spend_from_manifest(checkpoint)
 
@@ -284,12 +307,17 @@ def main() -> int:
     os.environ.setdefault("HF_HUB_OFFLINE", "1")  # embedding loads stay off the network
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--split", choices=["dev_v1"], default=None)
+    parser.add_argument(
+        "--retry-failed",
+        action="store_true",
+        help="re-run only non-correct checkpoint rows (keeps correct rows at $0)",
+    )
     parser.add_argument("--summarize", type=Path, default=None, help="reports dir to summarize")
     args = parser.parse_args()
     if args.summarize:
         summary = summarize(args.summarize)
     elif args.split == "dev_v1":
-        summary = run_dev_v1()
+        summary = run_dev_v1(retry_failed=args.retry_failed)
     else:
         parser.error("--split dev_v1 or --summarize <dir> is required")
         return 2

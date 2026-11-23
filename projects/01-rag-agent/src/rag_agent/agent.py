@@ -83,8 +83,15 @@ Rules you must always follow:
 9. Never state a number, date, or duration that is not present verbatim in a
    span. If a value must be computed from the evidence, do not state it —
    abstain on that claim instead. (Derived claims are not accepted.)
-10. Multi-hop answers: cite every article the claim combines, with one span
-   per leg.
+10. Multi-hop and comparison questions: when a question asks how two topics
+    relate or compares two topics (e.g. 'How does A relate to B?', 'Compare A
+    with B'), the corpus covers A and B in separate articles that may not
+    mention each other. Do NOT abstain when each topic is present in the
+    retrieved passages: state the supported facts for A from A's passage(s)
+    and for B from B's passage(s), cite every article used with at least one
+    verbatim span per leg, and set `confidence >= 0.7`. Never include refusal
+    phrases ('no evidence', 'no information', 'no relevant', 'not found', 'no
+    passage', 'cannot answer') inside a substantive answer.
 """
 
 
@@ -115,6 +122,19 @@ def build_agent(config: RAGConfig, model: Model | None = None) -> Agent[Retrieve
         model_settings=model_settings_for_provider(),
     )
 
+    soft_req_limit = max(3, config.agent_request_limit - 3)
+    soft_tool_limit = max(4, config.agent_tool_calls_limit - 4)
+
+    def _over_soft_budget(ctx: RunContext[Retriever]) -> bool:
+        """Deterministic stop 3 requests / 4 tool calls before the hard rails.
+
+        Revision 1 (phase-e): a prompt rule alone let one unanswerable row loop
+        until pydantic-ai raised UsageLimitExceeded. The soft ceiling returns
+        an empty result / notice so the model emits its final answer from the
+        passages already read instead of crashing the row.
+        """
+        return ctx.usage.requests >= soft_req_limit or ctx.usage.tool_calls >= soft_tool_limit
+
     @agent.tool
     async def search_documents(
         ctx: RunContext[Retriever], query: str, top_k: int = 5
@@ -124,12 +144,21 @@ def build_agent(config: RAGConfig, model: Model | None = None) -> Agent[Retrieve
         ``top_k`` is clamped to 1..10 (agent-loop-bounds-2026-11-20): unbounded
         values blow up the reranker candidate pool and the answer context.
         """
+        if _over_soft_budget(ctx):
+            return []
         k = max(1, min(top_k, 10))
         return ctx.deps.search(query, top_k=k)
 
     @agent.tool
     async def read_excerpt(ctx: RunContext[Retriever], citation_id: str) -> str:
         """Read the full text of a previously retrieved chunk by its chunk_id."""
+        if _over_soft_budget(ctx):
+            return (
+                "TOOL BUDGET REACHED: Do not call any more tools. Emit your final "
+                "AnalysisResult immediately using only the passages already read, "
+                "or abstain (confidence < 0.3, citations=[], claims=[]) if the "
+                "requested fact is not in those passages."
+            )
         chunk = ctx.deps.get_chunk(citation_id)
         if chunk is None:
             return f"chunk {citation_id!r} not found in the index"

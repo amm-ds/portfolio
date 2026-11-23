@@ -556,7 +556,13 @@ def _verify(
     judge: ClaimJudge,
     report: VerifyReport,
 ) -> None:
-    if is_abstention(result.summary, result.confidence):
+    # Revision 1 (phase-e): a substantive answer (populated claims, confidence
+    # >= 0.3) must run through structured verification even when its summary
+    # contains a caveat substring ("no passage", ...): multi-hop answers over
+    # separate articles used to be skipped here and misclassified as abstentions.
+    if (not result.claims or result.confidence < 0.3) and is_abstention(
+        result.summary, result.confidence
+    ):
         report.skipped = True
         return
 

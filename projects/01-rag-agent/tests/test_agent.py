@@ -7,7 +7,7 @@ from portfolio_core.llm import mock_model_for_tests
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart
 from pydantic_ai.models.function import FunctionModel
-from rag_agent.agent import build_agent
+from rag_agent.agent import agent_usage_limits, build_agent
 from rag_agent.config import RAGConfig
 from rag_agent.index import Retriever
 from rag_agent.schemas import AnalysisResult
@@ -57,7 +57,6 @@ def test_agent_rejects_invalid_canned_output(config: RAGConfig, retriever: Retri
 
 
 def test_agent_usage_limits_applies_configured_rails(config: RAGConfig) -> None:
-    from rag_agent.agent import agent_usage_limits
 
     limits = agent_usage_limits(config)
     assert limits.request_limit == 12
@@ -107,3 +106,37 @@ def test_search_documents_top_k_is_clamped(config: RAGConfig, retriever: Retriev
     result = agent.run_sync("climate?", deps=retriever)
     assert isinstance(result.output, AnalysisResult)
     assert seen and all(k == 10 for k in seen)
+
+
+def test_soft_tool_budget_ceiling_blocks_before_hard_rail(
+    config: RAGConfig, retriever: Retriever
+) -> None:
+    """Revision 1: at the soft ceiling search returns [] and read_excerpt returns
+    the TOOL BUDGET notice, so the run never hits UsageLimitExceeded."""
+    custom = config.model_copy(
+        update={"agent_request_limit": 6, "agent_tool_calls_limit": 8}
+    )  # soft limits: 3 requests / 4 tool calls
+    calls = {"n": 0}
+    observations: list[str] = []
+
+    def model_fn(messages: list, info: object) -> ModelResponse:
+        calls["n"] += 1
+        for message in messages:
+            for part in message.parts:
+                if part.part_kind == "tool-return":
+                    observations.append(str(part.content))
+        if calls["n"] <= 3:
+            return ModelResponse(
+                parts=[ToolCallPart(tool_name="search_documents", args={"query": "climate"})]
+            )
+        if calls["n"] == 4:
+            return ModelResponse(
+                parts=[ToolCallPart(tool_name="read_excerpt", args={"citation_id": "x"})]
+            )
+        return ModelResponse(parts=[TextPart(CANNED_ANALYSIS_JSON)])
+
+    agent = build_agent(custom, model=FunctionModel(model_fn))
+    result = agent.run_sync("climate?", deps=retriever, usage_limits=agent_usage_limits(custom))
+    assert isinstance(result.output, AnalysisResult)
+    assert "[]" in observations  # blocked search_documents
+    assert any("TOOL BUDGET REACHED" in o for o in observations)  # blocked read_excerpt

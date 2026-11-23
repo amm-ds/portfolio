@@ -137,3 +137,33 @@ def test_kimi_rate_card_resolution() -> None:
     card = model_rate_card("kimi-for-coding")
     assert "kimi" in card.label.lower()
     assert "k2.8" in card.label.lower() or "k2" in card.label.lower()
+
+
+def test_merged_traces_dedupes_fresh_run_rows(tmp_path: Path) -> None:
+    """A fresh checkpointed run must not double-count rows at merge time."""
+    manifest = RunManifest(
+        run_id="x-abc",
+        config_hash="c",
+        commit="g",
+        dirty=False,
+        split="x",
+        set_sha256="s",
+        index_id="i",
+        judge_model="m",
+        judge_prompt_hash="p",
+    )
+    checkpoint = Checkpoint.open(tmp_path / "x-abc", manifest)
+    for i in range(3):
+        checkpoint.write_row(
+            question_hash(f"q{i}"),
+            f"q{i}",
+            {"question": f"q{i}", "verdict": "correct"},
+            ["localhost"],
+            0.0,
+        )
+    merged = checkpoint.merged_traces(
+        [{"question": "q0", "verdict": "correct"}, {"question": "q3", "verdict": "empty-answer"}]
+    )
+    assert len(merged) == 4
+    by_q = {r["question"]: r["verdict"] for r in merged}
+    assert by_q["q3"] == "empty-answer"  # fresh row wins for q0

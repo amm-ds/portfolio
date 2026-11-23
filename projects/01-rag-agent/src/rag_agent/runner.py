@@ -214,10 +214,19 @@ class Checkpoint:
         self._rows[qhash] = row
 
     def merged_traces(self, new_traces: list[Any]) -> list[dict[str, Any]]:
-        """Checkpoint rows (resume) followed by the current run's traces."""
-        rows = [r["trace"] for r in self._rows.values()]
-        rows.extend(new_traces)
-        return rows
+        """Checkpoint rows (resume) followed by the current run's traces.
+
+        De-duplicated by question hash with the current run's row winning: on
+        a fresh run the recorder has already stored every row in the
+        checkpoint, so a naive concat would double-count each question (the
+        240-rows-for-120-questions merge bug, phase-e 2026-11-23).
+        """
+        merged: dict[str, dict[str, Any]] = {
+            row["qhash"]: row["trace"] for row in self._rows.values()
+        }
+        for row in new_traces:
+            merged[question_hash(row["question"])] = row
+        return list(merged.values())
 
     def update_spend(self, total_spend_usd: float) -> None:
         self.manifest.cumulative_spend_usd = round(total_spend_usd, 6)

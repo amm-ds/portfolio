@@ -5092,5 +5092,79 @@
       "huggingface.co"
     ],
     "run_id": "dev_v1-ed9013955903"
+  },
+  {
+    "ts": "2026-11-23T15:37:48.712748+00:00",
+    "step": "e2e",
+    "change": "e2e_dev_v1",
+    "split": "e2e_dev_v1",
+    "decision": "summarized",
+    "f1": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "overall_accuracy": 1.0,
+    "errors": {
+      "unsupported_claim": 0,
+      "false_abstention": 0,
+      "wrong_abstention": 0,
+      "budget_terminated": 0,
+      "format_failure": 0,
+      "uncited_relevant": 0
+    },
+    "report_path": "reports/e2e_dev_v1/f1_summary.json"
+  },
+  {
+    "ts": "2026-11-23T15:37:48.712748+00:00",
+    "step": "e2e",
+    "change": "dev_v1_gate",
+    "split": "dev_v1",
+    "decision": "gate",
+    "f1": 1.0,
+    "budget_terminated": 0,
+    "request_hosts": [
+      "api.kimi.com",
+      "huggingface.co"
+    ],
+    "run_id": "dev_v1-ed9013955903"
+  },
+  {
+    "ts": "2026-11-23T16:47:17.734447+00:00",
+    "step": "e2e",
+    "change": "final_v3_e2e",
+    "split": "final_v3_e2e",
+    "decision": "summarized",
+    "f1": 0.9091,
+    "precision": 0.9524,
+    "recall": 0.8696,
+    "overall_accuracy": 0.8667,
+    "errors": {
+      "unsupported_claim": 2,
+      "false_abstention": 20,
+      "wrong_abstention": 0,
+      "budget_terminated": 8,
+      "format_failure": 0,
+      "uncited_relevant": 16
+    },
+    "report_path": "reports/final_v3_e2e/f1_summary.json"
+  },
+  {
+    "ts": "2026-11-23T16:49:33.872036+00:00",
+    "step": "e2e",
+    "change": "final_v3_e2e",
+    "split": "final_v3_e2e",
+    "decision": "summarized",
+    "f1": 0.9091,
+    "precision": 0.9524,
+    "recall": 0.8696,
+    "overall_accuracy": 0.8667,
+    "errors": {
+      "unsupported_claim": 1,
+      "false_abstention": 10,
+      "wrong_abstention": 0,
+      "budget_terminated": 4,
+      "format_failure": 0,
+      "uncited_relevant": 8
+    },
+    "report_path": "reports/final_v3_e2e/f1_summary.json"
   }
 ]
