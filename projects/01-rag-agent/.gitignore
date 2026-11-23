@@ -83,3 +83,5 @@ data/*
 !/reports/judge_calibration_v2/
 /reports/judge_calibration_v2/drafts/
 /reports/judge_calibration_v2/superseded_v2a/
+!/reports/e2e_dev_v1/
+!/reports/final_v3_e2e/

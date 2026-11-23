@@ -254,21 +254,24 @@ def check_claim_spans(
 
     reasons.extend(_substantiation_failures(others, span_texts) if substantiation else [])
 
+    # Punctuation-safe token sets: s.split() leaves commas/periods attached
+    # ("september,"), falsely rejecting verbatim spans such as
+    # "in September, 2006,". Tokenize spans the same way claims are tokenized.
+    span_token_sets = [set(re.findall(r"[a-z0-9]+", s)) for s in span_texts]
+
     for number in dict.fromkeys(_NUM_RE.findall(claim_l)):
         if not any(number in s for s in span_texts):
             reasons.append(f"number {number!r} not present in any span")
             continue
-        for s in span_texts:
-            if number in s and not any(w in s.split() for w in others):
+        for s, span_tokens in zip(span_texts, span_token_sets, strict=True):
+            if number in s and not any(w in span_tokens for w in others):
                 reasons.append(f"value {number!r} shares no claim entity in its span")
                 break
     for token in sorted((words & _MONTHS) | ({w for w in words if w in _TEMPORAL})):
-        if not any(token in s.split() for s in span_texts):
+        if not any(token in span_tokens for span_tokens in span_token_sets):
             reasons.append(f"date/temporal token {token!r} not in any span")
     claim_neg = bool(_NEGATIONS & words)
-    span_words: set[str] = set()
-    for s in span_texts:
-        span_words |= set(s.split())
+    span_words: set[str] = set().union(*span_token_sets) if span_token_sets else set()
     span_neg = bool(_NEGATIONS & span_words)
     if claim_neg and not span_neg:
         reasons.append("claim negated but span is affirmative")

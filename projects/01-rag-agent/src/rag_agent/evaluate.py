@@ -168,6 +168,26 @@ logger = get_logger(__name__)
 MAX_OUTPUT_RETRIES = 2
 
 
+def _judge_context(evidence: list[Citation], cited: list[Citation], retriever: Retriever) -> str:
+    """Full chunk texts for the rubric judge: retrieved top-k union agent-cited chunks.
+
+    Phase E fix: the previous ``"\n".join(c.excerpt for c in evidence)`` passed
+    only the 240-char preview of the static initial search (truncating ~80% of
+    every chunk) and ignored the citations the agent actually used. Falls back
+    to ``c.excerpt`` only when ``retriever.get_chunk`` returns None (minimal
+    mock retrievers in unit tests).
+    """
+    seen: set[str] = set()
+    parts: list[str] = []
+    for c in [*evidence, *cited]:
+        if c.chunk_id in seen:
+            continue
+        seen.add(c.chunk_id)
+        chunk = retriever.get_chunk(c.chunk_id)
+        parts.append(chunk.text if chunk is not None else c.excerpt)
+    return "\n\n".join(parts)
+
+
 def answer_with_output_retries(
     agent: Agent[Retriever, AnalysisResult],
     question: str,
@@ -736,8 +756,11 @@ def run_rag_eval(  # noqa: C901 - established per-question state machine;
 
         summary = output.summary
         cited_relevant = any(c.article_id in relevant for c in output.citations)
+        # The agent cites what search_documents returned: a relevant citation
+        # means retrieval succeeded even when the static top-10 probe missed.
+        retrieved_relevant = retrieved_relevant or cited_relevant
         abstained = is_abstention(summary, output.confidence)
-        context = "\n".join(c.excerpt for c in evidence)
+        context = _judge_context(evidence, output.citations, retriever)
         faith = selected.judge(question.question, context, summary).score
         relevance = selected.judge(
             question.question, question.question + " " + context, summary

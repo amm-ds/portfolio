@@ -213,3 +213,56 @@ def test_run_heldout_refuses_to_score_invalid_set(
             model=mock_model_for_tests(CANNED_ANALYSIS_JSON),
         )
     assert not (config.reports_dir / "metrics.json").exists()
+
+
+def test_judge_context_uses_full_chunk_text() -> None:
+    """Phase E: the rubric judge must see chunk.text, not the 240-char excerpt."""
+    from rag_agent.evaluate import _judge_context
+    from rag_agent.index import ChunkRecord
+    from rag_agent.schemas import Citation
+
+    long_text = "Evidence sentence. " * 60  # far beyond excerpt_chars
+    chunk = ChunkRecord(
+        chunk_id="climate-000#c000",
+        article_id="climate-000",
+        text=long_text,
+        token_count=180,
+        title="Climate change",
+        topic="Climate",
+    )
+    missing = Citation(
+        chunk_id="absent#c000",
+        article_id="absent",
+        title="Absent",
+        excerpt="excerpt-only fallback",
+        score=1.0,
+    )
+    evidence = [
+        Citation(
+            chunk_id="climate-000#c000",
+            article_id="climate-000",
+            title="Climate change",
+            excerpt=long_text[:60],
+            score=1.0,
+        )
+    ]
+    cited = [
+        Citation(
+            chunk_id="climate-000#c000",  # duplicate of evidence: deduped
+            article_id="climate-000",
+            title="Climate change",
+            excerpt=long_text[:60],
+            score=1.0,
+        ),
+        missing,
+    ]
+
+    class StubRetriever:
+        def get_chunk(self, chunk_id: str) -> ChunkRecord | None:
+            return chunk if chunk_id == chunk.chunk_id else None
+
+    context = _judge_context(evidence, cited, StubRetriever())  # type: ignore[arg-type]
+    full = long_text.rstrip()  # pydantic strips the trailing space on validation
+    assert full in context  # full text, not the 60-char excerpt
+    assert "excerpt-only fallback" in context  # get_chunk None -> excerpt fallback
+    assert context.count(full) == 1  # dedup by chunk_id

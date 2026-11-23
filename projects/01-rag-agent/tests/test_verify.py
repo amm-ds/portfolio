@@ -680,3 +680,21 @@ def test_legacy_path_preserves_drafted_claims_on_judge_failure(
     assert report.n_drafted == (
         report.n_surviving + report.n_dropped_total + report.n_verification_error
     )
+
+
+def test_span_check_month_with_trailing_comma_passes() -> None:
+    """Phase E: "September," / "2006," must not false-reject verbatim spans."""
+    chunk_text = (
+        "The incident occurred in September, 2006, killing 154 people. "
+        "Dozens more were injured according to the official report."
+    )
+    claim = _claim(
+        "The incident occurred in September 2006, killing 154 people.",
+        [("c1", "in September, 2006, killing 154 people.")],
+        chunk_ids=["c1"],
+    )
+
+    def get_chunk(cid: str) -> ChunkRecord | None:
+        return _chunk_record(cid, text=chunk_text) if cid == "c1" else None
+
+    assert check_claim_spans(claim, get_chunk) == []
