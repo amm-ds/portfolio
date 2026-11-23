@@ -61,7 +61,7 @@ from rag_agent.index import (
     chunk_articles,
     load_index,
 )
-from rag_agent.runner import HostGrabber, config_hash, git_commit, git_dirty, sha256_file
+from rag_agent.runner import HostGrabber, git_commit, git_dirty, sha256_file
 
 logger = get_logger(__name__)
 ROOT = Path(__file__).resolve().parents[1]
@@ -174,6 +174,7 @@ class OllamaEmbedder:
         import httpx
 
         out: list[np.ndarray] = []
+        total = (len(texts) + self.batch - 1) // self.batch
         for start in range(0, len(texts), self.batch):
             batch = texts[start : start + self.batch]
             resp = httpx.post(
@@ -182,6 +183,9 @@ class OllamaEmbedder:
             resp.raise_for_status()
             vectors = np.asarray(resp.json()["embeddings"], dtype="float32")
             out.append(vectors)
+            done = start // self.batch + 1
+            if done % 10 == 0 or done == total:
+                logger.info("ollama embed %d/%d batches (%d texts)", done, total, len(texts))
         stacked: np.ndarray[Any, Any] = np.vstack(out)
         norms = np.linalg.norm(stacked, axis=1, keepdims=True) + 1e-12
         return np.asarray(stacked / norms, dtype="float32")
@@ -246,7 +250,7 @@ def structure_records(articles: list[Any], size: int, overlap: int) -> list[Chun
 
 def build_or_load_sweep_index(cfg: SweepConfig, articles: list[Any]) -> Retriever:
     """Build (or reuse) the sweep index under the gitignored data/index/."""
-    slug = f"{cfg.name}-{config_hash(cfg)[:12]}"
+    slug = f"{cfg.name}-{full_config_sha(cfg)[:12]}"
     out_dir = ROOT / "data" / "index" / "sweeps" / slug
     marker = out_dir / "sweep_marker.json"
 
@@ -299,7 +303,7 @@ def make_reranker(cfg: SweepConfig) -> Any:
 
 def assemble_retriever(cfg: SweepConfig, index: Any, chunks: list[ChunkRecord]) -> Retriever:
     rag_config = load_config()
-    return Retriever(
+    retriever = Retriever(
         rag_config,
         index,
         chunks,
@@ -307,6 +311,15 @@ def assemble_retriever(cfg: SweepConfig, index: Any, chunks: list[ChunkRecord]) 
         make_reranker(cfg),
         make_query_embedder(cfg),
     )
+    # Eagerly initialize torch-backed models while faiss is already imported:
+    # lazily initializing torch on the first rerank call (after faiss searches
+    # have spun their OpenMP pool) aborts on macOS with a duplicate libomp
+    # runtime (OMP Error #15, SIGABRT) — observed twice on the ollama arm.
+    if retriever.rerank_fn is not None:
+        eager = getattr(retriever.rerank_fn, "_load", None)
+        if callable(eager):
+            eager()
+    return retriever
 
 
 def full_config_sha(cfg: SweepConfig) -> str:
@@ -541,15 +554,16 @@ def main() -> int:
     items, set_sha, set_note = load_items(split, articles)
     try:
         retriever, index_note = build_retriever(cfg, articles)
-    except Exception as exc:  # broad: model-load failures vary; recorded per arm
+        metrics = measure(retriever, items, cfg)
+    except Exception as exc:  # broad: model-load/runtime failures vary; recorded per arm
         row = {
             "ts": datetime.now(UTC).isoformat(),
-            "step": "sweep",
+            "step": "sweep" if cfg.name != "baseline" else "baseline",
             "change": cfg.name,
             "split": split,
             "config_sha256": full_config_sha(cfg),
             "decision": "not_run",
-            "reason": f"retriever build failed: {exc}",
+            "reason": f"run failed: {type(exc).__name__}: {exc}",
             "request_hosts": sorted({h for h in grabber.hosts if h}),
         }
         append_log(row)
@@ -557,10 +571,9 @@ def main() -> int:
         out.write_text(
             json.dumps({"config": asdict(cfg), "not_run": row["reason"]}, indent=2) + "\n"
         )
-        logger.error("arm %s not run: %s", cfg.name, exc)
+        logger.error("arm %s not run: %s", cfg.name, row["reason"])
         return 0
 
-    metrics = measure(retriever, items, cfg)
     hosts = sorted({h for h in grabber.hosts if h})
     bad = [h for h in hosts if h not in LOCAL_HOSTS]
     if bad:
