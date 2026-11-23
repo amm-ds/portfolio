@@ -30,7 +30,21 @@ Executor: Kimi Code
 
 ---
 
-## 3. Workflow Loop (Claude $\leftrightarrow$ Kimi)
+## 3. Portfolio Release Waves (Post-RAG-01 Finalization)
+
+Full roadmap: `collaboration/designs/20261123-portfolio-release-roadmap/01-master-plan.md`
+
+| Wave | Scope | Status |
+|---|---|---|
+| **Wave 1** | Finalize RAG 01 (Phase E Rev 1 + `final_v3` 120-question E2E + docs/story/cardCopy update) | **ACTIVE (Phase E Rev 1 ready for Kimi)** |
+| **Wave 2** | UI light-mode green alignment (cards + `Send inquiry` / `Unlock` buttons), Contact disclaimer simplification, About/Home/Services/Projects cards pass | **PLANNED** |
+| **Wave 3** | All 13 projects: standardized ad-hoc roadmaps (`Data` $\to$ `Training` $\to$ `Evaluation` $\to$ `Production` $\to$ `Next`), language pass, and Demand Forecasting 02 erratic-series error reduction | **PLANNED** |
+| **Wave 4** | Apps alignment (`agent-chat` & `document-intelligence`: code, infra, articles, language) | **PLANNED** |
+| **Wave 5** | Backend deployment readiness (`showcase-api` + `deploy/`) & public-repo documentation cleanup | **PLANNED** |
+
+---
+
+## 4. Workflow Loop (Claude $\leftrightarrow$ Kimi)
 
 1. **Claude** reviews results, architects the next iteration under `collaboration/designs/`, updates `collaboration/ITERATION_TRACKER.md`, validates gates, commits to git, and outputs the **Execution Snippet for Kimi**.
 2. **Owner** pastes the snippet into Kimi's terminal.
