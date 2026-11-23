@@ -19,6 +19,8 @@ Source design: `collaboration/designs/20261123-portfolio-release-roadmap/01-mast
    - The working tree already has updated `reports_m5_full/{metrics.json,evaluation_metadata.json}` (10 origins, 30,490 series: `convex_ensemble` `official_wrmsse = 0.6211`, `erratic_routed` `0.6235` rejected).
    - Investigate targeted improvements on the 2,288 erratic dense series (`ADI < 1.32, CV2 >= 0.49`) — e.g., Tweedie power / Huber / asymmetric loss, intermittent/erratic stratified blending weights, or spike-lag / calendar features — scored **on the 9 selection origins first**; only promote/score on the 1 test origin if the selection screen improves without regressing pooled WRMSSE (`0.6211`) or zero-day accuracy.
    - Update `projects/02-demand-forecasting/{README.md,story.yaml}`, `docs/projects/02-demand-forecasting.md`, and `apps/showcase-web/src/lib/cardCopy.ts` to match the committed `reports_m5_full/metrics.json` (`0.6211` or improved winner), clearing the 2 `check_headline_numbers.py` drift findings.
+4. **UI Card Green Standard (`apps/showcase-web/src/styles/`):**
+   - Apply the `Send inquiry` card standard (`.contact-form`: `border-left: 3px solid var(--card-accent);`) uniformly across all cards in the app (`.study-card`, `.channel-card`, `.card`, service/about/story cards in `cards-grids.css`, `pages.css`, `story.css`, `tokens-base.css`) so every card shares the same left-accent green rail (`#0f766e` in light mode, `#2dd4bf` in dark mode).
 
 ## Affected surfaces
 
@@ -26,6 +28,7 @@ Source design: `collaboration/designs/20261123-portfolio-release-roadmap/01-mast
 - `projects/{03..13}-*/story.yaml` (roadmap + language polish)
 - `docs/projects/*.md`, `README.md`, `docs/projects/index.md` (via `gen_story_short.py` / `check_short_copy.py`)
 - `apps/showcase-web/src/lib/cardCopy.ts`, `storyShort.ts`, `staticRegistry.ts`
+- `apps/showcase-web/src/styles/{tokens-base,cards-grids,pages,story}.css`
 - `collaboration/reviews/20261123-wave3/00-closeout.md` (new)
 
 ## Gates & Close-out
