@@ -26,12 +26,12 @@ const GO_LINKS = [
   {
     to: "/projects",
     label: "projects",
-    line: "a growing set of reproducible experiments — metrics, interactive figures, published pipelines.",
+    line: "a growing set of reproducible experiments: metrics, interactive figures, published pipelines.",
   },
   {
     to: "/services",
     label: "services",
-    line: "What I deliver, how engagements run, and the frameworks behind the work.",
+    line: "what I deliver, how engagements run, and the frameworks behind the work.",
   },
   {
     to: "/contact",

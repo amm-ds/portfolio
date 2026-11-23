@@ -150,10 +150,8 @@ function PhoneChannelCard() {
       <div className="channel-text">
         <span className="channel-name">Phone</span>
         <p className="channel-lock-note" id="channel-phone-unlock-privacy">
-          Share your email or phone to unlock. When you unlock, your email/phone, its type and the
-          timestamp are stored for about 30 days so I can review who requested this line; invalid
-          values are not stored. <a href={deletionMailtoHref}>Request deletion by email</a>. This
-          is not a security boundary.
+          Share your email or phone to unlock; requests are logged for ~30 days ({" "}
+          <a href={deletionMailtoHref}>request deletion</a>).
         </p>
         <form className="channel-unlock" onSubmit={onSubmit} noValidate>
           <div className="channel-unlock-row">

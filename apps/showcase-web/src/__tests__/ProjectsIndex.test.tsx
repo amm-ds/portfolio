@@ -475,7 +475,7 @@ describe("ProjectsIndex", () => {
       "Built a question-answering agent",
     );
     expect(rag.querySelector(".study-achieves")!.textContent).toContain(
-      "the right passage is found 83% of the time",
+      "F1 0.909",
     );
     // two stacked metadata lines: topics/domain over data/source
     const metaItems = rag.querySelectorAll(".study-meta-item");
@@ -486,7 +486,7 @@ describe("ProjectsIndex", () => {
     expect(metaItems[1].querySelector(".study-sub")!.textContent).toBe("docs");
     // exactly four short technique tags (labels), no status or dataset chips
     const chips = [...rag.querySelectorAll(".chip")].map((el) => el.textContent);
-    expect(chips).toEqual(["RAG", "vector search", "reranking", "RAG evals"]);
+    expect(chips).toEqual(["RAG", "hybrid retrieval", "claim verification", "RAG evals"]);
     expect(rag.textContent).not.toContain("data: docs");
     expect(rag.querySelector(".chip-status")).toBeNull();
     expect(rag.textContent).not.toContain("flagship");
@@ -1025,12 +1025,12 @@ describe("ProjectsIndex", () => {
     const doesStrong = rag.querySelector(".study-does strong")!;
     expect(doesStrong.textContent).toBe("593-article");
     const achievesStrong = rag.querySelector(".study-achieves strong")!;
-    expect(achievesStrong.textContent).toBe("65-question tuning set");
+    expect(achievesStrong.textContent).toBe("120-question sealed pass");
     expect(rag.querySelector(".study-does")!.textContent).toContain(
       "a pinned 593-article Wikipedia corpus",
     );
     expect(rag.querySelector(".study-achieves")!.textContent).toContain(
-      "the right passage is found 83% of the time",
+      "F1 0.909",
     );
     // every card's copy renders — no raw ** markers leak into the DOM
     for (const el of document.querySelectorAll(".study-does, .study-achieves")) {

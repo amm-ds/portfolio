@@ -68,8 +68,8 @@
 }
 
 button {
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--btn-accent-bg);
+  color: var(--btn-accent-ink);
   border: none;
   border-radius: var(--radius);
   padding: 0.65rem 1.4rem;
@@ -565,7 +565,7 @@ button:disabled {
   padding: 1.25rem;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--card-accent);
   border-radius: var(--radius);
 }
 

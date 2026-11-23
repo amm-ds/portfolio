@@ -284,5 +284,6 @@
       "kimi_reason": "The passage states heavy snow at high-mountain ski resorts leads to annual ski races on the Fourth of July.",
       "agree": true
     }
-  ]
+  ],
+  "validated_by": "claude-role-audit (pending human owner hand-label confirmation)"
 }

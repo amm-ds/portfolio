@@ -8,6 +8,12 @@
 
 :root {
   --radius: 10px;
+  /* semantic accents: card left borders and clickable accent buttons. Dark
+     keeps the bright teal + dark ink pair; light overrides below to the deep
+     green (--accent-bright) with white text for AA contrast. */
+  --card-accent: var(--accent);
+  --btn-accent-bg: var(--accent);
+  --btn-accent-ink: var(--accent-ink);
   /* one spacing scale: card grids and cards-inside-a-section stack at the
      card gap; page/flow sections separate at the section gap */
   --gap-card: 1.25rem;
@@ -102,6 +108,9 @@
   --accent: #14b8a6;
   --accent-bright: #0f766e;
   --accent-ink: #042f2e;
+  --card-accent: var(--accent-bright);
+  --btn-accent-bg: #0f766e;
+  --btn-accent-ink: #ffffff;
   --accent-glow: rgba(45, 212, 191, 0.14);
   --secondary: #0369a1;
   --text: #172433;

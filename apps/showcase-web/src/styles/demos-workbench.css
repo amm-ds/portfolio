@@ -286,7 +286,7 @@
   font-size: 0.85rem;
   line-height: 1.5;
   color: var(--text);
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--card-accent);
   border-radius: 0 var(--radius) var(--radius) 0;
   background: var(--notice-bg);
 }
@@ -713,7 +713,7 @@
   padding: 0.55rem 0.8rem;
   background: var(--input-bg);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--card-accent);
   border-radius: 8px;
 }
 

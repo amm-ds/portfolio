@@ -392,3 +392,21 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
   indexes (3 chunk sizes), cross-encoder rerank, pydantic-ai agent with
   structured citations, retrieval + RAG + ops evaluation, DVC pipeline. See
   git history and `reports/metrics.json` for the evaluated configuration.
+- 2026-11-23 — Phase A–E close-out (S3 retrieval promotion, judge_v2
+  validation, final_v3 end-to-end pass). The SOTA retrieval ladder promoted
+  S3: structure-aware title-prefixed chunks (200/40), dense FAISS plus BM25
+  fused by reciprocal rank fusion (k=60, pool 50) before reranking, and a
+  per-article cap of 2 with score-order backfill. On the 120-question
+  final_v3 sealed set it beat the dense incumbent on recall@5, 0.9457 to
+  0.9239, with multi-hop recall@5 0.8333 to 0.7917 and no slice regression;
+  `params.yaml retrieval_best` and the rebuilt `data/index/chunks_200` carry
+  the promoted configuration. The judge_v2 calibration (147 claims, 72
+  one-detail same-subject negatives after 3 drops) was owner-validated on a
+  30-claim blind sample at 30/30 agreement, Wilson 95% [0.8865, 1.0]. Phase E
+  fixed three pipeline bugs (240-char judge context truncation, span
+  punctuation tokenization, unbounded search loops) and added a deterministic
+  soft tool ceiling inside the tools. The single official 120-question
+  end-to-end pass reached F1 0.9091, precision 0.9524, faithfulness 0.8717,
+  with 1 unsupported claim in 120 and 4 tool-budget rail stops on unanswerable
+  rows; cumulative cloud-equivalent spend $2.0392 of the $3.00 cap. Earlier
+  65-tuning, 55-heldout, stress, and B/C/D results remain prior baselines.
