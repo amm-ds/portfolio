@@ -4,35 +4,35 @@ sections:
 - id: background
   text_md: |
     **When every answer carries a citation, what can still go wrong?**
-    A footnote looks safe, yet a model can misread a source or stitch two separate lines into a false claim. Because readers trust cited links, a guess hidden behind a real page is worse than no answer at all. This assistant answers from 593 pinned Wikipedia articles, citing each claim or declining when proof is missing.
+    A footnote looks safe, yet a model can misread a source or stitch two unrelated facts into a false bridge. Because readers trust linked citations, a guess hidden behind a real page causes real harm. This assistant answers from 593 pinned Wikipedia articles, citing each claim or declining when evidence fails.
 
     ```diagram 01-rag-pipeline
     ```
 
-    CPU hybrid search pairs with a bounded repair loop before sending text.
+    CPU hybrid search pairs with a bounded repair loop before returning text.
 
     - Across 120 questions, 104 finish cleanly (`F1 0.9091`), and 1 keeps an unsupported claim.
-    - One model drafted and graded answers, and the test set ran four times, so scores act as an upper estimate.
+    - One model family drafted and graded answers, and the final set ran four times, so scores act as an upper estimate.
 
-    Next, we define the rules each answer must pass ([Objectives →](#sec-objectives)).
+    Next, we set the rules each answer must clear ([Objectives →](#sec-objectives)).
 
     **In plain terms:** The assistant answers from checked passages or refuses honestly, holding unsupported answers to 1 in 120 on a fixed slice.
   figures: []
 - id: objectives
   text_md: |
     **Set four targets before any tuning begins.**
-    An open-web chatbot sounds helpful even when it guesses. A citation-first tool fails loudest when it sounds confident and is wrong. Before touching any model, we locked one contract so the system refuses outside its corpus and checks every drafted claim within strict cost rails.
+    An open-web chatbot sounds helpful even when it guesses. A citation-first product fails loudest when it sounds sure and is wrong. Instead of chasing fluent text, we locked down clear rules before writing a single prompt. Every question enters one strict pipeline: search the pinned corpus, verify each claim against full text, and refuse cleanly when proof runs out.
 
     ```diagram auto-01-rag-agent-1
     ```
 
-    When search finds no proof in the 593 pages, a calibrated refusal counts as a right answer rather than an error. In-corpus answers must clear a claim check before returning text.
+    When search finds no match inside the 593 pages, a clear refusal counts as a win rather than a broken run. An open-web chat tool hates saying "I do not know." Here, honest abstention protects readers from invented trivia, while in-corpus answers face three tight gates.
 
-    - At least `60%` of an answer's claims must pass full-text checks against their cited passages (`min_support = 0.6`). Weak claims get two repair tries before removal or abstention.
-    - Search must put a gold passage in the top 5 at least `60%` of the time (`recall@5 >= 0.60`), meaning the exact source chunk on the final set and any passage of the right page on tuning sets.
-    - Answer cost stays at or under `$0.01` per query on CPU search, spending budget on claim checks rather than scale while supporting local models, hosted keys, and a `$0` offline mode.
+    - At least `60%` of an answer's claims must pass full-text checks against their cited passages (`min_support = 0.6`). Weak claims get two bounded repair tries before they are dropped or trigger a clean refusal.
+    - Search must put a gold passage in the top 5 at least `60%` of the time (`recall@5 >= 0.60`). On the final set, gold means the exact source chunk; on tuning sets, any passage from the right article counts.
+    - Answer cost stays at or below `$0.01` per query by running search on CPU. Rather than buying a giant model that still guesses between passages, we spend budget on claim checks, with support for local models, hosted endpoints, and a `$0` offline test mode.
 
-    The target table below pairs each up-front goal with the final test outcome; next, we inspect how the corpus and splits were locked ([Data →](#sec-data)).
+    The target table below tracks each up-front goal against our final test numbers; next, we trace how the corpus and test splits were built ([Data →](#sec-data)).
 
     | Target | Threshold | Final test result |
     |---|---|---|
@@ -47,18 +47,18 @@ sections:
 - id: data
   text_md: |
     **A small, pinned corpus makes each claim checkable.**
-    Indexing all of Wikipedia turns verification into a slow, open-ended search problem. Freezing a compact slice lets us trace every score back to the exact same bytes, both today and on any future run. This section explains how the 593 pages and three question splits were built and pinned.
+    Indexing all of Wikipedia turns verification into a slow, open-ended search problem. Freezing a compact slice lets us trace every score back to the exact same bytes, both today and on any future run. This section walks through how the 593 articles and three question splits were selected, capped, and locked against silent drift.
 
     ```diagram auto-01-rag-agent-2
     ```
 
-    DVC tracks each build step from raw scan to index, with dates and licenses in the [data registry](https://amm-ds.github.io/portfolio/data-registry/wikipedia/). Pages span five contrasting topics: Climate, Renewable energy, Aviation, Machine learning, and Photosynthesis (up to 120 pages per topic plus anchor titles).
+    DVC tracks each build step from raw Wikipedia dump scan to chunk index, while snapshot dates and licenses sit in the [data registry](https://amm-ds.github.io/portfolio/data-registry/wikipedia/). Articles span five contrasting subjects: Climate, Renewable energy, Aviation, Machine learning, and Photosynthesis (up to 120 pages per topic plus required anchor titles).
 
-    - Cutting pages at 12,000 characters fits each one into a single prompt window. That bounds search memory while keeping a long tail of rich flagship articles.
-    - Empty or oversized files fail before indexing. SHA-256 hashes lock corpus files and splits so any changed byte forces a clean rebuild.
-    - A local model wrote the 120 final questions from gold chunks (one per single-hop, two per multi-hop). The 28 unanswerables ask off-topic questions like Charon's orbit to test clear refusal rules.
+    - Cutting pages at 12,000 characters fits each one into a single prompt window. That bounds search memory and prompt cost while preserving a long tail of rich flagship entries.
+    - Empty or oversized files fail loudly before indexing. SHA-256 hashes lock corpus files and question splits so any changed byte forces a clean rebuild rather than shifting a metric quietly.
+    - A local model drafted the 120 final questions straight from ground-truth corpus chunks (one chunk per single-hop question, two per multi-hop). Meanwhile, the 28 unanswerable questions ask about off-topic subjects such as Charon's orbit to test clear boundary refusals.
 
-    The table below records each split's size and read count before we audit corpus balance in [EDA →](#sec-eda).
+    The question-set table below logs each split's size, role, and read count before we audit topic balance and page lengths in [EDA →](#sec-eda).
 
     | Question set | Size (single / multi / abstain) | Role | Reads |
     |---|---:|---|---|
@@ -71,15 +71,15 @@ sections:
 - id: eda
   text_md: |
     **Topics sit in a tight band; page lengths do not.**
-    Before tuning search, we audit the indexed slice directly. High average recall can easily mask a weak subject or fail silently when expected flagship pages were never scanned. Checking counts and length cutoffs first prevents misleading corpus-wide averages later.
+    Before tuning search parameters, we audit the indexed slice directly. A high average recall can easily mask one weak topic or hide missing flagship pages that test questions expect by name. Checking counts and length cutoffs up front ensures our headline averages reflect real domain coverage rather than dataset quirks.
 
-    Because the raw Wikipedia export is not sorted by topic, taking top-N pages in file order would skew toward arbitrary early entries. We matched each topic explicitly and checked the resulting slice.
+    Because the raw Wikipedia export is not sorted by topic, taking top-N pages in file order would pack the slice with unrelated early entries. We matched each topic explicitly and checked every resulting title against the slice.
 
-    - All five subjects hold between 102 and 125 pages, forcing search to handle science, energy, flight, and AI terms alike.
-    - Page lengths form a long tail that stops at 12,000 characters, showing our curation cap rather than natural article lengths.
-    - Some flagship titles were absent from the first scan, so we verified every anchor title and test question straight against the indexed pages.
+    - All five subjects hold between 102 and 125 indexed pages. That tight spread forces search to handle science, clean energy, flight, and machine learning terms alike.
+    - Word counts form a long tail that stops sharply at the 12,000-character cutoff. That hard edge reflects our curation cap, not natural article lengths on the web.
+    - Several expected flagship titles were missing from the first automated scan. Checking anchor titles and test questions straight against the corpus prevented scoring questions on pages that were never indexed.
 
-    The corpus stats table and `eda_corpus_composition` chart below confirm balanced counts and bounded page lengths before building search ([Training →](#sec-training)).
+    The corpus table and `eda_corpus_composition` chart below confirm even topic counts and bounded lengths across all 593 pages, setting a clean base for search tuning ([Training →](#sec-training)).
 
     | Corpus stat | Measured value |
     |---|---|
@@ -92,16 +92,16 @@ sections:
 - id: training
   text_md: |
     **Better ranking discipline, not a bigger model, lifted multi-hop search.**
-    Simple factual questions often match one dense embedding cleanly. Multi-hop questions fail unless exact words, page titles, and source diversity work together in the top results. Below we walk through our promoted hybrid retriever (`S3`) and what earlier tuning ruled out.
+    Simple one-fact questions often match a single dense vector cleanly. Multi-hop questions break down when exact names get diluted or one long page fills all top slots. Below we trace how our hybrid retriever (`S3`) solves those failure modes in four CPU steps, and what earlier tuning sweeps ruled out.
 
-    Our retriever builds ranking discipline in four CPU steps, each added after a measured miss in development.
+    Each layer of the retriever exists because a real test failure exposed a gap in plain vector search.
 
-    - **Title-anchored chunks:** Prefixing each chunk with its article title keeps short passages grounded in their subject ("the first flight lasted 12 seconds" needs the Wright Flyer title). This lifted `recall@5` from `0.9636` to `1.000` on the 65-question tuning split (`dev_v1` and `dev_40` already tied at `1.000`), and stayed because it costs almost nothing.
-    - **Hybrid rank fusion:** Exact names ("Boeing 737 MAX") favor BM25 word search, while paraphrases ("wind turbine capacity factor") favor FAISS vectors. Merging both top-50 lists via reciprocal rank fusion (`1 / (60 + rank)`) avoids learned weights that could overfit.
-    - **Cross-encoder reranking (`6 × k`):** A cross-encoder rescores the top 18 candidates at serving (`30` during evaluation) for fine relevance.
-    - **Per-article diversity cap:** Limiting results to 2 chunks per page stops one popular page from crowding out the second source needed for multi-hop answers. On 92 answerable final questions, `recall@5` rose from `0.9239` to `0.9457` (multi-hop `0.7917` to `0.8333`), while `all-articles@5` (requiring *all* gold pages in the top 5) led on all four dev splits.
+    - **Title-anchored chunks:** Adding the article title to each chunk keeps short passages anchored in their subject ("the first flight lasted 12 seconds" means little without the Wright Flyer title). This lifted `recall@5` from `0.9636` to `1.000` on the 65-question tuning split (`dev_v1` and `dev_40` already sat at `1.000`), and stayed because it adds almost zero overhead.
+    - **Hybrid rank fusion:** Exact identifiers ("Boeing 737 MAX") favor BM25 word search, while paraphrased ideas ("wind turbine capacity factor") favor FAISS vectors. Blending both top-50 lists by reciprocal rank (`1 / (60 + rank)`) avoids learned weights that overfit small sets.
+    - **Cross-encoder reranking (`6 × k`):** A cross-encoder rescores the top 18 fused items at serving (`30` during top-5 measurement) to sharpen rank order.
+    - **Per-article diversity cap:** Limiting results to 2 chunks per page prevents one popular entry from crowding out the second source needed for multi-hop synthesis. On 92 answerable final rows, `recall@5` climbed from `0.9239` to `0.9457` (multi-hop `0.7917` to `0.8333`), and `all-articles@5` (requiring *all* gold pages in the top 5) led on all four dev splits.
 
-    What tuning ruled out: 200-, 400-, and 800-token chunks tied at `0.831` `recall@5` on 65 tuning questions, so 200 tokens won on prompt size (`443` mean tokens at top 3 vs `748` at top 5). Reranking raised `MRR@5` from `0.718` to `0.808` across 975 candidates without raising recall (buying order, not new hits). Plain fusion without title prefixes or reranking trailed dense search (`0.533` vs `0.600`, n=15), and larger Qwen3 arms tied MiniLM at the 16-question ceiling, so CPU MiniLM stayed.
+    What tuning ruled out: 200-, 400-, and 800-token chunks tied at `0.831` `recall@5` on 65 tuning questions, so 200 tokens won by keeping top-3 prompts compact (`443` mean tokens vs `748` at top 5). Cross-encoder reranking lifted `MRR@5` from `0.718` to `0.808` across 975 candidates without raising recall, proving it buys rank order rather than new hits. Plain fusion without title prefixes or reranking trailed dense search (`0.533` vs `0.600`, n=15), and larger Qwen3 arms tied MiniLM at the 16-question ceiling, so CPU MiniLM stayed.
 
     ```python
     def search(self, query: str, top_k: int | None = None) -> list[Citation]:
@@ -133,27 +133,27 @@ sections:
         return [self._to_citation(c) for c in candidates[:k]]
     ```
 
-    Excerpt from [index.py](https://github.com/amm-ds/portfolio/blob/main/projects/01-rag-agent/src/rag_agent/index.py). Below, `retrieval_ladder` plots the full tournament with Wilson 95% whiskers while `chunk_size_sweep` and `model_comparison` show the earlier tuning runs; next we verify how answers are graded ([Evaluation →](#sec-evaluation)).
+    Excerpt from [index.py](https://github.com/amm-ds/portfolio/blob/main/projects/01-rag-agent/src/rag_agent/index.py). Below, `retrieval_ladder` charts the baseline-to-hybrid tournament with Wilson 95% whiskers while `chunk_size_sweep` and `model_comparison` show the earlier tuning runs; next, we examine how final answers are judged ([Evaluation →](#sec-evaluation)).
 
     **In plain terms:** Prefixing titles, blending keyword and vector search, reranking, and capping chunks per page lifted final recall to 94.6% on CPU.
   figures: [retrieval_ladder, chunk_size_sweep, model_comparison]
 - id: evaluation
   text_md: |
     **A score earns trust only when you can inspect the text behind it.**
-    One high accuracy number can hide a rubber-stamp judge or a runaway tool loop. Before accepting any headline result, we layer chance baselines, code span checks, calibrated judges, and strict loop caps so every pass is auditable.
+    One high accuracy figure can hide a weak judge or a runaway tool loop that burns budget. Before trusting any headline metric, we stack naive search baselines, code-level span checks, calibrated judges, and hard loop caps so every outcome is easy to audit.
 
     ```diagram auto-01-rag-agent-3
     ```
 
-    The flow pairs retrieval baselines with multi-stage answer verification and strict runtime limits.
+    The diagram traces how retrieval floors feed three grading layers inside a strict call and token budget.
 
-    - Search scores anchor on seeded random (`0.031` recall@5) and word-match baselines (`0.677` on tuning) to measure real lift over basic rules.
-    - Before any LLM judge runs, code checks verify quoted spans, numbers, dates, months, and negation words. They logged zero false drops on the final pass.
-    - Our first judge failed openly on the 194-claim tuning set (`Q3a`), missing `86 of 194` claims (`39.7%` hosted miss rate, `kappa 0.605`; `44.3%` local miss rate, `kappa 0.546`). We rebuilt `judge_v2` with 72 near-miss swaps out of 147 claims.
-    - The owner then hand-checked 30 claims blind to model tags (11 supported, 19 unsupported). Seven items were reconciled against chunk text with the reviewer audit, reaching `30/30` (`Wilson 95% [0.8865, 1.0]`, above `0.85`).
-    - Hard loop caps (12 calls, 16 tool steps, 200k input tokens, plus an in-tool limit) stop runaway searches. Checks abstained twice and skipped 33 claim-free outputs such as refusals.
+    - Search scores anchor on seeded random (`0.031` recall@5) and word-match baselines (`0.677` on tuning). Measuring above chance floors shows real gain over basic rules.
+    - Before an LLM judge runs, deterministic code checks verify quoted substrings, numbers, dates, months, and negation words. They logged zero false rejections on the final pass.
+    - Our first judge failed openly on the 194-claim tuning set (`Q3a`), missing `86 of 194` claims (`39.7%` hosted miss rate, `kappa 0.605`; `44.3%` local miss rate, `kappa 0.546`). We rebuilt calibration (`judge_v2`) with 72 subtle one-detail swaps out of 147 claims.
+    - The owner then hand-checked 30 claims blind to model tags (11 supported, 19 unsupported). Seven items were reconciled against passage text with the reviewer audit, hitting `30/30` (`Wilson 95% [0.8865, 1.0]`, well over `0.85`).
+    - Hard loop rails (12 requests, 16 tool calls, 200k input tokens, plus an in-tool ceiling) block runaway searches. Verification abstained twice and skipped 33 claim-free outputs such as refusals.
 
-    **How clean are the test set and judge?** Not fully independent. One model (`kimi-for-coding`) wrote, checked, and graded the answers, and `final_v3` was read four times (`R0`, `S3` gate, held-out check, and final run), making these scores an upper bound awaiting a fresh set and cross-model judge ([Results →](#sec-results)).
+    **How clean are the test set and judge?** Not fully independent. One model (`kimi-for-coding`) drafted, verified, and graded the answers, and `final_v3` was read four times (`R0`, `S3` gate, held-out check, and final run). These figures therefore represent an optimistic upper estimate pending a fresh test set and cross-model judge ([Results →](#sec-results)).
 
     | Check | Role | Model | Audit status |
     |---|---|---|---|
@@ -166,19 +166,19 @@ sections:
 - id: results
   text_md: |
     **104 of 120 questions answered or refused cleanly; 1 answer kept an unsupported claim.**
-    On the final 120-question pass, hybrid search and claim checks reach `0.9524` precision and `86.7%` accuracy (`Wilson 95% [0.7944, 0.9162]`). Faithfulness hits `0.8717 [0.8092, 0.9304]` across 92 answerable questions, with full traces saved in `reports/final_v3_e2e/`.
+    On the final 120-question pass, coupling hybrid search with bounded verification pushes precision to `0.9524` and overall accuracy to `86.7%` (`Wilson 95% [0.7944, 0.9162]`). Across 92 answerable questions, faithfulness reaches `0.8717 [0.8092, 0.9304]`, with every trace committed under `reports/final_v3_e2e/`.
 
     ```diagram auto-01-rag-agent-4
     ```
 
-    Follow one traced question from start to end. For *"Which company acquired LM Wind Power in April 2017 for €1.5 billion?"*, search puts the gold chunk first (`top_rank 1`), the draft cites it, and the verifier passes its claim unchanged. The answer *"GE Renewable Energy"* ships at `faithfulness 1.0` with zero retries (`question_traces_heldout.json`).
+    Follow one real traced question from start to end to see the loop in action. For *"Which company acquired LM Wind Power in April 2017 for €1.5 billion?"*, search ranks the gold chunk first (`top_rank 1`), the draft cites it, and the verifier accepts its claim unchanged. The final answer *"GE Renewable Energy"* ships at `faithfulness 1.0` with zero retries (`question_traces_heldout.json`).
 
     - **Over-caution replaced false claims as the top failure:** Fourteen of 16 misses came from saying too little (`10` empty answers on answerable rows, or `11/92` missed with 1 search miss, plus `4` budget-stop refusals counted as false positives). Only `1 of 120` answers kept an unsupported claim (`2 of 150` judged claims before drops or repairs).
-    - **Slice balance holds:** Single-hop (`60/68`), multi-hop (`20/24`), and unanswerable (`24/28`, refusal rate `0.8571`) slices all hold steady. Top-5 search covered `88.6%` of exact gold chunks and `93.5%` of key articles (`cite_when_expected 90.2%`).
-    - **Claim funnel:** Out of `166` drafted claims, `16` failed code checks and `150` reached the judge (`148` passed). Then `15` repair calls saved `11` more and `7` dropped, keeping `95.8%` (`159` claims at `0.9739` mean support).
-    - **Cost and speed:** Checks add `6.2 s` (`31%` of answer time). Cached reads (`74%`) kept answer cost at `$1.014` (`$0.781` agent + `$0.233` verify = `$0.0084/query`, under `$0.01`); judging raised total spend to `$1.458` (`$0.0121/query`), at `p50 16.5 s` and `p95 40.5 s`.
+    - **Slice balance holds:** Single-hop (`60/68`), multi-hop (`20/24`), and unanswerable (`24/28`, refusal accuracy `0.8571`) questions all hold steady. Top-5 search covered `88.6%` of exact gold chunks and `93.5%` of key articles (`cite_when_expected 90.2%`).
+    - **Claim verification funnel:** Out of `166` drafted claims, `16` failed code checks and `150` reached the judge (`148` passed first check). Then `15` repair calls saved `11` more and `7` dropped, retaining `95.8%` (`159` surviving claims at `0.9739` mean support).
+    - **Cost and speed:** Claim checks add `6.2 s` (`31%` of answer latency). Cached reads (`74%`) kept answer cost at `$1.014` (`$0.781` agent + `$0.233` verify = `$0.0084/query`, under `$0.01`); judging raised total spend to `$1.458` (`$0.0121/query`), at `p50 16.5 s` and `p95 40.5 s`.
 
-    The headline table and three charts below (`final_outcome`, `failure_taxonomy`, `verify_funnel`) break down every verdict and claim step before our final takeaways ([Conclusions →](#sec-conclusions)).
+    The headline table and three charts below (`final_outcome`, `failure_taxonomy`, `verify_funnel`) trace every verdict and claim step before we summarize lessons learned ([Conclusions →](#sec-conclusions)).
 
     | Final pass metric (`final_v3`, n = 120) | Value |
     |---|---:|
@@ -195,7 +195,7 @@ sections:
   text_md: |
     ## What the experiment taught
 
-    Grounding failures rarely come from a single weak prompt; they come from search blind spots, silent schema bugs, and uncalibrated checks. Four concrete lessons stand out from the committed runs before we wrap up with limits and exact appendix tables.
+    Grounding failures rarely come from one weak prompt; they emerge when search blind spots, silent schema bugs, and uncalibrated checks compound. Stepped isolation across retrieval, verification, and loop rails turned a noisy prototype into an auditable pipeline, leaving four clear lessons for similar systems.
 
     - **Schema bugs can look like reasoning failures:** Before grounding hardening, our citation mandate made an honest refusal invalid output, causing unanswerable questions to loop until the token cap (~33M tokens in one stress run). Making "no answer" a valid schema output fixed all six unanswerable stress rows cleanly.
     - **Reranking buys order, not missing facts:** On tuning runs, cross-encoder reranking lifted `MRR@5` from `0.718` to `0.808` at constant recall; fixing missed multi-hop articles required title-anchored chunks, BM25+FAISS fusion, and a 2-chunk page cap.
@@ -208,7 +208,7 @@ sections:
     - Answers, claim checks, and grading all used `kimi-for-coding`, partially mitigated by the 30-claim blind owner audit but still awaiting a cross-model judge.
     - Results cover 593 capped Wikipedia articles and off-topic unanswerables, not noisy enterprise corpora or near-miss unanswerable traps.
 
-    The `final_outcome` chart below summarizes the 120-question confusion and slice totals alongside the full historical appendix; see the [full evaluation report](https://amm-ds.github.io/portfolio/projects/01-rag-agent/) for supporting artifacts.
+    Below, `final_outcome` summarizes the 120-question confusion matrix and slice totals beside the full historical appendix; see the [full evaluation report](https://amm-ds.github.io/portfolio/projects/01-rag-agent/) for supporting artifacts.
 
     ## Exact numbers
 
