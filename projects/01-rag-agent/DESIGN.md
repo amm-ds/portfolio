@@ -409,6 +409,6 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
   punctuation tokenization, unbounded search loops) and added a deterministic
   soft tool ceiling inside the tools. The single official 120-question
   end-to-end pass reached F1 0.9091, precision 0.9524, faithfulness 0.8717,
-  with 1 unsupported claim in 120 and 4 tool-budget rail stops on unanswerable
-  rows; cumulative cloud-equivalent spend $2.0392 of the $3.00 cap. Earlier
+  with 1 of 120 answers keeping an unsupported claim and 4 tool-budget rail stops on unanswerable
+  rows; final pass meter `$1.014` answer path (`$1.458` total incl. judging). Earlier
   65-tuning, 55-heldout, stress, and B/C/D results remain prior baselines.

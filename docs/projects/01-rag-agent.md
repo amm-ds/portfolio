@@ -9,9 +9,9 @@
 > This agent answers only from retrieved evidence with per-claim citations.
 > The promoted S3 retriever (title-anchored chunks, dense plus BM25 RRF
 > fusion, cross-encoder rerank, per-article diversity cap) reaches recall@5
-> 0.946 on the sealed set; the judge's labels are audited 30/30 by a reviewer
-> agent (owner hand-label pending); the single 120-question final pass reaches F1 0.9091 with 1
-> unsupported claim in 120.
+> 0.946 on the `final_v3` set; the judge's labels are audited 30/30 by a reviewer
+> agent (owner hand-label pending); the 120-question final pass reaches F1 0.9091 with 1 of 120 answers
+> keeping an unsupported claim.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/01-rag-agent)
 

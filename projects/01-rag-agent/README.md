@@ -11,9 +11,10 @@ Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybrid retrieval rea
 The runtime default is local Ollama (`qwen3.6:35b-a3b-q4_K_M`); any
 OpenAI-compatible endpoint uses the same path. There is no runtime mock.
 **`kimi-for-coding` is the selected provider for the reported evaluation**.
-The finalized pass scores the 120-question `final_v3` sealed set once:
-**F1 0.9091, precision 0.9524, faithfulness 0.8717, 1 unsupported claim in
-120**. The earlier 65-question tuning and 55-question held-out numbers below
+The end-to-end pass scores the 120-question `final_v3` set (read four times
+across baseline, S3 gate, held-out, and E2E passes):
+**F1 0.9091, precision 0.9524, faithfulness 0.8717, 1 of 120 answers
+keeping an unsupported claim**. The earlier 65-question tuning and 55-question held-out numbers below
 are prior baselines. The current production configuration adds the
 grounding-hardening verify loop and a bounded agent loop; earlier stress and
 independent-set results are reported separately below.
