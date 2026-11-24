@@ -376,8 +376,8 @@ roadmap:
   title: "Published the spike-capture negative result."
   detail: "Erratic routing rejected by the adoption gate; the champion stands."
 - status: next
-  title: "Cut erratic error with one challenger."
-  detail: "Wave-34 Huber challenger screening on the 9 selection origins first."
+  title: "Find erratic gains beyond routing."
+  detail: "Wave-34 Huber arm rejected on origin 1 (0.8683 vs 0.7409); screen stopped."
 figure_captions:
   m5_full_sample_series: "Three catalog series at the scored-once test origin on 2016-05-22: top-units, hardest-intermittent, and mid-volume. Each panel shows 56 days of history, 28 days of actual sales, and the ensemble curve with its member envelope. The envelope is the members' spread, not a calibrated interval. Look for the weekly shape, weeks-long zero runs, and quiet days."
   m5_full_candidate_ranking: "All 8 candidates ranked by official hierarchical WRMSSE on the scored-once competition window across 42,840 revenue-weighted nodes. Lower bars are better. The stability-screened convex ensemble leads at 0.6211, the best single pooled fit scores 0.6219, and the seasonal-naive floor scores 0.8929."
