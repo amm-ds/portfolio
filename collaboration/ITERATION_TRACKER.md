@@ -41,7 +41,8 @@ Full roadmap: `collaboration/designs/20261123-portfolio-release-roadmap/01-maste
 | **Wave 2** | UI light-mode green alignment (cards + `Send inquiry` / `Unlock` buttons), Contact disclaimer simplification, About/Home/Services/Projects cards pass | **DONE & COMMITTED** |
 | **Wave 3** | All 13 projects: standardized ad-hoc roadmaps (`Data` $\to$ `Training` $\to$ `Evaluation` $\to$ `Production` $\to$ `Next`), M5 `0.6211` headline sync (`0` drift), wave-34 erratic challenger (`rejected` on origin 1877: `0.8683` vs `0.7409`, shards stopped), and UI card `--card-accent` rail | **DONE & COMMITTED** |
 | **Wave 4** | Apps alignment (`agent-chat` & `document-intelligence`: code, infra, articles, language) | **DONE & COMMITTED** |
-| **Wave 5** | Backend deployment readiness (`showcase-api` + `deploy/`) & public-repo documentation cleanup, then merge to `main` and push to website | **DONE & COMMITTED — MERGED & PUSHED TO `main`** |
+| **Wave 5** | Backend deployment readiness (`showcase-api` + `deploy/`) & public-repo documentation cleanup, then merge to `main` and push to website | **DONE & COMMITTED — MERGED & PUSHED TO `main` (`c09d9166`)** |
+| **Wave 6** | Experiment validation round (01–13), RAG 01 updated figures/assets, remove `.terminal-dots` in apps + refresh screenshots/video, and demo responsive autosizing | **READY FOR KIMI (`20261124-wave6-experiments-apps-and-demos`)** |
 
 ---
 
