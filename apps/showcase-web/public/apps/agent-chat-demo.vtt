@@ -1,0 +1,10 @@
+WEBVTT
+
+00:00.000 --> 00:02.000
+Mock streaming walkthrough: question submitted, tool evidence retrieved.
+
+00:02.000 --> 00:04.000
+Consequential restart action pauses for operator approval.
+
+00:04.000 --> 00:05.560
+Operator approves action; conversation completes and saved list is shown.

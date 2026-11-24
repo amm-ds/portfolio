@@ -154,6 +154,9 @@ describe("groupByRow", () => {
     expect(stylesCss.match(/\.study-card__content \{[\s\S]*?\n\}/)![0]).toContain(
       "padding: 1.1rem 1.25rem 1.25rem;",
     );
+    expect(stylesCss.match(/\.study-card__content \{[\s\S]*?\n\}/)![0]).not.toContain(
+      "max-inline-size",
+    );
     const title = stylesCss.match(/\.project-card h4 \{[\s\S]*?\n\}/)![0];
     expect(title).toContain("font-size: 1.2rem;");
     expect(title).not.toContain("margin:");
@@ -405,6 +408,13 @@ describe("ProjectsIndex", () => {
     // …and the horizontally-scrolling flex row is gone
     expect(gridRule).not.toContain("overflow-x: auto;");
     expect(gridRule).not.toContain("display: flex;");
+    // width comes from the fluid shell: no grid caps or centring (Wave 6 regression)
+    for (const sel of ["demo-grid", "project-grid", "apps-grid"]) {
+      const rule = stylesCss.match(new RegExp(`\\.${sel} \\{[\\s\\S]*?\\n\\}`))![0];
+      expect(rule).not.toContain("max-width");
+      expect(rule).not.toContain("margin-inline: auto");
+      expect(rule).not.toContain("0 auto");
+    }
   });
 
   it("falls back to the static demo cards when the registry fetch fails — same description block and results chip", async () => {
@@ -1027,7 +1037,7 @@ describe("ProjectsIndex", () => {
     const doesStrong = rag.querySelector(".study-does strong")!;
     expect(doesStrong.textContent).toBe("593-article");
     const achievesStrong = rag.querySelector(".study-achieves strong")!;
-    expect(achievesStrong.textContent).toBe("120-question sealed pass");
+    expect(achievesStrong.textContent).toBe("120-question pass");
     expect(rag.querySelector(".study-does")!.textContent).toContain(
       "a pinned 593-article Wikipedia corpus",
     );

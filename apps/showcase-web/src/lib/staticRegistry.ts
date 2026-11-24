@@ -293,16 +293,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "verify_funnel"
     ],
     "has_roadmap": true,
-    "metrics_keys": [
-      "rag_agent",
-      "retrieval_chunks_200",
-      "retrieval_lexical_chunks_200",
-      "retrieval_model_bge_small_chunks_200",
-      "retrieval_model_minilm_chunks_200",
-      "retrieval_random_chunks_200",
-      "retrieval_rerank_off_chunks_200",
-      "retrieval_rerank_on_chunks_200"
-    ],
+    "metrics_keys": [],
     "project_id": "01-rag-agent",
     "section_ids": [
       "background",

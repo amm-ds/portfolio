@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../App";
+import { readStylesCss } from "./helpers/css";
 import ForecastWorkbench from "../demos/forecast-workbench/ForecastWorkbench";
 import { ModelSpreadPanel } from "../demos/forecast-workbench/panels";
 import type { ForecastWorkbenchPayload } from "../demos/types";
@@ -649,5 +650,17 @@ describe("ForecastWorkbench", () => {
     // the scroll region is capped (max-height) so a long list cannot push
     // the layout — the rail and chart keep the churn demo's proportions
     expect(scroll.classList.contains("fwb-store-scroll")).toBe(true);
+  });
+
+  it("keeps workbench rows at content height and full width on large screens", () => {
+    const css = readStylesCss();
+    const root = css.match(/\n\.wb-root \{[\s\S]*?\n\}/)![0];
+    expect(root).toContain("align-content: start;");
+    expect(root).not.toContain("max-width");
+    expect(root).not.toContain("margin-inline: auto");
+    const strip = css.match(/\.wb-notice-strip \{\n  display: grid;[\s\S]*?\n\}/)![0];
+    expect(strip).toContain("repeat(auto-fit, minmax(min(100%, 18rem), 1fr))");
+    const card = css.match(/\.wb-canvas-slot \.figure-card \{[\s\S]*?\n\}/)![0];
+    expect(card).toContain("min-height: 460px;");
   });
 });

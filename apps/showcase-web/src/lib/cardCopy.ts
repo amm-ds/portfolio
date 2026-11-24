@@ -42,7 +42,7 @@ export const CARD_DOES: Record<string, string> = {
  *  **bold** so the result scans at a glance. */
 export const CARD_ACHIEVES: Record<string, string> = {
   "01-rag-agent":
-    "The finalized **120-question sealed pass** reaches **F1 0.909** (precision **0.952**, faithfulness **0.872**) with **1 of 120** unsupported claims; the promoted S3 retriever hits **0.946 recall@5** and the judge's labels are audited **30/30** by a reviewer agent (owner hand-label pending).",
+    "The finalized **120-question pass** reaches **F1 0.909** (precision **0.952**, faithfulness **0.872**) with **1 of 120 answers** keeping an unsupported claim; the promoted S3 retriever hits **0.946 recall@5** and the judge's labels are audited **30/30** by a reviewer agent (owner hand-label pending).",
   "02-demand-forecasting":
     "A stability-screened ensemble of pooled LightGBM fits reaches **0.6211** vs the naive floor's **0.8929** official WRMSSE (**−30.4%**) on the scored-once competition window.",
   "03-anomaly-detection":

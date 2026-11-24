@@ -1,14 +1,12 @@
 /* --- Demos (projects page, above the experiments rows) --- */
 
-/* full-width grid, same shape as the experiment card grid below; capped so
-   the two demo cards stay readable on very wide screens (proposal A) */
+/* full-width grid, same shape as the experiment card grid below; width comes
+   from the fluid page shell, never from the grid */
 .demo-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--gap-card);
   margin-bottom: 1rem;
-  margin-inline: auto;
-  max-width: 72rem;
   align-items: stretch;
 }
 
@@ -47,7 +45,6 @@
 
 .study-card__content {
   padding: 1.1rem 1.25rem 1.25rem;
-  max-inline-size: 70ch;
 }
 
 .study-card h3 {
@@ -220,8 +217,6 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--gap-card);
-  margin-inline: auto;
-  max-width: 72rem;
   align-items: stretch;
 }
 
@@ -253,8 +248,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--gap-card);
-  margin: 0 auto 2rem;
-  max-width: 72rem;
+  margin: 0 0 2rem;
 }
 
 @media (min-width: 960px) {

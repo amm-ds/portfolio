@@ -280,6 +280,13 @@ export function AgentChatArticle() {
               <video controls preload="metadata" playsInline poster="/apps/agent-chat-ui-v3.png">
                 <source src="/apps/agent-chat-demo.webm" type="video/webm" />
                 <source src="/apps/agent-chat-demo.mp4" type="video/mp4" />
+                <track
+                  kind="captions"
+                  src="/apps/agent-chat-demo.vtt"
+                  srcLang="en"
+                  label="English captions"
+                  default
+                />
                 Your browser does not support the video element.
               </video>
               <div className="prose">

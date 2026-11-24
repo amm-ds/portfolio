@@ -99,7 +99,7 @@ or agent change must be measured on a newly sealed set (`final_v4`).
 | failure taxonomy | 104 correct / 1 unsupported-claim / 10 empty-answer / 1 retrieval-miss / 4 budget-terminated |
 | single_hop / multi_hop / unanswerable correct | 60/68 / 20/24 / 24/28 |
 | judge sample audit agreement (reviewer agent) | 30/30 [0.8865, 1.0] |
-| whole-wave meter | $2.0392 cumulative cloud-equivalent |
+| final pass meter (answer path / incl. judging) | $1.014 ($0.0084/q) / $1.458 ($0.0121/q) |
 
 ### Tuning baseline (65 questions, prior)
 

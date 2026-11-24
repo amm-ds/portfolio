@@ -3,166 +3,93 @@ short_version: "Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybr
 sections:
 - id: background
   text_md: |
-    **When every answer carries a citation, what can still go wrong?**
-    Grounding-hardened QA answers only from 593 pinned Wikipedia articles,
-    citing each claim. Its verifier repairs or drops weak claims and refuses
-    without evidence — a screen, not proof. Independent set B has 9
-    unsupported-claim outcomes, over the gate of 6.
+    **When every answer has a citation, what can still go wrong?**
+    A model can still misread a source or invent a detail between two quoted lines. This system answers questions strictly from 593 pinned Wikipedia articles. It cites each claim or refuses when evidence is missing.
 
     ```diagram 01-rag-pipeline
     ```
 
-    In `01-rag-pipeline`, follow CPU retrieval through drafting and
-    verification; it explains the control path, not answer correctness.
+    The pipeline pairs CPU search with a check-and-repair loop that trims or drops weak claims.
 
-    These were the prior baselines: the 65-question tuning run reached
-    recall@5 0.831 with 17 unsupported outcomes; a frozen stress re-run
-    reached 0.733; set B reached 0.633 and missed two quality gates. The
-    finalized pipeline then passed the 120-question final_v3 sealed set with
-    F1 0.909 and 1 unsupported claim in 120 (Results).
+    - **Result:** Across 120 test questions, 104 answers pass (`F1 0.9091`), and only 1 keeps an unsupported claim.
+    - **Screen, not proof:** Checks cut bad claims, yet small test sets and single-model judging still limit certainty.
+    - **Scope:** Scores cover this 593-article slice, not open-web readiness.
 
-    **Business summary:** The assistant is auditable over one Wikipedia slice;
-    after retrieval, judge, and agent-loop hardening, the final sealed pass
-    clears its quality gates.
+    **In plain terms:** The system answers from checked passages or declines honestly, cutting unsupported answers to 1 in 120 on a fixed test set. [Next: Objectives →](#sec-objectives)
   figures: []
 - id: objectives
   text_md: |
-    **The product must answer with evidence or refuse honestly. It must never
-    guess.** The decision flow is the contract for every question.
+    **Answer with evidence or refuse honestly, and never guess.**
+    Every question follows one clear contract before it can return text to a reader.
 
     ```diagram auto-01-rag-agent-1
     ```
 
-    Follow the question through the diagram. It first meets the corpus
-    boundary. A question outside that boundary receives a calibrated refusal,
-    which means the system declines instead of inventing an answer. An
-    in-corpus question moves to a cited draft. Each claim must reach the 0.6
-    support floor, a score for how well its passage backs it.
+    Questions outside the 593 articles get a safe refusal. In-corpus questions must clear claim checks within a strict budget.
 
-    The repair loop gives failing claims a few bounded retries. If they still
-    fail, the system abstains, meaning it returns no answer. Only a passing
-    answer reaches the cost meter. Success therefore means:
+    - **Support floor:** Each claim needs at least `0.6` support from its passage. Weak claims get two repair tries before they are dropped.
+    - **Search target:** Put a right article in the top 5 at least 60% of the time (`recall@5 >= 0.60`).
+    - **Cost and privacy:** Keep answer cost at or under `$0.01` per query. Search runs on CPU, and users can pick local or hosted models.
+    - **Why not a bigger model:** Larger models still invent links between claims and would break the cost cap.
 
-    - Return a structured summary, citations, and confidence, an estimate of
-      answer reliability. Bad output fails loudly after a few retries.
-    - Find the right article at least 0.60 of the time, cite it when it exists,
-      and refuse questions outside the corpus.
-    - Keep cost at or under $0.01 a query.
+    | Target | Goal | Final test result |
+    |---|---|---|
+    | Retrieval `recall@5` (92 answerable) | >= 0.60 | **0.9457** |
+    | Unanswerable refusals | high recall | **24 / 28** |
+    | Answer cost (agent + verify) | <= $0.01 / query | **$0.0084 / query** |
+    | Speed (`p50` / `p95`, n = 120) | bounded | **16.5 s / 40.5 s** |
 
-    The diagram also explains two design choices. Retrieval runs on CPU only.
-    The model can be local, which keeps prompts and sources on the machine, or
-    hosted, which sends them to an outside provider. That is a user choice,
-    not a default. Offline mode checks the contract without a provider or
-    spend. A bigger hosted model was rejected because scale does not fix
-    grounding, the link between claims and evidence, and would break the cost
-    cap.
-
-    **Business summary:** The product must answer with citations or refuse
-    honestly, find the right article at least 60% of the time, and stay under
-    $0.01 per query.
+    **In plain terms:** The system chooses honest refusals and source checks over fluent guesses, meeting its search and cost goals. [Next: Data →](#sec-data)
   figures: []
 - id: data
   text_md: |
-    **A small, pinned corpus makes every claim checkable.** The lineage
-    diagram shows how source pages become the exact files used for scoring.
-    DVC, a data version-control tool, tracks each step.
+    **A small, pinned corpus makes every claim easy to check.**
+    Rather than indexing all of Wikipedia, we freeze a compact slice so every score maps to the exact same bytes.
 
     ```diagram auto-01-rag-agent-2
     ```
 
-    Follow the diagram from the bounded scan to the bounded build and then to
-    scores. Every score comes from one pinned artifact, or fixed data file.
-    A sha256 checksum, a unique digital fingerprint, identifies that file.
-    Source, snapshot date, license, and credit sit in the
-    [data registry](https://amm-ds.github.io/portfolio/data-registry/wikipedia/).
+    DVC tracks each file from raw scan to chunk index. Source dates and licenses sit in the [data registry](https://amm-ds.github.io/portfolio/data-registry/wikipedia/).
 
-    The diagram's build step applies these limits and checks:
+    - **Five topics:** Climate, Renewable energy, Aviation, Machine learning, and Photosynthesis. Each holds up to 120 pages plus key anchor titles.
+    - **12,000-character cap:** Every page fits in one model prompt, keeping checks fast and repeatable.
+    - **Clean inputs:** Empty or oversized pages fail before indexing. SHA-256 hashes lock each split against drift.
+    - **Balanced test mix:** Splits mix single-page, multi-page, and unanswerable questions to test search, synthesis, and refusal together.
 
-    - Five topics are covered: Climate, Renewable energy, Aviation, Machine
-      learning, and Photosynthesis. Each has at most 120 matched articles plus
-      exact-title anchors, which are required known pages.
-    - Every article is cut at 12,000 characters. Indexing all Wikipedia would
-      make claim checks open-ended. Uncapped articles would not fit one model
-      context, the text a model can read at once.
-    - Null and length gates reject empty or oversized input before indexing,
-      the step that prepares text for search.
-    - Both question sets, 65 tuning and 55 sealed, are graded by hand. The
-      sealed set was written only after tuning froze.
-    - The tuning mix has 44 single-hop questions, 11 multi-hop questions, and
-      10 unanswerable questions. Single-hop needs one article; multi-hop
-      combines several. This mix exercises retrieval, composition, and refusal.
+    | Question set | Size (single / multi / abstain) | Role | Reads |
+    |---|---:|---|---|
+    | Tuning set | 65 (44 / 11 / 10) | Search & prompt tuning | Multiple |
+    | Earlier gate set | 55 (32 / 10 / 13) | Early full-loop gate | Consumed |
+    | Final test set (`final_v3`) | 120 (68 / 24 / 28) | Final search & loop test | >1 (consumed) |
 
-    **Business summary:** The corpus is five topics, 593 articles capped at
-    12,000 characters, pinned by a sha256 contract with source and license in
-    the data registry.
+    **In plain terms:** Locking a 593-page corpus and a 120-question test mix ensures every score traces back to the exact same text. [Next: EDA →](#sec-eda)
   figures: []
 - id: eda
   text_md: |
-    **Topic counts are near-balanced; article lengths are not.** Read the
-    corpus composition figure in two passes.
+    **Topic counts stay even; page lengths do not.**
+    Before we tune search, we inspect the corpus so no single topic can hide weak recall in an average score.
 
-    - The topic bars show 102–125 articles per topic. No topic dominates
-      retrieval training, so one average cannot hide a weak subject.
-    - The length distribution has a long tail and a hard right edge at 12,000
-      characters. This cap keeps embedding cost low. Embeddings are numeric
-      representations of meaning used for search. Every article also fits one
-      model context.
+    - **Even topics (102–125 pages):** All five subjects sit in a tight band, keeping overall scores honest.
+    - **Hard length cap:** Page lengths show a long tail that stops at 12,000 characters, bounding prompt size and cost.
+    - **Checked anchor pages:** Because the Wikipedia dump is not sorted by topic, naive sampling would pull minor side pages. Every anchor title and test question was checked directly against the slice.
 
-    The balanced bars required direct coverage checks, not assumptions:
+    | Corpus stat | Value |
+    |---|---|
+    | Total indexed pages | 593 |
+    | Pages per topic | 102–125 |
+    | Maximum page length | 12,000 characters |
 
-    - Dump order is not topical. A naive quota fill would pad topics with side
-      pages.
-    - Several hoped-for flagship titles were missing from the scan.
-
-    Each anchor title and test question was therefore checked against the
-    corpus itself. The small corpus makes that cheap. The near-equal bars then
-    support a fair corpus-wide average instead of a score carried by one large
-    subject.
-
-    **Business summary:** The corpus runs 102–125 articles per topic with
-    lengths cut at 12,000 characters; every anchor title and test question was
-    verified against it.
+    **In plain terms:** Early checks proved balanced topic coverage and capped page sizes before any model ran. [Next: Training →](#sec-training)
   figures: [eda_corpus_composition]
 - id: training
   text_md: |
-    **Ranking discipline, not a larger model, improves retrieval.** The
-    promoted retriever is S3, a hybrid design. Structure-aware chunks prefix
-    every chunk with its article title. A pool of dense FAISS and BM25 word
-    search fuses by reciprocal rank fusion (RRF, k=60). The cross-encoder
-    reranks, and a per-article cap of 2 keeps the top-k diverse. On the final
-    sealed set, S3 beats the incumbent dense setup on recall@5, 0.9457 against
-    0.9239, with multi-hop recall@5 up from 0.7917 to 0.8333 and no slice
-    regression
-    (reports/retrieval_sweeps/s3_structure_hybrid_diverse__final_v3.json).
-    FAISS is a library that finds exact nearest matches between embeddings.
-    A cross-encoder is a second model that reorders candidates by relevance.
+    **Smart ranking beats a bigger model.**
+    Multi-hop questions need both exact word matches and semantic search, plus a guard so one page does not crowd out the rest.
 
-    The 65-question tuning sweep below selected the earlier dense champion and
-    still anchors the seeded floors. Start with that retrieval funnel. Across
-    65 questions, 975 embedding candidates narrow to 195 reranked passages.
-    The final top-3 retains a relevant article for 54 questions. The wide
-    first stage avoids discarding useful candidates before reranking.
-
-    The other two figures explain the chosen setup:
-
-    - In the chunk-size sweep, 200-, 400-, and 800-token chunks tie at recall@5
-      0.831. Tokens are small pieces of text used by models. The 200-token
-      setup needs only ≈800 input tokens per query for the top-3 context.
-      Larger chunks cost roughly 2–4× the tokens for no recall gain.
-    - In the model comparison, the 80 MB MiniLM matches BGE-small at recall@5
-      0.831. It edges BGE-small on MRR@5, 0.808 versus 0.805. MRR@5 is the mean
-      reciprocal rank of the first relevant hit in the top five. A bigger
-      embedding model was rejected, so CPU-only search stays.
-
-    The funnel also isolates the reranker's effect. It lifts MRR@5 from 0.718
-    to 0.808 without changing recall@5. It reorders relevant articles rather
-    than finding new ones. At 593 articles, exact search is cheap enough that
-    no approximate index is needed.
-
-    **Retrieval core: wide candidate recall first, cross-encoder precision
-    second.** The code below shows the promoted search path: dense and BM25
-    pools fuse by RRF, the reranker reorders, and the per-article cap with
-    score-order backfill shapes the top-k.
+    - **Title-prefixed chunks (`S1`):** Adding the page title to every chunk keeps isolated paragraphs clear.
+    - **Hybrid RRF blend (`S2`):** Blending FAISS vector search with BM25 word search via Reciprocal Rank Fusion (`k = 60`) catches both names and paraphrases.
+    - **Rerank and page cap (`S3`):** A cross-encoder reorders the pool, and a 2-chunk-per-page cap keeps the top 5 diverse (`0.9457` vs `0.9239` `recall@5`).
+    - **What tuning ruled out:** 200-, 400-, and 800-token chunks tied at `0.831` `recall@5` on 65 tuning questions, so 200 tokens won on cost. MiniLM (80 MB) tied BGE-small and edged `MRR@5` (`0.808` vs `0.805`) on CPU; reranking lifted `MRR@5` from `0.718` to `0.808`.
 
     ```python
     def search(self, query: str, top_k: int | None = None) -> list[Citation]:
@@ -194,236 +121,85 @@ sections:
         return [self._to_citation(c) for c in candidates[:k]]
     ```
 
-    Excerpt from [index.py](https://github.com/amm-ds/portfolio/blob/main/projects/01-rag-agent/src/rag_agent/index.py).
-    The funnel and model comparison show recall@5 0.831 against 0.677 for word
-    match and 0.031 for seeded random. The funnel ends at retrieval, so it
-    does not measure answer quality. The hosted pass classified 17 of 65 answers
-    as keeping unsupported claims. Full run records live in the conclusions.
+    Excerpt from [index.py](https://github.com/amm-ds/portfolio/blob/main/projects/01-rag-agent/src/rag_agent/index.py). Note: `chunk_size_sweep` and `model_comparison` show tuning history; `retrieval_ladder` plots the final `R0 -> S3` tournament.
 
-    **Business summary:** The promoted S3 retriever lifts sealed recall@5 to
-    0.9457 on the 120-question final_v3 set. The 65-question tuning baseline
-    finds the right article 83% of the time; word-match search reaches 68%,
-    random 3%. Cross-encoder reranking lifts its MRR@5 from 0.718 to 0.808.
-  figures: [retrieval_funnel, chunk_size_sweep, model_comparison]
+    **In plain terms:** Adding page titles to chunks, mixing word and vector search, and capping chunks per page lifted final recall to 94.6% on CPU. [Next: Evaluation →](#sec-evaluation)
+  figures: [retrieval_ladder, chunk_size_sweep, model_comparison]
 - id: evaluation
   text_md: |
-    **Auditable means every claim points to a passage a person can read. A
-    reviewer is still necessary.** The measurement diagram shows the gate for
-    every result: two seeded floors, three judges, a sealed set, and cost
-    metering under a hard cap.
+    **Auditable means every claim points to text a person can check.**
+    Because one metric can miss subtle errors, our test rules stack simple baselines, three judges, and hard tool limits.
 
     ```diagram auto-01-rag-agent-3
     ```
 
-    The judges check different things. A rubric judge labels failure types.
-    RAGAS is an automated suite for scoring answer quality. A claim verifier
-    checks each claim against its cited passage, a screen, not proof. Earlier
-    calibrated judges accepted about 44% of unsupported claims; the rebuilt
-    judge_v2 calibration fixes this. A reviewer agent audited the judge's
-    labels on a 30-claim sample against the passage text: agreement with the
-    kimi-for-coding labels is 30 of 30, Wilson 95%
-    [0.8865, 1.0], clearing the 0.85 gate
-    (reports/judge_calibration_v2/owner_sample_validated.json). The owner's
-    own hand-label pass on the sample is still pending.
+    - **Chance floors:** Seeded random (`0.031` recall@5) and word-match (`0.677` recall@5) baselines anchor how hard the task is.
+    - **Three-judge screen:** A rubric judge tags failure modes, RAGAS scores answer quality, and a claim verifier checks the `0.6` support floor with up to two repairs.
+    - **Audited judge calibration:** Earlier judges passed 44% of bad claims. The rebuilt `judge_v2` set scored `30/30` (`Wilson 95% [0.8865, 1.0]`) in a reviewer-agent audit (`owner_sample_validated.json`), with owner hand-labelling pending.
+    - **Hard agent rails:** Caps of 12 requests, 16 tool calls, and 200k input tokens stop runaway loops, while checkpoints save token spend.
+    - **Open limits:** Generation, verification, and judging all use `kimi-for-coding` (a cross-judge check is pending), and `final_v3` was read more than once (`R0`, `S3` gate, validation, E2E pass), so it is now consumed.
 
-    These checks first ran on the 65 tuning questions. Hosted
-    `kimi-for-coding` raises rubric faithfulness from 0.5504 to 0.6209 and
-    answer relevance from 0.5573 to 0.6458. Context recall stays at 0.9636.
-    RAGAS faithfulness is 0.7337 [0.6562, 0.8131], while answer relevancy
-    falls from 0.8775 to 0.8602. That selected pass has 46 correct, 17
-    unsupported-claim, 2 retrieval-miss, and 0 format-failure outcomes.
-    Refusal accuracy is 1.0, false-abstention is 0.0545, and
-    cite-when-expected is 0.9636.
+    | Check | Role | Model | Audit status |
+    |---|---|---|---|
+    | Claim verifier | Passage support (`>= 0.6`) | `kimi-for-coding` | 30/30 agent audit (owner pending) |
+    | Rubric judge | Answer vs. abstain class | `kimi-for-coding` | Calibrated on `judge_v2` |
+    | RAGAS suite | Faithfulness & relevance | `kimi-for-coding` | Library v0.3.1 (tuning pass) |
 
-    The latency histogram shows what the selected pass costs in time. Answer
-    generation costs $0.000906/query before judge and verification costs. Its
-    p50 latency is 25.888 s and p95 is 108.836 s. These are the median and the
-    level below which 95% of answers finish.
-
-    Return to the measurement diagram for the sealed test. It has 55
-    questions: 32 single-hop, 10 multi-hop, and 13 unanswerable, expanded from
-    15 after tuning froze. It keeps 44 of 55 correct (0.80, CI [0.69, 0.89]).
-    CI means confidence interval, a range that reflects sampling uncertainty.
-    Operational recall@5 is 0.745 versus a 0.055 random floor. Rubric
-    faithfulness is 0.63 [0.57, 0.70], and context recall is 0.976. Of 13
-    required refusals, 12 succeed (0.92, CI [0.77, 1.0]); one answer is a false
-    abstention. The pass costs $1.95 cloud-equivalent, an estimate at public
-    cloud rates rather than a bill. Latency is p50 24.443 s and p95 126.811 s.
-
-    The sealed result needs its gate. Every expansion question passed an
-    answerability check, so retrieval is a consistency read, not a stress test.
-    Of 11 failures, 9 have the right article at rank 1 yet keep unsupported
-    claims. One is a top-k demotion, where the article falls below the retained
-    results. None is a raw retrieval miss.
-
-    The same diagram governs an independent 30-question stress set with no
-    production-retriever gate. Scored once under the same protocol
-    (`evaluate --stress`, $1.93, `detail.stress`), it has 16/30 correct
-    (0.53, CI [0.37, 0.70]) against 0.80 on the gated set. Of 14 non-correct outcomes, 11 keep
-    unsupported claims with retrieval intact. Refusal accuracy is 0.60 (6/10,
-    CI [0.30, 0.90]). This is measured stress performance, not broad-corpus
-    proof. A citation pass adds per-claim records (`--citations`, $1.58,
-    `detail.heldout_citations`); results appear below.
-
-    Finally, the fusion comparison keeps retrieval honest. Fusion combines
-    word-based and embedding search. The earlier tuning-arm comparison ties
-    dense search rather than beating it, so fusion alone was not promoted
-    then. The finalized S3 arm couples fusion with title-anchored chunks
-    before reranking, and it wins the final sealed ladder (Training).
-
-    The finalized end-to-end pass scores the 120-question final_v3 set once
-    under this contract: F1 0.9091, accuracy 0.8667, faithfulness 0.8717, 1
-    unsupported claim, 10 empty-answers, and 4 tool-budget rail stops. A
-    bounded agent loop (12 requests, 16 tool calls, 200,000 input tokens)
-    with a soft in-tool ceiling stops runaway searches; checkpointed rows make
-    the pass resumable. Cumulative cloud-equivalent spend is $2.04 (Results).
-
-    **Business summary:** Selected `kimi-for-coding` improves faithfulness;
-    a reviewer-agent audit agrees with the judge's labels at 30 of 30 on the
-    sample (owner hand-label pending); the final sealed
-    pass reaches F1 0.909 with 1 unsupported claim in 120.
+    **In plain terms:** Every answer faces search baselines, tool caps, and a 30/30 agent-audited verifier, with single-model judging openly noted. [Next: Results →](#sec-results)
   figures: [latency_histogram, kimi_generation_comparison, fusion_arm_comparison]
-  metrics_keys:
-  - retrieval_chunks_200
-  - retrieval_random_chunks_200
-  - retrieval_lexical_chunks_200
-  - retrieval_model_minilm_chunks_200
-  - retrieval_model_bge_small_chunks_200
-  - retrieval_rerank_on_chunks_200
-  - retrieval_rerank_off_chunks_200
-  - rag_agent
 - id: results
   text_md: |
-    **These figures do not show broad-corpus readiness.** They describe one
-    Wikipedia slice, and the tuning charts in the earlier sections are
-    development history from the 65-question passes. The finalized 120-question
-    pass below is the only sealed read of the champion. The sealed 55-question
-    pass kept 44 correct answers and refusal accuracy 0.92. Noisier collections
-    are unmeasured.
-
-    The finalized pass supersedes these tuning figures. On the 120-question
-    final_v3 sealed set the pipeline reaches F1 0.9091 (precision 0.9524,
-    recall 0.8696), accuracy 0.8667, and faithfulness 0.8717. Of 120 rows,
-    104 answers are correct, 1 keeps an unsupported claim, 10 are
-    empty-answers, 4 unanswerable rows stop at the tool-budget rail, and 1
-    misses retrieval. The full table is in the conclusions.
-
-    Start with the retrieval ladder. It plots the tournament that chose the
-    retriever. R0 is the as-shipped baseline: size chunks, dense embeddings,
-    reranking. S1 swaps in title-anchored structure chunks. S2 adds BM25
-    fusion through reciprocal rank fusion. S3 adds a per-article diversity
-    cap. Each left-panel bar is recall@5 with Wilson 95% whiskers on a frozen
-    split; the right panel counts a hit only when every chunk of a relevant
-    article reaches the top 5. S3 lifts final_v3 recall@5 to 0.9457
-    (n = 92 answerable) from 0.9239 for R0, after winning every development
-    split. S1 and S2 have no final_v3 bar: the set was consumed by the S3
-    promotion gate.
-
-    Next, read the final outcome. The left panel is the answer-versus-abstain
-    confusion: 80 true positives, 4 false positives, 24 true negatives, and
-    12 false negatives across 120 questions. The right panel splits
-    correctness by question type: single-hop 60 of 68, multi-hop 20 of 24,
-    and unanswerable 24 of 28.
-
-    The failure taxonomy counts the same 120 rows by verdict: 104 correct,
-    10 empty-answer, 4 budget-terminated, 1 unsupported-claim, and 1
-    retrieval-miss. The prior 65-question pass had 17 unsupported-claim
-    answers, so grounding hardening cut that failure to 1 in 120. The
-    remaining debt is over-abstention and rail stops, not grounding volume.
-
-    The traces behind those failure bars stay visible in opt-in showcase chat.
-    Hosted answers cost real money. The committed examples include an
-    unsupported answer with faithfulness 0.2, a multi-hop grounding failure,
-    and a support-floor abstention. They expose failure instead of hiding it.
-
-    The verify funnel in the conclusions is the claim-level reading. Of 166
-    drafted claims, 16 fail mechanical checks before judging. A claim
-    verifier judges the remaining 150 against their cited passages and
-    supports 148. The final answers keep 159 claims: 148 originals plus 11
-    repaired after at most two repair calls; 7 are dropped. Mean support
-    among surviving claims is 0.9739. The verifier bounds, repairs, and
-    abstains; it does not turn weak drafts into grounded ones. Judge
-    calibration (Q3a, offline, 194 labels by construction)
-    quantifies the miss: the local judge accepts 0.4433 of unsupported
-    claims, Wilson 95% [0.3752, 0.5136], kappa 0.5464; the hosted judge
-    accepts 0.3966 [0.3269, 0.4707], kappa 0.6052 [0.5262, 0.6831].
-
-    **Business summary:** The finalized 120-question pass reaches F1 0.9091
-    with 1 unsupported claim in 120. The earlier 65-answer tuning pass had 46
-    correct and 17 unsupported, and it remains the prior baseline. The
-    accuracy claim stops at this corpus.
-  figures: [retrieval_ladder, final_outcome, failure_taxonomy]
-  metrics_keys:
-  - retrieval_chunks_200
-  - retrieval_random_chunks_200
-  - retrieval_model_minilm_chunks_200
-  - retrieval_rerank_on_chunks_200
-  - rag_agent
-- id: conclusions
-  text_md: |
-    ## Results summary
-
-    Use `auto-01-rag-agent-4` to connect retrieval, answer checks, and final
-    outcomes. It explains why a retrieved source is not yet a supported answer.
+    **104 of 120 questions answered or refused cleanly, with 1 unsupported answer.**
+    The final 120-question run hits `0.9091` F1 and `0.9524` precision, showing strong grounding alongside a few conservative empty answers.
 
     ```diagram auto-01-rag-agent-4
     ```
 
-    The finalized champion pairs hosted generation with S3 hybrid retrieval:
-    title-anchored chunks, dense plus BM25 RRF fusion, cross-encoder
-    reranking, and a per-article cap. On the 120-question final_v3 sealed set
-    it reaches F1 0.9091 with 1 unsupported claim in 120
-    (reports/final_v3_e2e/f1_summary.json). One disclosure: final_v3 retrieval
-    was read more than once (R0 baseline, S3 promotion gate, held-out
-    validation, this pass), so the set is consumed and future changes need a
-    new sealed set (final_v4). The verify funnel below accounts for every
-    drafted claim in the final pass: 166 drafted, 16 mechanical fails before
-    judging, 150 judged, 148 supported, 159 accepted (148 originals plus 11
-    repaired), 7 dropped. The frozen stress re-run (0.733)
-    and set B (0.633) remain earlier baselines, not inputs to the final
-    denominators. See the
-    [full evaluation report](https://amm-ds.github.io/portfolio/projects/01-rag-agent/).
+    - **Overall accuracy:** `F1 0.9091` (`precision 0.9524`, `recall 0.8696`) and `86.7%` accuracy (`Wilson 95% [0.7944, 0.9162]`) across `60/68` single-hop, `20/24` multi-hop, and `24/28` unanswerable rows.
+    - **Grounding lift:** Only **1 of 120 answers** kept an unsupported claim (down from `17/65` during tuning). At claim level, `148/150` judged claims passed and `159` survived after repairs (`mean support 0.9739`).
+    - **Remaining misses:** `10` answerable rows returned empty answers (`11/92` missed counting 1 retrieval miss; `8` cited no key page), and `4` unanswerable rows hit the tool limit.
+    - **Cost and speed:** Answers cost `$1.014` (`$0.0084/query`, under the `$0.01` cap); judging raised total spend to `$1.458` (`$0.0121/query`), at `p50 16.5 s` / `p95 40.5 s`.
 
-    Finalized results on the 120-question final_v3 sealed set:
-
-    | metric | value |
+    | Final pass metric (`final_v3`, n = 120) | Value |
     |---|---:|
-    | F1 | 0.9091 |
-    | precision / recall | 0.9524 / 0.8696 |
-    | overall accuracy | 0.8667 |
-    | faithfulness (CI 95%) | 0.8717 [0.8092, 0.9304] |
-    | unsupported-claim / empty-answer / budget-terminated | 1 / 10 / 4 |
-    | judge sample audit agreement (reviewer agent) | 30/30 [0.8865, 1.0] |
-    | cumulative cloud-equivalent spend | $2.0392 |
+    | F1 / Precision / Recall | **0.9091** / 0.9524 / 0.8696 |
+    | Overall accuracy (Wilson 95% CI) | **0.8667** `[0.7944, 0.9162]` |
+    | Faithfulness (n = 92 answerable, 95% CI) | **0.8717** `[0.8092, 0.9304]` |
+    | Retrieval `recall@5` (n = 92 answerable) | **0.9457** (vs 0.9239 R0) |
+    | Outcomes (correct / empty / budget / unsupported / miss) | **104 / 10 / 4 / 1 / 1** |
+    | Answer cost / Total with judge | **$0.0084** / **$0.0121** per query |
+
+    **In plain terms:** Grounding rules cut bad answers to 1 in 120 and stayed under `$0.01` per query; next work targets the 10 false empty answers. [Next: Conclusions →](#sec-conclusions)
+  figures: [final_outcome, failure_taxonomy, verify_funnel]
+- id: conclusions
+  text_md: |
+    ## Results summary
+
+    Pairing hybrid title-anchored search (`0.9457` recall@5) with a bounded verify-and-repair loop yields `0.9091` F1 and `0.9524` precision on the 120-question final set (`reports/final_v3_e2e/f1_summary.json`). Across 166 drafted claims, 16 failed rule checks, 150 were judged (148 supported), 11 repaired, and 7 dropped (`159` kept).
 
     ## What the experiment taught
 
-    - Retrieval was comparatively strong on this corpus, not generally solved.
-      The 65-question sweep selected 200-token chunks, MiniLM, and reranking;
-      held-out and stress results still expose retrieval and grounding errors.
-    - Grounding hardening improved the frozen stress re-run, but independent
-      set B failed two pre-registered quality gates. Verification bounds harm;
-      it does not guarantee correctness.
-    - Provider selection was not a clean sweep. Rubric faithfulness and answer
-      relevance improved, while RAGAS answer relevancy regressed 0.8775 →
-      0.8602 on the 65-question comparison.
-    - Out-of-the-box fusion and the rebuilt judge were not promoted at the
-      time. RRF did not beat dense recall without structure chunks, and the
-      rebuilt hosted judge failed every alignment gate. The promoted S3
-      retriever coupled hybrid fusion with title-anchored chunks, reranking,
-      and a per-article cap, and won the tournament on every frozen split.
-    - The reusable deliverable is the measurement contract: seeded floors,
-      separate judges, sealed sets, explicit denominators, and cost meters.
+    - **Search ranking beats model size:** Title prefixes, dense + BM25 RRF fusion, reranking, and a 2-chunk page cap lifted `all-articles@5` on every development split.
+    - **Checks bound harm; they do not remove risk:** Grounding rules cut unsupported answers sharply, yet single-model judging and empty answers remain open limits.
+    - **The test contract is reusable:** Seeded floors, pre-set gates, saved checkpoints, and cost meters transfer cleanly to new tasks.
+
+    ## Limits
+
+    - **Consumed final set:** `final_v3` was read more than once (`R0`, `S3` gate, validation, E2E pass); a fresh sealed set (`final_v4`) is needed next.
+    - **Single-model judging and pending labels:** Generation, checks, and judging all use `kimi-for-coding`, and owner hand-labelling on the 30-claim sample is pending.
+    - **Bounded scope:** Numbers cover 593 capped Wikipedia pages; broad-corpus readiness is unmeasured.
 
     ## Exact numbers
 
-    Retrieval configurations on the 65 tuning questions:
+    Tuning-pass retrieval configurations (65 tuning questions, `reports/metrics.json`):
 
     | Retrieval configuration | recall@5 | recall@10 | MRR@5 |
     |---|---|---|---|
     | MiniLM, 200-token chunks | **0.831** | 0.846 | **0.808** |
     | lexical word match (baseline) | 0.677 | 0.754 | 0.500 |
     | seeded random (chance floor) | 0.031 | 0.046 | 0.018 |
+
+    Tuning-pass generation comparison (65 tuning questions):
 
     | Generation metric | Incumbent | Selected `kimi-for-coding` |
     |---|---:|---:|
@@ -434,117 +210,55 @@ sections:
     | RAGAS answer relevancy | 0.8775 | **0.8602** |
     | RAGAS context precision / recall | — | 0.7609 / 0.9826 |
 
-    Judge and evaluator metadata: the entailment judge and the RAGAS evaluator
-    run on the hosted `kimi-for-coding` provider (committed comparison
-    artifact), RAGAS library version 0.3.1 from the locked environment.
-
-    - Selected tuning taxonomy: 46 correct / 17 unsupported / 2 retrieval-miss /
-      0 format failures. Refusal accuracy 1.0, false-abstention 0.0545,
-      cite-when-expected 0.9636; p50 25.888 s and p95 108.836 s. Answer
-      generation costs $0.000906/query before judge and verification costs.
-    - Earlier gated sealed pass (55 questions): 44 correct / 9 unsupported /
-      1 retrieval-miss / 1 format-failure (0.80, CI [0.69, 0.89]); operational
-      recall@5 0.745; 12/13 required refusals (0.92, CI [0.77, 1.0]); 241
-      calls and $1.950667 cloud-equivalent; p50 24.443 s, p95 126.811 s.
-    - Citation pass over 42 verified answers: 258 claims, first-check support
-      0.903 CI [0.868, 0.938], 16 repaired and 11 dropped; 236 calls and
-      $1.583466 cloud-equivalent.
-    - Original independent stress pass (30 questions): 16 correct (0.53, CI
-      [0.37, 0.70]), 11 unsupported-claim outcomes with retrieval intact, and
-      refusal accuracy 0.60 (6/10, CI [0.30, 0.90]).
-
-    Current grounding-hardened results:
-
-    | evaluation | overall correctness | answer-expected correctness | unsupported claims | refusal / false abstention |
-    |---|---:|---:|---:|---:|
-    | frozen stress re-run | 0.733 [0.567, 0.867] | 0.700 | 5 | 0.800 / 0.050 |
-    | independent set B | 0.633 [0.467, 0.80] | 0.550 | 9/30 | 0.800 / 0.000 |
-
-    Set B's pre-registered gates were overall correctness ≥0.60,
-    answer-expected correctness ≥0.70, unsupported claims ≤6/30, refusal
-    accuracy ≥0.8, and false abstention ≤0.10. It passes overall, refusal, and
-    false-abstention gates but fails the other two. Hosted answer latency on
-    the hardened path is p50 23.0 s and p95 532 s; frozen-set and B costs are
-    $9.74 and $2.19 cloud-equivalent.
+    - Selected 65-question tuning taxonomy: 46 correct / 17 unsupported / 2 retrieval-miss / 0 format failures (`p50 25.888 s`, `p95 108.836 s`, `$0.000906/query` generation).
+    - Earlier gated sealed pass (55 questions): 44 correct / 9 unsupported / 1 retrieval-miss / 1 format failure (`0.80`, CI `[0.69, 0.89]`; `12/13` refusals; `$1.95` cloud-equivalent; `p50 24.443 s`, `p95 126.811 s`).
+    - Earlier stress sets (30 questions each, before final S3 + loop hardening): original stress `16/30` (`0.53`, CI `[0.37, 0.70]`); frozen re-run `22/30` (`0.733`, 5 unsupported); set B `19/30` (`0.633`, 9 unsupported); set C `10/30` (`20` empty); set D `17/30` (`9` unsupported).
 
     ## Measured alternatives
 
-    - The 2026-11-23 SOTA ladder promoted S3: structure chunking, RRF fusion,
-      and a per-article cap. It beat the dense incumbent on final_v3 recall@5,
-      0.9457 to 0.9239, with multi-hop recall@5 0.8333 to 0.7917 and no slice
-      regression.
-    - `fusion_arm_comparison` is the earlier retrieval-only candidate
-      comparison with reranking off. RRF tied dense tuning recall@5 and trailed
-      sealed raw-layer recall@5 0.952 to 0.976, so fusion alone was not
-      promoted then. The promoted S3 arm differs: fusion runs before reranking
-      on title-anchored chunks, and it wins the final sealed ladder.
-    - The earlier rebuilt hosted judge failed its alignment gates
-      (false-acceptance 35.6%, kappa 0.656). The judge_v2 calibration
-      supersedes it: a reviewer-agent audit agrees with the judge's sample
-      labels at 30/30, Wilson 95% [0.8865, 1.0], clearing the 0.85 gate. The
-      owner's own hand-label pass is still pending.
+    - **S3 vs R0 on `final_v3` (92 answerable):** `recall@5` rose `0.9239 -> 0.9457`; `multi-hop recall@5` rose `0.7917 -> 0.8333`; `all-articles@5` reached `0.8804`.
+    - **`fusion_arm_comparison` (reranking off):** Dense and RRF tied at `0.831` on 65 tuning questions; on the 15-question sealed raw layer, RRF trailed dense (`0.533` vs `0.600`), showing fusion alone needed title-anchored chunks and reranking.
 
     ## Protocol
 
-    - Tuning: 65 questions (44 single-hop, 11 multi-hop, 10 unanswerable) drive
-      selection; the earlier sealed set has 55 (32 single-hop, 10 multi-hop,
-      13 unanswerable). Later frozen stress, B, C, and D sets remain distinct.
-    - Floors: seeded random and word-match search, scored per configuration.
-    - Judges: rubric taxonomy, hosted RAGAS, and per-claim verification against
-      cited chunks. The support floor is 0.6 with at most two repairs.
-    - Cost: cloud-equivalent rate-card estimates at $1.00/Mtok input and
-      $4.00/Mtok output, with cached reads at 30%; these are not billed amounts.
+    - Floors: seeded random and lexical word-match search per configuration.
+    - Judges: rubric taxonomy, RAGAS `0.3.1`, and per-claim verification (`0.6` support floor, `<= 2` repairs).
+    - Cost: public rate card estimates at `$1.00/Mtok` input, `$4.00/Mtok` output, `30%` cached reads.
 
-    ## Limits
-
-    - The final_v3 pass still has 10 empty-answers in 92 answerable rows and 4
-      tool-budget rail stops on unanswerable rows. Small samples and judge
-      noise limit every comparison; a fresh sealed set is required for the
-      next quality claim.
-    - The retrieval grid is small and covers only 593 capped Wikipedia articles.
-      The answerability-gated sealed expansion is a consistency check, not a
-      stress test; no broad-corpus or unattended-readiness claim follows.
-    - Live hosted calls need an explicit budget, and always-on public chat is
-      not enabled by this evidence.
-
-    **Business summary:** S3 hybrid retrieval, a validated judge, and a
-    bounded agent loop lift the final sealed pass to F1 0.9091 with 1
-    unsupported claim in 120. The remaining debt is false abstention and rail
-    stops, not grounding volume. The system is auditable, not yet
-    unattended-ready.
-  figures: [verify_funnel]
+    **In plain terms:** S3 hybrid search, an audited verifier, and bounded tool rails lift final F1 to 0.9091 with 1 unsupported answer in 120; next requires owner sample labelling, a cross-judge check, and a fresh `final_v4` test set. [Full evaluation report →](https://amm-ds.github.io/portfolio/projects/01-rag-agent/)
+  figures: [retrieval_funnel]
 key_concepts:
   - "**Seeded floors:** Random and word-match rankings anchor every headline, so a score cannot merely restate how easy the task is."
-  - "**Sealed held-out set:** A second question set is written after tuning freezes and scored once, which protects it from tuning overfit."
-  - "**Claim support floor:** Each claim needs support of 0.6 or better from its cited passage. Otherwise it is cut, repaired at most twice, or the answer abstains."
-  - "**Three separate judges:** Rubric taxonomy, RAGAS, and per-claim verification catch different failures. No single score represents answer quality."
-  - "**Cloud-equivalent cost metering:** A public rate card turns token use into estimated dollars and applies a hard cap to every pass."
-  - "**Auditable is not trustworthy:** Every answer traces to a readable passage, yet the tuning pass still kept unsupported claims in 17 of 65 answers; the final sealed pass cut that to 1 of 120. Verification bounds harm; it does not remove it."
+  - "**Sealed held-out set:** A fresh question set is written after tuning freezes and scored once to prevent tuning overfit."
+  - "**Claim support floor:** Each claim needs support of 0.6 or better from its cited passage; otherwise it is repaired at most twice, dropped, or the answer abstains."
+  - "**Three separate judges:** Rubric taxonomy, RAGAS, and per-claim verification catch different failures; no single score represents answer quality."
+  - "**Cloud-equivalent cost metering:** A public rate card turns token use into estimated dollars under a hard budget cap."
+  - "**Verification bounds harm; it does not eliminate risk:** Grounding checks cut unsupported answers dramatically, yet single-model judging and empty-answer abstentions remain open limits."
 roadmap:
 - status: shipped
-  title: "Pinned corpus and frozen contracts."
-  detail: "593 articles; final_v3 (120 questions) and judge_v2 (147 claims) contracts."
+  title: "Pin Wikipedia corpus and contracts"
+  detail: "Curate 593 bounded articles and frozen evaluation splits."
 - status: shipped
-  title: "Promoted hybrid title-anchored retrieval."
-  detail: "S3: structure chunks, dense+BM25 RRF, per-article cap; 0.946 recall@5."
+  title: "Promote hybrid title-anchored retrieval"
+  detail: "Combine dense search, BM25 fusion, and cross-encoder reranking."
 - status: shipped
-  title: "Validated the judge and final pass."
-  detail: "Reviewer-agent audit 30/30 on the judge sample; owner hand-label pending."
+  title: "Harden bounded agent and verifier"
+  detail: "Add tool-budget rails, claim repair loops, and checkpointed runs."
 - status: shipped
-  title: "Hardened the agent loop."
-  detail: "Soft tool budget 12/16/200k, verify loop, checkpointed runs."
+  title: "Audit judge and score full pipeline"
+  detail: "30/30 reviewer-agent audit (owner pending); 104/120 final answers."
 - status: next
-  title: "Cut false abstentions and rail stops."
-  detail: "final_v3 has 10/92 empty-answers and 4 unanswerable budget-terminated rows."
+  title: "Cut abstentions and confirm judge"
+  detail: "Gate: owner 30-claim label, cross-judge check, and fresh final_v4 set."
 figure_captions:
   eda_corpus_composition: "Articles per topic and word-length distribution for all 593 bounded Wikipedia articles. Topic coverage is near-balanced. The long tail ends at the 12,000-character cap."
-  retrieval_funnel: "Development history: question-level outcomes for the reranked top-3 on 65 golden questions, 54 hits and 11 misses. Upstream candidate volumes are 975 embedding passages (65 x top-15) and 195 retained passages (65 x top-3); those passage counts are deliberately not plotted as question outcomes. Reranking improves rank quality, not recall@5."
-  chunk_size_sweep: "Development history: retrieval recall for 200/400/800-token chunks against the lexical word-match floor on 65 tuning questions. All three sizes tie at recall@5 0.831, and 200 tokens minimizes context cost. The seeded-random floor (0.02-0.03) is a tabulated metric, not a plotted line; see Exact numbers."
-  latency_histogram: "Development history: per-answer latency for the selected hosted 65-question tuning run. The median, p50, is 25.888 s. The 95th percentile, p95, is 108.836 s."
-  kimi_generation_comparison: "Development history: selected kimi-for-coding versus the incumbent on 65 tuning questions. Rubric faithfulness and answer relevance improve. RAGAS faithfulness reaches 0.7337, while RAGAS answer relevancy regresses from 0.8775 to 0.8602."
-  model_comparison: "Development history: MiniLM and BGE-small tie at recall@5 0.831 on 65 tuning questions. MiniLM has slightly higher MRR@5 (0.808 vs 0.805), so the smaller CPU model is the measured default here."
-  retrieval_ladder: "The tournament that chose the retriever, retrieval-only with no LLM calls. R0 is the as-shipped baseline (size chunks, dense embeddings, rerank); S1 adds title-anchored structure chunks; S2 adds BM25 RRF fusion; S3 adds a per-article diversity cap and is promoted. Bars are recall@5 with Wilson 95% whiskers on frozen splits; the right panel requires every chunk of a relevant article in the top 5. S3 lifts final_v3 recall@5 to 0.9457 from 0.9239; S1 and S2 were never measured on the consumed final_v3 set."
-  final_outcome: "The final sealed pass on 120 final_v3 questions. Left: the answer-versus-abstain confusion, 80 true positives, 4 false positives, 24 true negatives, 12 false negatives (F1 0.9091, precision 0.9524, recall 0.8696). Right: correct per question type, single-hop 60 of 68, multi-hop 20 of 24, unanswerable 24 of 28."
-  failure_taxonomy: "Final-pass verdicts for the 120 final_v3 rows: 104 correct, 10 empty-answer, 4 budget-terminated, 1 unsupported-claim, 1 retrieval-miss. Grounding hardening cut unsupported claims from 17 of 65 in the tuning pass to 1 of 120; the remaining debt is over-abstention and rail stops."
-  verify_funnel: "Claim-level accounting of the final pass verify loop: 166 drafted claims, 16 mechanical fails before judging, 150 judged, 148 supported, 159 accepted (148 originals plus 11 repaired within the two-call rail), 7 dropped. Mean support among surviving claims is 0.9739."
-  fusion_arm_comparison: "Development history: dense, BM25, and RRF(k=60) retrieval arms on 65 tuning questions and a 15-question sealed raw layer, reranking off and no LLM calls. Tuning recall@5 ties dense and RRF at 0.831; sealed recall@5 trails 0.533 (RRF) to 0.600 (dense). Plain out-of-the-box fusion was not promoted; the later S3 champion couples hybrid fusion with structure chunks, reranking, and a per-article cap."
+  retrieval_funnel: "Development history: question-level outcomes for the reranked top-3 on 65 golden questions, 54 hits and 11 misses. Upstream candidate volumes are 975 embedding passages (65 x top-15) and 195 retained passages (65 x top-3); reranking improves rank quality, not recall@5."
+  chunk_size_sweep: "Development history: retrieval recall for 200/400/800-token chunks against the lexical word-match floor on 65 tuning questions. All three sizes tie at recall@5 0.831, and 200 tokens minimizes context cost."
+  latency_histogram: "Development history: per-answer latency for the selected hosted 65-question tuning run (p50 25.888 s, p95 108.836 s)."
+  kimi_generation_comparison: "Development history: selected kimi-for-coding versus the incumbent on 65 tuning questions. Rubric faithfulness improves while RAGAS answer relevancy trades off from 0.8775 to 0.8602."
+  model_comparison: "Development history: MiniLM and BGE-small tie at recall@5 0.831 on 65 tuning questions; MiniLM edges MRR@5 (0.808 vs 0.805), keeping search CPU-only."
+  retrieval_ladder: "Tournament that chose the retriever (retrieval-only, no LLM calls). S3 lifts final_v3 recall@5 to 0.9457 from 0.9239 (R0) and leads all-articles@5 on every development split; S1 and S2 were not run on the consumed final_v3 set."
+  final_outcome: "Final 120-question pass: 80 true positives, 4 false positives, 24 true negatives, 12 false negatives (F1 0.9091, precision 0.9524, recall 0.8696); 60/68 single-hop, 20/24 multi-hop, 24/28 unanswerable."
+  failure_taxonomy: "Final-pass verdicts across 120 rows: 104 correct, 10 empty-answer, 4 budget-terminated, 1 unsupported-claim, 1 retrieval-miss."
+  verify_funnel: "Claim-level accounting of the final verify loop: 166 drafted, 16 mechanical fails, 150 judged, 148 supported, 159 accepted (including 11 repaired), 7 dropped; mean support 0.9739."
+  fusion_arm_comparison: "Development history: dense, BM25, and RRF(k=60) retrieval arms with reranking off on 65 tuning questions (tie at 0.831) and the 15-question sealed raw layer (0.533 RRF vs 0.600 dense). S3 pairs RRF with title-anchored chunks and reranking."

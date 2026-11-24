@@ -85,7 +85,7 @@ under `reports/runs/final_v3-432d6b705715/`.
 | Failure taxonomy | 104 correct / 1 unsupported-claim / 10 empty-answer / 1 retrieval-miss / 4 budget-terminated |
 | single_hop / multi_hop / unanswerable correct | 60/68 / 20/24 / 24/28 |
 | Judge sample audit agreement (reviewer agent) | 30/30 [0.8865, 1.0] |
-| Whole-wave meter | $2.0392 cumulative cloud-equivalent |
+| Final pass meter (answer path / incl. judging) | $1.014 ($0.0084/q) / $1.458 ($0.0121/q) |
 
 One disclosure: final_v3 retrieval was read more than once (R0 baseline, S3
 promotion gate, held-out validation, and this pass), so the set is consumed;

@@ -292,10 +292,8 @@ button.chip.demo-preset:hover {
 
 .wb-root {
   display: grid;
-  /* the controls rail sits right of the chart; the main row absorbs free
-     viewport height (minmax floor 400px) so big screens don't leave dead
-     space below the workbench; content taller than the viewport overflows
-     the 1fr row and scrolls the page */
+  /* the controls rail sits right of the chart; every row is content-sized
+     and content taller than the viewport scrolls the page */
   grid-template-columns: minmax(0, 1fr) 340px;
   grid-template-rows: auto auto auto auto auto auto;
   grid-template-areas:
@@ -308,11 +306,9 @@ button.chip.demo-preset:hover {
   gap: 0.5rem;
   height: auto;
   min-height: calc(100dvh - 58px - 1rem);
-  /* cap the whole workbench on very wide screens so charts stay readable
-     (proposal A: chart column tops out just under 1,400px at 2560px) */
-  max-width: 109rem;
-  margin-inline: auto;
-  width: 100%;
+  /* rows keep their content height; free viewport height stays below the
+     last row instead of stretching the header, KPI and notice tiles */
+  align-content: start;
 }
 
 .wb-header {
@@ -436,11 +432,12 @@ button.chip.wb-scenario.active {
   min-width: 0;
 }
 
-/* notice strip: two dynamic tiles side by side under the KPI band */
+/* notice strip: one tile per notice under the KPI band; a single notice spans
+   the strip and two notices stack on phones */
 
 .wb-notice-strip {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
   gap: 0.5rem;
 }
 
@@ -470,13 +467,13 @@ button.chip.wb-scenario.active {
 
 /* the canvas figure card grows to fill the row; the chart svg fills the card */
 .wb-canvas-slot .figure-card {
-  /* definite clamped card: the measured viewBox cannot feed back into layout
-     (an auto-height chain grew the row without bound), and the chart never
-     resizes because the controls rail grew; the clamp caps the card on very
-     wide screens (proposal A) while keeping a floor for small laptops */
+  /* definite card: the measured viewBox cannot feed back into layout (an
+     auto-height chain grew the row without bound); the 460px floor matches
+     the slot's inline height floor in DemoWorkbench.tsx, so the card never
+     outgrows its overflow-hidden slot */
   flex: none;
   height: 100%;
-  min-height: clamp(400px, 48vh, 640px);
+  min-height: 460px;
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
