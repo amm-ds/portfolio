@@ -31,24 +31,26 @@ sections:
     text_md: |
       **Legacy tuning passed 15/15 fixed tasks; held-out did not pass every
       check.** The workflow suits supervised pilots, not unattended use. It
-      plans, uses approved tools, and reviews its work. Auditable means a
+      plans, uses approved tools, reviews its work. Auditable means a
       reviewer can reconstruct each step.
 
-      Held-out results were 13/13 answers, 5/6 refusals, 18/19 step budgets,
-      and 12/19 latency budgets. Tuning cost about $0.13 of the $2.00 cap,
+      Held-out: 13/13 answers, 5/6 refusals, 18/19 step budgets, 12/19
+      latency budgets. Tuning cost about $0.13 of the $2.00 cap,
       not billed spend. Data: a synthetic 12-document handbook and 3,589
-      Wikipedia passages under CC BY-SA. Typed outcomes, no-evidence
-      stopping, and deadline enforcement have deterministic tests and a live
-      confirmation (2026-11-19: 6/6 live-grader refusals; h19 a
-      calculator-guard error).
+      Wikipedia passages under CC BY-SA. Typed outcomes, no-evidence stopping,
+      and deadline enforcement have deterministic tests and a live confirmation
+      (2026-11-19: 6/6 live-grader refusals; h19 a calculator-guard error).
 
       ```diagram 09-agent-loop
       ```
 
-      Plan records steps and tools. Consequential runs pause for human review.
-      Critique audits tool use; StepTrace records every transition.
+      Plan records steps and tools; consequential runs pause for review;
+      Critique audits tool use; StepTrace records transitions.
 
-      **Business summary:** Legacy results: 15/15 fixed tasks, 13/13 held-out
+      Next, the loop's testable targets
+      ([Objectives →](#sec-objectives)).
+
+      **In plain terms:** Legacy results: 15/15 fixed tasks, 13/13 held-out
       answers, 5/6 refusals, and about $0.13 of the $2.00 cap.
     figures: []
     metrics_keys: []
@@ -89,7 +91,10 @@ sections:
       tasks to grades: tuning and held-out tasks face the same checks, and
       results land in `metrics.json`.
 
-      **Business summary:** Targets: plan-act-review with bounded retries,
+      The targets need fixed corpora; next, the handbook, the Wikipedia
+      index, and the task files ([Data →](#sec-data)).
+
+      **In plain terms:** Targets: plan-act-review with bounded retries,
       code-graded answers and tool sets, $0.25 per task, and a human
       checkpoint.
     figures: []
@@ -129,7 +134,10 @@ sections:
       numbers to compare text, not just exact words. In the diagram's held-out
       split, six of the 19 tasks are built to fail.
 
-      **Business summary:** The data: a synthetic 12-document handbook,
+      Fixed corpora make exact answers possible; next, the grading design
+      and the tool-usage matrix ([EDA →](#sec-eda)).
+
+      **In plain terms:** The data: a synthetic 12-document handbook,
       read-only retrieval over 3,589 Wikipedia chunks, and 15 tuning plus
       19 held-out tasks.
     figures: []
@@ -170,7 +178,10 @@ sections:
       share of actual calls that were planned. Tool recall is the share of
       planned calls that occurred.
 
-      **Business summary:** The grading: code scores answers, exact tool
+      The grading design sets the audit rules; next, the executable graph
+      behind the runs ([Training →](#sec-training)).
+
+      **In plain terms:** The grading: code scores answers, exact tool
       sets, step count, and time; should-fail probes pass only on an honest
       no.
     figures:
@@ -179,7 +190,7 @@ sections:
   - id: training
     text_md: |
       **The deliverable is an executable graph, not a trained model.** No
-      model parameters are learned. The graph is a fixed network of steps that
+      parameters are learned. The graph is a fixed network of steps that
       controls Plan, Execute, and Critique. Critique revises through Execute,
       never Plan, and audits tool use against the plan. Consequential runs
       pause at a typed approval gate.
@@ -187,14 +198,14 @@ sections:
       ```diagram auto-09-agentic-workflows-4
       ```
 
-      Read the gate as a state machine, where the current state determines the
-      next allowed step. Plan hands a typed plan to the checkpoint. Approval
+      Read the gate as a state machine, where the current state determines
+      the next step. Plan hands a typed plan to the checkpoint. Approval
       runs the tools, rejection returns the plan with feedback, and parking
       freezes state for later. Execute retries failed calls within the cap,
       and Critique takes one revision. Empty search evidence and terminal tool
       failures end as typed refusals; the task deadline cancels an over-time
       run. Every exit is a structured `WorkflowResult` with an ok, refused,
-      failed, or deadline_exceeded status. These visible states support
+      failed, or deadline_exceeded status. These states support
       bounded, auditable control that one large prompt would not expose.
 
       **Checkpoint resume is a state transition, not a prompt instruction.**
@@ -224,20 +235,19 @@ sections:
 
       In this [hitl.py
       excerpt](https://github.com/amm-ds/portfolio/blob/main/projects/09-agentic-workflows/src/agentic_workflows/hitl.py),
-      the approved branch resumes at Execute. The rejection branch stores
-      feedback and records the re-plan before returning to Plan, matching the
-      diagram.
+      the approved branch resumes at Execute; the rejection branch stores
+      feedback, records the re-plan, and returns to Plan.
 
-      Tool descriptions are behavioral contracts, or rules for allowed use.
+      Tool descriptions are behavioral contracts, rules for allowed use.
       At the diagram's Execute node, the calculator rejects non-arithmetic
       work, conversion uses fixed factors, retrieval fails loudly if project
       01's index is absent, and the notebook runs only when recording is
       requested. Per-call traces capture name, arguments, latency, result
       size, and success.
 
-      The following measurements apply to the graph path shown above. The
-      diagram identifies the work being measured; the numbers come from the
-      recorded runs. Each strength has a limit:
+      The measurements below apply to the graph path above; the diagram
+      identifies the measured work, the numbers come from recorded runs. Each has a
+      limit:
 
       - All 15 tuning tasks passed all four checks: answers, exact tool set,
         step budget, and latency budget. *Limit:* one suite, one endpoint,
@@ -262,7 +272,10 @@ sections:
       - A recorded run demonstrates pause, reject-with-feedback, and re-plan.
         Nothing here demonstrates unattended operation.
 
-      **Business summary:** The legacy tuning run passed 15/15 tasks with
+      The graph is fixed; next, the capture-and-grade audit path
+      ([Evaluation →](#sec-evaluation)).
+
+      **In plain terms:** The legacy tuning run passed 15/15 tasks with
       30/30 calls planned, median latency 18.2 s, and about $0.13 of the
       $2.00 cap. Held-out failures remain visible; the 2026-11-19 live run
       confirms 6/6 refusals under the live grader (h19 a calculator-guard
@@ -314,7 +327,10 @@ sections:
       with a reviewer watching. They do not establish open-ended or new-domain
       performance.
 
-      **Business summary:** Runs are captured once and re-scored offline for
+      The audit path sets the verdict rules; next, the suite summary and
+      node waterfall ([Results →](#sec-results)).
+
+      **In plain terms:** Runs are captured once and re-scored offline for
       free. Held out: 13/13 answers with exact tool sets, 5/6 refusals, 18/19
       step budgets, and 12/19 latency budgets.
     figures:
@@ -359,7 +375,10 @@ sections:
         tool sets (Details). These repeats are separate from the single-run
         bars and do not establish cross-provider repeatability.
 
-      **Business summary:** Final grades: 15/15 answers and exact tool sets on
+      The grades are recorded; next, the exact tables and protocol
+      ([Conclusions →](#sec-conclusions)).
+
+      **In plain terms:** Final grades: 15/15 answers and exact tool sets on
       the tuning suite; 13/13 answers and 5/6 refusals held out; zero
       unplanned calls; median latency 18.2 s.
     figures:
@@ -474,7 +493,7 @@ sections:
       - A supervised pilot needs an external review team and production tasks.
         Open-ended autonomy stays out of scope.
 
-      **Business summary:** The record run passed 15/15 tuning tasks and
+      **In plain terms:** The record run passed 15/15 tuning tasks and
       13/13 held-out answers, with 5/6 refusals, at about $0.10–0.15 per
       suite and zero unplanned calls. The evidence supports a supervised
       pilot, not unattended use.
@@ -489,17 +508,17 @@ key_concepts:
   - "**Behavioral tool contracts:** Tool descriptions state what each tool may do and make unplanned calls visible in per-call traces."
 roadmap:
 - status: shipped
-  title: "Pinned typed outcomes and hard deadlines."
+  title: "Pin typed outcomes and hard deadlines"
   detail: "Offline regressions pass; the live run answers 13 of 13."
 - status: shipped
-  title: "Bounded retries behind a human checkpoint."
+  title: "Bound retries behind a human checkpoint"
   detail: "Consequential runs pause for approval, rejection, or later review."
 - status: shipped
-  title: "Replaced AI judges with deterministic graders."
+  title: "Replace AI judges with deterministic graders"
   detail: "Four code checks per answer task; probes demand an honest no."
 - status: shipped
-  title: "Audited 52 captured calls against plan."
+  title: "Audit captured calls against the plan"
   detail: "All 52 captured calls matched planned tool sets in both suites."
 - status: next
-  title: "Run the multi-trial reliability study."
-  detail: "Needs an owner-approved cap; current results are single runs."
+  title: "Run the multi-trial reliability study"
+  detail: "Needs an owner-approved cap; published results are single runs."

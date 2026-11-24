@@ -5,25 +5,27 @@ sections:
   - id: background
     text_md: |
       **The system sorts news into four topics. It scores 0.954 fresh
-      macro-F1 and reviews 22 of 1,000 fresh items.** Macro-F1 averages
-      topic-level F1, which balances finding and correctly labeling topics. A
+      macro-F1 and reviews 22 of 1,000 items.** Macro-F1 averages
+      topic-level F1, balancing discovery with correct labels. A
       transformer learns text patterns and predicts every item. An LLM, or large
       language model, reviews only items below confidence cutoff τ=0.6.
 
       AG News has 127,600 items, 120k for training, and a research-purposes
-      license.
-      Before review, the full-data transformer scores 0.9529432. The keyword
-      model scores 0.8785 fresh, runs about 40× faster, and avoids token cost.
-      Tokens are text pieces used for billing.
+      license. Before review, the full-data transformer scores 0.9529432; the
+      keyword model scores 0.8785 fresh, runs about 40× faster, and avoids
+      token cost, the billed text pieces.
 
-      In the baseline diagram, 75.4% exit on keywords and 24.6% reach the
-      sample-trained transformer. The selected policy starts with the full-data
+      The baseline diagram routes 75.4% out on keywords, 24.6% to the
+      sample-trained transformer; the selected policy starts with the full-data
       transformer instead.
 
       ```diagram 04-routing
       ```
 
-      **Business summary:** Keep the diagram's low-cost keyword baseline. Select
+      Next, the rungs each candidate must climb
+      ([Objectives →](#sec-objectives)).
+
+      **In plain terms:** Keep the diagram's low-cost keyword baseline. Select
       the full-data transformer plus τ=0.6 review for the best measured quality.
       Avoid reviewing every item.
     figures: []
@@ -68,7 +70,10 @@ sections:
       Starting with the largest model would spend the budget before establishing
       a cheaper comparison.
 
-      **Business summary:** The diagram sets five rungs and one judge. Accuracy
+      Five rungs and one judge need fixed views; next, the four data views
+      that keep the ladder fair ([Data →](#sec-data)).
+
+      **In plain terms:** The diagram sets five rungs and one judge. Accuracy
       and macro-F1 must beat two trivial floors; validation-only selection and
       paired uncertainty govern the tuned-model choice.
     figures: []
@@ -105,7 +110,10 @@ sections:
       in the shared test set prevent class priors, or topic frequencies, from
       explaining a score gap.
 
-      **Business summary:** The diagram separates four fixed views: a bounded
+      The four views hold selection and diagnostics apart; next, the balance
+      figure that makes the bounded test readable ([EDA →](#sec-eda)).
+
+      **In plain terms:** The diagram separates four fixed views: a bounded
       sample with validation-only selection, a full-data track, a disjoint fresh
       diagnostic holdout, and a same-protocol scale ladder.
     figures: []
@@ -133,7 +141,10 @@ sections:
       with 95% CI [−0.0048, +0.0204], so the choice is inconclusive. The bounded
       test and fixed fresh holdout never enter that selection.
 
-      **Business summary:** The figure confirms balanced classes and short
+      Balance and short texts clear the readability bar; next, how the
+      transformer trained and where tuning stopped ([Training →](#sec-training)).
+
+      **In plain terms:** The figure confirms balanced classes and short
       texts. Two trivial floors and two metrics frame the test; paired
       validation uncertainty, not a test-set winner, governs selection.
     figures: [eda_class_balance]
@@ -201,7 +212,10 @@ sections:
       epochs overfit, meaning they learn training detail that does not generalize.
       The probe confirms the default instead of replacing it.
 
-      **Business summary:** The figures and scale evidence favor more data, not
+      The evidence favors data over tuning; next, the diagram that turns the
+      measurements into an operating policy ([Evaluation →](#sec-evaluation)).
+
+      **In plain terms:** The figures and scale evidence favor more data, not
       more tuning. Each tripling adds about +1.5 macro-F1 points, reaching
       0.9460 test and 0.9529 fresh. One temperature cuts calibration error
       for free.
@@ -245,7 +259,10 @@ sections:
       transformer. The comparison figure does not show those speeds, and the
       probes do not price the hosted review pass.
 
-      **Business summary:** The diagram and comparison figure show the τ=0.6
+      The policy's measured trade-off sets up the diagnostic figures; next,
+      what the three test figures explain and bound ([Results →](#sec-results)).
+
+      **In plain terms:** The diagram and comparison figure show the τ=0.6
       cascade's observed trade-off: 0.9539265 fresh macro-F1 and 0.954 accuracy
       with 22 reviews. Keep the keyword router as the cheaper, lower-quality
       option; the cascade delta of +0.001 macro-F1 is no measurable change and
@@ -292,7 +309,10 @@ sections:
       The exact tables and run identities in Conclusions preserve the full
       evidence behind these visual summaries.
 
-      **Business summary:** The figures show no measurable fresh cascade change
+      The figures bound the claim; next, the exact tables and protocol that
+      preserve the evidence ([Conclusions →](#sec-conclusions)).
+
+      **In plain terms:** The figures show no measurable fresh cascade change
       over the full-data transformer (Δ macro-F1 +0.001), without established
       superiority.
       Business/Sci-Tech ambiguity and bounded evaluation remain limits.
@@ -472,7 +492,7 @@ sections:
       ```diagram auto-04-nlp-classification-4
       ```
 
-      **Business summary:** The diagram's selected full-data transformer plus
+      **In plain terms:** The diagram's selected full-data transformer plus
       selective LLM cascade reaches 0.9539265 fresh macro-F1 and 0.954 accuracy
       with 22 fresh reviews. Keep the keyword-first router as the cheaper
       baseline, not the quality leader.
@@ -480,20 +500,20 @@ sections:
     metrics_keys: [distilbert_full_120k]
 roadmap:
 - status: shipped
-  title: "Measured the data-scale response."
-  detail: "+1.3 to +1.6 macro-F1 points per 3x data step on the seeded ladder."
+  title: "Measure the data-scale response"
+  detail: "Each tripling of rows buys about +1.5 macro-F1 points."
 - status: shipped
-  title: "Kept the default under inconclusive tuning."
-  detail: "Paired 95% CI [-0.0048, +0.0204] crosses zero; the default stays."
+  title: "Keep the default under inconclusive tuning"
+  detail: "The paired confidence interval crosses zero; the default stays."
 - status: shipped
-  title: "Beat every rung with full data."
-  detail: "0.9460 test macro-F1; floors end at 0.1000 and 0.2533."
+  title: "Beat every rung with full data"
+  detail: "The full-data rung tops the shared-test ladder."
 - status: shipped
-  title: "Shipped the cascade with calibrated confidence."
+  title: "Ship the cascade with calibrated confidence"
   detail: "One temperature rescales confidence; the uncertain quarter routes to review."
 - status: next
-  title: "Persist per-row review decisions."
-  detail: "Would unlock the paired cascade interval; not stored today."
+  title: "Persist per-row review decisions"
+  detail: "Unlocks the paired cascade interval once rows are persisted."
 key_concepts:
 - "**Macro-F1**: the unweighted mean of per-topic F1, so a rare topic counts as much as a common one."
 - "**Model ladder**: cheapest-first rungs judged by one metric pair. A rung must beat the rung below it to justify its extra cost."

@@ -5,23 +5,25 @@ sections:
   text_md: |
     **How far can a learned forecaster beat the simple weekly rule on
     Walmart's full M5 panel?** The M5 data covers 30,490 daily sales series,
-    one per item-store, over 1,969 days. LightGBM is a machine-learning method
-    combining decision trees. This project blends several LightGBM models into
-    one forecast at full scale.
+    one per item-store, over 1,969 days. LightGBM combines decision trees; this
+    project blends several LightGBM fits into one full-scale forecast.
 
-    The official score is WRMSSE, or weighted root mean squared scaled error.
-    It measures error across 42,840 products and product groups (nodes) in a
-    hierarchy of totals and subtotals. Higher-revenue nodes carry more weight.
-    The seasonal-naive floor repeats last week's sales per weekday.
+    The official score, WRMSSE (weighted root mean squared scaled error),
+    measures error across 42,840 products and product groups (nodes) in a
+    hierarchy; higher-revenue nodes carry more weight. The seasonal-naive
+    floor repeats last week's sales per weekday.
 
     ```diagram 02-m5-pipeline
     ```
 
-    Follow the diagram from raw sales to one forecast. Its final block scores
-    the last 28 days once: the blend reaches an official WRMSSE of 0.6211
+    Follow the diagram from raw sales to one forecast; its final block
+    scores the last 28 days once: the blend reaches official WRMSSE 0.6211
     against the floor's 0.8929, a 30.4% error reduction.
 
-    **Business summary:** On the full M5 panel, the blend cuts official WRMSSE
+    The diagram gives the route and headline; next, the contract behind
+    the score ([Objectives →](#sec-objectives)).
+
+    **In plain terms:** On the full M5 panel, the blend cuts official WRMSSE
     against the seasonal-naive floor.
   figures: []
 - id: objectives
@@ -47,7 +49,10 @@ sections:
     - Choose on the past and score the final window once.
     - Report where the simple rule still wins.
 
-    **Business summary:** The diagram sets one test for every candidate:
+    One test for every candidate needs a fixed input; next, the pinned
+    panel and its time splits ([Data →](#sec-data)).
+
+    **In plain terms:** The diagram sets one test for every candidate:
     stable selection on past data, one final WRMSSE score, and supporting
     checks for direction, hierarchy level, and quiet days.
   figures: []
@@ -80,7 +85,11 @@ sections:
     This separation blocks random splits, which could mix future information
     into training and make the reported gap unverifiable.
 
-    **Business summary:** All 30,490 series pass through the diagram's same
+    That fixed panel sets up the demand-pattern audit; next, the
+    classification counts and the sample series behind them
+    ([EDA →](#sec-eda)).
+
+    **In plain terms:** All 30,490 series pass through the diagram's same
     contract: two past origins for selection and one 28-day competition window
     for final scoring.
   figures: []
@@ -109,7 +118,10 @@ sections:
     floor against 57.2% for the ensemble. That caveat is not visible in the
     three ensemble forecast curves, so it must sit beside the headline result.
 
-    **Business summary:** The sample figure shows the challenge behind the
+    The quiet-stretch caveat frames the candidate design; next, the eight
+    candidates and the stability screen ([Training →](#sec-training)).
+
+    **In plain terms:** The sample figure shows the challenge behind the
     counts: 91% of series are intermittent and 59.5% of days are zero. Quiet
     days still favor the floor.
   figures: [m5_full_sample_series]
@@ -175,7 +187,10 @@ sections:
     win in official WRMSSE does not mean every operational check improves. The
     complete diagrammed run takes about 12.9 hours on one machine.
 
-    **Business summary:** The selection diagram chooses three pooled fits from
+    The screen sets the blend; next, the single official score and the
+    checks that locate its gain ([Evaluation →](#sec-evaluation)).
+
+    **In plain terms:** The selection diagram chooses three pooled fits from
     eight candidates by mean + 1.0×std at two past origins. It never uses the
     test window.
   figures: [m5_full_pooling_panel]
@@ -217,7 +232,11 @@ sections:
     Neither the diagram nor the figure measures savings. Stockouts, promotions,
     and returns sit outside the model, so no safety-stock or cost claim follows.
 
-    **Business summary:** The evaluation diagram scores every candidate once
+    The checks narrow the question to the final ranking; next, the
+    scored-once result and its measured challengers
+    ([Results →](#sec-results)).
+
+    **In plain terms:** The evaluation diagram scores every candidate once
     with official WRMSSE. The per-level figure locates the gain, while WAPE,
     bias, stability, and zero-day checks expose different failure modes.
   figures: [m5_full_per_level_wrmsse]
@@ -260,7 +279,11 @@ sections:
     absent from the ranking figure; its full-panel performance is measured
     and it loses. The final ensemble stays 0.6211.
 
-    **Business summary:** The ranking figure shows the ensemble at 0.6211 versus
+    The ranking stands with its caveats; next, the exact tables, protocol,
+    and limits behind the recommendation
+    ([Conclusions →](#sec-conclusions)).
+
+    **In plain terms:** The ranking figure shows the ensemble at 0.6211 versus
     the 0.8929 floor, a 30.4% reduction. Pooled fits beat the global model, with
     the gain concentrated at aggregate levels.
   figures: [m5_full_candidate_ranking]
@@ -357,7 +380,7 @@ sections:
     ```diagram auto-02-demand-forecasting-5
     ```
 
-    **Business summary:** The closing diagram's pooled ensemble reaches 0.6211
+    **In plain terms:** The closing diagram's pooled ensemble reaches 0.6211
     against the 0.8929 floor, a 30.4% reduction on the official scheme. Use it
     for full-panel, weekly-reforecast M5 demand, and re-check the choice where
     quiet-day accuracy outranks aggregate WRMSSE or once bootstrap intervals
@@ -372,20 +395,20 @@ key_concepts:
   - "**Scored-once evaluation**: Candidates are chosen on past origins and graded exactly once on the competition window. Random splits could leak future information into training."
 roadmap:
 - status: shipped
-  title: "Pinned the full M5 panel."
-  detail: "30,490 series, checksum-pinned; 9 selection origins + 1 test."
+  title: "Pin the full M5 panel"
+  detail: "30,490 series checksum-pinned; origins split selection from scoring."
 - status: shipped
-  title: "Screened one compact convex blend."
-  detail: "Best three of six arms by mean + 1.0 x std on selection origins."
+  title: "Screen one compact convex blend"
+  detail: "Best three of six arms by the stability screen on selection origins."
 - status: shipped
-  title: "Scored the blend once on test."
-  detail: "Official test WRMSSE 0.6211; scored once on the held-out origin."
+  title: "Score the blend once on test"
+  detail: "Official test WRMSSE 0.6211, scored once on the held-out origin."
 - status: shipped
-  title: "Published the spike-capture negative result."
+  title: "Publish the spike-capture negative result"
   detail: "Erratic routing rejected by the adoption gate; the champion stands."
 - status: next
-  title: "Find erratic gains beyond routing."
-  detail: "Wave-34 Huber arm rejected on origin 1 (0.8683 vs 0.7409); screen stopped."
+  title: "Find erratic gains beyond routing"
+  detail: "Huber challenger lost its only selection origin and never reached test."
 figure_captions:
   m5_full_sample_series: "Three catalog series at the scored-once test origin on 2016-05-22: top-units, hardest-intermittent, and mid-volume. Each panel shows 56 days of history, 28 days of actual sales, and the ensemble curve with its member envelope. The envelope is the members' spread, not a calibrated interval. Look for the weekly shape, weeks-long zero runs, and quiet days."
   m5_full_candidate_ranking: "All 8 candidates ranked by official hierarchical WRMSSE on the scored-once competition window across 42,840 revenue-weighted nodes. Lower bars are better. The stability-screened convex ensemble leads at 0.6211, the best single pooled fit scores 0.6219, and the seasonal-naive floor scores 0.8929."

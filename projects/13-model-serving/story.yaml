@@ -13,8 +13,7 @@ sections:
       **What does it take to turn a trained model into software other
       systems can call?** This study deploys the champion from experiment
       12. It is a small multilayer perceptron (MLP). An MLP is a neural
-      network that learns from tables. This one predicts hourly bike
-      rentals. FastAPI is a Python tool for building web APIs. An API, or
+      network that learns from tables. It predicts hourly bike rentals. FastAPI is a Python tool for building web APIs. An API, or
       application programming interface, sets the rules for requests and
       answers.
 
@@ -27,7 +26,10 @@ sections:
       ```diagram 13-serving-pipeline
       ```
 
-      **Business summary:** The diagram covers the full deployment path for
+      The pipeline diagram sets the path; next, the three gates that
+      protect the results ([Objectives →](#sec-objectives)).
+
+      **In plain terms:** The diagram covers the full deployment path for
       one champion model, with reproducible evidence behind every number.
     figures: []
   - id: objectives
@@ -56,7 +58,10 @@ sections:
       - Paired benchmarking: both backends receive identical request bytes. A backend is the software that runs the model. Warm-up is excluded. Each cell reports the median, or middle result, of 3 repeats.
       - Container evidence: measure image size, fresh-process memory, and electricity cost with declared assumptions.
 
-      **Business summary:** Reproduction and parity establish correctness
+      The gates need a rebuilt champion; next, the identical recipe and
+      feature contract ([Data →](#sec-data)).
+
+      **In plain terms:** Reproduction and parity establish correctness
       before the paired protocol measures speed, memory, and cost.
     figures: []
   - id: data
@@ -90,7 +95,10 @@ sections:
       feeds the embedding index, and the 15 selected numeric fields feed the
       main network. `atemp` is absent because the selection rule removed it.
 
-      **Business summary:** The diagram links identical data and features to
+      The rebuild is verified; next, the probe grid that tests correctness
+      and drives the benchmark ([EDA →](#sec-eda)).
+
+      **In plain terms:** The diagram links identical data and features to
       the exact 25.4316 test MAE and to the request schema the service checks.
     figures: []
   - id: eda
@@ -120,7 +128,10 @@ sections:
       and missing fields with the standard 422 response. HTTP 422 means the
       API understood the request but its contents failed validation.
 
-      **Business summary:** The diagram ties one seeded grid to 7.2e-07
+      The grid passes parity; next, the guarded service and its readiness
+      gate ([Training →](#sec-training)).
+
+      **In plain terms:** The diagram ties one seeded grid to 7.2e-07
       max-abs parity, repeatable benchmarks, and clean rejection of invalid
       requests.
     figures: []
@@ -175,7 +186,10 @@ sections:
       ```
 
       Excerpts from [model.py](https://github.com/amm-ds/portfolio/blob/main/projects/13-model-serving/src/model_serving/service/model.py) and [app.py](https://github.com/amm-ds/portfolio/blob/main/projects/13-model-serving/src/model_serving/service/app.py).
-      **Business summary:** The diagram connects gated export, one FastAPI
+      The service is warmed; next, the three figures from one paired
+      protocol ([Evaluation →](#sec-evaluation)).
+
+      **In plain terms:** The diagram connects gated export, one FastAPI
       service for both backends, and tested readiness before traffic.
     figures: []
   - id: evaluation
@@ -211,7 +225,10 @@ sections:
       small gaps read as scheduling noise on a shared CPU, not a different
       model.
 
-      **Business summary:** The figures show 1.6 ms p50 single-request
+      The protocol is paired; next, the measured ledger with its caveats
+      ([Results →](#sec-results)).
+
+      **In plain terms:** The figures show 1.6 ms p50 single-request
       latency (p95 2.0 ms, p99 2.2 ms; n = 300 requests per cell), a ~950
       req/s knee, and ~56k rows/s batched throughput under a
       warmed, paired, median-of-3 protocol.
@@ -267,7 +284,10 @@ sections:
       pins six locked dependencies plus portfolio-core `--no-deps`; the parity
       gate supports dropping the framework safely.
 
-      **Business summary:** The figures and ledger support 1.6 ms p50 (p95
+      The ledger stands; next, the exact tables and protocol
+      ([Conclusions →](#sec-conclusions)).
+
+      **In plain terms:** The figures and ledger support 1.6 ms p50 (p95
       2.0 ms, p99 2.2 ms; n = 300/cell), a
       ~950 req/s knee, ~56k rows/s batched, a 6.5 GB full image with a 291 MB
       ONNX-only alternative, and ~$0.000012 per 1k predictions. Deployment
@@ -371,7 +391,7 @@ sections:
         no wall meter or amortized hardware. Re-derive the number on your
         hardware before quoting it.
 
-      **Business summary:** The diagram joins a verified champion, measured
+      **In plain terms:** The diagram joins a verified champion, measured
       serving, and explicit limits into one reproducible deployment case.
       The takeaway decision: gate every export on measured parity, warm
       the backend before traffic, and re-run the paired harness on the
@@ -379,19 +399,19 @@ sections:
     figures: []
 roadmap:
 - status: shipped
-  title: "Reproduced the champion; gated the export."
-  detail: "Parity max-abs 7.2e-07 on 512 seeded probe rows against the 1e-4 gate."
+  title: "Reproduce the champion; gate the export"
+  detail: "Parity max-abs of 7.2e-07 sits orders inside the gate."
 - status: shipped
-  title: "Passed both backends through load testing."
-  detail: "4,320 requests per backend, zero errors; median of 3 repeats."
+  title: "Pass both backends through load testing"
+  detail: "4,320 requests per backend finished with zero errors."
 - status: shipped
-  title: "Served both backends from one schema."
-  detail: "Only the --backend flag differs; readiness gates traffic."
+  title: "Serve both backends from one schema"
+  detail: "One flag switches the backend; readiness gates traffic."
 - status: shipped
-  title: "Measured image bloat; shipped slim variant."
-  detail: "Slim image 291 MB, 22.2x smaller, smoke-passed."
+  title: "Measure image bloat; ship the slim variant"
+  detail: "The slim image lands at a fraction of the size, smoke-passed."
 - status: next
-  title: "Re-measure on the target deployment host."
+  title: "Re-measure on the target deployment host"
   detail: "Absolute numbers are host-specific; the paired harness travels."
 key_concepts:
   - "**Reproduction gate:** The same pinned data, recipe, and seed must reproduce the champion's committed test MAE exactly before export."

@@ -29,19 +29,19 @@ figure_captions:
     together, so this compares combinations, not engines in isolation.
 roadmap:
 - status: shipped
-  title: "Standardized the task across all arms."
+  title: "Standardize the task across all arms"
   detail: "8 schema-checked prompts with keyword checklists."
 - status: shipped
-  title: "Committed the full measurement grid."
-  detail: "19 cells and 760 requests on one quiet machine, zero failures."
+  title: "Commit the full measurement grid"
+  detail: "760 requests across the grid on one quiet machine, zero failures."
 - status: shipped
-  title: "Caught a silent config error pre-run."
+  title: "Catch a silent config error pre-run"
   detail: "Reasoning disabled before the committed runs."
 - status: shipped
-  title: "Re-derived every published value offline."
+  title: "Re-derive every published value offline"
   detail: "Percentiles recomputed from the raw record before publishing."
 - status: next
-  title: "Prove the values on shipping hardware."
+  title: "Prove the values on shipping hardware"
   detail: "Needs quiet-hardware access and an MLX build for the MoE."
 key_concepts:
   - "**Latency percentiles:** p50 is the median response time, p95 is the time within which 95% finish, and p99 is the 99th-percentile time. Together they reveal delays that a mean can hide."
@@ -55,21 +55,24 @@ sections:
       **One laptop, one run.** Five large language model (LLM) serving setups
       ran on a quiet 128 GB MacBook with Ollama 0.40.4.
 
-      The benchmark pipeline diagram links prompts, load driver, endpoint,
-      request records, and reports: 760 requests, 19 cells, zero failures.
+      The pipeline diagram links prompts, load driver, endpoint, request
+      records, and reports: 760 requests, 19 cells, zero failures.
       A cell is one setup at one concurrency, or simultaneous request count.
 
       Records favor a 4-bit mixture-of-experts (MoE). Quantization compresses
       model weights; MoE activates only 3B parameters per token, a text
-      fragment. At concurrency 1, it records 0.81 s p95 latency, 0.63 s median,
-      and 7× the dense 32B model's tokens per second. Estimated electricity
+      fragment. At concurrency 1, it records 0.81 s p95, 0.63 s median,
+      and 7× the dense 32B's tokens per second. Estimated electricity
       cost is $0.12 per 1M output tokens under declared power assumptions.
       Values are not portable; re-measure with the harness.
 
       ```diagram 08-serving-benchmark
       ```
 
-      **Business summary:** The 4-bit MoE is fastest in this run, with 0.81 s
+      Next, the measurement contract behind each cell
+      ([Objectives →](#sec-objectives)).
+
+      **In plain terms:** The 4-bit MoE is fastest in this run, with 0.81 s
       p95 latency at concurrency 1; bounded quality ties across tested arms.
     figures: []
     metrics_keys: []
@@ -102,7 +105,10 @@ sections:
       ```diagram auto-08-inference-serving-1
       ```
 
-      **Business summary:** Measure latency, throughput, quality, and failures
+      Four views need a fixed task; next, the shared request schema and
+      its checks ([Data →](#sec-data)).
+
+      **In plain terms:** Measure latency, throughput, quality, and failures
       at concurrency 1 through 8, plus electricity cost from measured tokens
       and stated power draw.
     figures: []
@@ -136,7 +142,10 @@ sections:
       the figures. Published percentiles are recalculated offline from the raw
       record. No new run is needed.
 
-      **Business summary:** Eight local prompts, keyword checklists, and one
+      The schema gives every setup the same task; next, the quality
+      guardrail table that makes timings comparable ([EDA →](#sec-eda)).
+
+      **In plain terms:** Eight local prompts, keyword checklists, and one
       fixed answer schema give every setup the same task and rules.
     figures: []
     metrics_keys: []
@@ -162,7 +171,10 @@ sections:
       model. Neither method is used, so the checker itself does not create
       artificial differences.
 
-      **Business summary:** The table confirms schema and keyword rates of 1.00
+      The guardrail clears the timing comparison; next, the serving grid
+      and the throughput figure ([Training →](#sec-training)).
+
+      **In plain terms:** The table confirms schema and keyword rates of 1.00
       across all 760 responses after reasoning was disabled for comparability.
     figures:
       - quality_quant
@@ -225,7 +237,10 @@ sections:
 
       Excerpt from [bench.py](https://github.com/amm-ds/portfolio/blob/main/projects/08-inference-serving/src/inference_serving/bench.py).
 
-      **Business summary:** The serving grid and throughput figure show the
+      The grid sets the champion; next, the latency-versus-concurrency
+      chart that marks the portability limit ([Evaluation →](#sec-evaluation)).
+
+      **In plain terms:** The serving grid and throughput figure show the
       4-bit MoE producing about 7× the dense 32B's tokens per second, while
       per-request speed still falls under load.
     figures:
@@ -256,7 +271,10 @@ sections:
       is the procedure: record latency, throughput, quality, and cost, then
       choose from those measurements.
 
-      **Business summary:** The 4-bit MoE wins on this machine, but its p95
+      The chart bounds the verdict; next, the engine panel comparing two
+      packaging combinations ([Results →](#sec-results)).
+
+      **In plain terms:** The 4-bit MoE wins on this machine, but its p95
       latency rises from 0.81 s at one request to 7.80 s at eight. Transfer
       the procedure, not the values.
     figures:
@@ -276,7 +294,10 @@ sections:
       conditions. The conclusions retain the full grid, exact values, and
       limits.
 
-      **Business summary:** The engine panel shows a 2.9× throughput gap
+      The panel keeps the comparison honest; next, the exact tables and
+      protocol ([Conclusions →](#sec-conclusions)).
+
+      **In plain terms:** The engine panel shows a 2.9× throughput gap
       between two packaging combinations, not a proven engine-only advantage.
     figures:
       - engine_panel
@@ -398,7 +419,7 @@ sections:
         for access. Quantization-matched engine isolation waits for suitable
         builds.
 
-      **Business summary:** The committed evidence path covers 19 cells and 760
+      **In plain terms:** The committed evidence path covers 19 cells and 760
       requests with zero failures. The 4-bit MoE is the fastest tested arm on
       this machine; its bounded quality scores tie the other arms rather than
       establishing a quality advantage.

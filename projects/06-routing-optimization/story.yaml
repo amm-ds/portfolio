@@ -7,17 +7,17 @@ sections:
       **How close can simple, repeatable search get to the best published
       plans, and how fast?** A time window is the allowed arrival time. Truck
       capacity limits the load. A valid plan serves every stop once, meets
-      every window, and keeps distance short.
+      every window, keeps distance short.
 
       On 56 standard Solomon test days, tuned ALNS averages a 4.23% distance
-      gap from the best published plans. It takes about one second per problem
-      and uses 3.73 more trucks on average. Adaptive large-neighborhood
+      gap from the best published plans, about one second per problem and 3.73
+      more trucks on average. Adaptive large-neighborhood
       search, or ALNS, improves routes by removing and reinserting stops. The
       gap is the percentage above reference distance. Best-known plans are
       published references, not proven optima.
 
-      Both diagrams route inputs and solver outputs through one machine
-      validator; only valid plans reach the results.
+      Both diagrams pass plans through one machine validator; only valid plans
+      reach results.
 
       ```diagram auto-06-routing-optimization-1
       ```
@@ -25,7 +25,10 @@ sections:
       ```diagram 06-solver-ladder
       ```
 
-      **Business summary:** Across 56 benchmark days, ALNS stays within about
+      Next, the acceptance contract behind the scores
+      ([Objectives →](#sec-objectives)).
+
+      **In plain terms:** Across 56 benchmark days, ALNS stays within about
       4% of the best published distance in a second per day, with 3.73 extra
       trucks on average.
     figures: []
@@ -58,7 +61,10 @@ sections:
       convention. That pairing matters because adding vehicles can shorten
       distance. Distance-only reporting would hide that cost.
 
-      **Business summary:** Accept only valid, code-checked plans. Report
+      The contract needs fixed inputs; next, the 56 pinned test days and
+      their references ([Data →](#sec-data)).
+
+      **In plain terms:** Accept only valid, code-checked plans. Report
       distance beside truck count, and keep the tuned heuristic ladder within
       about two minutes.
     figures: []
@@ -97,7 +103,10 @@ sections:
       Best-known is a changing literature reference, not an optimality
       certificate, which is a proof that no better valid plan exists.
 
-      **Business summary:** The evidence uses 56 pinned public test days in six
+      The six families set the reading rules; next, the C101 map that
+      shows why shape matters ([EDA →](#sec-eda)).
+
+      **In plain terms:** The evidence uses 56 pinned public test days in six
       families, with quality checks and published distance and fleet references.
     figures: []
   - id: eda
@@ -126,7 +135,10 @@ sections:
         the C2 and R1 contrasts show why one average can hide different failure
         modes.
 
-      **Business summary:** Window width and customer spread change the routing
+      The map sets three reading rules; next, the solver ladder that falls
+      from floor to ALNS ([Training →](#sec-training)).
+
+      **In plain terms:** Window width and customer spread change the routing
       problem. Read results by family, not through one average alone.
     figures: [eda_instance_map]
   - id: training
@@ -140,13 +152,13 @@ sections:
       to shorten a tour, reaches 13.63%. ALNS reaches **4.23%** (95 %
       bootstrap CI [3.22 %, 5.28 %] over the 56 instances) in roughly one
       second per instance. Every rung is feasible and machine-checked; the
-      route-map figure shows the resulting C101 plan rather than an invalid
+      route-map figure shows the resulting C101 plan, not an invalid
       shortcut.
 
       - **Distance wins:** compare the solver distributions in the gap figure;
         the per-instance record shows ALNS leads on 52 of 56 and its fleet-first
-        variant leads the other 4. With fleet size ranked first, ALNS wins 38
-        of 56, the variant 5, and naive solvers 13 by using more trucks at far
+        variant leads the other 4. Ranked fleet-first, ALNS wins 38
+        of 56, the variant 5, naive solvers 13 by using more trucks at far
         worse distance. No solver beats the best-known fleet size: the average
         delta is +3.73 vehicles.
       - **Fleet trade-off:** compare ALNS and `alns_fleet` in the gap figure.
@@ -164,15 +176,15 @@ sections:
         independent confirmation. Measured mean runtimes are ~1.1 s for ALNS
         and 12.0 s for hinted CP-SAT; the solver-profile distributions
         summarize their distances.
-        Without a hint and with the same ten-second budget, CP-SAT finds no
+        Unhinted at the same ten-second budget, CP-SAT finds no
         feasible plan on any instance. These probes establish no general solver
         speedup. Only small cases carry proofs: a 25-customer C101 case is
         certified optimal in 2.9 s, and a 5-customer case in 0.1 s.
       - **Tuning limits:** the tuned 2-opt result in the gap figure reflects a
         gain of only 13.75% → 13.63%. Randomized restarts never pay, so ALNS
-        keeps `k=1`, one start. Move budgets saturate at about twenty accepted
+        keeps `k=1`, one start. Move budgets saturate near twenty accepted
         moves. Hyperparameter optimization, or HPO, is the systematic search
-        for these settings; its negative results remain visible.
+        for these settings; its negative results stay visible.
 
       **Search core: destroy, repair, then decide whether to accept.** The code
       removes stops and uses regret-2 repair, which reinserts each stop by
@@ -200,11 +212,14 @@ sections:
       ```
 
       This [solver.py excerpt](https://github.com/amm-ds/portfolio/blob/main/projects/06-routing-optimization/src/routing_optimization/solver.py)
-      explains the shape of the three figures: solver profile compares total
-      distance, the gap plot normalizes each result against its reference, and
-      the C101 route map shows one feasible ALNS plan.
+      explains the three figures: solver profile compares total distance, the
+      gap plot normalizes each result against its reference, and the C101 route
+      map shows one feasible ALNS plan.
 
-      **Business summary:** ALNS improves the mean gap from a 316.95% random
+      The ladder sets the champion; next, the contract diagram for the
+      served plan ([Evaluation →](#sec-evaluation)).
+
+      **In plain terms:** ALNS improves the mean gap from a 316.95% random
       floor to 4.23% in about a second per problem. Its fleet-first variant
       trades 0.07 points of gap for 0.07 fewer trucks.
     figures: [solver_profile, gap_pct, route_map_C101]
@@ -236,7 +251,10 @@ sections:
         times the runtime; the 25-customer proof supports its certification
         role.
 
-      **Business summary:** Use the seeded ALNS plan for a valid, one-second
+      The guarantees frame the measured results; next, the three figures
+      with spread, runtime, and limits ([Results →](#sec-results)).
+
+      **In plain terms:** Use the seeded ALNS plan for a valid, one-second
       result with distance and fleet labels. Use the exact solver to certify
       small cases.
     figures: []
@@ -269,7 +287,10 @@ sections:
         the full window. This cold-start comparison differs from the headline
         hinted arm, where CP-SAT starts from the ALNS plan.
 
-      **Business summary:** The family view gives a 4.23% average gap, a worst
+      The figures bound the claims; next, the exact tables and protocol
+      ([Conclusions →](#sec-conclusions)).
+
+      **In plain terms:** The family view gives a 4.23% average gap, a worst
       residual of 19.48%, and eight beaten references. The frontier records the
       two cold-start traces; it does not establish a general exact-solver speedup.
     figures: [family_gap, pareto_gap_runtime, frontier_gap_time]
@@ -380,27 +401,27 @@ sections:
       certify small cases; re-check the fleet-first variant before committing
       a truck count.
 
-      **Business summary:** ALNS delivers a 4.23% mean gap and +3.73 trucks in
+      **In plain terms:** ALNS delivers a 4.23% mean gap and +3.73 trucks in
       about a second per day, beating the best-known reference on 5 of 56
       instances. Best-known is not proof of optimality.
     figures: []
     metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, alns_fleet, ortools_cp]
 roadmap:
 - status: shipped
-  title: "Pinned the benchmark and merged references."
-  detail: "56 standard instances; the SINTEF TOP supplement covers 42."
+  title: "Pin the benchmark and merge references"
+  detail: "Standard instances pinned; the supplement restores 42 references."
 - status: shipped
-  title: "Built the seeded, machine-checked solver ladder."
+  title: "Build the seeded, machine-checked solver ladder"
   detail: "Eight solvers; every plan validated before scoring."
 - status: shipped
-  title: "Tuned search settings with seeded HPO."
+  title: "Tune search settings with seeded HPO"
   detail: "Restarts never pay; 2-opt HPO gains 0.12 points."
 - status: shipped
-  title: "Tied the arms at 12 s."
+  title: "Tie hinted CP-SAT to ALNS"
   detail: "Hinted CP-SAT ties ALNS at 12.0 s mean runtime."
 - status: next
-  title: "Extend to larger Gehring-Homberger instances."
-  detail: "Needs an owner scope decision; evidence covers 100 customers today."
+  title: "Extend to larger Gehring-Homberger instances"
+  detail: "Needs an owner scope decision; evidence covers 100 customers only."
 key_concepts:
   - "**Optimality gap:** the percentage by which a plan's distance exceeds the best-known published distance."
   - "**Best-known solutions:** the shortest published plans. They are references, not proven optima."

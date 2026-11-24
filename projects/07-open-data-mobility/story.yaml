@@ -49,25 +49,26 @@ sections:
     text_md: |
       **Next-hour taxi demand, zone by zone, on one laptop.** A zone-hour is
       one zone during one hour. The pipeline diagram joins 41.2M real 2024
-      yellow-taxi trips and public Central Park weather into one forecasting
-      table.
+      yellow-taxi trips and public Central Park weather into one table.
 
-      The model box holds a gradient-boosting model (GBM), which combines
+      The model box holds a gradient-boosting model (GBM) that combines
       small decision trees. Served means chosen for use. On a strict
       October–December holdout, meaning data reserved for final checks, it
-      averages 4.68 missed pickups per zone-hour across 584,855 cases. This
-      is 28% below the same-hour-yesterday rule. It repeats the previous
-      day's value.
+      averages 4.68 missed pickups per zone-hour across 584,855 cases, 28%
+      below the same-hour-yesterday rule repeating the previous day's
+      value.
 
       The model box also reports the p90 band, an upper forecast meant to
       exceed 90% of outcomes. Coverage, the share contained, is 90.8%.
-      No-borough zones under-cover at 84.7%. Weather links are descriptive
-      associations only.
+      No-borough zones under-cover at 84.7%.
 
       ```diagram 07-mobility-pipeline
       ```
 
-      **Business summary:** The diagram's model misses 1.8 fewer pickups per
+      Next, the success bars and time rules
+      ([Objectives →](#sec-objectives)).
+
+      **In plain terms:** The diagram's model misses 1.8 fewer pickups per
       zone-hour than yesterday. Its 90% band works except in the no-borough bucket.
     figures: []
     metrics_keys: []
@@ -105,7 +106,10 @@ sections:
       ```diagram auto-07-open-data-mobility-1
       ```
 
-      **Business summary:** The bars are a fifth less error than the
+      The bars set the contract; next, the two public feeds behind the
+      panel ([Data →](#sec-data)).
+
+      **In plain terms:** The bars are a fifth less error than the
       dispatcher's rule, an honest 90% band, laptop-class memory, and a
       one-command replay.
     figures: []
@@ -143,7 +147,10 @@ sections:
       ```diagram auto-07-open-data-mobility-2
       ```
 
-      **Business summary:** The diagram joins 41.2M taxi trips and Central
+      The panel sets the evidence base; next, the two figures that show
+      hotspots and weekly rhythm ([EDA →](#sec-eda)).
+
+      **In plain terms:** The diagram joins 41.2M taxi trips and Central
       Park weather into one reusable zone-hour panel. Nothing downloads
       twice.
     figures: []
@@ -166,7 +173,10 @@ sections:
       weekday evenings burn bright, while the airport bands stay comparatively
       flat. That visible weekly rhythm is what the calendar features must capture.
 
-      **Business summary:** The map shows a few demand hotspots, and the
+      The figures frame the candidate comparison; next, the run ladder
+      and the serving rule ([Training →](#sec-training)).
+
+      **In plain terms:** The map shows a few demand hotspots, and the
       heatmap shows a strong weekly rhythm. The zero-filled grid keeps every
       time-based input aligned to the correct hour.
     figures: [zone_hour_heatmap, zone_demand_map]
@@ -234,7 +244,10 @@ sections:
 
       Excerpt from [serving.py](https://github.com/amm-ds/portfolio/blob/main/projects/07-open-data-mobility/src/mobility/serving.py).
 
-      **Business summary:** The ladder supports a tuned booster with 28%
+      The serving rule is set; next, the figures that turn error into a
+      staffing view ([Evaluation →](#sec-evaluation)).
+
+      **In plain terms:** The ladder supports a tuned booster with 28%
       less error than the yesterday rule. Validation, not the test
       leaderboard, decides which model serves.
     figures: [gbm_vs_nn]
@@ -269,7 +282,10 @@ sections:
       no-borough bucket remains under 85% at 84.7%, so it stays flagged rather
       than hidden or conflated with the demand-sparse tercile.
 
-      **Business summary:** The figures support yellow-taxi next-hour
+      The figures qualify the band; next, the demand scale and the
+      weather ratios behind the limits ([Results →](#sec-results)).
+
+      **In plain terms:** The figures support yellow-taxi next-hour
       planning and staffing from the 90% band. Keep the flagged no-borough
       zones on manual watch.
     figures: [actual_vs_pred_top5, borough_mae, conformal_coverage]
@@ -294,7 +310,10 @@ sections:
       and EWR at 1.08×. These ratios have no hour-of-week normalization. They
       show association, not a causal weather effect.
 
-      **Business summary:** The figures support the band where zones are
+      The figures bound the claims; next, the exact records and protocol
+      ([Conclusions →](#sec-conclusions)).
+
+      **In plain terms:** The figures support the band where zones are
       busy and expose where it falls short. Wet and dry hours have different
       mean demand in some groups, but the evidence is descriptive only.
     figures: [hour_borough_heatmap, p90_band, weather_elasticity]
@@ -459,24 +478,24 @@ sections:
       ```diagram auto-07-open-data-mobility-3
       ```
 
-      **Business summary:** The diagram supports serving a tuned booster for
+      **In plain terms:** The diagram supports serving a tuned booster for
       next-hour yellow-taxi demand at 4.676 MAE, 28.3% below the yesterday
       rule. Its 90% band reaches 90.8% coverage where zones are busy.
     figures: []
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 roadmap:
 - status: shipped
-  title: "Replay the study with one command."
+  title: "Replay the study with one command"
   detail: "41.2M trips zero-filled into one replayable zone-hour panel."
 - status: shipped
-  title: "Served validation winner, not test leader."
-  detail: "The test leader tested -4.1% better; the holdout has no vote."
+  title: "Serve the validation winner, not the test leader"
+  detail: "The test leader tested better; the holdout has no vote."
 - status: shipped
-  title: "Calibrated the band; flagged no-borough zones."
-  detail: "90.8% coverage overall; the no-borough bucket flags at 84.7%."
+  title: "Calibrate the band; flag no-borough zones"
+  detail: "Coverage lands on target; the no-borough bucket stays flagged."
 - status: shipped
-  title: "Retrained per service; drift stays in-window."
-  detail: "Green refit on 337,080 zone-hours wins; two-service API live."
+  title: "Retrain per service; keep drift in-window"
+  detail: "Green refit wins on its own history; drift months stay in-window."
 - status: next
-  title: "Test causal weather and longer horizons."
+  title: "Test causal weather and longer horizons"
   detail: "Needs a new study contract with causal identification and multi-hour setup."

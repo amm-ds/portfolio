@@ -5,23 +5,25 @@ sections:
   - id: background
     text_md: |
       **The output is a priced contact list.** Churn means a customer leaves.
-      In the decision diagram, follow one row through a model, a learned rule
-      that estimates churn. Serving uses that rule to choose contacts. A
-      threshold is the cutoff for action. At 0.175, it separates "call" from
-      "skip". The bill box shows 601 cost units (missed churner $5, contact
-      $1, from `params.yaml`) versus 1,035 for contacting
-      everyone, a 41.9% cut.
+      In the decision diagram, one row passes through a model, a learned rule
+      estimating churn; serving uses it to choose contacts. A threshold,
+      the cutoff for action, separates "call" from "skip" at 0.175. The bill
+      box shows 601 cost units (missed churner $5, contact $1, from
+      `params.yaml`) versus 1,035 for contacting everyone, a 41.9% cut.
 
       ```diagram 05-churn-cycle
       ```
 
-      The diagram's mistake costs explain the objective. A false alarm spends
-      one retention voucher. A missed churner costs five. Accuracy, the share
-      of correct predictions, treats mistakes alike, so it cannot choose the
-      cheapest list. The 95% bootstrap interval of −508 to −353 estimates the
-      saving's uncertainty by repeatedly resampling customers.
+      The diagram's mistake costs explain the objective: a false alarm spends
+      one retention voucher, a missed churner costs five. Accuracy, the share
+      correct, treats mistakes alike, so it cannot choose the cheapest list.
+      The bootstrap interval −508 to −353 estimates that saving by resampling
+      customers.
 
-      **Business summary:** On 7,043 real telco customers, the model cuts
+      Next, the cost-model diagram that sets the gates
+      ([Objectives →](#sec-objectives)).
+
+      **In plain terms:** On 7,043 real telco customers, the model cuts
       retention cost 42% versus contacting everyone. Re-derive the cutoff
       when a missed churner's price changes.
     figures: []
@@ -48,7 +50,10 @@ sections:
       holdout. The final branches report the exact policy's saving interval
       and re-freeze a cutoff under each alternative missed-churner price.
 
-      **Business summary:** The goal is the cheapest contact list under a
+      Three tests for success need one real panel and one twin; next, the
+      lineage diagram and its gates ([Data →](#sec-data)).
+
+      **In plain terms:** The goal is the cheapest contact list under a
       1-versus-5 cost split, with the saving's range and the threshold's
       stability measured, not asserted.
     figures: []
@@ -82,7 +87,10 @@ sections:
       software checks, when the network is unavailable. It never replaces the
       real-data results.
 
-      **Business summary:** One real panel of 7,043 customers, pinned by
+      The gates and split fix the evidence base; next, the churn-profile
+      figure that sets the judging rules ([EDA →](#sec-eda)).
+
+      **In plain terms:** One real panel of 7,043 customers, pinned by
       sha256, splits into train, calibration, and a scored-once holdout. A
       synthetic twin guards the pipeline, or full processing sequence, in CI
       only.
@@ -112,7 +120,10 @@ sections:
       base-rate floor. The base rate is the overall churn share. A curve near
       that floor adds little ranking skill.
 
-      **Business summary:** The churn profile shows high churn for
+      The profile and curve frame the candidates; next, the three training
+      figures behind one preparation pipeline ([Training →](#sec-training)).
+
+      **In plain terms:** The churn profile shows high churn for
       month-to-month, senior, and fiber customers. Churners also pay more and
       leave sooner. The precision-recall curve shows ranking skill; it does not
       select the operating cutoff.
@@ -185,7 +196,10 @@ sections:
 
       Excerpt from [evaluate.py](https://github.com/amm-ds/portfolio/blob/main/projects/05-ml-pipeline-churn/src/churn_pipeline/evaluate.py).
 
-      **Business summary:** Training-side cost, not accuracy or holdout
+      Cost picks the cutoff; next, the evaluation chain that prices and
+      freezes it ([Evaluation →](#sec-evaluation)).
+
+      **In plain terms:** Training-side cost, not accuracy or holdout
       retuning, picks the cutoff. A calibrated boosted model serves at 0.175
       for 601 versus 1,035. The cutoff is re-frozen when price moves.
     figures: [calibration_curve, business_cost_curve, permutation_importance]
@@ -218,7 +232,10 @@ sections:
       Fairness means checking results across customer groups. Fresh data must
       test the served calibrated policy before rollout.
 
-      **Business summary:** The artifact accepts raw CRM rows behind the
+      The frozen policy is measured once; next, the fairness figure that
+      sets the rollout gates ([Results →](#sec-results)).
+
+      **In plain terms:** The artifact accepts raw CRM rows behind the
       data-quality gates. The frozen policy's measured cost cut is about 42%
       when a missed churner costs 5×. Temporal validation and fresh-data
       fairness remain rollout gates.
@@ -251,7 +268,10 @@ sections:
       - It covers one operator and 21 columns. Transfer to other customer
         bases is plausible, but unmeasured.
 
-      **Business summary:** Treat 601 as a measured budget line from one
+      The slices bound the claim; next, the exact tables and protocol
+      behind the measured record ([Conclusions →](#sec-conclusions)).
+
+      **In plain terms:** Treat 601 as a measured budget line from one
       snapshot split. The fairness figure makes fresh-data checks a
       pre-rollout gate, especially for long-contract customers.
     figures: [fairness_slices]
@@ -366,25 +386,25 @@ sections:
       - The pipeline covers one operator and 21 columns. Transfer to other
         customer bases is plausible, not measured.
 
-      **Business summary:** The measured record is 601 versus 1,035 on one
+      **In plain terms:** The measured record is 601 versus 1,035 on one
       holdout. The visuals and tables preserve its limits: one snapshot,
       raw-model fairness, no time axis, and unmeasured transfer.
     figures: [bootstrap_ci]
 roadmap:
 - status: shipped
-  title: "Pinned one reproducible panel and twin."
+  title: "Pin one reproducible panel and twin"
   detail: "Real 7,043-row panel and the synthetic CI twin pass the same DQ gates."
 - status: shipped
-  title: "Chose the cutoff from OOF cost."
+  title: "Choose the cutoff from OOF cost"
   detail: "Seeded 25-trial search; isotonic calibration on a train-side split."
 - status: shipped
-  title: "Priced the served policy by bootstraps."
-  detail: "2,000 paired resamples at the frozen cutoff; the 95% CI excludes zero."
+  title: "Price the served policy by bootstraps"
+  detail: "Paired bootstrap resamples at the frozen cutoff; the interval excludes zero."
 - status: shipped
-  title: "Re-froze the cutoff as prices moved."
-  detail: "Threshold moves 0.250 to 0.150 as missed-churner price goes 3 to 8."
+  title: "Re-freeze the cutoff as prices move"
+  detail: "The cutoff tracks the missed-churner price across the sensitivity grid."
 - status: blocked
-  title: "Rollout gates wait on owner data."
+  title: "Gate rollout on owner data"
   detail: "Time-stamped feed; fresh-data fairness for the served policy."
 key_concepts:
   - "**Decision cost**: Price false alarms and missed churners separately, then tune the model on the bill rather than accuracy."

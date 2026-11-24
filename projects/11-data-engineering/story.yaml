@@ -4,8 +4,8 @@ short_version: |
 sections:
   - id: background
     text_md: |
-      Pandas and Polars are Python tools for working with tables. DuckDB and
-      sqlite are database engines that use SQL, a language for querying
+      **Pandas and Polars are Python tools for working with tables.** DuckDB
+      and sqlite are database engines that use SQL, a language for querying
       tables. This case study compares all four on ten identical tasks over
       2,964,624 New York City taxi trips.
 
@@ -19,7 +19,10 @@ sections:
       overall speed and differences by task, so one average cannot hide a
       slow case.
 
-      **Business summary:** One pinned month of real taxi trips, ten tasks,
+      The diagram sets the shared contract; next, the protocol rules every
+      measurement must satisfy ([Objectives →](#sec-objectives)).
+
+      **In plain terms:** One pinned month of real taxi trips, ten tasks,
       and four engines share one contract. Results must match before any
       stopwatch starts.
     figures: []
@@ -60,7 +63,10 @@ sections:
       Read the diagram from input to accepted measurement. Correctness comes
       before speed at every step.
 
-      **Business summary:** Ten shared tasks, equal results as a hard gate,
+      The protocol needs one fixed input; next, the pinned January file and
+      its projection ([Data →](#sec-data)).
+
+      **In plain terms:** Ten shared tasks, equal results as a hard gate,
       untraced median-of-5 timing, cold reads, true peak memory, and a fully
       rerunnable offline CI track.
     figures: []
@@ -90,7 +96,10 @@ sections:
       named "N/A". The CI and scalability branches regenerate the same schema
       from a seed, with a deterministic checksum.
 
-      **Business summary:** January 2024 yellow-taxi trips are SHA-256-pinned
+      The fixed input sets the month; next, the EDA diagram that reads its
+      patterns ([EDA →](#sec-eda)).
+
+      **In plain terms:** January 2024 yellow-taxi trips are SHA-256-pinned
       from the same snapshot family project 07 uses. One derived CSV and a
       31-file partitioned layout give every engine identical input.
     figures: []
@@ -124,7 +133,10 @@ sections:
       ```diagram auto-11-data-engineering-3
       ```
 
-      **Business summary:** The diagram covers 2.96 million real trips with
+      The diagram sets the measurement rules; next, the speedup figure and
+      the parity catches ([Training →](#sec-training)).
+
+      **In plain terms:** The diagram covers 2.96 million real trips with
       strong daily patterns and skewed fares. Every measurement uses an
       untraced median on a shared machine after results match.
     figures: []
@@ -200,7 +212,10 @@ sections:
       - sqlite's join is its best cell at 3.65 s. Its SQL engine performs the
         join, but the per-task import dominates the measured workflow.
 
-      **Business summary:** The speedup figure shows Polars at x19.2 and
+      The speedup map is measured; next, the protocol evidence behind the
+      sizing decision ([Evaluation →](#sec-evaluation)).
+
+      **In plain terms:** The speedup figure shows Polars at x19.2 and
       DuckDB at x14.9 over pandas by geomean. Their per-task ranges differ,
       while sqlite remains correct but pays a measured conversion cost.
     figures: [speedup_overview]
@@ -244,7 +259,10 @@ sections:
       costs pandas 1.15 s, Polars 0.031 s, DuckDB 0.020 s, and sqlite 26.4 s.
       sqlite's CSV read needs 19.4 s against Polars's 0.12 s.
 
-      **Business summary:** Per-task speedups and memory support platform
+      The evidence supports sizing; next, the three figures that read time,
+      memory, and patterns together ([Results →](#sec-results)).
+
+      **In plain terms:** Per-task speedups and memory support platform
       sizing. The measured growth curves show the columnar engines pulling
       away with scale while pandas and sqlite stay linear.
     figures: [scalability_lines]
@@ -280,7 +298,10 @@ sections:
       the absolute totals are 2.99 s of median pandas work versus 0.16 s for
       Polars, 0.22 s for DuckDB, and 40.55 s for sqlite.
 
-      **Business summary:** Identical results take 0.16-0.22 s instead of
+      The figures complete the map; next, the exact tables and protocol
+      ([Conclusions →](#sec-conclusions)).
+
+      **In plain terms:** Identical results take 0.16-0.22 s instead of
       2.99 s. The figures show distinct per-task spreads for Polars and
       DuckDB, 2-3x memory headroom for the columnar engines, and sqlite's
       measured conversion cost.
@@ -396,25 +417,25 @@ sections:
       - The scalability tracks are synthetic (seeded, same schema); they
         measure growth shape, not real-trip behavior at 10M.
 
-      **Business summary:** The measured map shows x19.2 / x14.9 geomean
+      **In plain terms:** The measured map shows x19.2 / x14.9 geomean
       speedups, a 7-44x spread by task, and linear-versus-sub-linear growth.
       The parity gate caught real dropped rows before timing was accepted.
     figures: []
 roadmap:
 - status: shipped
-  title: "Gated every timing on identical rows."
-  detail: "SHA-256-pinned input; 39 of 39 measured cells passed the canonical gate."
+  title: "Gate every timing on identical rows"
+  detail: "Pinned input; every measured cell passed the canonical gate."
 - status: shipped
-  title: "Kept timings honest with untraced medians."
+  title: "Keep timings honest with untraced medians"
   detail: "Median of 5 warm repeats; tracing stays outside the timed region."
 - status: shipped
-  title: "Caught dropped rows with parity checks."
+  title: "Catch dropped rows with parity checks"
   detail: "Cross-engine comparison exposed 1,658 hidden N/A-borough trips."
 - status: shipped
-  title: "Showed the fast two scale sub-linearly."
-  detail: "Log-log slopes 0.31-0.76 for Polars and DuckDB; pandas and sqlite ~1."
+  title: "Show the fast two scale sub-linearly"
+  detail: "The two columnar engines grow sub-linearly; pandas and sqlite stay linear."
 - status: next
-  title: "Benchmark real trips at 10M rows."
+  title: "Benchmark real trips at 10M rows"
   detail: "The 10M track is seeded synthetic, not real trips."
 key_concepts:
   - "**Wall-time speedup:** divide one engine's median elapsed time by another's. Read it per task; the geomean is the geometric mean of those ratios."

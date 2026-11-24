@@ -57,25 +57,27 @@ sections:
   - id: background
     text_md: |
       **Find customers who buy because of the email.** Uplift is the extra
-      buying an email causes. Random assignment lets chance decide recipients
-      for a fair comparison. The checksum-pinned March 2008 Hillstrom snapshot
-      holds 64,000 randomized customers. A checksum is the file's fingerprint.
+      buying an email causes. Random assignment makes the comparison fair. The checksum-pinned March 2008 Hillstrom snapshot
+      holds 64,000 randomized customers; a checksum is the file's fingerprint.
 
       ```diagram auto-10-uplift-experimentation-1
       ```
 
-      Follow the first diagram from campaign data to the policy race. A policy
-      is a recipient-selection rule. At a 25% send budget, targeted ranking
-      beat random targeting by +$2,812 (+70%) in revenue minus send cost. Its 95%
-      confidence interval (CI), [+$718, +$4,767], is a range for that gap and
-      stays above zero. The second diagram links the verdict to cost: at $0.01
-      per email, mailing everyone earned $16,103 in revenue minus send cost,
-      the highest value before other costs.
+      The first diagram runs from campaign data to the policy race, a
+      recipient-selection rule. At a 25% send budget, targeted ranking
+      beat random targeting by +$2,812 (+70%) in revenue minus send cost; its
+      95% confidence interval (CI), [+$718, +$4,767], a range for that gap,
+      stays above zero. The second diagram adds the cost test: at $0.01
+      per email, mailing everyone earned $16,103, the top value
+      before other costs.
 
       ```diagram 10-uplift-judging
       ```
 
-      **Business summary:** Targeting the top quarter beat random mailing by
+      The diagrams frame the race and its cost test; next, the judging
+      path ([Objectives →](#sec-objectives)).
+
+      **In plain terms:** Targeting the top quarter beat random mailing by
       70% at that budget. At a penny per email, mailing everyone still paid
       more.
     figures: []
@@ -116,7 +118,10 @@ sections:
       judging uses 1,000 paired bootstraps. The final verdict records the send
       costs it covers.
 
-      **Business summary:** Check the assignment, compare three rankings, and
+      The judging path needs a pinned snapshot; next, the two analysis
+      frames it feeds ([Data →](#sec-data)).
+
+      **In plain terms:** Check the assignment, compare three rankings, and
       judge each on revenue minus send cost, and an honest interval.
     figures: []
   - id: data
@@ -155,7 +160,10 @@ sections:
       branch for per-arm reads. The diagram keeps those evidence bases
       separate.
 
-      **Business summary:** One checksum-pinned snapshot of 64,000 customers
+      The frames fix the evidence bases; next, the profile figure that
+      checks the randomization ([EDA →](#sec-eda)).
+
+      **In plain terms:** One checksum-pinned snapshot of 64,000 customers
       supports a two-arm main comparison and a three-arm frame for separate
       email reads.
     figures: []
@@ -179,7 +187,10 @@ sections:
       converting email with a non-converting one. That could make both look
       like wins or both like losses.
 
-      **Business summary:** The figure shows similar starting groups. The Mens
+      The profile clears the design; next, the cross-fitting rule behind
+      every score ([Training →](#sec-training)).
+
+      **In plain terms:** The figure shows similar starting groups. The Mens
       email moved visits and purchases. The Womens email moved visits only.
     figures: [eda_segment_profile]
   - id: training
@@ -240,7 +251,10 @@ sections:
       This is model-estimated money, not a realized result. Unconstrained
       mail-everyone-Mens leads at $49.8k until sends cost ≈$0.31.
 
-      **Business summary:** Cross-fitting protects every score. CUPED barely
+      Cross-fitting sets the scores; next, the two figures that test the
+      ranking and its cost edge ([Evaluation →](#sec-evaluation)).
+
+      **In plain terms:** Cross-fitting protects every score. CUPED barely
       reduced variance. Channel-choice money remains model-estimated.
     figures: [cuped_variance, profit_frontier_multi_arm, recommended_arm_distribution]
   - id: evaluation
@@ -265,7 +279,10 @@ sections:
       contact fatigue and cost of goods sold (COGS), so real margins could be
       thinner.
 
-      **Business summary:** The figures support a coarse ranking under a
+      The figures set the trust level; next, the measured wins and the
+      unproven claims ([Results →](#sec-results)).
+
+      **In plain terms:** The figures support a coarse ranking under a
       budget or costly sends. At $0.01 per email, mail everyone.
     figures: [uplift_by_decile, cost_sensitivity]
   - id: results
@@ -313,7 +330,10 @@ sections:
       appear in different arms. Near-constant propensity means they had similar
       assignment chances. This is not a general verdict on the X-learner.
 
-      **Business summary:** The solid findings are the Mens effect, the +70%
+      The claims are bounded; next, the exact tables and protocol
+      ([Conclusions →](#sec-conclusions)).
+
+      **In plain terms:** The solid findings are the Mens effect, the +70%
       budgeted win over random, and multi-arm best-arm beating random. Per-arm
       rankings and best-arm superiority over single-arm Mens remain unproven.
     figures:
@@ -465,7 +485,7 @@ sections:
       ```diagram auto-10-uplift-experimentation-4
       ```
 
-      **Business summary:** Rank by measured uplift only when sends are
+      **In plain terms:** Rank by measured uplift only when sends are
       budgeted or costly: +$2,812 (+70%) over random at a 25% budget, CI
       [+$718, +$4,767]. At $0.01 per email, mailing everyone earned $16,103
       in this campaign.
@@ -480,17 +500,17 @@ key_concepts:
   - "**Cost-sweep break-even:** The send cost, ≈$0.30, above which targeted sending beats mailing everyone."
 roadmap:
 - status: shipped
-  title: "Validated randomization and sized the read."
-  detail: "ATE +0.68 pp; power needs 3,063 per arm, 21,306 available."
+  title: "Validate randomization and size the read"
+  detail: "Measured ATE is +0.68 pp; arm sizes cover the power need."
 - status: shipped
-  title: "Cross-fitted three rankers on pre-treatment features."
+  title: "Cross-fit three rankers on pre-treatment features"
   detail: "Five-fold splits; paired bootstraps judge every policy gap."
 - status: shipped
-  title: "Kept observed and estimated value separate."
+  title: "Keep observed and estimated value separate"
   detail: "Best-arm beats random on DR/IPW; not established over single-arm."
 - status: shipped
-  title: "Priced the win against email costs."
-  detail: "Top-25% targeting overtakes mail-everyone above about $0.30 per email."
+  title: "Price the win against email costs"
+  detail: "Targeted sending overtakes mail-everyone above the break-even cost."
 - status: next
-  title: "Decide the next live-campaign test."
+  title: "Decide the next live-campaign test"
   detail: "Needs a fresh randomized holdout, per-order margin, fatigue data."
