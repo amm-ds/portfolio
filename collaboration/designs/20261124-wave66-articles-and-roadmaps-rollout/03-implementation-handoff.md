@@ -3,15 +3,15 @@
 Date: 2026-11-24
 Designer: Claude Code
 Executor: Kimi Code
-Status: **ready for owner review / execution on a new branch from `main` after Wave 6.5C merge**
-Validated Baseline: `projects/01-rag-agent/story.yaml` (Wave 6.5C) + `collaboration/reviews/20261124-rag-article-deep-review/00-review.md` §9 (8-rule style guide) + `collaboration/reviews/20261124-roadmap-review/00-review.md` §4.3–5.
+Status: **approved (ready for Kimi execution on a new branch from `main` @ `a66de659`)**
+Validated Baseline: `projects/01-rag-agent/story.yaml` (`a66de659`) + `collaboration/reviews/20261124-rag-article-deep-review/00-review.md` §9 (8-rule style guide) + `collaboration/reviews/20261124-roadmap-review/00-review.md` §4.3–5.
 
 ---
 
 ## 1. Objective
 
-Apply the exact editorial, structural, visual-alignment, and neutral-roadmap baseline validated on `01-rag-agent` across the remaining **12 portfolio projects (`02` through `13`)**:
-1. **8-rule narrative & section flow:** `[opening intro & description -> diagram -> mid paragraph + bullets/table -> **In plain terms:** -> figures]` (no `[Next: ...]` links inside cards; scroll-spy rail handles navigation).
+Apply the exact editorial, structural, visual-alignment, and neutral-roadmap baseline validated on `01-rag-agent` (`a66de659`) across the remaining **12 portfolio projects (`02` through `13`)** without breaking already-good sections (keep what is already strong, deepen thin openings/closings, fix any factual/diagram drift):
+1. **8-rule narrative & section flow:** `[Reinforced descriptive intro -> diagram -> core walkthrough paragraph + varied bullets -> closing transition naming tables/figures & next-section link ([Next ->](#sec-...)) -> table -> **In plain terms:** -> figures]`. Keep `[Next ->](#sec-...)` **outside** the `**In plain terms:**` card (inside the closing paragraph above it).
 2. **Real worked example & definitions:** Define domain metrics and deterministic checks in plain English at first use, and include one concrete trace/case walk-through from a committed artifact per project.
 3. **Diagram & figure alignment:** Verify each `auto-NN-*` / custom diagram matches the shipped architecture and committed metrics, and confirm every `figures:` entry is narrated in its section's prose (zero stranded or contradictory charts).
 4. **Neutral 5-card milestone roadmaps (`§4.3`):** Imperative verb-first titles (3–6 words, no trailing period), plain-language `detail <= 90` chars (max 1 number or 1 decision, no internal IDs like `wave-34` or `origin 1877`), and clear `next` gate. Resolve the 4 roadmap-traceability items flagged in `20261124-roadmap-review/00-review.md §5`.
