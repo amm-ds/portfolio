@@ -1,8 +1,8 @@
 # Release notes — v1.1.0
 
 Second release: the portfolio goes live and closes the first external-audit
-round. Factual changelog; evidence per item lives in the repo and
-`docs/audits/`.
+round. Factual changelog; evidence per item lives in the repo (pre-release
+internal audit records are retained in git history, not shipped in `docs/`).
 
 ## Production cutover — alejandromerida.dev
 
@@ -48,8 +48,8 @@ docs.
 
 # Release notes — v1.0.0
 
-First public release of the amm-ds portfolio. Factual changelog; for the underlying
-evidence see the linked audits.
+First public release of the amm-ds portfolio. Factual changelog; for the
+underlying evidence see the per-project `reports/` and `story.yaml` artifacts.
 
 ## Projects — 10 case studies, real data on the primary track
 
@@ -96,9 +96,10 @@ the docs build on every push.
 
 ## Audits
 
-- Pre-publish review, 2026-10-14 — `docs/audits/pre-publish-2026-10-14.md`
-- Productization gap report — `docs/audits/productization-gap-report.md`
-- External audit response, 2026-10-15 — `docs/audits/2026-10-15-external-audit-response.md`
+Pre-release review records (2026-10-14 pre-publish review, productization gap
+report, 2026-10-15 external audit response) were internal working documents;
+they are retained in this repository's git history rather than shipped in
+`docs/`.
 
 ## Result updates since first publication (2026-10-29, verified)
 
