@@ -5,7 +5,7 @@ import type { DiagramSpec } from "../types";
 // architecture specs.
 export const AUTO_01_RAG_AGENT_4_SPEC = {
   id: "auto-01-rag-agent-4",
-  title: "RAG Agent — Conclusions & lessons",
+  title: "RAG Agent — Final pass results",
   direction: "LR",
   nodes: [
     {
@@ -52,7 +52,7 @@ export const AUTO_01_RAG_AGENT_4_SPEC = {
     },
     {
       id: "s15",
-      label: "Sealed 55-question set · scored once",
+      label: "120 final_v3 questions · read 4x, consumed",
       kind: "data",
       facts: [],
     },

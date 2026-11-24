@@ -330,6 +330,9 @@ def taxonomy_figure(traces: list[QuestionTrace], *, scope: str = "hosted") -> go
             go.Bar(
                 x=order,
                 y=[counts[label] for label in order],
+                text=[counts[label] for label in order],
+                textposition="outside",
+                textfont={"size": 12},
                 marker_color=[
                     "#34d399",
                     "#fbbf24",
@@ -342,9 +345,9 @@ def taxonomy_figure(traces: list[QuestionTrace], *, scope: str = "hosted") -> go
         ]
     )
     fig.update_layout(
-        title="Answer verdicts by category",
+        title=f"Answer verdicts by category (n = {len(traces)})",
         xaxis_title="verdict",
-        yaxis_title=f"questions (n = {len(traces)})",
+        yaxis={"title": "questions", "range": [0, max(counts.values()) * 1.2]},
     )
     return _finish_themed(
         fig,
@@ -472,6 +475,15 @@ def retrieval_ladder_figure(rows: list[dict[str, Any]]) -> go.Figure:
         "S2": "S2 +RRF",
         "S3": "S3 +cap (promoted)",
     }
+    # Fixed colour per arm, identical in both panels: the promoted arm must be
+    # recognisable at a glance, and missing cells must never shift the palette
+    # (a per-panel colourway reassigns colours when a trace is absent).
+    arm_colors = {
+        "R0": "#94a3b8",  # slate — the as-shipped baseline
+        "S1": "#38bdf8",  # sky
+        "S2": "#a78bfa",  # violet
+        "S3": "#2dd4bf",  # teal — the promoted arm
+    }
     splits: list[str] = []
     for row in rows:
         if row["split"] not in splits:
@@ -496,6 +508,8 @@ def retrieval_ladder_figure(rows: list[dict[str, Any]]) -> go.Figure:
                 y=[by_split[s]["recall_at_5"] for s in splits if s in by_split],
                 text=[f"{by_split[s]['recall_at_5']:.3f}" for s in splits if s in by_split],
                 textposition="outside",
+                marker_color=arm_colors[arm],
+                textfont={"size": 11},
                 error_y={
                     "type": "data",
                     "array": [
@@ -530,6 +544,8 @@ def retrieval_ladder_figure(rows: list[dict[str, Any]]) -> go.Figure:
                         if s in aa_by_split
                     ],
                     textposition="outside",
+                    marker_color=arm_colors[arm],
+                    textfont={"size": 11},
                     showlegend=False,
                 ),
                 row=1,
@@ -547,7 +563,9 @@ def retrieval_ladder_figure(rows: list[dict[str, Any]]) -> go.Figure:
         fig,
         takeaway=(
             "retrieval-only, no LLM calls; final_v3 measured for R0 and S3 only "
-            "(set consumed). Sources: reports/retrieval_baseline + retrieval_sweeps"
+            "(set consumed). recall@5 on final_v3 = chunk-exact hit rate; on the "
+            "development splits = article-level hit rate. Same fixed colour per "
+            "arm in both panels. Sources: reports/retrieval_baseline + retrieval_sweeps"
         ),
     )
 
@@ -571,7 +589,12 @@ def final_outcome_figure(summary: dict[str, Any], slices: dict[str, tuple[int, i
         ),
         horizontal_spacing=0.14,
     )
-    outcome_labels = ["TP<br>answered", "FP<br>answered", "TN<br>abstained", "FN<br>abstained"]
+    outcome_labels = [
+        "TP<br>answered",
+        "FP<br>budget stop<br>(no answer)",
+        "TN<br>abstained",
+        "FN<br>abstained",
+    ]
     fig.add_trace(
         go.Bar(
             x=outcome_labels,
@@ -609,15 +632,17 @@ def final_outcome_figure(summary: dict[str, Any], slices: dict[str, tuple[int, i
     )
     fig.update_layout(
         barmode="group",
-        title="Final sealed pass: outcome counts and slice correctness",
+        title="Final pass (final_v3): outcome counts and slice correctness",
         yaxis={"title": f"questions (n = {n})", "range": [0, n * 0.72]},
         yaxis2={"title": "questions", "range": [0, 80]},
     )
     return _finish_themed(
         fig,
         takeaway=(
-            f"final_v3 held run, {n} questions — F1 {summary['f1']:.4f} "
+            f"final_v3 run, {n} questions — F1 {summary['f1']:.4f} "
             f"(precision {summary['precision']:.4f}, recall {summary['recall']:.4f}); "
+            "all 4 FPs are unanswerable rows that hit the tool budget before "
+            "refusing, not wrong answers; "
             "slices: single-hop 60/68, multi-hop 20/24, unanswerable 24/28 correct. "
             "Source: reports/final_v3_e2e/f1_summary.json + question_traces_heldout.json"
         ),
@@ -637,14 +662,22 @@ def verify_funnel_figure(verify: dict[str, Any]) -> go.Figure:
         ("mechanical fail", verify["n_mechanical_fail"], "#fbbf24"),
         ("judged", verify["n_judged"], "#818cf8"),
         ("judge-supported", verify["n_judge_supported"], "#2dd4bf"),
-        ("accepted (orig+repaired)", verify["n_surviving"], "#34d399"),
+        ("kept (orig+repaired)", verify["n_surviving"], "#34d399"),
         ("dropped", verify["n_dropped"], "#f472b6"),
     ]
+    retention = verify["n_surviving"] / verify["n_drafted"]
     fig = go.Figure(
         go.Bar(
             x=[s[0] for s in stages],
             y=[s[1] for s in stages],
-            text=[f"{s[1]} ({s[1] / verify['n_drafted']:.1%})" for s in stages],
+            text=[
+                (
+                    f"{s[1]} ({retention:.1%} of drafted kept)"
+                    if s[0].startswith("kept")
+                    else f"{s[1]}"
+                )
+                for s in stages
+            ],
             textposition="outside",
             marker_color=[s[2] for s in stages],
             hovertemplate="%{x}: %{y} claims<extra></extra>",
@@ -661,7 +694,9 @@ def verify_funnel_figure(verify: dict[str, Any]) -> go.Figure:
     return _finish_themed(
         fig,
         takeaway=(
-            f"accepted = {verify['n_accepted_original']} original + "
+            f"share of drafted claims kept: {retention:.1%} "
+            f"({verify['n_surviving']}/{verify['n_drafted']}) — accepted = "
+            f"{verify['n_accepted_original']} original + "
             f"{verify['n_accepted_repaired']} repaired; dropped = "
             f"{verify['n_dropped_original']} original + {verify['n_dropped_repaired']} "
             f"repaired after the repair rail; mean support "

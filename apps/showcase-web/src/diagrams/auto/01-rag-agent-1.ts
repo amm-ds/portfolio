@@ -16,7 +16,7 @@ export const AUTO_01_RAG_AGENT_1_SPEC = {
     },
     {
       id: "d",
-      label: "Relevant passage · in corpus?",
+      label: "Agent search finds · relevant passage?",
       kind: "gate",
       facts: [],
     },
@@ -34,7 +34,7 @@ export const AUTO_01_RAG_AGENT_1_SPEC = {
     },
     {
       id: "v",
-      label: "All claims at · 0.6 support floor?",
+      label: "At least 60% of · claims survive?",
       kind: "gate",
       facts: [],
     },

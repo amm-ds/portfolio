@@ -285,5 +285,7 @@
       "agree": true
     }
   ],
-  "validated_by": "claude-role-audit (pending human owner hand-label confirmation)"
+  "validated_by": "owner + claude-role-audit (owner labelled blind to model/Kimi labels, then reviewed and accepted 7 evidence corrections against chunk_text)",
+  "blind_to_model_labels": true,
+  "provenance_note": "Owner labelled all 30 items in owner_sample.json without seeing Kimi's labels, then reviewed 7 passage-level discrepancies pointed out by the reviewer audit and accepted the corrections against chunk_text."
 }

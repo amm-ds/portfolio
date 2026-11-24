@@ -6,7 +6,7 @@ returns structured, cited answers. The promoted retriever is S3: title-anchored
 chunks, dense FAISS fused with BM25 by reciprocal rank fusion, cross-encoder
 reranking, and a per-article diversity cap.
 
-Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybrid retrieval reaches 0.946 recall@5. Judge sample: reviewer-agent audit 30/30; owner hand-label pending. Final 120-question pass: F1 0.909, precision 0.952, faithfulness 0.872, 1/120 unsupported.
+Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybrid retrieval reaches 0.946 recall@5. Judge sample: 30/30 owner-labelled. Final 120-question pass: F1 0.909, precision 0.952, faithfulness 0.872, 1/120 unsupported.
 
 The runtime default is local Ollama (`qwen3.6:35b-a3b-q4_K_M`); any
 OpenAI-compatible endpoint uses the same path. There is no runtime mock.
@@ -70,18 +70,19 @@ per article with score-order backfill. The agent exposes only
 The verify loop checks each drafted claim against its full cited chunks. It
 repairs or drops unsupported claims and abstains when surviving support falls
 below 0.6. The rebuilt judge_v2 calibration supersedes the earlier miss
-rates: a reviewer agent audited the judge's labels on a 30-claim sample
-against the passage text, and agreement with the
+rates: the owner labelled a 30-claim sample blind to the model's labels
+(11 supported, 19 unsupported), and agreement with the
 `kimi-for-coding` labels is 30/30, Wilson 95% [0.8865, 1.0], clearing the
-0.85 gate (`reports/judge_calibration_v2/owner_sample_validated.json`). The
-owner's own hand-label pass on the sample is still pending. The
-earlier calibration accepted about 44% of unsupported claims and stays in
-[DESIGN.md](DESIGN.md) as history. Provider selection, verification, and
+0.85 gate (`reports/judge_calibration_v2/owner_sample_validated.json`).
+During the reviewer audit the owner also re-checked 7 claims against the
+cited passage text and accepted the corrections. The
+earlier hosted calibration accepted 39.7% of unsupported claims (69/174) and
+stays in [DESIGN.md](DESIGN.md) as history. Provider selection, verification, and
 judging follow DESIGN.md and ADR-0004.
 
 ## Results
 
-### Finalized sealed pass (final_v3, 120 questions)
+### Final pass (final_v3, 120 questions)
 
 The single official end-to-end pass over `data/golden_final_v3.json` uses the
 promoted S3 retriever, the verify loop, and the bounded agent loop (12
@@ -99,7 +100,7 @@ or agent change must be measured on a newly sealed set (`final_v4`).
 | faithfulness (95% CI) | **0.8717 [0.8092, 0.9304]** |
 | failure taxonomy | 104 correct / 1 unsupported-claim / 10 empty-answer / 1 retrieval-miss / 4 budget-terminated |
 | single_hop / multi_hop / unanswerable correct | 60/68 / 20/24 / 24/28 |
-| judge sample audit agreement (reviewer agent) | 30/30 [0.8865, 1.0] |
+| judge sample agreement (owner-labelled, blind to model labels) | 30/30 [0.8865, 1.0] |
 | final pass meter (answer path / incl. judging) | $1.014 ($0.0084/q) / $1.458 ($0.0121/q) |
 
 ### Tuning baseline (65 questions, prior)
@@ -128,7 +129,7 @@ The provider comparison improves rubric faithfulness, answer relevance, and
 RAGAS faithfulness, but the RAGAS answer-relevancy regression is real and stays
 in the headline table. Retrieval remains stronger than generation grounding.
 
-### Sealed held-out set
+### Earlier gate set (55 questions, prior)
 
 The held-out set holds 55 fresh questions: 32 single-hop, 10 multi-hop, and
 13 unanswerable — the original 15 plus 40 expansions written after tuning
@@ -182,63 +183,23 @@ refusal accuracy falls to 0.60 (6/10) on the abstain rows. The gated set
 measured consistency — this set measures the drop: 123 calls, $1.932540
 cloud-equivalent.
 
-R6 hardened grounding against that baseline, measured pre-registered
-(`detail.stress_after_r6`, `reports/question_traces_stress_after_r6.json`,
-per-row outcomes in `reports/stress_failure_ledger.md`): schema-v2 answers
-draft claims with verbatim evidence spans; deterministic number/date/
-negation checks run ahead of the entailment judge; repair-and-drop; the
-evidence gate refuses on empty evidence. Normalized comparison (same
-classifier both sides, baseline row 14 reclassified budget-terminated):
-overall 0.500 → 0.733 (CI [0.567, 0.867]); answer-expected 0.450 → 0.700;
-unsupported-claim outcomes 5 of 30 (was 11 of 30; the CI width exceeds the
-change — not a demonstrated gain); refusal accuracy 0.600 → 0.800; false abstention
-0.050 → 0.050. Claim pipeline: 54 drafted / 8 mech-failed / 9 repaired /
-54 surviving; the mech checker's false-rejection rate is 8.6% on tuning
-diagnostics (≤10% guardrail). Latency layers: end-to-end hosted answer p50
-23.0 s / p95 532 s (retrieval + generation + verify/repair in the critical
-path); verify overlay mean 5.9 s (6.6% of answer time); the full 30-question
-pass ran ≈50 min wall at the 80M-token rail, $9.74 cloud-equivalent (129
-calls). The measurement also exposed a schema defect: the pre-R6 citation
-mandate made honest refusal unrepresentable, burning up to ~33M tokens in
-tool loops on unanswerable rows — fixed (refusal = empty citations/claims +
-stop), which is what let all six unanswerable rows refuse correctly.
-Independent set B (`data/golden_stress_b.json`, absolute targets
-pre-registered in the story) is scored once under `detail.stress_b`. It reaches
-0.633 overall correctness (CI [0.467, 0.80]), 0.550 answer-expected
-correctness, 9/30 unsupported-claim outcomes, refusal accuracy 0.80, and zero
-false abstentions. Overall, refusal, and false-abstention gates pass;
-unsupported claims (target ≤6/30) and answer-expected correctness (target
-≥0.70) fail. This is the current champion's independent limit, not a broad
-generalization claim.
+Earlier grounding-hardening rounds stay compact here; the full narratives
+live in [DESIGN.md](DESIGN.md) with per-row traces.
 
-R7 then measured the next levers without adopting them: the retrieval
-tournament's best arm gained +1.5 points recall@10 — below the +5-point
-promotion gate, so the incumbent retrieval stays; the local-judge
-calibration (274 constructed labels) shows false-rejection 83.5% and
-κ 0.155, so the small local judge is diagnostic-only; and the sealed C
-evaluation (fresh 30-question set, local generation + hosted adjudication,
-$0.096 CE) **missed its pre-registered targets outright** — overall 0.333
-vs 0.70, false abstention 1.000. R8.1 later identified the cause as a
-verifier crash on an empty judge batch (UnboundLocalError), so C is a
-failure diagnostic, not a measurement of the local generator's ceiling.
-The hosted generation + incumbent retrieval
-champion is unchanged, and the miss is published with its traces rather
-than tuned away. Reports live under `reports/retrieval_tournament/`,
-`reports/judge_calibration/`, `reports/local_eval_preflight.json`, and
-`detail.stress_c`.
+| Round | What it measured | Outcome (pre-registered where stated) |
+|---|---|---|
+| R6 stress re-run (30 q) | schema-v2 claims, deterministic number/date/negation checks, repair-and-drop | overall 0.500 → 0.733 (CI [0.567, 0.867]); unsupported 11 → 5 of 30 (CI width exceeds the change, not a demonstrated gain); refusal accuracy 0.600 → 0.800 (`detail.stress_after_r6`, `reports/stress_failure_ledger.md`) |
+| Independent stress set B (30 q) | the champion's limit under absolute targets | 0.633 overall (CI [0.467, 0.80]); 9/30 unsupported; refusal and false-abstention gates pass, unsupported and answer-expected targets fail (`detail.stress_b`) |
+| R7 retrieval tournament + local judge | next levers, adoption-gated | best arm +1.5 points recall@10, below the +5-point promotion gate, so the incumbent retrieval stays; local judge false-rejection 83.5% (κ 0.155, diagnostic only) (`reports/retrieval_tournament/`, `reports/local_eval_preflight.json`) |
+| Stress set C (30 q) | local generation + hosted adjudication | missed its targets outright (0.333 vs 0.70, false abstention 1.000); R8.1 traced the cause to a verifier crash on an empty judge batch (UnboundLocalError), so C measures that bug, not the model (`detail.stress_c`) |
+| R8 judge alignment + stress set D | full-entailment judge prompt | frozen set dropped to 0.667 (false abstention 0.25); D passed 1/6 targets; hosted-vs-local calibration fails both directions, so the rubric verdict stays the correctness instrument |
+| R8.1 measurement layer | empty-batch verifier crash, claim forensics, calibration rebuild | verifier crash fixed; the rebuilt hosted calibration still fails the gates (FA 35.6% UCB 46.1%, kappa 0.656) |
 
-R8 then measured judge alignment rather than adopting it: the
-full-entailment judge prompt dropped the frozen set to 0.667 with false
-abstention 0.25, and the sealed D evaluation passed only 1/6 targets
-(overall 0.567, single-hop 0.625). Hosted-vs-local judge calibration fails
-both directions (hosted FA 45.4%, local FR 83.5%), so the rubric verdict
-stays the correctness instrument. R6's configuration remains the
-production champion; R8's contribution is the measurement record, not a
-new pipeline. R8.1 then fixed the measurement layer: the empty-batch
-verifier crash, claim forensics (`verification_error` states with per-answer
-reconciliation), export secret exclusions, and a rebuilt calibration whose
-hosted judge still fails the gates (FA 35.6% UCB 46.1%, kappa 0.656) — the
-rubric verdict remains the correctness instrument.
+The most expensive defect sat in the output schema, not the model: before R6,
+the citation mandate made an honest refusal unrepresentable, so unanswerable
+questions drove tool loops that burned up to ~33M tokens; making refusal a
+valid output (empty citations plus a stop) let all six unanswerable stress rows
+refuse correctly.
 
 ### Cost and budget operation
 
@@ -283,12 +244,16 @@ Exact telemetry is in `reports/metrics.json → detail.heldout.meter`.
 
 ## Limits
 
-Answers are not trustworthy unattended: the selected tuning pass retains 17
-unsupported-claim outcomes, and the sealed pass keeps 44 of 55 correct with
-9 of 11 failures grounded anyway at rank-1 retrieval. Local repair
-is weak, and local verification gains come mainly through abstention. Broader
-corpus quality and always-on public chat remain unproven; `RAG_CHAT_ENABLED=1`
-stays opt-in and hosted calls require an explicit budget.
+Answers are not trustworthy unattended: the final pass still has 1
+unsupported answer in 120, 10 answerable questions return empty answers, and
+4 unanswerable rows stop at the tool budget. The final test set was read four
+times during development and is consumed, so the headline numbers are an
+upper-bound estimate. Generation, verification, and judging all use
+`kimi-for-coding`, so the generator and its graders share blind spots;
+the 30-claim owner-labelled audit is the current counter, and a cross-judge
+check from another model family is planned. Broader corpus quality and
+always-on public chat remain unproven; `RAG_CHAT_ENABLED=1` stays opt-in and
+hosted calls require an explicit budget.
 
 ## Client-corpus onboarding
 

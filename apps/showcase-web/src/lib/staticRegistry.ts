@@ -284,11 +284,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "eda_corpus_composition",
       "failure_taxonomy",
       "final_outcome",
-      "fusion_arm_comparison",
-      "kimi_generation_comparison",
-      "latency_histogram",
       "model_comparison",
-      "retrieval_funnel",
       "retrieval_ladder",
       "verify_funnel"
     ],

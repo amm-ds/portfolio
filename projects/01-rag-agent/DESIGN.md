@@ -24,16 +24,19 @@ flowchart LR
         B --> C[(data/raw<br/>corpus.jsonl + contract)]
     end
     subgraph Index
-        C --> D[chunking<br/>paragraph-aware, sizes 200/400/800]
+        C --> D[chunking<br/>title-prefixed, 200/40]
         D --> E[MiniLM-L6-v2 embeddings<br/>L2-normalized]
-        E --> F[(FAISS IndexFlatIP<br/>per chunk size)]
+        E --> F[(FAISS IndexFlatIP<br/>+ BM25 lexical index)]
+        F --> M[RRF fusion k=60<br/>pool 50, per-article cap 2]
     end
     subgraph Agent
         U[User question] --> G[pydantic-ai Agent<br/>AnalysisResult output]
         G -->|search_documents / read_excerpt| H[Retriever]
-        H --> F
-        H --> I[cross-encoder rerank<br/>ms-marco-MiniLM]
+        H --> M
+        M --> I[cross-encoder rerank<br/>ms-marco-MiniLM, top 6 x k]
         I --> G
+        G --> V[claim verify loop<br/>mech checks + entailment judge,<br/>repair <= 2, abstain < 0.6 support]
+        V --> G
     end
     subgraph Eval
         G --> J[RAGEvaluator<br/>faithfulness / relevance / recall]
@@ -41,6 +44,15 @@ flowchart LR
         J & K --> L[reports/<br/>metrics.json + report.html + figures]
     end
 ```
+
+The promoted retrieval arm (S3, since 2026-11-23) prefixes every chunk with its
+article title, fuses the dense FAISS and BM25 lexical rankings by reciprocal
+rank fusion (k=60, pool 50), reranks the top `6 × top_k` candidates with the
+cross-encoder, caps each article at 2 chunks with score-order backfill, and
+sends every drafted claim through the verify loop: deterministic span checks
+(verbatim substring, numbers, dates, negation polarity) ahead of an entailment
+judge, at most 2 repair calls, and abstention when surviving support falls
+below 0.6.
 
 ## 3. Options considered
 
@@ -61,7 +73,7 @@ exactly correct.
 ### 3.2 Reranking: none vs cross-encoder
 
 - **None**: one embedding model, one latency hop; acceptable for top-5 over small corpora.
-- **Cross-encoder `ms-marco-MiniLM-L-6-v2`** (chosen): re-scores the top `5 × top_k`
+- **Cross-encoder `ms-marco-MiniLM-L-6-v2`** (chosen): re-scores the top `6 × top_k`
   candidates with full query-passage attention. Cost is ~25 small model calls per
   query — single-digit milliseconds each on CPU — a negligible fraction of the
   end-to-end budget and a visible MRR gain on natural questions.
@@ -213,7 +225,7 @@ grounding guarantee.
 
 Historical local measurements (2026-10-14/15, `qwen3.6:35b-a3b-q4_K_M`) — the
 current golden-set numbers (65 questions, local + hosted provider A/B) live in
-`README.md` §Wave 14/16 and `docs/projects/01-rag-agent.md`; this table records
+`README.md` and `docs/projects/01-rag-agent.md`; this table records
 the original envelope targets and their first measured values:
 
 | SLO | Target | First measurement (local, earlier 26-q / 10-q sets) |
@@ -397,14 +409,14 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
   S3: structure-aware title-prefixed chunks (200/40), dense FAISS plus BM25
   fused by reciprocal rank fusion (k=60, pool 50) before reranking, and a
   per-article cap of 2 with score-order backfill. On the 120-question
-  final_v3 sealed set it beat the dense incumbent on recall@5, 0.9457 to
+  final_v3 set (read four times, now consumed) it beat the dense incumbent on recall@5, 0.9457 to
   0.9239, with multi-hop recall@5 0.8333 to 0.7917 and no slice regression;
   `params.yaml retrieval_best` and the rebuilt `data/index/chunks_200` carry
   the promoted configuration. The judge_v2 calibration (147 claims, 72
   one-detail same-subject negatives after 3 drops) was audited on a
-  30-claim sample by a reviewer agent at 30/30 agreement against the passage
-  text, Wilson 95% [0.8865, 1.0]; the owner's own hand-label pass is still
-  pending. Phase E
+  30-claim sample, owner-labelled blind to the model's labels, at 30/30
+  agreement, Wilson 95% [0.8865, 1.0]; the reviewer audit also had the owner
+  re-check 7 claims against the passage text, and the corrections were accepted. Phase E
   fixed three pipeline bugs (240-char judge context truncation, span
   punctuation tokenization, unbounded search loops) and added a deterministic
   soft tool ceiling inside the tools. The single official 120-question

@@ -10,7 +10,7 @@ export const AUTO_01_RAG_AGENT_3_SPEC = {
   nodes: [
     {
       id: "tuning-j",
-      label: "Tuning pass, 65 questions · Three judges: · rubric, RAGAS, claims",
+      label: "Tuning pass, 65 questions · rubric, RAGAS, · claim judges",
       kind: "task",
       facts: [],
     },
@@ -22,7 +22,7 @@ export const AUTO_01_RAG_AGENT_3_SPEC = {
     },
     {
       id: "gate-g",
-      label: "Gate and meters · Sealed set, scored once · cost + latency cap",
+      label: "judge_v2 + final_v3 · 30/30 owner-labelled audit · 120 questions, read 4x",
       kind: "model",
       facts: [],
     },

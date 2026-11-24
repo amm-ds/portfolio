@@ -76,7 +76,7 @@ def build_failure_taxonomy(traces: list[QuestionTrace]) -> None:
         counts[classify_question(trace)] += 1
     _expect(counts == EXPECTED_TAXONOMY, f"taxonomy drifted: {counts}")
     _expect(len(traces) == 120, f"expected 120 traces, got {len(traces)}")
-    fig = taxonomy_figure(traces, scope="final_v3 sealed pass")
+    fig = taxonomy_figure(traces, scope="final_v3 final pass")
     save_json(fig, FIGURES / "failure_taxonomy.json")
     save_html(fig, FIGURES / "failure_taxonomy.html", title="failure_taxonomy")
     print("wrote failure_taxonomy (n=120: 104/10/4/1/1)")

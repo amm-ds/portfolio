@@ -223,7 +223,7 @@ describe("FlowDiagram", () => {
     await waitFor(() => expect(document.querySelector(".frame-skeleton")).toBeNull());
     const result = document.querySelector<SVGGElement>('[data-id="draft-verifier"]')!;
     expect(result).toHaveAccessibleName(
-      'result edge “draft + citations”: Agent draft with citations to Claim verifier · 0.6 support floor',
+      'result edge “draft + citations”: Agent draft with citations to Claim verifier · ≥ 60% survive',
     );
     expect(result.querySelector<SVGPathElement>(".flow-edge__path")!.style.strokeDasharray).toBe("8 4");
     const task = document.querySelector<SVGGElement>('[data-id="funnel-draft"]')!;
