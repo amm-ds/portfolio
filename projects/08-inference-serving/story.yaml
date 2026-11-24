@@ -28,21 +28,21 @@ figure_captions:
     llama.cpp Q8_0 at 6.4 tok/s and 7.12 s. Quantization and packaging differ
     together, so this compares combinations, not engines in isolation.
 roadmap:
-  - status: shipped
-    title: "Standardized the task across all arms."
-    detail: "8 schema-checked prompts with keyword checklists."
-  - status: shipped
-    title: "Committed the full grid without failures."
-    detail: "19 cells and 760 requests on one quiet machine."
-  - status: shipped
-    title: "A silent config error was caught before the runs."
-    detail: "Reasoning disabled before the committed runs."
-  - status: shipped
-    title: "Re-derived every published value offline."
-    detail: "Percentiles recomputed from the raw record."
-  - status: next
-    title: "Prove the values on shipping hardware."
-    detail: "Needs quiet-hardware access and an MLX build for the MoE."
+- status: shipped
+  title: "Standardized the task across all arms."
+  detail: "8 schema-checked prompts with keyword checklists."
+- status: shipped
+  title: "Committed the full measurement grid."
+  detail: "19 cells and 760 requests on one quiet machine, zero failures."
+- status: shipped
+  title: "Caught a silent config error pre-run."
+  detail: "Reasoning disabled before the committed runs."
+- status: shipped
+  title: "Re-derived every published value offline."
+  detail: "Percentiles recomputed from the raw record before publishing."
+- status: next
+  title: "Prove the values on shipping hardware."
+  detail: "Needs quiet-hardware access and an MLX build for the MoE."
 key_concepts:
   - "**Latency percentiles:** p50 is the median response time, p95 is the time within which 95% finish, and p99 is the 99th-percentile time. Together they reveal delays that a mean can hide."
   - "**Packaging confound:** the runner and quantization change together, so the 2.9× gap compares combinations rather than engines alone."

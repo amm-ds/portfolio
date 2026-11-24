@@ -487,19 +487,19 @@ sections:
 roadmap:
 - status: shipped
   title: "Locked the event-aware evaluation contract."
-  detail: "Past-only splits, frozen threshold, seeded random floor."
+  detail: "Past-only splits, frozen 2% alert budget, seeded random floor."
 - status: shipped
-  title: "Rank-average ensemble halves paged load at equal recall."
-  detail: "66 → 35 pages at recall 0.604, range-F1 0.533."
+  title: "Rank-average ensemble halves paged load."
+  detail: "66 to 35 pages at recall 0.604; range-F1 0.533."
 - status: shipped
-  title: "A detector challenge with a published negative result."
+  title: "Published a detector-challenge negative result."
   detail: "No fusion clears the precision gate; the committed detector stands."
+- status: shipped
+  title: "Shipped the champion behind frozen thresholds."
+  detail: "The showcase demo replays committed alerts; the threshold never moves."
 - status: next
-  title: "Re-run the headline on TSB-AD with VUS-PR."
+  title: "Re-run the headline on TSB-AD VUS-PR."
   detail: "Current benchmark for this task; no hosted calls needed."
-- status: next
-  title: "Report run count and fit variance on the champion."
-  detail: "Single fit per series today (Lyu 2026 disclosure)."
 key_concepts:
 - "**Alert-budget stream:** Deduplicated alert episodes capped at one page per series per 24 h, turning 1,609 raw alerts into 80 pages."
 - "**Rank-average ensemble:** The mean of each minute's normalized ranks under IsolationForest, LOF, and OCSVM; it wins the sweep at the frozen default without recalibration or tuning."

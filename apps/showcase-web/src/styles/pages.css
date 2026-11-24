@@ -404,6 +404,7 @@ button:disabled {
   gap: 0.8rem;
   background: var(--surface);
   border: 1px solid var(--border);
+  border-left: 3px solid var(--card-accent);
   border-radius: var(--radius);
   padding: 0.9rem 1.1rem;
   color: inherit;

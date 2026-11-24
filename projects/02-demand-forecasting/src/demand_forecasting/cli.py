@@ -12,6 +12,7 @@ The ``*-m5`` / ``*-m5-full`` commands run the Walmart M5 headline track,
 invoked manually or from CI (see README) — dvc.yaml does not cover them.
 """
 
+import json
 import os
 
 # Apple Accelerate (numpy's BLAS/LAPACK on macOS arm64) reads
@@ -364,6 +365,70 @@ def evaluate_m5_full(
         n_jobs_ets=n_jobs_ets,
     )
     write_m5_full_artifacts(result, reports_dir)
+
+
+@app.command("evaluate-m5-erratic-challenger")
+def evaluate_m5_erratic_challenger(
+    data_dir: Annotated[Path | None, typer.Option(help="M5 full-panel raw dir.")] = None,
+    reports_dir: Annotated[Path | None, typer.Option(help="M5 full reports dir.")] = None,
+    cache_dir: Annotated[
+        Path | None,
+        typer.Option(help="Per-candidate per-origin forecast cache dir."),
+    ] = None,
+    stage: Annotated[
+        Literal["selection", "test", "all"],
+        typer.Option(help="selection = 9 selection origins; test = held-out origin once."),
+    ] = "selection",
+    n_estimators: Annotated[
+        int | None, typer.Option(help="Smoke override for every lgbm arm.")
+    ] = None,
+    max_origins: Annotated[
+        int | None, typer.Option(help="Calibrate: score only the first N origins.")
+    ] = None,
+    origin_indices: Annotated[
+        str | None,
+        typer.Option(help="Comma-separated origin indices to score (shard across processes)."),
+    ] = None,
+) -> None:
+    """Wave-34 erratic challenger vs the committed champion (100% local).
+
+    Trains (or loads from the parquet cache) the pooled arms behind the
+    committed convex ensemble, the seasonal-naive floor, and the wave-34
+    challenger (erratic-stratum Huber store-x-category direct arm), routes the
+    erratic class to the challenger, and scores champion vs routed with the
+    official hierarchical WRMSSE. The selection stage gates promotion; the
+    test stage scores the held-out origin once. Writes
+    reports_m5_full/erratic_challenger.json (never touches metrics.json —
+    the verdict block is merged there by the operator after review).
+    """
+    root = Path.cwd()
+    data_dir = data_dir or root / "data_m5" / "raw"
+    reports_dir = reports_dir or root / "reports_m5_full"
+    cache_dir = cache_dir or data_dir / ".cache" / "full_forecasts"
+    from demand_forecasting.evaluate import _json_safe
+    from demand_forecasting.m5_full import run_erratic_challenger
+
+    result = run_erratic_challenger(
+        data_dir,
+        metrics_path=reports_dir / "metrics.json",
+        cache_dir=cache_dir,
+        stage=stage,
+        n_estimators=n_estimators,
+        max_origins=max_origins,
+        origin_indices=(
+            [int(x) for x in origin_indices.split(",")] if origin_indices else None
+        ),
+    )
+    out = reports_dir / "erratic_challenger.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(_json_safe(result), indent=2) + "\n")
+    logger = get_logger(__name__)
+    logger.info(
+        "erratic challenger (%s) written: %s | screen_passed=%s",
+        stage,
+        out,
+        result["verdict"]["screen_passed"],
+    )
 
 
 @app.command("demo-payload-m5-full")

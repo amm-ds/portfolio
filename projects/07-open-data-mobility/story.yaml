@@ -465,18 +465,18 @@ sections:
     figures: []
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 roadmap:
-  - status: shipped
-    title: "Replay the study with one command"
-    detail: "41.2M trips zero-filled into one replayable zone-hour panel."
-  - status: shipped
-    title: "Validation winner served; test leader rejected."
-    detail: "The test leader tested −4.1% better; the holdout has no vote."
-  - status: shipped
-    title: "Calibrate the band; flag no-borough zones"
-    detail: "90.8% coverage overall; no-borough bucket flagged at 84.7%."
-  - status: shipped
-    title: "Retrain per service; drift stays in-window"
-    detail: "Green refit on 337,080 zone-hours wins; drift in-window; two-service API live."
-  - status: next
-    title: "Test causal weather and longer horizons"
-    detail: "Needs a new study contract with causal identification and multi-hour setup."
+- status: shipped
+  title: "Replay the study with one command."
+  detail: "41.2M trips zero-filled into one replayable zone-hour panel."
+- status: shipped
+  title: "Served validation winner, not test leader."
+  detail: "The test leader tested -4.1% better; the holdout has no vote."
+- status: shipped
+  title: "Calibrated the band; flagged no-borough zones."
+  detail: "90.8% coverage overall; the no-borough bucket flags at 84.7%."
+- status: shipped
+  title: "Retrained per service; drift stays in-window."
+  detail: "Green refit on 337,080 zone-hours wins; two-service API live."
+- status: next
+  title: "Test causal weather and longer horizons."
+  detail: "Needs a new study contract with causal identification and multi-hour setup."

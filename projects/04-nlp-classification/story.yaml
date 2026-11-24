@@ -479,21 +479,21 @@ sections:
     figures: []
     metrics_keys: [distilbert_full_120k]
 roadmap:
-  - status: shipped
-    title: "Beat every rung with full data."
-    detail: "0.9460 test-split macro-F1; floors end at 0.1000 and 0.2533."
-  - status: shipped
-    title: "Keep the default under inconclusive tuning evidence."
-    detail: "Paired 95% CI [−0.0048, +0.0204] crosses zero."
-  - status: shipped
-    title: "Calibrated probabilities with one temperature."
-    detail: "One temperature rescales confidence; predictions unchanged."
-  - status: shipped
-    title: "Macro-F1 rises 1.3–1.6 points per 3× more data."
-    detail: "+1.3–1.6 macro-F1 points per 3× data step."
-  - status: next
-    title: "Persist per-row review decisions."
-    detail: "Would unlock the paired cascade interval; not stored today."
+- status: shipped
+  title: "Measured the data-scale response."
+  detail: "+1.3 to +1.6 macro-F1 points per 3x data step on the seeded ladder."
+- status: shipped
+  title: "Kept the default under inconclusive tuning."
+  detail: "Paired 95% CI [-0.0048, +0.0204] crosses zero; the default stays."
+- status: shipped
+  title: "Beat every rung with full data."
+  detail: "0.9460 test macro-F1; floors end at 0.1000 and 0.2533."
+- status: shipped
+  title: "Shipped the cascade with calibrated confidence."
+  detail: "One temperature rescales confidence; the uncertain quarter routes to review."
+- status: next
+  title: "Persist per-row review decisions."
+  detail: "Would unlock the paired cascade interval; not stored today."
 key_concepts:
 - "**Macro-F1**: the unweighted mean of per-topic F1, so a rare topic counts as much as a common one."
 - "**Model ladder**: cheapest-first rungs judged by one metric pair. A rung must beat the rung below it to justify its extra cost."

@@ -488,18 +488,18 @@ key_concepts:
   - "**Recorded run, offline grading:** A run is saved once as JSON and re-scored for free, without another provider call."
   - "**Behavioral tool contracts:** Tool descriptions state what each tool may do and make unplanned calls visible in per-call traces."
 roadmap:
-  - status: shipped
-    title: "Typed outcomes and hard deadlines in place."
-    detail: "Offline regressions pass; live run done (13/13 answers)."
-  - status: shipped
-    title: "Bounded retries behind a human checkpoint."
-    detail: "Consequential runs pause for approval, rejection, or later review."
-  - status: shipped
-    title: "Deterministic graders replaced AI judges."
-    detail: "Four code checks per answer task; probes demand an honest no."
-  - status: shipped
-    title: "All 52 captured calls followed the plan."
-    detail: "Planned tool sets matched captured calls in both suites."
-  - status: next
-    title: "Multi-trial reliability run (k≥3)."
-    detail: "Needs an owner-approved cap; current results are single runs."
+- status: shipped
+  title: "Pinned typed outcomes and hard deadlines."
+  detail: "Offline regressions pass; the live run answers 13 of 13."
+- status: shipped
+  title: "Bounded retries behind a human checkpoint."
+  detail: "Consequential runs pause for approval, rejection, or later review."
+- status: shipped
+  title: "Replaced AI judges with deterministic graders."
+  detail: "Four code checks per answer task; probes demand an honest no."
+- status: shipped
+  title: "Audited 52 captured calls against plan."
+  detail: "All 52 captured calls matched planned tool sets in both suites."
+- status: next
+  title: "Run the multi-trial reliability study."
+  detail: "Needs an owner-approved cap; current results are single runs."

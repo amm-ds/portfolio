@@ -1,0 +1,70 @@
+{
+  "protocol": "m5_full_v1-wave34-erratic-challenger",
+  "stage": "selection",
+  "panel_cache_key": "9c1457f75895",
+  "champion_members": [
+    "lgbm_pool_storecat",
+    "lgbm_pool_store",
+    "lgbm_pool_dept"
+  ],
+  "champion_weights": [
+    0.95,
+    0.0,
+    0.050000000000000044
+  ],
+  "challenger": {
+    "name": "lgbm_erratic_huber",
+    "objective": "huber(alpha=0.9)",
+    "stratum": "erratic dense series (ADI < 1.32, CV2 >= 0.49)",
+    "n_erratic_series": 2288,
+    "features": "subset-track lag/rolling space (lags 1/7/14/21/28 + rolling means/stds + calendar); no new feature columns"
+  },
+  "n_origins_scored": 1,
+  "per_origin": {
+    "1877": {
+      "date": "2016-03-20",
+      "official_wrmsse": {
+        "champion_blend": 0.7409214520166044,
+        "erratic_huber_routed": 0.8682913097140856
+      },
+      "zero_day_accuracy": {
+        "champion_blend": 0.6365368148028643,
+        "erratic_huber_routed": 0.6366402329804706
+      },
+      "erratic_win_rate_vs_naive": {
+        "champion_blend": {
+          "win_rate": 0.8662587412587412,
+          "beats_floor": 1982,
+          "n_series": 2288
+        },
+        "erratic_huber_routed": {
+          "win_rate": 0.8369755244755245,
+          "beats_floor": 1915,
+          "n_series": 2288
+        }
+      },
+      "cache_hits_members": "0/2",
+      "wall_s": 47411.4
+    }
+  },
+  "summary": {
+    "champion_blend": {
+      "pooled_wrmsse_mean": 0.7409214520166044,
+      "wave30_screen_mean_plus_1std": 0.7409214520166044,
+      "zero_day_accuracy_mean": 0.6365368148028643,
+      "erratic_win_rate_vs_naive_mean": 0.8662587412587412
+    },
+    "erratic_huber_routed": {
+      "pooled_wrmsse_mean": 0.8682913097140856,
+      "wave30_screen_mean_plus_1std": 0.8682913097140856,
+      "zero_day_accuracy_mean": 0.6366402329804706,
+      "erratic_win_rate_vs_naive_mean": 0.8369755244755245
+    }
+  },
+  "verdict": {
+    "stage": "selection",
+    "screen_passed": false,
+    "rule": "promote to the test origin only if the routed arm improves the selection pooled official WRMSSE without regressing zero-day accuracy"
+  },
+  "wall_s": 47435.0
+}

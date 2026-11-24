@@ -1059,3 +1059,82 @@ def test_screened_ensemble_never_reads_test_origin() -> None:
     leaked = {c: {o: p.copy() for o, p in per.items()} for c, per in forecasts.items()}
     with pytest.raises(AssertionError, match="test origin"):
         screened_ensemble(leaked, [0, 1, 2], guarded_ctx, pool=pool)
+
+
+# --- wave-34 erratic challenger -------------------------------------------------
+
+
+def test_cached_forecast_roundtrip(tmp_path: Path) -> None:
+    from demand_forecasting.m5_full import _cached_forecast
+
+    calls = {"n": 0}
+
+    def compute() -> np.ndarray:
+        calls["n"] += 1
+        return np.arange(2 * H, dtype=float).reshape(2, H) + 1.0
+
+    mat, hit = _cached_forecast(tmp_path, "key", "cand", 0, ["a", "b"], compute)
+    assert not hit
+    assert calls["n"] == 1
+    again, hit = _cached_forecast(tmp_path, "key", "cand", 0, ["a", "b"], compute)
+    assert hit
+    assert calls["n"] == 1  # cache hit, no recompute
+    np.testing.assert_array_equal(again, mat)
+
+
+def test_cached_forecast_rejects_series_mismatch(tmp_path: Path) -> None:
+    from demand_forecasting.m5_full import _cached_forecast
+
+    _cached_forecast(
+        tmp_path, "key", "cand", 0, ["a", "b"], lambda: np.ones((2, H))
+    )
+    with pytest.raises(ValueError, match="series order mismatch"):
+        _cached_forecast(
+            tmp_path, "key", "cand", 0, ["b", "a"], lambda: np.ones((2, H))
+        )
+
+
+def test_champion_blend_weights_reads_committed_metrics(tmp_path: Path) -> None:
+    from demand_forecasting.m5_full import _champion_blend_weights
+
+    metrics = tmp_path / "metrics.json"
+    metrics.write_text(
+        json.dumps({"ensemble": {"members": ["a", "b"], "weights": [0.9, 0.1]}})
+    )
+    members, weights = _champion_blend_weights(metrics)
+    assert members == ["a", "b"]
+    assert weights == [0.9, 0.1]
+
+
+def test_erratic_challenger_uses_huber_and_restricts_to_stratum(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from demand_forecasting import m5_full
+
+    seen: dict[str, object] = {}
+
+    def _spy(prep, seed, *, series_ids, groups, lgbm_params, name, n_estimators=None):
+        seen["objective"] = lgbm_params.get("objective")
+        seen["alpha"] = lgbm_params.get("alpha")
+        seen["series_ids"] = list(series_ids)
+        seen["groups"] = groups
+        seen["name"] = name
+        return np.ones((len(series_ids), H))
+
+    monkeypatch.setattr(m5_full, "_lgbm_pool_direct_forecast", _spy)
+    erratic_ids = ["s1", "s3"]
+    groups = {"g1": ["s1", "s2", "s3"], "g2": ["s2"], "g3": ["s4"]}
+    out = m5_full._erratic_challenger_forecast(
+        pd.DataFrame(),
+        0,
+        erratic_ids=erratic_ids,
+        storecat_groups=groups,
+        lgbm_params={"n_estimators": 5},
+        n_estimators=7,
+    )
+    assert seen["objective"] == "huber"
+    assert seen["alpha"] == m5_full.HUBER_ALPHA
+    assert seen["series_ids"] == erratic_ids
+    assert seen["groups"] == {"g1": ["s1", "s3"]}  # s2/s4 dropped; empty g2/g3 gone
+    assert seen["name"] == m5_full.ERRATIC_CHALLENGER
+    assert out.shape == (2, H)

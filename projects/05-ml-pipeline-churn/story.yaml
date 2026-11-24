@@ -371,21 +371,21 @@ sections:
       raw-model fairness, no time axis, and unmeasured transfer.
     figures: [bootstrap_ci]
 roadmap:
-  - status: shipped
-    title: "Reproducible pipeline, DQ gates, CI twin."
-    detail: "One fitted chain; real 7,043-row panel and synthetic twin pass the same gates."
-  - status: shipped
-    title: "Model and cutoff chosen on OOF cost."
-    detail: "Seeded 25-trial search; isotonic calibration on a train-side split."
-  - status: shipped
-    title: "Served policy priced by paired bootstraps."
-    detail: "2,000 paired resamples at the frozen cutoff; the 95% CI excludes zero."
-  - status: shipped
-    title: "Cutoff re-frozen as the churn price moves."
-    detail: "Served threshold moves 0.250 → 0.150 as missed-churner price goes 3 → 8."
-  - status: blocked
-    title: "Rollout gates wait on owner data."
-    detail: "Time-stamped feed; fresh-data fairness for the served policy."
+- status: shipped
+  title: "Pinned one reproducible panel and twin."
+  detail: "Real 7,043-row panel and the synthetic CI twin pass the same DQ gates."
+- status: shipped
+  title: "Chose the cutoff from OOF cost."
+  detail: "Seeded 25-trial search; isotonic calibration on a train-side split."
+- status: shipped
+  title: "Priced the served policy by bootstraps."
+  detail: "2,000 paired resamples at the frozen cutoff; the 95% CI excludes zero."
+- status: shipped
+  title: "Re-froze the cutoff as prices moved."
+  detail: "Threshold moves 0.250 to 0.150 as missed-churner price goes 3 to 8."
+- status: blocked
+  title: "Rollout gates wait on owner data."
+  detail: "Time-stamped feed; fresh-data fairness for the served policy."
 key_concepts:
   - "**Decision cost**: Price false alarms and missed churners separately, then tune the model on the bill rather than accuracy."
   - "**Cost-ratio sensitivity**: The served threshold moves when a missed churner's price moves. The cutoff is a policy choice, not a constant."

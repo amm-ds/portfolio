@@ -386,21 +386,21 @@ sections:
     figures: []
     metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, alns_fleet, ortools_cp]
 roadmap:
-  - status: shipped
-    title: "Pinned the benchmark and merged references."
-    detail: "The SINTEF TOP supplement covers 42 instances."
-  - status: shipped
-    title: "Built the seeded, machine-checked solver ladder."
-    detail: "Eight solvers; every plan validated before scoring."
-  - status: shipped
-    title: "Tuned search settings with seeded HPO."
-    detail: "Restarts never pay; 2-opt HPO gains 0.12 points."
-  - status: shipped
-    title: "Solver arms tie on runtime at 12 s."
-    detail: "Hinted CP-SAT ties ALNS at 12.0 s mean runtime."
-  - status: next
-    title: "Extend to larger Gehring–Homberger instances."
-    detail: "Needs an owner scope decision; evidence covers 100 customers today."
+- status: shipped
+  title: "Pinned the benchmark and merged references."
+  detail: "56 standard instances; the SINTEF TOP supplement covers 42."
+- status: shipped
+  title: "Built the seeded, machine-checked solver ladder."
+  detail: "Eight solvers; every plan validated before scoring."
+- status: shipped
+  title: "Tuned search settings with seeded HPO."
+  detail: "Restarts never pay; 2-opt HPO gains 0.12 points."
+- status: shipped
+  title: "Tied the arms at 12 s."
+  detail: "Hinted CP-SAT ties ALNS at 12.0 s mean runtime."
+- status: next
+  title: "Extend to larger Gehring-Homberger instances."
+  detail: "Needs an owner scope decision; evidence covers 100 customers today."
 key_concepts:
   - "**Optimality gap:** the percentage by which a plan's distance exceeds the best-known published distance."
   - "**Best-known solutions:** the shortest published plans. They are references, not proven optima."
