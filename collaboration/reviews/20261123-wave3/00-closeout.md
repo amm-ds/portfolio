@@ -51,13 +51,20 @@ is scored once.
 a large regression; erratic win-rate vs the naive floor 0.866 → 0.837; zero-day
 a wash (0.6365 vs 0.6366). Measured pace ~13.2 h/origin under load.
 
-**Full 9-origin selection pass: RUNNING in background** (task
-`bash-fltfczr0`, cache-resumable; ETA ~4–5 days at the measured pace; origin 1
-replays from cache). Verdict lands in
-`reports_m5_full/erratic_challenger.json`; given origin 1, rejection is the
-likely outcome, recorded measured-and-rejected per protocol. The owner can stop
-the task anytime; the cache preserves completed origins. **Owner call**: this
-pace trades days of compute for a near-certain rejection signal.
+**Wave-34 verdict: STOPPED by owner decision (2026-11-24), rejected on the
+origin-1 calibration signal.** The completed first selection origin (2016-03-20)
+scores champion 0.7409 vs routed 0.8683 — a large regression — with the erratic
+win-rate vs the naive floor down (0.866 → 0.837) and zero-day accuracy a wash.
+The full 9-origin screen was relaunched sequentially (the configuration that
+survived the 13 h calibration; a 4-way parallel shard attempt died silently in
+concurrent panel prep) and then stopped by the owner before further spend: the
+origin-1 signal already answers the engineering question under an identical
+per-origin recipe. Record: `reports_m5_full/erratic_challenger.json`
+(origin-1 block) + the forecast cache under `data_m5/raw/.cache/full_forecasts/`
+(origin 1877 complete; four further naive forecasts). The champion
+(0.6211) stands; the roadmap `next` card now names the follow-up gate. The test
+origin was never read. A shared-prep parallel design is noted as the
+improvement if the screen is ever resumed.
 
 **Data note**: `data_m5/raw/m5/datasets/m5.zip` was missing from the working
 tree (only the parquet cache remained). Re-downloaded from the canonical
@@ -108,7 +115,5 @@ Web (`apps/showcase-web`): `npm test` → **56 files / 753 tests passed**;
 
 ## Owner decisions next
 
-1. The running selection pass: let it grind (~4–5 days) or stop it — origin 1
-   already signals rejection.
-2. Catalog rerun to sync `demo_payload.json` (~3 h).
+1. Catalog rerun to sync `demo_payload.json` (~3 h).
 3. Commit strategy for the whole wave (Claude's pass).

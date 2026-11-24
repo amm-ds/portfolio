@@ -15,9 +15,7 @@ context = "\n".join(c.excerpt for c in evidence)
 with a helper `_judge_context(evidence: list[Citation], cited: list[Citation], retriever: Retriever) -> str`:
 
 ```python
-def _judge_context(
-    evidence: list[Citation], cited: list[Citation], retriever: Retriever
-) -> str:
+def _judge_context(evidence: list[Citation], cited: list[Citation], retriever: Retriever) -> str:
     """Full chunk texts for the rubric judge: retrieved top-k union agent-cited chunks.
 
     Falls back to ``c.excerpt`` only when ``retriever.get_chunk(c.chunk_id)`` is

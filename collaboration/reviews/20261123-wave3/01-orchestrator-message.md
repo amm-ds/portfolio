@@ -25,18 +25,21 @@ regression**, and the erratic win-rate vs the naive floor dropped (0.866 →
 0.837). The stratum-restricted Huber arm is worse on its own target stratum,
 consistent with the wave-33 spike-weight rejection (0.6235 vs 0.6211).
 
-The full 9-origin screen is **sharded across 4 parallel workers right now**
-(origin 1877 cached; shards cover 1884–1933; ETA ~14–20 h). Per the promotion
+The full 9-origin screen runs as **one sequential process** (the config that
+survived the 13 h calibration; a 4-way parallel attempt died silently in
+concurrent panel prep — parallel by origin needs a shared prep, a later
+improvement). ETA ~4 days; origin 1877 replays from cache. Per the promotion
 rule it will not pass: the screen requires the routed arm to beat the champion
 on the selection pooled mean, and a ~17% relative deficit on origin 1 will not
 be overturned by the remaining origins under an identical recipe.
 
-**Decision needed**:
-(a) Stop the shards now; record wave-34 as *rejected on the origin-1
-calibration signal, screen stopped by owner decision* — my recommendation; or
-(b) let it run overnight for the full 9-origin measured-and-rejected record
-(test origin untouched either way; verdict lands in
-`reports_m5_full/erratic_challenger.json`).
+**Decision (resolved 2026-11-24): stopped by owner.** Wave-34 is recorded as
+*rejected on the origin-1 calibration signal, screen stopped by owner
+decision*: champion 0.7409 vs routed 0.8683 on 2016-03-20, erratic win-rate
+down 0.866 → 0.837. The champion (0.6211) stands; the test origin was never
+read; the origin-1 record and the forecast cache are preserved under
+`reports_m5_full/` and `data_m5/raw/.cache/full_forecasts/`. The roadmap `next`
+card names the follow-up gate.
 
 ## Notes
 
