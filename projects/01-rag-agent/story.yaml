@@ -15,7 +15,7 @@ sections:
     - **Screen, not proof:** Checks reduce bad claims, yet small test sets and single-family judging limit certainty.
     - **Scope:** Scores measure this 593-article slice, not broad-corpus or unattended chat readiness.
 
-    **In plain terms:** The assistant answers from checked passages or refuses honestly, cutting unsupported answers to 1 in 120 on a fixed test set. [Next: Objectives →](#sec-objectives)
+    **In plain terms:** The assistant answers from checked passages or refuses honestly, cutting unsupported answers to 1 in 120 on a fixed test set.
   figures: []
 - id: objectives
   text_md: |
@@ -39,7 +39,7 @@ sections:
     | Answer-path cost (agent + verify) | <= $0.01 / query | **$0.0084 / query** |
     | Answer latency (`p50` / `p95`, n = 120) | bounded | **16.5 s / 40.5 s** |
 
-    **In plain terms:** The architecture prioritizes verifiable citations and honest refusals over fluent guessing, meeting its retrieval and answer-cost targets. [Next: Data →](#sec-data)
+    **In plain terms:** The architecture prioritizes verifiable citations and honest refusals over fluent guessing, meeting its retrieval and answer-cost targets.
   figures: []
 - id: data
   text_md: |
@@ -62,12 +62,12 @@ sections:
     | Earlier gate set | 55 (32 / 10 / 13) | Early full-loop gate | Consumed |
     | Final test set (`final_v3`) | 120 (68 / 24 / 28) | Final search & loop pass | >1 (consumed) |
 
-    **In plain terms:** Locking a 593-page corpus and a balanced 120-question test mix ensures every score traces back to the exact same text. [Next: EDA →](#sec-eda)
+    **In plain terms:** Locking a 593-page corpus and a balanced 120-question test mix ensures every score traces back to the exact same text.
   figures: []
 - id: eda
   text_md: |
     **Topic counts stay even; page lengths do not.**
-    Before we tune search, we inspect the indexed pages. We want to be sure no single subject can hide weak recall inside an average score, and that the slice really contains the articles its questions assume.
+    Before we tune search, we inspect the indexed pages. A high average recall can easily mask a weak subject if one topic dominates the dataset, or fail silently if flagship articles were never scanned. We therefore audit both topic counts and length bounds before any retrieval model runs.
 
     - **Even topics (102–125 pages):** All five subjects sit in a tight band. High overall recall therefore requires good search across every domain, not mastery of one lucky topic.
     - **Dump-order bias avoided:** The Wikipedia export is not sorted by topic, so naive top-N sampling would over-represent whatever sections appear early in the dump. We matched pages per topic explicitly instead of trusting the file order.
@@ -80,7 +80,7 @@ sections:
     | Pages per topic | 102–125 |
     | Maximum page length | 12,000 characters |
 
-    **In plain terms:** Early checks proved even topic balance and capped page sizes across all 593 pages before any model ran. [Next: Training →](#sec-training)
+    **In plain terms:** Early checks proved even topic balance and capped page sizes across all 593 pages before any model ran.
   figures: [eda_corpus_composition]
 - id: training
   text_md: |
@@ -125,7 +125,7 @@ sections:
 
     Excerpt from [index.py](https://github.com/amm-ds/portfolio/blob/main/projects/01-rag-agent/src/rag_agent/index.py): the dense and BM25 pools feed reciprocal rank fusion, the cross-encoder reorders the survivors, and the per-article cap backfills. `retrieval_ladder` plots the final `R0 -> S3` tournament; `chunk_size_sweep` and `model_comparison` show the earlier 65-question tuning diagnostics.
 
-    **In plain terms:** Prefixing titles, blending keyword and semantic search, reranking, and capping chunks per article lifted final recall to 94.6% on CPU. [Next: Evaluation →](#sec-evaluation)
+    **In plain terms:** Prefixing titles, blending keyword and semantic search, reranking, and capping chunks per article lifted final recall to 94.6% on CPU.
   figures: [retrieval_ladder, chunk_size_sweep, model_comparison]
 - id: evaluation
   text_md: |
@@ -138,7 +138,7 @@ sections:
     - **Chance floors:** Every run anchors on seeded random (`0.031` recall@5) and word-match search (`0.677` recall@5 on tuning). Without floors, a headline score can merely restate how easy the task is; with them, lift over keyword search and a dice roll is the quantity being measured.
     - **Three judges, because one score lies:** A rubric judge tags answer-versus-abstain classes and failure types, RAGAS scores answer quality, and a per-claim verifier enforces the `0.6` support floor with up to two repairs. Each catches failure modes the others miss: the rubric sees shape, RAGAS sees quality, and the verifier checks the text behind every citation.
     - **The earlier judge failed openly:** The first verifier accepted 44% of unsupported claims (agreement `kappa 0.546` local, `0.605` hosted). A judge that passes bad claims is worse than none, so we published the miss instead of averaging over it.
-    - **Judge audit (`judge_v2`):** Rebuilt with near-miss negatives (147 calibration claims, 72 one-detail same-subject negatives), `judge_v2` was then audited by an independent reviewer agent on a 30-claim sample (11 supported, 19 unsupported): agreement `30/30`, `Wilson 95% [0.8865, 1.0]`, clearing the `0.85` gate. Human owner hand-labelling is still pending, and the article says so.
+    - **Judge audit (`judge_v2`):** We rebuilt `judge_v2` with near-miss negatives (147 calibration claims, 72 one-detail same-subject negatives). An independent reviewer agent then checked a 30-claim sample (11 supported, 19 unsupported): agreement hit `30/30` (`Wilson 95% [0.8865, 1.0]`), clearing the `0.85` gate. Human owner hand-labelling is still pending, and the article says so.
     - **Hard agent rails:** Caps of 12 calls, 16 tool steps, and 200k input tokens stop runaway loops, with a soft in-tool ceiling so a single tool cannot dominate a run. The verify stage itself abstained twice, skipped 33 short answers, and made zero mechanical false rejections on the final pass. Saved runs log token spend per stage, so no number in this article is reconstructed from memory.
     - **Single-family judging, stated plainly:** Answers, checks, and judging all use `kimi-for-coding`. That keeps the pipeline consistent but means the generator and its graders share blind spots; a cross-judge check with a different model family is the planned counter. Also, `final_v3` was read more than once (`R0`, `S3` gate, validation, E2E pass), so it is now consumed and the next quality claim needs a fresh sealed set.
 
@@ -148,7 +148,7 @@ sections:
     | Rubric judge | Answer vs. abstain class | `kimi-for-coding` | Calibrated on `judge_v2` |
     | RAGAS suite | Faithfulness & relevance | `kimi-for-coding` | Library v0.3.1 (tuning pass) |
 
-    **In plain terms:** Every answer faces search floors, tool limits, and a 30/30 agent-audited verifier, with single-family judging openly noted. [Next: Results →](#sec-results)
+    **In plain terms:** Every answer faces search floors, tool limits, and a 30/30 agent-audited verifier, with single-family judging openly noted.
   figures: [latency_histogram, kimi_generation_comparison, fusion_arm_comparison]
 - id: results
   text_md: |
@@ -172,13 +172,13 @@ sections:
     | Outcomes (correct / empty / budget / unsupported / miss) | **104 / 10 / 4 / 1 / 1** |
     | Answer-path cost / Total with judge | **$0.0084** / **$0.0121** per query |
 
-    **In plain terms:** Grounding hardening cut unsupported answers to 1 in 120 while keeping answer cost at `$0.0084/query`; the main remaining trade-off is over-abstention on 10 answerable questions. [Next: Conclusions →](#sec-conclusions)
+    **In plain terms:** Grounding hardening cut unsupported answers to 1 in 120 while keeping answer cost at `$0.0084/query`; the main remaining trade-off is over-abstention on 10 answerable questions.
   figures: [final_outcome, failure_taxonomy, verify_funnel]
 - id: conclusions
   text_md: |
     ## Results summary
 
-    Pairing hybrid title-anchored retrieval (`0.9457` recall@5) with a bounded verify-and-repair loop yields `0.9091` F1 and `0.9524` precision on the 120-question final pass (`reports/final_v3_e2e/f1_summary.json`). Out of 166 drafted claims, 16 failed mechanical checks, 150 were judged (148 supported), 11 repaired within two calls, and 7 dropped (`159` surviving claims).
+    Pairing hybrid title-anchored retrieval (`0.9457` recall@5) with a bounded verify-and-repair loop yields `0.9091` F1, `0.9524` precision, and `0.8667` accuracy (`Wilson 95% [0.7944, 0.9162]`) on the 120-question final pass (`reports/final_v3_e2e/f1_summary.json`). Out of 166 drafted claims, 16 failed mechanical checks, 150 were judged (148 supported), 11 repaired within two calls, and 7 dropped (`159` surviving claims at `0.9739` mean support). Answer-path cost stayed at `$0.0084` per query (`$1.014` total), showing that bounded verification can sharply curb hallucinations (`1` of `120` answers unsupported) within a strict per-query budget.
 
     ## What the experiment taught
 

@@ -356,11 +356,32 @@ code {
   box-shadow: 0 0 8px var(--accent-glow);
 }
 
+.roadmap-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.roadmap-step-num {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--accent-bright);
+  letter-spacing: 0.06em;
+}
+
 .roadmap-label {
-  font-size: 0.82rem;
+  font-size: 0.86rem;
+  font-weight: 600;
   line-height: 1.35;
   color: var(--text);
-  opacity: 0.85;
+}
+
+.roadmap-detail {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--muted);
 }
 
 /* narrow screens: the timeline wraps into a vertical list */
@@ -383,6 +404,10 @@ code {
     flex-direction: row;
     align-items: flex-start;
     text-align: left;
+  }
+
+  .roadmap-step {
+    align-items: flex-start;
   }
 }
 

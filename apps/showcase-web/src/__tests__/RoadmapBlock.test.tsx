@@ -31,8 +31,10 @@ describe("RoadmapBlock", () => {
     expect(nodes).toHaveLength(2);
     expect(nodes[0].classList.contains("shipped")).toBe(true);
     expect(nodes[1].classList.contains("shipped")).toBe(true);
-    // labels carry the card title; the hover title adds the detail
+    // labels carry step number, card title, and visible detail; hover title keeps both
+    expect(nodes[0].textContent).toContain("/01");
     expect(nodes[0].textContent).toContain("Baseline retrieval with citations.");
+    expect(nodes[0].textContent).toContain("Recall@5 0.831 on the tuning set.");
     expect(nodes[1].getAttribute("title")).toBe(
       "Reranked index with eval harness. Cross-encoder reranker adopted.",
     );

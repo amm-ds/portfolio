@@ -33,7 +33,11 @@ export function RoadmapBlock({ roadmap }: { roadmap: RoadmapItemData[] | undefin
             title={`${r.title} ${r.detail}`}
           >
             <span className="roadmap-dot" aria-label={r.status} role="img" />
-            <span className="roadmap-label">{shortMilestone(r.title)}</span>
+            <div className="roadmap-step">
+              <span className="roadmap-step-num">/{String(i + 1).padStart(2, "0")}</span>
+              <span className="roadmap-label">{shortMilestone(r.title)}</span>
+              {r.detail && <span className="roadmap-detail">{r.detail}</span>}
+            </div>
           </li>
         ))}
       </ol>
