@@ -43,6 +43,7 @@ Full roadmap: `collaboration/designs/20261123-portfolio-release-roadmap/01-maste
 | **Wave 4** | Apps alignment (`agent-chat` & `document-intelligence`: code, infra, articles, language) | **DONE & COMMITTED** |
 | **Wave 5** | Backend deployment readiness (`showcase-api` + `deploy/`) & public-repo documentation cleanup, then merge to `main` and push to website | **DONE & COMMITTED — MERGED & PUSHED TO `main` (`c09d9166`)** |
 | **Wave 6** | Opus-aligned validation & polish (Tasks 1–15): RAG 01 truth fixes (`[0.8092, 0.9304]` CI + judge attribution + headline guard + new figures), 02 copy fix, remove `.terminal-dots` in all 3 apps + refresh media, demo/workbench wide-screen sizing, scrub `/Users/` paths, `web-dev` compose fix, em-dash pass | **READY PENDING OWNER D1/D2 SIGN-OFF (`20261124-wave6-experiments-apps-and-demos`)** |
+| **Wave 7 (Planned)** | New portfolio experiments filling technique gaps:<br>- **Project 14 (`14-llm-finetuning`):** LoRA/QLoRA fine-tuning (`Qwen2.5-3B-Instruct` vs `Gemma-3-4B-it`) on Banking77 + strict JSON routing (`20261124-exp14-finetuning`)<br>- **Project 15 (`15-rl-dynamic-pricing`):** Causal Double ML elasticity + constrained RL (`PPO`/`DQN` via `gymnasium` + `stable-baselines3`) on UCI Online Retail II (`20261124-exp15-rl-dynamic-pricing`) | **DESIGN BRIEFS & ARCH PROPOSALS READY (pending owner decisions)** |
 
 ---
 
