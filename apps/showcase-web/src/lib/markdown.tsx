@@ -33,15 +33,15 @@ const CODE_LANGUAGES: Record<string, string> = {
 };
 
 const INLINE_RE =
-  /(`[^`\n]+`|\*\*[^*]+\*\*|\*[^*\n]+\*|\[[^\]\n]+\]\((?:https?:\/\/|mailto:)[^)\s]+\))/gi;
+  /(`[^`\n]+`|\*\*[^*]+\*\*|\*[^*\n]+\*|\[[^\]\n]+\]\((?:https?:\/\/|mailto:|#)[^)\s]+\))/gi;
 
-// Story links are public-facing references (docs, datasets, source files).
-// Only http(s)/mailto URLs ever tokenize as links — other schemes and relative
-// paths render as literal text, so there is no anchor surface at all (no
-// javascript:, no scheme confusion). URLs containing parentheses are not
-// supported; use encoded forms.
+// Story links are public-facing references (docs, datasets, source files) or
+// in-page section anchors (#sec-*). Only http(s)/mailto/#fragment URLs ever
+// tokenize as links — other schemes and relative paths render as literal text,
+// so there is no anchor surface at all (no javascript:, no scheme confusion).
+// URLs containing parentheses are not supported; use encoded forms.
 const LINK_TOKEN_RE = /^\[([^\]\n]+)\]\(([^)\n]+)\)$/i;
-const ALLOWED_LINK_SCHEMES = /^(?:https?:|mailto:)/i;
+const ALLOWED_LINK_SCHEMES = /^(?:https?:|mailto:|#[a-z0-9-]+$)/i;
 
 //
 // Glossary auto-linking: the first occurrence of each glossary term (per call,
@@ -129,11 +129,19 @@ function inlineToken(part: string, key: string, state: GlossaryLinkState | null)
   }
   const link = LINK_TOKEN_RE.exec(part);
   if (link) {
-    // Allowed schemes become external anchors; anything else keeps the text
-    // and drops the URL. Link text stays plain — never nested glossary tips.
-    if (ALLOWED_LINK_SCHEMES.test(link[2].trim())) {
+    const href = link[2].trim();
+    // Allowed schemes become anchors; in-page #anchors stay in the same tab,
+    // external http(s)/mailto links open safely; anything else drops the URL.
+    if (ALLOWED_LINK_SCHEMES.test(href)) {
+      if (href.startsWith("#")) {
+        return (
+          <a key={key} href={href}>
+            {link[1]}
+          </a>
+        );
+      }
       return (
-        <a key={key} href={link[2].trim()} target="_blank" rel="noopener noreferrer">
+        <a key={key} href={href} target="_blank" rel="noopener noreferrer">
           {link[1]}
         </a>
       );
