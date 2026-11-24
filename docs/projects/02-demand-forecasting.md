@@ -60,7 +60,7 @@ Ensemble composition (selection screen, test never consulted): lgbm_pool_storeca
   at the item×store leaves every learned candidate lands at 1.04–1.15 while the
   floor scores 1.38–1.39: intermittent leaves stay noisy for everyone.
 - **91% of the panel is intermittent** (27,736 of 30,490 series by ADI/CV²) —
-  on zero-actual days the naive floor still wins (66.6% vs 57.3% accuracy);
+  on zero-actual days the naive floor still wins (66.6% vs 57.2% accuracy);
   full scale prices that in instead of solving it.
 - **Stated limits** — the selection screen runs on nine origins and the headline
   has no bootstrap confidence interval. The demo envelope is member spread, not

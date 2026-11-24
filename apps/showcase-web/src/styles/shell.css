@@ -175,31 +175,6 @@
   font-size: 0.8rem;
 }
 
-.terminal-dots {
-  display: flex;
-  gap: 0.4rem;
-  margin-right: 0.5rem;
-}
-
-.terminal-dots span {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: var(--border);
-}
-
-.terminal-dots span:nth-child(1) {
-  background: var(--danger);
-}
-
-.terminal-dots span:nth-child(2) {
-  background: var(--warning);
-}
-
-.terminal-dots span:nth-child(3) {
-  background: var(--ok);
-}
-
 .terminal-body {
   padding: 1rem 1.1rem 1.25rem;
   min-height: 200px;

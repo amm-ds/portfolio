@@ -43,11 +43,6 @@ export function ChatSurface({ chat }: { chat: ChatController }) {
 
       <main className="chat-main">
         <div className="chat-titlebar">
-          <span className="terminal-dots" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </span>
           <span className="chat-title">agent-chat</span>
           <span className="chat-phase">{state.phase}</span>
         </div>

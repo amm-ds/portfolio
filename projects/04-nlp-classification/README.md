@@ -27,7 +27,7 @@ AdamW, a **linear warmup + linear decay LR schedule written by hand**
 (`lr_at_step`), per-epoch train/val loss and validation macro-F1, and early
 stopping with patience 1 that restores the best `state_dict`.
 
-**Bounded data contract:** full AG News is 120k train rows — far beyond a CPU
+**Bounded data contract:** full AG News is 120k train rows, far beyond a CPU
 showcase. We download the real dataset once and draw a seeded
 (`numpy.random.RandomState`), per-class stratified subsample:
 **4000 train (3600 train / 400 val after a stratified carve-out) / 1000 test**.
@@ -35,14 +35,14 @@ That bound keeps the whole pipeline under ~15 minutes on CPU and is documented
 in [`DESIGN.md`](DESIGN.md).
 
 Data quality gates (`portfolio_core.dq`): zero empty texts, labels within
-`[0, 3]` — checked per split, persisted to `data/dq_*.md`, enforced with
+`[0, 3]`, checked per split, persisted to `data/dq_*.md`, enforced with
 `raise_if_failed()`. The prepared snapshot carries a `DatasetContract`
 (name, source, license, snapshot date, sha256, row count).
 
 See [DESIGN.md](DESIGN.md) for requirements, options considered, and the
 pipeline diagram.
 
-## Results (real runs, this machine — CPU ladder, full-data run on Apple MPS)
+## Results (real runs, this machine: CPU ladder, full-data run on Apple MPS)
 
 Bounded test split: **1000 rows**, perfectly stratified (250 per class),
 seed 42. Every run below is scored on that identical, shared split with the
@@ -81,7 +81,7 @@ fresh labels or examples tune the router.
 The earlier keyword-first router remains the cheaper, lower-quality baseline:
 0.9061 fresh macro-F1 with 75.4% of items on the keyword path. The full-data
 transformer reaches 0.9529432 fresh; the selected cascade moves it by +0.001
-macro-F1 with 22 reviews — no measurable change. No paired cascade interval
+macro-F1 with 22 reviews, no measurable change. No paired cascade interval
 can be computed from committed artifacts (the per-row review decisions are not
 persisted), so these point deltas are descriptive rather than established
 superiority.
@@ -90,14 +90,14 @@ Macro-F1 ladder vs. the better naive floor (`random_uniform`): TF-IDF **+61.8
 pp.**, encoder_b **+64.5 pp.**, bounded DistilBERT family **+64.9 pp.**, full-data
 DistilBERT **+69.3 pp.**. DistilBERT beats
 the TF-IDF baseline by **+3.1 pp.** and its roberta-base challenger by **+0.4
-pp.** — inside test noise (±1.9 pp.), so read the two encoders as tied at this
+pp.**, inside test noise (±1.9 pp.), so read the two encoders as tied at this
 data scale. `naive_majority` looks deceptively good on accuracy (0.25 =
-chance on a balanced test split) but collapses on macro-F1 (0.10) — exactly
+chance on a balanced test split) but collapses on macro-F1 (0.10), exactly
 why the portfolio scores runs with macro-F1, not accuracy.
 
 ### Serving economics (probe-hardware numbers, not the headline)
 
-Measured, not estimated — this machine (Apple M4 Max, torch 2.14.1, CPU
+Measured, not estimated, this machine (Apple M4 Max, torch 2.14.1, CPU
 with 12 torch threads), batch=1 end-to-end serving (tokenize + forward for
 the transformers, vectorize + predict for sklearn), n=200 held-out test
 rows per variant, p50 per prediction. These are single-machine probe
@@ -107,7 +107,7 @@ bytes for the
 sklearn pipeline, serialized `state_dict` for torch. Accuracy/F1 in the
 first table are the committed 1000-row test-split numbers (no
 re-evaluation). The int8 row's quality is measured on a 2,000-row *train*
-sample — a different split — so it is reported separately below rather than
+sample, a different split, so it is reported separately below rather than
 mixed into the test-split table (fp32 on the same sample: macro-F1 0.9627 →
 int8 0.9637, Δ +0.0010 —
 no drop). Cost is cloud-equivalent at a declared rate card ($1 / 1M input
@@ -136,7 +136,7 @@ token-metered cost, at −7.4 pp. macro-F1; the full DistilBERT buys that back
 for ~$0.065 per 1k items at ~110 pred/s on a laptop CPU. Dynamic int8
 (`torch.quantization.quantize_dynamic`, qnnpack on arm64) halves model size
 with zero measured quality loss but is **slower** here (13.2 vs 8.7 ms
-p50) — on Apple Silicon the int8 kernels lose to fp32 Accelerate at
+p50), on Apple Silicon the int8 kernels lose to fp32 Accelerate at
 batch=1, so quantization buys memory and transfer, not speed.
 
 ### Full-data path
@@ -150,12 +150,12 @@ wall-clock estimate (~45–50 min/epoch on this CPU) unless `--force-cpu` /
 `--device cpu` is passed; `--subset N` gives bounded evidence runs.
 
 **The full run** (this machine, Apple Silicon MPS, torch 2.14.1, batch 32 —
-verified by an up-front memory probe at 256 MiB allocated — seed 42, 2
+verified by an up-front memory probe at 256 MiB allocated, seed 42, 2
 epochs, val macro-F1 0.9433 → **0.9464**): **0.9460 test macro-F1** on the
 shared 1000-row split, **+4.4 pp. over the 3.6k-row models**. Honest
 measured wall-clock: **27.5 min for epoch 1 (1651 s), 18.0 min for epoch 2
-(1079 s)** — the training loop totalled ~46 min, the whole command ~47 min
-end-to-end — versus the ~50 s / 3.6k-row CPU epoch this path is gated on
+(1079 s)**, the training loop totalled ~46 min, the whole command ~47 min
+end-to-end, versus the ~50 s / 3.6k-row CPU epoch this path is gated on
 (full 120k ≈ 45–50 min/epoch on CPU, ~1.5–2 h for 2 epochs). Epoch 1 ran
 while other jobs shared this machine; steady state is ~18 min/epoch, and
 epoch-to-epoch variance tracks machine load, not GPU thermal drift. MPS
@@ -163,7 +163,7 @@ quirks documented: the libomp-dependent classical stack (lightgbm, xgboost)
 and torch MPS coexist in one process here (the workspace libomp repair
 holds), MPS has no OOM recovery so the batch is probed with a synthetic
 forward+backward before training, and single-process tokenization of the
-120k split is CPU-bound (~10 s — batched HF tokenizer, not a bottleneck).
+120k split is CPU-bound (~10 s, batched HF tokenizer, not a bottleneck).
 
 **Why two epochs?** Because the third and fourth are measured to buy nothing.
 A probe re-ran the full fine-tune with the budget raised to 4 epochs and
@@ -179,7 +179,7 @@ the **full 120k data**, not the bounded subsample: `reports/history_fulldata.jso
 is the shipped headline run (2 epochs, early stopping enabled, val macro-F1
 0.9433 → 0.9464); `reports/history_probe4.json` is this 4-epoch probe of the
 same full-data fine-tune. Read the probe as "extra epochs overfit", not as
-a better headline — its peak 0.9477 vs the shipped 0.9464 is the validation
+a better headline, its peak 0.9477 vs the shipped 0.9464 is the validation
 split under a different LR schedule, inside run-to-run noise. The combined
 `reports/figures/training_curve.*` keeps the two histories in separate panels
 and marks the headline endpoint with a star.
@@ -202,7 +202,7 @@ holdout; per-rung wall-clock and device provenance live in
 
 - **Device component measured, not assumed:** the same-rows twins differ by
   0.0002 macro-F1 on the test split and 0.0105 on the fresh holdout (the MPS
-  twin's best-restored epoch is 2, the CPU twin's is 1 — depth + fp noise,
+  twin's best-restored epoch is 2, the CPU twin's is 1, depth + fp noise,
   still inside the ±1.9 pp. CI). The bounded↔full gap is **not** a device
   artifact.
 - **Data component measured:** at fixed device each 3× step buys +1.5 / +1.6 /
@@ -210,21 +210,21 @@ holdout; per-rung wall-clock and device provenance live in
   on the fresh holdout (+1.5 / +2.1 / +1.0 pp.).
 - MPS rung wall-clock measured end-to-end on this machine: 84 s / 292 s /
   995 s for the 3.6k / 10.8k / 36k rungs (batch 32, 2 epochs, shared-machine
-  load inflates the largest — epoch time tracks load, as the full run did).
+  load inflates the largest, epoch time tracks load, as the full run did).
 
 The dominant confusion pair is **stable across the measured runs**:
-Business → Sci/Tech, 24/250 at 3.6k → 15/250 at 20k → 14/250 at 120k — the
+Business → Sci/Tech, 24/250 at 3.6k → 15/250 at 20k → 14/250 at 120k, the
 same hybrid technology-business headlines (e.g. *"Amazon Snaps Up China's
 Largest Web Retailer…"*) still trip the model, just nearly half as often.
 That residual is a labeling-ambiguity floor, not a data-scale problem. Hybrid
 articles require a separate multi-label contract.
 
-Classifier serving economics — size, latency, throughput, and token cost —
+Classifier serving economics, size, latency, throughput, and token cost —
 are measured in the [Serving economics](#serving-economics-probe-hardware-numbers-not-the-headline) table above;
 LLM-serving stacks (llama.cpp vs MLX on Apple Silicon) are benchmarked in
 [08 · LLM Inference & Serving](../08-inference-serving/README.md).
 
-### HPO — and the honest part
+### HPO, and the honest part
 
 Optuna searched the hand-written loop's hypers (seeded TPE sampler, median
 pruning between epochs, 12 trials; lr log 1e-5…5e-5, warmup 0…0.2, weight
@@ -241,18 +241,18 @@ macro-F1 over the default, with a paired 2,000-resample bootstrap 95% CI of
 choice, test macro-F1 is **0.9011** for HPO versus **0.9021** for the default.
 Test labels do not enter selection; the fresh split remains diagnostic only.
 
-**Seed variance — is the HPO gain even real?** The `hpo-seeds` stage re-ran
+**Seed variance: is the HPO gain even real?** The `hpo-seeds` stage re-ran
 the study under 3 fixed sampler seeds (6 trials each, epochs 2–3 budget):
 best val macro-F1 0.8953 (seed 42), 0.8852 (seed 43), 0.8926 (seed 44) —
 **mean 0.8910 ± 0.0042**. Against 0.8880 for defaults, the mean HPO gain is
 ~+0.3 pp., i.e. **smaller than the seed standard deviation**: at 400 validation
 rows, run-to-run HPO variance exceeds the effect being chased. (Seed 42's best
-matches the 12-trial study bit-for-bit — same RNG stream, determinism
+matches the 12-trial study bit-for-bit, same RNG stream, determinism
 re-confirmed.) Full data in `reports/hpo_seeds.json` and
 `metrics.json → _meta.hpo_seeds`.
 
 **Calibration.** Temperature scaling fitted on the 400-row validation split
-(T = 0.927 — the selected model is mildly *under*-confident) cuts test
+(T = 0.927, the selected model is mildly *under*-confident) cuts test
 calibration error without changing predictions (argmax is
 temperature-invariant), so calibration is a free reliability upgrade for any
 confidence-thresholded routing; numbers in `metrics.json → _meta.calibration`
@@ -271,18 +271,18 @@ restored and saved to `reports/models/distilbert.pt`.
 
 **Error analysis.** The dominant confusion of the selected bounded transformer is
 **Business → Sci/Tech (25 of 250 Business rows)**; the full-data model shows
-the **same pair (14 of 250)** — e.g. *"Amazon Snaps Up China's Largest Web
-Retailer…"* and *"PeopleSoft customers reassured…"* — stories about
+the **same pair (14 of 250)**, e.g. *"Amazon Snaps Up China's Largest Web
+Retailer…"* and *"PeopleSoft customers reassured…"*, stories about
 technology companies that are legitimately business news. The original
 default-artifact scaling curve moves 24 → 15 → 14 of 250; only its frequency
 shrinks with data. Full table in [`reports/error_analysis.md`](reports/error_analysis.md);
 per-class comparison vs the TF-IDF baseline in
 `reports/figures/per_class_f1_comparison.*`.
 
-**Misclassified examples** — selected bounded transformer (`distilbert_tuned`,
+**Misclassified examples**: selected bounded transformer (`distilbert_tuned`,
 HPO-retrained artifact per `reports/selection.json`) on the shared 1,000-row
 bounded test split; reproduced by running the committed artifact on the committed
-test split — the reproduced predictions bit-match `reports/metrics.json`
+test split, the reproduced predictions bit-match `reports/metrics.json`
 (accuracy 0.9010, macro-F1 0.9010575861537158). Full list with all 8
 examples and per-pair confusion counts:
 [`reports/misclassification_examples.json`](reports/misclassification_examples.json).
@@ -312,7 +312,7 @@ demonstrations whose gains sit within seed noise. Validation selects
 holdout (`reports/fresh_holdout.json`) is diagnostic, not another selection:
 HPO minus default is +0.0069 with 95% CI [−0.0025, +0.0161], also inconclusive.
 The full-data model's fresh point score is 0.9529 versus 0.9460 on bounded test.
-The controlled scale ladder removes the last confound — same-rows CPU/MPS twins
+The controlled scale ladder removes the last confound, same-rows CPU/MPS twins
 at 3.6k bracket the device effect at ≤0.011 macro-F1, and the same-device rungs
 isolate a data-scale slope of +1.3–1.6 pp. per 3× step on both the test split
 and the fresh holdout. Temperature scaling cuts ECE by 37% on the shared test
@@ -320,13 +320,13 @@ split. Full-data and rung MPS timings are machine-specific.
 
 Figures (interactive HTML + showcase-API JSON in `reports/figures/`):
 
-- `eda_class_balance.{html,json}` — class distribution across splits + train text-length histogram
-- `hpo_history.{html,json}` — per-trial validation macro-F1 + best-so-far
-- `hpo_importance.{html,json}` — fANOVA parameter importance over the study
-- `training_curve.{html,json}` — separate headline and four-epoch-probe panels: train/val loss + val macro-F1
-- `scale_ladder.{html,json}` — controlled data-scale ladder: test macro-F1 vs train rows, by device
-- `confusion_matrix_selected.{html,json}` — selected bounded transformer, counts
-- `per_class_f1_comparison.{html,json}` — selected bounded transformer vs TF-IDF baseline, per class
+- `eda_class_balance.{html,json}`: class distribution across splits + train text-length histogram
+- `hpo_history.{html,json}`: per-trial validation macro-F1 + best-so-far
+- `hpo_importance.{html,json}`: fANOVA parameter importance over the study
+- `training_curve.{html,json}`: separate headline and four-epoch-probe panels: train/val loss + val macro-F1
+- `scale_ladder.{html,json}`: controlled data-scale ladder: test macro-F1 vs train rows, by device
+- `confusion_matrix_selected.{html,json}`: selected bounded transformer, counts
+- `per_class_f1_comparison.{html,json}`: selected bounded transformer vs TF-IDF baseline, per class
 
 Human-readable report: [`reports/report.html`](reports/report.html).
 

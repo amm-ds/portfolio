@@ -5166,5 +5166,25 @@
       "uncited_relevant": 8
     },
     "report_path": "reports/final_v3_e2e/f1_summary.json"
+  },
+  {
+    "ts": "2026-11-24T18:18:00.801922+00:00",
+    "step": "e2e",
+    "change": "final_v3_e2e",
+    "split": "final_v3_e2e",
+    "decision": "summarized",
+    "f1": 0.9091,
+    "precision": 0.9524,
+    "recall": 0.8696,
+    "overall_accuracy": 0.8667,
+    "errors": {
+      "unsupported_claim": 1,
+      "false_abstention": 10,
+      "wrong_abstention": 0,
+      "budget_terminated": 4,
+      "format_failure": 0,
+      "uncited_relevant": 8
+    },
+    "report_path": "reports/final_v3_e2e/f1_summary.json"
   }
 ]

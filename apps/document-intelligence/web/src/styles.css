@@ -115,10 +115,6 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .brand h1 { font-size: 1rem; margin: 0 0 0.1rem; letter-spacing: 0.01em; }
 .brand h1 span { color: var(--accent); }
 .brand p { margin: 0; color: var(--muted); font-size: 0.75rem; }
-.terminal-dots { display: flex; gap: 0.35rem; }
-.terminal-dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--danger); }
-.terminal-dots span:nth-child(2) { background: var(--warning); }
-.terminal-dots span:nth-child(3) { background: var(--ok); }
 .header-controls { display: flex; align-items: center; gap: 1.15rem; }
 .header-metrics { display: flex; align-items: center; gap: 1.2rem; color: var(--muted); font-family: var(--mono); font-size: 0.72rem; }
 .header-metrics strong { color: var(--text); font-size: 0.9rem; margin-right: 0.25rem; }
@@ -361,7 +357,6 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 640px) {
   body { font-size: 13px; }
   .app-header { align-items: flex-start; padding: 0.65rem 0.75rem; }
-  .terminal-dots { display: none; }
   .header-controls { width: 100%; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
   .header-metrics { flex-wrap: wrap; justify-content: flex-end; gap: 0.35rem 0.75rem; font-size: 0.58rem; }
   .theme-switcher { margin-left: auto; }

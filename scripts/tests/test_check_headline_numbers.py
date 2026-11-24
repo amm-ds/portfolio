@@ -76,6 +76,18 @@ def test_broken_source_reports_instead_of_tracing(
 
 
 def test_known_drift_filter() -> None:
-    assert headline._is_known("01-rag-agent: anything")
     assert headline._is_known("04-nlp-classification: anything")
+    assert not headline._is_known("01-rag-agent: drift")
     assert not headline._is_known("02-demand-forecasting: drift")
+
+
+def test_m01_derives_final_v3_headline_from_committed_reports() -> None:
+    """The 01 claim is anchored to committed final_v3 artifacts, not hard-coded."""
+    assert headline._m01() == ["0.9091", "0.946"]
+
+
+def test_m01_claim_verifies_against_real_repo() -> None:
+    """The 01-rag-agent claim (README + story.yaml) matches its report sources."""
+    claim = next(c for c in headline.CLAIMS if c["project"] == "01-rag-agent")
+    assert claim["label"] == "final_v3 F1 + promoted S3 recall@5"
+    assert headline.check_claim(claim) == []

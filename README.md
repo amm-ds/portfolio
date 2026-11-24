@@ -31,9 +31,9 @@ clean clone.
 
 Real artifacts from the pipelines (interactive versions in each [case study](https://alejandromerida.dev/projects/)):
 
-| Flagship demand intelligence (41.2M trips, zone map) | RAG quality-vs-cost frontier | Anomaly detection over NAB telemetry (897 alerts vs labelled windows) |
+| Flagship demand intelligence (41.2M trips, zone map) | RAG retrieval ladder: S3 hybrid wins the sealed tournament | Anomaly detection over NAB telemetry (897 alerts vs labelled windows) |
 |---|---|---|
-| ![NYC taxi-zone demand map](docs/assets/readme/mobility-demand-map.png) | ![RAG quality-cost frontier](docs/assets/readme/rag-quality-cost-frontier.png) | ![NAB telemetry: champion alerts vs labelled incident windows](docs/assets/readme/anomaly-timelines.png) |
+| ![NYC taxi-zone demand map](docs/assets/readme/mobility-demand-map.png) | ![RAG retrieval ladder: S3 lifts sealed recall@5 to 0.9457 across the R0-S3 tournament](docs/assets/readme/rag-retrieval-ladder.png) | ![NAB telemetry: champion alerts vs labelled incident windows](docs/assets/readme/anomaly-timelines.png) |
 
 ## Projects
 
@@ -41,7 +41,7 @@ Thirteen projects, all working showcases on the same platform.
 
 | # | Project | Domain | Data | Highlights |
 |---|---|---|---|---|
-| 01 | [RAG & Agentic AI Assistant](projects/01-rag-agent/) | Agentic AI | Wikipedia (real) | Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybrid retrieval (title-anchored chunks, BM25+dense RRF, diversity cap) reaches 0.946 recall@5. Judge calibrated 30/30 blind. Final 120-question pass: F1 0.909, precision 0.952, faithfulness 0.872, 1/120 unsupported.<br>Stack: pydantic-ai agent, final_v3 120-question sealed pass (F1 0.9091), promoted S3 hybrid retrieval, judge_v2 owner-validated, per-phase cost metering |
+| 01 | [RAG & Agentic AI Assistant](projects/01-rag-agent/) | Agentic AI | Wikipedia (real) | Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybrid retrieval reaches 0.946 recall@5. Judge sample: reviewer-agent audit 30/30; owner hand-label pending. Final 120-question pass: F1 0.909, precision 0.952, faithfulness 0.872, 1/120 unsupported.<br>Stack: pydantic-ai agent, final_v3 120-question sealed pass (F1 0.9091), promoted S3 hybrid retrieval, judge_v2 calibration (reviewer-agent audit; owner hand-label pending), per-phase cost metering |
 | 02 | [Hierarchical Demand Forecasting](projects/02-demand-forecasting/) | Time series | Walmart M5 full panel (real) | M5 full panel: 30,490 series, one scored test origin (final 28 days) with official 42,840-node WRMSSE. Pooled LightGBM ensemble: 0.6211 vs seasonal-naive 0.8929 (−30.4%); no bootstrap interval bounds the result; quiet days favor the floor.<br>Stack: rolling origins scored once, global + pooled LightGBM, Tweedie arm, AutoETS, stability-screened convex ensemble |
 | 03 | [Anomaly Detection over Telemetry](projects/03-anomaly-detection/) | Unsupervised ML | NAB (real) + seeded synthetic CI path | NAB (9 series): IsolationForest touches 16/17 incidents with 1,609 raw alerts. One fit per series; no-skill = 16 seeded baselines. Budgeting cuts to 80 pages; like-for-like, the ensemble halves 66 budgeted pages to 35 at recall 0.604, range-F1 0.533. NAB score not reported.<br>Stack: event-based metrics (PR-AUC, range-F1), detector HPO, threshold sweeps |
 | 04 | [NLP Classification with Transformers](projects/04-nlp-classification/) | Deep learning NLP | AG News 120k (real) | AG News sorter: the selected transformer + selective LLM cascade shows no measurable change in fresh macro-F1 (0.953 → 0.954, +0.001) and accuracy (0.953 → 0.954), reviewing 22 of 1,000 fresh items. Full evaluation: $0.023671 cloud-equivalent. License: research purposes.<br>Stack: hand-written fine-tuning loop, selective LLM cascade (τ=0.6), calibration analysis |

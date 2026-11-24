@@ -3,7 +3,7 @@
   "dataset": {
     "dataset": "M5 Forecasting Competition (Walmart) \u2014 accuracy track subset",
     "subset_rule": "top-3 stores by total units (CA_3, CA_1, TX_2) x top-200 items by total units within those stores; deterministic ranking, see data_m5/PROVENANCE.md",
-    "provenance_ref": "/Users/alejandro/work/portfolio/projects/02-demand-forecasting/data_m5/PROVENANCE.md",
+    "provenance_ref": "projects/02-demand-forecasting/data_m5/PROVENANCE.md",
     "checksums_sha256": {
       "subset_Y.parquet": "52dfc7d31d830d37f7b8b7b3ea886e353699816ab3bc56702c5e1c77b3a2a2b7",
       "subset_X.parquet": "6bac678a3dd6aadc161422c90bc072464039e0a7eee0dd89ebd084a61124ff06",

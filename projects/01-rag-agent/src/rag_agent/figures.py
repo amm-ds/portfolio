@@ -307,8 +307,13 @@ def corpus_eda_figure(articles: list[Article]) -> go.Figure:
     )
 
 
-def taxonomy_figure(traces: list[QuestionTrace]) -> go.Figure:
-    """Failure-taxonomy breakdown: counts per deterministic verdict class."""
+def taxonomy_figure(traces: list[QuestionTrace], *, scope: str = "hosted") -> go.Figure:
+    """Failure-taxonomy breakdown: counts per deterministic verdict class.
+
+    ``scope`` names the run in the takeaway line (``hosted`` for the
+    provider-backed passes, ``final_v3 sealed pass`` for the committed
+    final run).
+    """
     order = [
         "correct",
         "retrieval-miss",
@@ -343,7 +348,7 @@ def taxonomy_figure(traces: list[QuestionTrace]) -> go.Figure:
     )
     return _finish_themed(
         fig,
-        takeaway=(f"counts per deterministic verdict class — hosted {len(traces)}-question run"),
+        takeaway=(f"counts per deterministic verdict class — {scope} {len(traces)}-question run"),
         showlegend=False,  # single unnamed trace → no "trace 0" chip
     )
 
@@ -446,3 +451,222 @@ def fusion_arm_figure(block: dict[str, Any]) -> go.Figure:
         "(k=60, no tuning); generation path unchanged",
     )
     return apply_theme(fig)
+
+
+def retrieval_ladder_figure(rows: list[dict[str, Any]]) -> go.Figure:
+    """Retrieval tournament ladder: R0-S3 arms across frozen splits.
+
+    One group per split, one bar per arm. Left panel: recall@5 with the
+    committed Wilson 95% whiskers; right panel: all_articles@5 (share of
+    relevant articles with every chunk in the top 5). Cells that were never
+    measured (S1/S2 on the consumed final_v3 set; all_articles under
+    chunk-exact gold) are absent on purpose: the ladder plots committed
+    measurements only.
+    """
+    from plotly.subplots import make_subplots
+
+    arms = ["R0", "S1", "S2", "S3"]
+    arm_names = {
+        "R0": "R0 as-shipped",
+        "S1": "S1 structure",
+        "S2": "S2 +RRF",
+        "S3": "S3 +cap (promoted)",
+    }
+    splits: list[str] = []
+    for row in rows:
+        if row["split"] not in splits:
+            splits.append(row["split"])
+    split_labels = {
+        s: f"{s}<br>(n={next(r['n'] for r in rows if r['split'] == s)})" for s in splits
+    }
+
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        subplot_titles=("recall@5 (Wilson 95% whiskers)", "all_articles@5"),
+        horizontal_spacing=0.12,
+    )
+    for arm in arms:
+        arm_rows = [r for r in rows if r["arm"] == arm]
+        by_split = {r["split"]: r for r in arm_rows}
+        fig.add_trace(
+            go.Bar(
+                name=arm_names[arm],
+                x=[split_labels[s] for s in splits if s in by_split],
+                y=[by_split[s]["recall_at_5"] for s in splits if s in by_split],
+                text=[f"{by_split[s]['recall_at_5']:.3f}" for s in splits if s in by_split],
+                textposition="outside",
+                error_y={
+                    "type": "data",
+                    "array": [
+                        by_split[s]["wilson95"][1] - by_split[s]["recall_at_5"]
+                        for s in splits
+                        if s in by_split
+                    ],
+                    "arrayminus": [
+                        by_split[s]["recall_at_5"] - by_split[s]["wilson95"][0]
+                        for s in splits
+                        if s in by_split
+                    ],
+                    "color": "#94a3b8",
+                    "thickness": 1.5,
+                    "width": 5,
+                },
+            ),
+            row=1,
+            col=1,
+        )
+        aa_rows = [r for r in arm_rows if r.get("all_articles_at_5") is not None]
+        if aa_rows:
+            aa_by_split = {r["split"]: r for r in aa_rows}
+            fig.add_trace(
+                go.Bar(
+                    name=arm_names[arm],
+                    x=[split_labels[s] for s in splits if s in aa_by_split],
+                    y=[aa_by_split[s]["all_articles_at_5"] for s in splits if s in aa_by_split],
+                    text=[
+                        f"{aa_by_split[s]['all_articles_at_5']:.3f}"
+                        for s in splits
+                        if s in aa_by_split
+                    ],
+                    textposition="outside",
+                    showlegend=False,
+                ),
+                row=1,
+                col=2,
+            )
+    fig.update_layout(
+        barmode="group",
+        title="Retrieval tournament ladder: R0 to S3 across frozen splits",
+        xaxis={"type": "category", "title": "frozen split (answerable n)"},
+        xaxis2={"type": "category", "title": "frozen split (answerable n)"},
+        yaxis={"title": "recall@5", "range": [0, 1.15]},
+        yaxis2={"title": "all_articles@5", "range": [0, 1.15]},
+    )
+    return _finish_themed(
+        fig,
+        takeaway=(
+            "retrieval-only, no LLM calls; final_v3 measured for R0 and S3 only "
+            "(set consumed). Sources: reports/retrieval_baseline + retrieval_sweeps"
+        ),
+    )
+
+
+def final_outcome_figure(summary: dict[str, Any], slices: dict[str, tuple[int, int]]) -> go.Figure:
+    """Final-pass outcome: answer/abstain confusion + per-slice correct shares.
+
+    ``summary`` is the committed ``f1_summary.json`` (tp/fp/tn/fn); ``slices``
+    maps slice name -> (correct, total) computed from the committed traces.
+    """
+    from plotly.subplots import make_subplots
+
+    tp, fp, tn, fn = (summary[k] for k in ("tp", "fp", "tn", "fn"))
+    n = tp + fp + tn + fn
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        subplot_titles=(
+            f"answer vs abstain outcome (n={n})",
+            "correct per slice",
+        ),
+        horizontal_spacing=0.14,
+    )
+    outcome_labels = ["TP<br>answered", "FP<br>answered", "TN<br>abstained", "FN<br>abstained"]
+    fig.add_trace(
+        go.Bar(
+            x=outcome_labels,
+            y=[tp, fp, tn, fn],
+            text=[tp, fp, tn, fn],
+            textposition="outside",
+            marker_color=["#2dd4bf", "#f472b6", "#34d399", "#fbbf24"],
+            showlegend=False,
+        ),
+        row=1,
+        col=1,
+    )
+    slice_names = list(slices)
+    fig.add_trace(
+        go.Bar(
+            name="correct",
+            x=slice_names,
+            y=[slices[s][0] for s in slice_names],
+            text=[slices[s][0] for s in slice_names],
+            textposition="outside",
+        ),
+        row=1,
+        col=2,
+    )
+    fig.add_trace(
+        go.Bar(
+            name="total",
+            x=slice_names,
+            y=[slices[s][1] for s in slice_names],
+            text=[f"{slices[s][0]}/{slices[s][1]}" for s in slice_names],
+            textposition="outside",
+        ),
+        row=1,
+        col=2,
+    )
+    fig.update_layout(
+        barmode="group",
+        title="Final sealed pass: outcome counts and slice correctness",
+        yaxis={"title": f"questions (n = {n})", "range": [0, n * 0.72]},
+        yaxis2={"title": "questions", "range": [0, 80]},
+    )
+    return _finish_themed(
+        fig,
+        takeaway=(
+            f"final_v3 held run, {n} questions — F1 {summary['f1']:.4f} "
+            f"(precision {summary['precision']:.4f}, recall {summary['recall']:.4f}); "
+            "slices: single-hop 60/68, multi-hop 20/24, unanswerable 24/28 correct. "
+            "Source: reports/final_v3_e2e/f1_summary.json + question_traces_heldout.json"
+        ),
+    )
+
+
+def verify_funnel_figure(verify: dict[str, Any]) -> go.Figure:
+    """Claim verify-loop accounting for the final pass, as stage bars.
+
+    Stages follow the loop's real flow: drafts lose mechanically broken rows
+    before judging; supported claims are accepted, some originals dropped,
+    some repaired back in (which is why accepted exceeds supported). A funnel
+    chart would force a monotone shape the loop does not have.
+    """
+    stages = [
+        ("drafted", verify["n_drafted"], "#38bdf8"),
+        ("mechanical fail", verify["n_mechanical_fail"], "#fbbf24"),
+        ("judged", verify["n_judged"], "#818cf8"),
+        ("judge-supported", verify["n_judge_supported"], "#2dd4bf"),
+        ("accepted (orig+repaired)", verify["n_surviving"], "#34d399"),
+        ("dropped", verify["n_dropped"], "#f472b6"),
+    ]
+    fig = go.Figure(
+        go.Bar(
+            x=[s[0] for s in stages],
+            y=[s[1] for s in stages],
+            text=[f"{s[1]} ({s[1] / verify['n_drafted']:.1%})" for s in stages],
+            textposition="outside",
+            marker_color=[s[2] for s in stages],
+            hovertemplate="%{x}: %{y} claims<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        title="Claim verify loop: stage accounting for the final pass",
+        xaxis_title="stage",
+        yaxis={
+            "title": f"claims (drafted n = {verify['n_drafted']})",
+            "range": [0, verify["n_drafted"] * 1.18],
+        },
+    )
+    return _finish_themed(
+        fig,
+        takeaway=(
+            f"accepted = {verify['n_accepted_original']} original + "
+            f"{verify['n_accepted_repaired']} repaired; dropped = "
+            f"{verify['n_dropped_original']} original + {verify['n_dropped_repaired']} "
+            f"repaired after the repair rail; mean support "
+            f"{verify['mean_support_fraction']:.4f}; repair rail ≤2 calls. "
+            "Source: final_v3_e2e/metrics.json detail.final_v3.verify"
+        ),
+        showlegend=False,
+    )

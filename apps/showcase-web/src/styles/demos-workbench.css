@@ -302,7 +302,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.9rem;
-  height: 280px;
+  height: clamp(240px, 24vh, 360px);
   min-height: 0;
 }
 

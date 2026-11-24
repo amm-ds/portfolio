@@ -283,12 +283,14 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "chunk_size_sweep",
       "eda_corpus_composition",
       "failure_taxonomy",
+      "final_outcome",
       "fusion_arm_comparison",
       "kimi_generation_comparison",
       "latency_histogram",
       "model_comparison",
       "retrieval_funnel",
-      "retrieval_hpo_frontier"
+      "retrieval_ladder",
+      "verify_funnel"
     ],
     "has_roadmap": true,
     "metrics_keys": [

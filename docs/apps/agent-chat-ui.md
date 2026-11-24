@@ -16,7 +16,7 @@ events into the active answer, and commits the validated `Answer` when `done`
 arrives. Memory recall uses the same tool-card path as arithmetic or retrieval;
 there is no special memory panel and no hidden notebook dump.
 
-![The agent-chat surface with a calculator tool card, answer, citations, and token meter.](../assets/apps/agent-chat-ui.png){ width="100%" }
+![The agent-chat surface with a search_docs tool card, streamed answer, citations, and token meter.](../assets/apps/agent-chat-ui.png){ width="100%" }
 
 ## Surface anatomy
 
@@ -56,7 +56,7 @@ same parts, not emitted as a separate event stream. Text before a tool is a
 last completed step is presented as running. It is a compact execution trace,
 not a claim that the model exposed private chain-of-thought.
 
-![The approval leg: send_message is running while a pending human decision holds the stream open.](../assets/apps/agent-chat-approval.png){ width="100%" }
+![The approval leg: restart_service is running while a pending human decision holds the stream open.](../assets/apps/agent-chat-approval.png){ width="100%" }
 
 ## The approval leg
 
@@ -82,13 +82,13 @@ parallel notification that can race a later answer.
 
 Memory needs no new event type. A `remember` call appears as a completed tool
 card containing the stored note; a later `recall` card contains only the notes
-selected for that question. In the capture below, the second answer is grounded
-by the visible recalled note, while unrelated notebook entries never enter the
-tool result or prompt. The notebook persists across conversations and backend
-restarts; the screenshot drives the real FastAPI stream with the deterministic
-fake model, not a browser mock.
+selected for that question. The capture below is the scripted mock transport
+(`VITE_MOCK=1`): the seeded incident-triage conversation, reopened from the
+list, with no live model or memory backend. The remember/recall behavior is
+implemented and graded in the committed offline suite; this screenshot only
+illustrates the conversation UI.
 
-![Memory recall in the live UI: a stored Neovim preference is selectively recalled in a later turn.](../assets/apps/agent-chat-memory.png){ width="100%" }
+![A stored incident-triage conversation reopened from the list in the scripted mock UI.](../assets/apps/agent-chat-memory.png){ width="100%" }
 
 The browser generates an anonymous UUID in `sessionStorage` and sends it as
 `X-Agent-Chat-Session`. New conversations and reloads in the same tab share that

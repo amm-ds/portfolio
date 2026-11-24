@@ -401,8 +401,10 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
   0.9239, with multi-hop recall@5 0.8333 to 0.7917 and no slice regression;
   `params.yaml retrieval_best` and the rebuilt `data/index/chunks_200` carry
   the promoted configuration. The judge_v2 calibration (147 claims, 72
-  one-detail same-subject negatives after 3 drops) was owner-validated on a
-  30-claim blind sample at 30/30 agreement, Wilson 95% [0.8865, 1.0]. Phase E
+  one-detail same-subject negatives after 3 drops) was audited on a
+  30-claim sample by a reviewer agent at 30/30 agreement against the passage
+  text, Wilson 95% [0.8865, 1.0]; the owner's own hand-label pass is still
+  pending. Phase E
   fixed three pipeline bugs (240-char judge context truncation, span
   punctuation tokenization, unbounded search loops) and added a deterministic
   soft tool ceiling inside the tools. The single official 120-question

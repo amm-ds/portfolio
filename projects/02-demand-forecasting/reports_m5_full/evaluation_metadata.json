@@ -2,7 +2,7 @@
   "protocol": "m5_full_v1",
   "dataset": {
     "dataset": "M5 Forecasting Competition (Walmart) \u2014 accuracy track FULL panel",
-    "provenance_ref": "/Users/alejandro/work/portfolio/projects/02-demand-forecasting/data_m5/raw/PROVENANCE.md",
+    "provenance_ref": "projects/02-demand-forecasting/data_m5/raw/PROVENANCE.md",
     "checksums_sha256": {
       "m5/datasets/m5.zip": "cc704ba15d6802f8262e6ec7d4c6041e4ad6366a94365e8c84f721e450eed774",
       ".cache/m5/m5/Y_df.parquet": "bdd4c6fd4c6544188212e805fb5708b1431049a6dae72d11e51842de8310d875",

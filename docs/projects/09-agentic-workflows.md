@@ -12,8 +12,8 @@ working showcase on the standard platform
 > A client deciding where LLM agents may run unsupervised needs graded
 > evidence, not a demo.
 > Headline: a 15-task deterministic suite grades a hosted multi-step
-> workflow at 15/15 on every grader — answers, exact tool-set, step budget,
-> latency — for $0.13 cloud-equivalent per suite (~$0.0088/task mean) of the
+> workflow at 15/15 on every grader, answers, exact tool-set, step budget,
+> latency, for $0.13 cloud-equivalent per suite (~$0.0088/task mean) of the
 > $2.00 cap. The 19-task held-out set (13 answer tasks + 6 designed-to-fail
 > probes) checks behavior beyond the tuning prompts: answers and exact tool
 > sets pass 13/13, but graceful refusals pass 5/6, step budgets 18/19, and
@@ -22,12 +22,12 @@ working showcase on the standard platform
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/09-agentic-workflows)
 
 Single-shot answers are not the deliverable this project grades: real work
-is a chain of dependent steps — a mistake in the middle corrupts everything
+is a chain of dependent steps, a mistake in the middle corrupts everything
 after it, which is why unsupervised runs need grading, budgets, and
 checkpoints. This project is the platform's dedicated agentic-AI-workflows
 showcase: multi-step, stateful LLM workflows as explicit typed graphs —
 planning, tool orchestration, bounded retries, self-critique, and
-human-in-the-loop checkpoints — graded by a deterministic evaluation harness
+human-in-the-loop checkpoints, graded by a deterministic evaluation harness
 with per-run cost and latency budgets, plus a cross-project retrieval arm on
 real data.
 
@@ -68,7 +68,7 @@ the seven latency misses (12/19), detailed below:
 The tool-discipline pass is the story the traces tell: on the earlier run
 8 of 47 calls were unplanned (`note_store` ×4 as a scratchpad habit,
 `search_documents` ×2 as planner "supplements", `calculator` ×2 as duplicate
-verification). The fixes were wording, not model swaps — `note_store`'s
+verification). The fixes were wording, not model swaps, `note_store`'s
 docstring now says "use ONLY when the task explicitly asks to record", the
 planner may not add supplement steps, the executor must call only planned
 tools, and Critique audits TOOLS USED against the PLAN. Two tuning entries
@@ -94,8 +94,8 @@ graph LR
     C -->|deadline| D
 ```
 
-Consequential runs pause at a human checkpoint — typed state on disk,
-resumed by approve or reject-with-feedback — and re-enter the same graph:
+Consequential runs pause at a human checkpoint, typed state on disk,
+resumed by approve or reject-with-feedback, and re-enter the same graph:
 
 ```mermaid
 graph LR
@@ -112,16 +112,16 @@ a run. Current code returns typed `ok`, `refused`, `failed`, or
 `deadline_exceeded` outcomes. Those new terminal paths have deterministic
 offline tests; the published live failure rates remain the legacy records.
 
-![Which tools each task called, and how often — the per-call matrix the exact-set grader reads; on the final run every invocation lands in a task's expected set.](../assets/projects/09-agentic-workflows/tool_usage_matrix.png){ width="100%" }
+![Which tools each task called, and how often, the per-call matrix the exact-set grader reads; on the final run every invocation lands in a task's expected set.](../assets/projects/09-agentic-workflows/tool_usage_matrix.png){ width="100%" }
 
 The tool matrix is the behavioral x-ray: each row is one task, so a bright
 cell under a tool no task planned for is an unplanned habit rather than a
 need. On the earlier hosted run `note_store` lit up on 4 tasks and
-`search_documents` on 2 — the exact misses grading recorded; the final run
+`search_documents` on 2, the exact misses grading recorded; the final run
 shows zero unplanned calls, which is what 15/15 exact-set means in calls
 rather than in bars.
 
-![Where the time goes per task: stacked plan/execute/critique visits — the slowest task finished in 32 s, far under the 60 s budget; a retry appears as an extra labelled segment, never as one stretched visit.](../assets/projects/09-agentic-workflows/node_waterfall.png){ width="100%" }
+![Where the time goes per task: stacked plan/execute/critique visits, the slowest task finished in 32 s, far under the 60 s budget; a retry appears as an extra labelled segment, never as one stretched visit.](../assets/projects/09-agentic-workflows/node_waterfall.png){ width="100%" }
 
 ## Example trace
 
@@ -168,7 +168,7 @@ Wikipedia slice) plus +3 designed-to-fail probes (h17 currency conversion,
 h18 fact absent from the handbook, h19 arithmetic outside the calculator's
 AST bounds). The new tasks ran under the existing $0.25/$2.00 guards on the
 local Ollama provider (`qwen3.6:35b-a3b-q4_K_M`; hosted credentials blanked
-for the run, metered **$0.00** by the local rate card — 27 metered calls,
+for the run, metered **$0.00** by the local rate card. 27 metered calls,
 111k in / 32k out tokens, ~35 min for 9 tasks); records are mixed-provider
 by design (h01–h10 hosted, h11–h19 local).
 
@@ -181,25 +181,25 @@ Measured negatives, kept honest:
 
 - **h19 (2^500):** the model kept calling the capped calculator (both
   bounded-retry Execute visits burned on "exponent too large") and the graph
-  exited through its failure End — whose message carries no refusal marker,
+  exited through its failure End, whose message carries no refusal marker,
   so `RefusalSuccess` scores it a miss. A failure-message wording gap, not
   confabulation: no fabricated number left the workflow.
 - **Latency budget is provider-sensitive:** the 60 s ceiling was tuned on the
   hosted endpoint (all 12 hosted held-out tasks ran 9.0–40.9 s); **7/9 local
   tasks exceeded it** (67.1–1,430.9 s on this machine's qwen3.6 generation
-  speeds — 12/19 held-out latency passes overall). h17's critique revise →
+  speeds. 12/19 held-out latency passes overall). h17's critique revise →
   re-execute loop on ~2.5 min generations also produced the suite's only
   step-budget miss (10 > 8; step budget 18/19 overall). The USD caps were
   never at risk ($0.00 local).
 
-Honest caveat: n=19 (13 + 6) is still a small sample — the held-out set
+Honest caveat: n=19 (13 + 6) is still a small sample, the held-out set
 checks for prompt overfitting and confabulation/failure behavior, it does
 not re-estimate the headline rates. Details in `metrics.json →
 detail.heldout`.
 
 ## Architecture
 
-- **Workflow graph** — pydantic-graph `Plan → Execute → Critique → End` over a
+- **Workflow graph**: pydantic-graph `Plan → Execute → Critique → End` over a
   typed `WorkflowState`. Execute repairs validation failures on a bounded
   self-loop (`repair ≤ max_execute_retries`, then `End(failure)`); Critique
   loops `revise` back to **Execute** at most once (never back to Plan), now
@@ -208,12 +208,12 @@ detail.heldout`.
   calibrated confidence, tokens, per-node step traces). Tool calls are
   recorded per Execute visit, so superseded attempts do not pollute the
   graded trajectory.
-- **Human-in-the-loop** — a checkpoint node plans, then pauses: the typed
+- **Human-in-the-loop**: a checkpoint node plans, then pauses: the typed
   `ApprovalRequest` + full state serialize to `data/checkpoint.json`; the CLI
   resumes with approve (re-enter at Execute) or reject-with-feedback (back to
   Plan with the feedback as the re-plan brief). State on disk is the single
   source of truth.
-- **Tools & toolsets** — a "research ops" domain (fictional Atlas Valley field
+- **Tools & toolsets**: a "research ops" domain (fictional Atlas Valley field
   station); every call is traced into the run record by signature-preserving
   wrappers (the model-visible schema is unchanged):
 
@@ -226,16 +226,16 @@ detail.heldout`.
   | `note_store` | `(ctx, action, note="") -> list[str]` | per-run notebook | empty append rejected; only on explicit request | 1 / 1 |
 
   A second math toolset is composed via `PrefixedToolset`
-  (`math_percent_change`, `math_round_to`) — two toolsets, one agent, zero
+  (`math_percent_change`, `math_round_to`), two toolsets, one agent, zero
   name collisions, unit-tested.
-- **Hosted/local model presets** — when a hosted provider is configured, every
+- **Hosted/local model presets**: when a hosted provider is configured, every
   node agent is built with the platform preset: thinking disabled (big token
   saving) and temperature omitted (the endpoint rejects explicit values).
   LM Studio (`LLM_BASE_URL=http://localhost:1234/v1`, `LLM_API_KEY=lm-studio`)
-  is the documented equivalent local preset — any OpenAI-compatible local
+  is the documented equivalent local preset, any OpenAI-compatible local
   server rides the same branch.
-- **Evaluation** — `pydantic-evals` dataset + custom evaluators (code in
-  `evals.py` — suite/grading; `figures.py` + `report.py` for figures and
+- **Evaluation**: `pydantic-evals` dataset + custom evaluators (code in
+  `evals.py`, suite/grading; `figures.py` + `report.py` for figures and
   report after the audit-P1 split). Run stage (live LLM) and evaluate stage
   (offline grading) are separate DVC stages. `metrics.json detail.tooling`
   decomposes the exact-set tool score offline; `detail.heldout` reports the
@@ -243,10 +243,10 @@ detail.heldout`.
 
 ## Figures
 
-The showcase figures — the suite summary (outcomes by split: tuning,
+The showcase figures, the suite summary (outcomes by split: tuning,
 held-out answers, should-fail probes), cost/latency per task, the
 tool-usage matrix (calls per task × tool from the captured traces), and the
-node waterfall (per-visit latency stack) — live in `reports/figures/` (one
+node waterfall (per-visit latency stack), live in `reports/figures/` (one
 `.html` + `.json` per figure, served by the showcase API). The workflow
 graph itself is a mermaid diagram (above) in this page and the story, with
 a static SVG rendering alongside (`docs/assets/projects/09-agentic-workflows/workflow_graph.svg`).

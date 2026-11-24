@@ -247,12 +247,18 @@ sections:
     a smaller past-only evaluation, the swap won its erratic quadrant against
     the floor.
 
-    The wider result did not hold up: the pooled fit scored twice the noise
-    band worse than the blend on WRMSSE. An adoption gate, a rule that rejects
-    a candidate
-    when the wider result worsens, rejected it. This arm is absent from the
-    ranking figure because its evidence comes only from that capped window. Its
-    full-panel performance remains unproven, and the final ensemble stays 0.6211.
+    The wider result did not hold up: on the full scored-once test window the
+    routed arm scored 0.6235 against the champion's 0.6211, a +0.0025 setback
+    about 3.9 times the paired bootstrap noise band. Its erratic-class win
+    rate against the floor also slipped, 0.8247 against 0.8260. An adoption
+    gate, a rule that rejects a candidate when the wider result worsens,
+    rejected it on both checks. One disclosure: that gate is a second use of
+    the scored-once test window, so the window is no longer strictly
+    single-use; the champion is unchanged, so the headline stands. An earlier
+    Huber variant never reached the test window: the screening pass stopped
+    it after origin 1, 0.8683 against 0.7409 for the champion. This arm is
+    absent from the ranking figure; its full-panel performance is measured
+    and it loses. The final ensemble stays 0.6211.
 
     **Business summary:** The ranking figure shows the ensemble at 0.6211 versus
     the 0.8929 floor, a 30.4% reduction. Pooled fits beat the global model, with
@@ -281,14 +287,16 @@ sections:
       store-by-category cell, or department beat one global fit.
     - Its stability screen selected a three-member blend by mean + 1.0×std over
       two selection origins, rather than rewarding one lucky origin.
-    - Its scored-once windows keep the headline believable: choose on nine origins
-      and grade exactly once on the competition window.
+    - Its scored-once windows keep the headline believable: choose on nine
+      origins and grade on the competition window; the erratic arm's adoption
+      gate read that window a second time, and the champion still won it.
     - The full-panel choice still loses on quiet days. On zero-actual days,
-      zero-day accuracy stays with the floor: 66.6% against the ensemble's 57.3%.
+      zero-day accuracy stays with the floor: 66.6% against the ensemble's 57.2%.
     - Spike capture remains a measured negative result. It won the erratic
-      quadrant on a capped window but over-forecasted the wider panel, with
-      a pooled-WRMSSE setback of twice the noise band. The adoption gate
-      rejected it, so no full-panel improvement is claimed.
+      quadrant on a capped window but scored 0.6235 on the full scored-once
+      test window against the champion's 0.6211, a +0.0025 setback about 3.9
+      times the paired bootstrap noise band. The adoption gate rejected it on
+      a second use of the test window, so no full-panel improvement is claimed.
     - The 30.4% reduction has bounded support. The screen uses only nine origins,
       no bootstrap confidence intervals exist, and stockouts are unmodeled.
 
@@ -335,7 +343,7 @@ sections:
     - The selection screen is thin. Members and weights use only 2 selection
       origins. No bootstrap CIs, meaning resampling-based confidence intervals,
       exist, so the 30.4% reduction has no interval bound.
-    - On zero-actual days the floor still wins, 66.6% versus 57.3% accuracy.
+    - On zero-actual days the floor still wins, 66.6% versus 57.2% accuracy.
       Full scale prices intermittency into the hierarchy but does not remove it.
     - The demo band is the per-day minimum/maximum envelope of the blend members.
       It shows their spread, not a calibrated prediction interval with measured
@@ -382,4 +390,4 @@ figure_captions:
   m5_full_sample_series: "Three catalog series at the scored-once test origin on 2016-05-22: top-units, hardest-intermittent, and mid-volume. Each panel shows 56 days of history, 28 days of actual sales, and the ensemble curve with its member envelope. The envelope is the members' spread, not a calibrated interval. Look for the weekly shape, weeks-long zero runs, and quiet days."
   m5_full_candidate_ranking: "All 8 candidates ranked by official hierarchical WRMSSE on the scored-once competition window across 42,840 revenue-weighted nodes. Lower bars are better. The stability-screened convex ensemble leads at 0.6211, the best single pooled fit scores 0.6219, and the seasonal-naive floor scores 0.8929."
   m5_full_per_level_wrmsse: "Official WRMSSE by hierarchy level on the test window for the convex ensemble, seasonal-naive floor, and best single fit (lgbm_pool_store). Each level receives equal total weight. Compare the paired bars: the blend's edge is broadest at aggregate levels. At item level, learned candidates cluster near 1.04–1.15 while the floor sits near 1.39."
-  m5_full_pooling_panel: "All eight candidates on the scored-once full M5 panel. Left: signed bias as a percentage of mean actual sales; positive means over-forecasting. Right: accuracy on zero-actual days, overall and for intermittent series, where a forecast below 0.5 is correct. The seasonal-naive floor leads overall quiet-day accuracy at 66.6% versus 57.3% for the blend, so pooled WRMSSE gains do not erase the quiet-day trade-off."
+  m5_full_pooling_panel: "All eight candidates on the scored-once full M5 panel. Left: signed bias as a percentage of mean actual sales; positive means over-forecasting. Right: accuracy on zero-actual days, overall and for intermittent series, where a forecast below 0.5 is correct. The seasonal-naive floor leads overall quiet-day accuracy at 66.6% versus 57.2% for the blend, so pooled WRMSSE gains do not erase the quiet-day trade-off."

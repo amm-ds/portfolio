@@ -20,23 +20,23 @@
 ## What it shows
 
 Campaign owners deciding who gets the next send face a counterfactual
-question — who buys *because of us*? — that conversion scorers cannot
+question (who buys *because of us*?) that conversion scorers cannot
 answer. This project runs the full experimentation stack that turns a
 randomized campaign into an operating targeting policy. On the canonical
 Hillstrom benchmark (Mens E-Mail arm vs no-email control, 42,613 customers):
 DQ gates and balance checks on the pinned snapshot; the honest difference-in-means read (conversion +0.68pp,
 SE 0.09pp); **CUPED** variance reduction with a strictly pre-period covariate
-(measured, not assumed: 0.08% on conversion, 0.52% on visit — covariate
+(measured, not assumed: 0.08% on conversion, 0.52% on visit, covariate
 quality is the whole game); an **analytic power analysis** (3,063 per arm
 required at alpha 0.05 / power 0.8 vs 21,306 available); and three targeting
-policies — the marketing-practice **response model**, a hand-rolled **T-learner**
+policies, the marketing-practice **response model**, a hand-rolled **T-learner**
 and **X-learner** on sklearn (5-fold cross-fitted scores, no causallib) —
 judged by **Qini curves/coefficient** and by **incremental revenue minus
 send cost under a documented campaign cost model** ($114 revenue per conversion =
-`revenue_per_conversion`, measured mean converter spend — no COGS in the
+`revenue_per_conversion`, measured mean converter spend, no COGS in the
 snapshot; $0.01 per email) against random, treat-everyone, and no-campaign
 baselines. Every policy number carries a **paired-bootstrap 95% CI** (paired
-row bootstrap of the out-of-fold scores, n=1000, seeded — one shared
+row bootstrap of the out-of-fold scores, n=1000, seeded, one shared
 row-resample per replication), and a **cost sweep** locates the break-even
 send cost where targeted mail beats mailing everyone.
 
@@ -46,7 +46,7 @@ Qini is the curve area above random in conversion units (higher is
 better); the value column is expected revenue minus send cost from mailing
 the top 25% by
 score under the cost model; the Δ columns are at the same 25% budget vs
-random — Δ Qini in incremental conversions, Δ value in dollars — with 95%
+random. Δ Qini in incremental conversions, Δ value in dollars, with 95%
 CIs from a paired row bootstrap.
 
 | policy | Qini [95% CI] | revenue minus send cost @ 25% budget [95% CI] | Δ Qini vs random | Δ value vs random |
@@ -57,7 +57,7 @@ CIs from a paired row bootstrap.
 | random | 0.0 | $4,026 | — | — |
 | treat-everyone | 0.0 | — (full-mail $16,103) | — | — |
 
-![The response model posts the highest Qini area but the paired difference CI spans zero — the curve-area ranking is not established while T-learner's value advantage is.](../assets/projects/10-uplift-experimentation/qini_curves.png){ width="100%" }
+![The response model posts the highest Qini area but the paired difference CI spans zero, the curve-area ranking is not established while T-learner's value advantage is.](../assets/projects/10-uplift-experimentation/qini_curves.png){ width="100%" }
 
 The table's Qini intervals are the primary two-arm Mens-versus-control
 analysis. The separate per-arm AUUC read is Mens 12.03 [−0.47, 24.21] and
@@ -74,22 +74,22 @@ policy-value interval below, not interchangeable evidence.
 
 - Ranking verdict, with intervals: the response model posts the highest Qini
   area but the lowest budget value; the paired Qini-difference CI
-  (response − T) of [−8.18, 9.52] **spans zero — the curve-area ranking is
+  (response − T) of [−8.18, 9.52] **spans zero, the curve-area ranking is
   NOT established**, while the paired revenue-minus-send-cost-difference CI
   [−$3,617, −$48]
-  is entirely below zero — **T-learner's value advantage IS established**.
+  is entirely below zero. **T-learner's value advantage IS established**.
   Policy is chosen on the money; the curve explains why.
 - Cost sensitivity: the value-maximizing fraction drops below full-mail by
   ≈$0.20/email; above ≈$0.30/email (analytic break-even c\* ≈ $0.2999) the
-  top-25% policy beats mail-everyone — $1,618 vs −$4,777 at $0.50, the
+  top-25% policy beats mail-everyone, $1,618 vs −$4,777 at $0.50, the
   list-wear regime where targeting is the difference between a net gain and
   a net loss.
 
-![Above ≈$0.30/email the top-25% T-learner policy beats mail-everyone — $1,618 vs −$4,777 at $0.50, the break-even where targeting is the difference between a net gain and a net loss.](../assets/projects/10-uplift-experimentation/cost_sensitivity.png){ width="100%" }
+![Above ≈$0.30/email the top-25% T-learner policy beats mail-everyone, $1,618 vs −$4,777 at $0.50, the break-even where targeting is the difference between a net gain and a net loss.](../assets/projects/10-uplift-experimentation/cost_sensitivity.png){ width="100%" }
 
-- CUPED: ATE unchanged (+0.00680 vs +0.00681) — unbiased by construction;
+- CUPED: ATE unchanged (+0.00680 vs +0.00681), unbiased by construction;
   conversion variance reduction is only 0.08% because prior spend barely
-  predicts a ~1% event. Predicting conversions ≠ changing them — the same
+  predicts a ~1% event. Predicting conversions ≠ changing them, the same
   lesson as Project 05's fairness finding.
 - 14/14 DQ checks on the pinned snapshot; full pipeline ~30 s, deterministic.
 

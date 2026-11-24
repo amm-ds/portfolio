@@ -48,6 +48,7 @@ import pyarrow.parquet as pq
 from portfolio_core.logging import get_logger
 
 from demand_forecasting.intermittent import classify_demand
+from demand_forecasting.m5_data import _repo_rel
 from demand_forecasting.m5_full import (
     CANDIDATES,
     ORIGIN_SPACING_DAYS,
@@ -380,7 +381,7 @@ def run_m5_full_catalog(
         "protocol": PROTOCOL,
         "origin": str(odate.date()),
         "catalog_rule": CATALOG_RULE,
-        "weights_source": str(metrics_path),
+        "weights_source": _repo_rel(metrics_path),
         "ensemble": json.dumps({"members": members, "weights": weights}),
         "band": "band_lo/band_hi = per-day min/max of the committed ensemble "
         "member forecasts (an envelope, NOT a calibrated prediction interval)",
@@ -416,7 +417,7 @@ def run_m5_full_catalog(
             "ladder_cap": series_cap,
             "pooled_strategy": pooled_strategy,
         },
-        "weights_source": str(metrics_path),
+        "weights_source": _repo_rel(metrics_path),
         "weights_rule": "committed members/weights read from the committed run's "
         "metrics.json and reused verbatim — the catalog run does NOT re-select",
         "ensemble": {"members": members, "weights": weights},

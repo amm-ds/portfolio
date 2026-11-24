@@ -755,10 +755,12 @@ describe("ProjectsIndex", () => {
     expect(cards).toHaveLength(2);
     const card = cards[0];
     expect(card.querySelector("img")!.getAttribute("src")).toBe("/apps/agent-chat-approval-v3.png");
-    // compact app cards: capped screenshot height (house rule)
+    // compact app cards: aspect-ratio screenshot with a wide-screen cap (proposal A)
     const css = readStylesCss();
     const shotRule = css.match(/\.app-card__shot \{[\s\S]*?\n\}/)![0];
-    expect(shotRule).toContain("height: 180px;");
+    expect(shotRule).toContain("height: auto;");
+    expect(shotRule).toContain("aspect-ratio: 16 / 10;");
+    expect(shotRule).toContain("max-height: 22rem;");
     expect(shotRule).toContain("object-fit: cover;");
     const links = [...card.querySelectorAll("a")].map((a) => [
       a.textContent,

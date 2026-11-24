@@ -6,7 +6,7 @@ returns structured, cited answers. The promoted retriever is S3: title-anchored
 chunks, dense FAISS fused with BM25 by reciprocal rank fusion, cross-encoder
 reranking, and a per-article diversity cap.
 
-Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybrid retrieval (title-anchored chunks, BM25+dense RRF, diversity cap) reaches 0.946 recall@5. Judge calibrated 30/30 blind. Final 120-question pass: F1 0.909, precision 0.952, faithfulness 0.872, 1/120 unsupported.
+Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybrid retrieval reaches 0.946 recall@5. Judge sample: reviewer-agent audit 30/30; owner hand-label pending. Final 120-question pass: F1 0.909, precision 0.952, faithfulness 0.872, 1/120 unsupported.
 
 The runtime default is local Ollama (`qwen3.6:35b-a3b-q4_K_M`); any
 OpenAI-compatible endpoint uses the same path. There is no runtime mock.
@@ -69,9 +69,11 @@ per article with score-order backfill. The agent exposes only
 The verify loop checks each drafted claim against its full cited chunks. It
 repairs or drops unsupported claims and abstains when surviving support falls
 below 0.6. The rebuilt judge_v2 calibration supersedes the earlier miss
-rates: the owner hand-labelled a 30-claim blind sample and agreement with the
+rates: a reviewer agent audited the judge's labels on a 30-claim sample
+against the passage text, and agreement with the
 `kimi-for-coding` labels is 30/30, Wilson 95% [0.8865, 1.0], clearing the
 0.85 gate (`reports/judge_calibration_v2/owner_sample_validated.json`). The
+owner's own hand-label pass on the sample is still pending. The
 earlier calibration accepted about 44% of unsupported claims and stays in
 [DESIGN.md](DESIGN.md) as history. Provider selection, verification, and
 judging follow DESIGN.md and ADR-0004.
@@ -84,15 +86,19 @@ The single official end-to-end pass over `data/golden_final_v3.json` uses the
 promoted S3 retriever, the verify loop, and the bounded agent loop (12
 requests, 16 tool calls, 200,000 input tokens, with a soft in-tool ceiling).
 It is checkpointed under `reports/runs/final_v3-432d6b705715/`.
+Disclosure: final_v3 retrieval results were read more than once (R0 baseline,
+S3 promotion gate, held-out validation, and this pass) and the S3 promotion
+was confirmed on this set, so the set is **consumed**: any future retrieval
+or agent change must be measured on a newly sealed set (`final_v4`).
 
 | metric | final_v3 result |
 |---|---:|
 | F1 / precision / recall | **0.9091 / 0.9524 / 0.8696** |
 | overall accuracy (95% CI) | **0.8667 [0.7944, 0.9162]** |
-| faithfulness (95% CI) | **0.8717 [0.7983, 0.9155]** |
+| faithfulness (95% CI) | **0.8717 [0.8092, 0.9304]** |
 | failure taxonomy | 104 correct / 1 unsupported-claim / 10 empty-answer / 1 retrieval-miss / 4 budget-terminated |
 | single_hop / multi_hop / unanswerable correct | 60/68 / 20/24 / 24/28 |
-| judge blind-sample agreement | 30/30 [0.8865, 1.0] |
+| judge sample audit agreement (reviewer agent) | 30/30 [0.8865, 1.0] |
 | whole-wave meter | $2.0392 cumulative cloud-equivalent |
 
 ### Tuning baseline (65 questions, prior)

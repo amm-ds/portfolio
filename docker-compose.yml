@@ -14,7 +14,7 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-}
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=4)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=4)"]
       interval: 30s
       timeout: 5s
       start_period: 20s
@@ -26,6 +26,11 @@ services:
     command: sh -c "npm ci --no-audit --no-fund && npm run dev -- --host"
     volumes:
       - ./apps/showcase-web:/web
+      # Anonymous volume: keep the container's own node_modules (installed for
+      # the image arch) instead of shadowing them with the host's macOS arm64
+      # tree, which triggers the npm optional-dependencies bug (rollup
+      # darwin-arm64 missing). `npm ci` in the command refreshes the volume.
+      - /web/node_modules
     ports:
       - "4321:4321"
     depends_on:

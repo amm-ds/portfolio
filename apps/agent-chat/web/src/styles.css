@@ -180,31 +180,6 @@ summary:focus-visible,
   background-size: 14px 14px;
 }
 
-.terminal-dots {
-  display: flex;
-  gap: 0.4rem;
-  margin-right: 0.5rem;
-}
-
-.terminal-dots span {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: var(--border);
-}
-
-.terminal-dots span:nth-child(1) {
-  background: var(--danger);
-}
-
-.terminal-dots span:nth-child(2) {
-  background: #fbbf24;
-}
-
-.terminal-dots span:nth-child(3) {
-  background: var(--ok);
-}
-
 .chat-title::before {
   content: "> ";
   color: var(--accent);

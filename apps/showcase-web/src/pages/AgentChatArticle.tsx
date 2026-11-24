@@ -264,14 +264,14 @@ export function AgentChatArticle() {
               />
               <Screenshot
                 name="agent-chat-approval-v3.png"
-                alt="Agent chat waiting for an operator to approve or deny a send_message action"
+                alt="Agent chat waiting for an operator to approve or deny a restart_service action"
                 caption="The run pauses for an explicit approve/deny decision."
               />
             </div>
             <div className="prose">
               <p>
                 Compare the <strong>workspace and approval screenshots</strong>: the first exposes
-                tool evidence beside the answer; the second holds the simulated messaging action for
+                tool evidence beside the answer; the second holds the simulated restart action for
                 an operator decision. They demonstrate interaction and state, not external delivery
                 or answer correctness.
               </p>
@@ -280,25 +280,19 @@ export function AgentChatArticle() {
               <video controls preload="metadata" playsInline poster="/apps/agent-chat-ui-v3.png">
                 <source src="/apps/agent-chat-demo.webm" type="video/webm" />
                 <source src="/apps/agent-chat-demo.mp4" type="video/mp4" />
-                <track
-                  kind="captions"
-                  src="/apps/agent-chat-demo.vtt"
-                  srcLang="en"
-                  label="English scene descriptions"
-                  default
-                />
                 Your browser does not support the video element.
               </video>
               <div className="prose">
                 <p>
                   <strong>Walkthrough:</strong> a question streams an answer with tool evidence,
-                  a consequential action pauses for approval, and a later conversation recalls a
-                  stored fact. The clip uses the same public UI and typed SSE contract shown below.
+                  a consequential action pauses for approval, and a stored conversation is reopened
+                  from the list. The clip uses the same public UI and typed SSE contract shown below.
                 </p>
                 <p>
-                  The 44.8-second recording uses <code>kimi-for-coding</code> and fresh conversations
-                  rather than mock transport. It is a UI walkthrough, not an independent evaluation;
-                  the approval scene still uses the in-memory messaging simulation.
+                  Recorded against the scripted mock transport (<code>VITE_MOCK=1</code>): canned
+                  streaming, tool calls, and the approval flow run entirely in the browser with no
+                  live model or memory backend. It is a UI walkthrough, not an independent
+                  evaluation; the approval scene uses the in-memory restart simulation.
                 </p>
               </div>
             </div>
@@ -349,15 +343,16 @@ export function AgentChatArticle() {
             <div className="app-media-grid app-media-grid--single">
               <Screenshot
                 name="agent-chat-memory-v3.png"
-                alt="Agent chat recalling one cloud preference in the current browser session"
-                caption="One complete fact is recalled in a new conversation within the same browser session."
+                alt="Agent chat showing the seeded incident-triage conversation reopened from the list"
+                caption="Scripted incident-triage exchange, reopened from the conversation list (mock transport)."
               />
             </div>
             <div className="prose">
               <p>
-                The <strong>memory screenshot</strong> above shows one selective recall in a new
-                conversation. It demonstrates namespace reuse, not semantic memory quality or
-                secure multi-tenant identity.
+                The <strong>screenshot</strong> above shows the seeded incident-triage conversation
+                rendered after selection from the list. Recorded with the scripted mock transport,
+                it illustrates the conversation UI; the memory claims in this section rest on the
+                implementation and the committed evaluation evidence, not on this capture.
               </p>
             </div>
           </ArticleSection>

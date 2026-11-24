@@ -114,8 +114,9 @@ let completed = false;
 try {
   await mkdir(publicDir, { recursive: true });
   const webUrl = process.env.AGENT_CHAT_WEB_URL ?? "http://127.0.0.1:4322";
-  const expectedProvider = process.env.AGENT_CHAT_EXPECT_PROVIDER ?? "kimi";
-  const expectedModel = process.env.AGENT_CHAT_EXPECT_MODEL ?? "k3-256k";
+  const isMock = process.env.AGENT_CHAT_MOCK === "1";
+  const expectedProvider = process.env.AGENT_CHAT_EXPECT_PROVIDER ?? (isMock ? "mock" : "kimi");
+  const expectedModel = process.env.AGENT_CHAT_EXPECT_MODEL ?? (isMock ? "mock-agent-1" : "k3-256k");
   await page.goto(webUrl, { waitUntil: "networkidle", timeout: 60_000 });
   const badge = await page.locator(".composer-badge").innerText();
   if (!badge.includes(`${expectedModel}@${expectedProvider}`)) {
@@ -123,23 +124,41 @@ try {
   }
   // Do not showcase a stale persisted conversation: every flow starts clean.
   await page.locator(".btn-new").click();
-  await ask("What is 2+2? Answer briefly.");
-  await capture("agent-chat-ui-v3.png", ".bubble");
+  if (isMock) {
+    // Scripted mock transport (VITE_MOCK=1): every run parks on the canned
+    // restart approval, so the flow is question -> approval capture -> approve
+    // -> done -> capture. The memory screenshot comes from the seeded
+    // "example: incident triage" conversation (scripted content, no backend).
+    await send("Why did p99 latency spike at 14:20?");
+    const approve = page.getByRole("button", { name: /^approve$/i });
+    await approve.waitFor({ timeout: 60_000 });
+    await page.waitForTimeout(400);
+    await capture("agent-chat-approval-v3.png", ".approval-card");
+    await approve.click();
+    await waitDone(60_000);
+    await capture("agent-chat-ui-v3.png", ".bubble");
+    await page.locator(".conversation-select", { hasText: "incident triage" }).click();
+    await page.waitForTimeout(400);
+    await capture("agent-chat-memory-v3.png", ".bubble");
+  } else {
+    await ask("What is 2+2? Answer briefly.");
+    await capture("agent-chat-ui-v3.png", ".bubble");
 
-  await send('Use send_message to post "Deployment succeeded" to the ops channel.');
-  const approve = page.getByRole("button", { name: /^approve$/i });
-  await approve.waitFor({ timeout: 600_000 });
-  await capture("agent-chat-approval-v3.png", ".approval-card");
-  await approve.click();
-  await waitDone();
+    await send('Use send_message to post "Deployment succeeded" to the ops channel.');
+    const approve = page.getByRole("button", { name: /^approve$/i });
+    await approve.waitFor({ timeout: 600_000 });
+    await capture("agent-chat-approval-v3.png", ".approval-card");
+    await approve.click();
+    await waitDone();
 
-  await page.locator(".btn-new").click();
-  const acknowledgement = await ask("Remember that my preferred cloud is GCP.");
-  assertCompleteCloudFact(acknowledgement, "memory acknowledgement");
-  await page.locator(".btn-new").click();
-  const recalled = await ask("What is my preferred cloud?");
-  assertCompleteCloudFact(recalled, "memory recall");
-  await capture("agent-chat-memory-v3.png", ".bubble");
+    await page.locator(".btn-new").click();
+    const acknowledgement = await ask("Remember that my preferred cloud is GCP.");
+    assertCompleteCloudFact(acknowledgement, "memory acknowledgement");
+    await page.locator(".btn-new").click();
+    const recalled = await ask("What is my preferred cloud?");
+    assertCompleteCloudFact(recalled, "memory recall");
+    await capture("agent-chat-memory-v3.png", ".bubble");
+  }
   completed = true;
 } finally {
   await context.close();

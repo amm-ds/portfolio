@@ -83,7 +83,7 @@ from portfolio_core.io import sha256_of
 from portfolio_core.logging import get_logger
 
 from demand_forecasting.intermittent import classify_demand
-from demand_forecasting.m5_data import encode_events, split_exogenous
+from demand_forecasting.m5_data import _repo_rel, encode_events, split_exogenous
 from demand_forecasting.m5_track import (
     ENSEMBLE_GRID_STEP,
     ENSEMBLE_STABILITY_LAMBDA,
@@ -1624,7 +1624,7 @@ def run_m5_full(
         "protocol": PROTOCOL,
         "dataset": {
             "dataset": "M5 Forecasting Competition (Walmart) — accuracy track FULL panel",
-            "provenance_ref": str(Path(raw_dir) / "PROVENANCE.md"),
+            "provenance_ref": _repo_rel(Path(raw_dir) / "PROVENANCE.md"),
             "checksums_sha256": dict(FULL_CHECKSUMS),
             "observed_panel": {
                 "date_start": str(y_all["ds"].min().date()),

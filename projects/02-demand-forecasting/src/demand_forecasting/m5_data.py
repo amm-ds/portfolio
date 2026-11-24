@@ -29,6 +29,18 @@ from portfolio_core.logging import get_logger
 
 logger = get_logger(__name__)
 
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+
+
+def _repo_rel(path: Path) -> str:
+    """Repo-relative display path for committed artifacts (no machine prefixes)."""
+    resolved = Path(path).resolve()
+    try:
+        return str(resolved.relative_to(_REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
 #: sha256 pins of the committed subset (computed at subset time, wave 24).
 M5_CHECKSUMS = {
     "subset_Y.parquet": "52dfc7d31d830d37f7b8b7b3ea886e353699816ab3bc56702c5e1c77b3a2a2b7",
@@ -348,7 +360,7 @@ def m5_dataset_metadata(data_dir: Path, y: pd.DataFrame, s: pd.DataFrame) -> dic
         "subset_rule": "top-3 stores by total units (CA_3, CA_1, TX_2) x top-200 items "
         "by total units within those stores; deterministic ranking, see "
         "data_m5/PROVENANCE.md",
-        "provenance_ref": str(Path(data_dir) / "PROVENANCE.md"),
+        "provenance_ref": _repo_rel(Path(data_dir) / "PROVENANCE.md"),
         "checksums_sha256": dict(M5_CHECKSUMS),
         "observed_panel": {
             "date_start": str(y["ds"].min().date()),

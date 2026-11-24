@@ -61,6 +61,14 @@ Dev servers: API `uv run uvicorn showcase_api.main:app --port 8000`
 `/contact/unlock` to the API). The API enumerates projects at startup —
 restart it after adding a project.
 
+Note for macOS arm64 hosts: the Node here is arm64 (`node -p process.arch`).
+If `npm ci` was last run under Rosetta/x64, Vite fails with "Cannot find
+module @rollup/rollup-darwin-arm64" (npm optional-dependencies bug). Fix with
+`npm ci` under the arm64 node, or `npm i --no-save @rollup/rollup-darwin-arm64`.
+The `web-dev` compose service avoids the issue entirely: it installs
+node_modules inside the container and mounts an anonymous `/web/node_modules`
+volume so the host tree never shadows the image's.
+
 ## Rules of the house
 
 - Conventions (story contract, truth-in-copy, copy surfaces, commits,

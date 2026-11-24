@@ -13,7 +13,7 @@
     "ladder_cap": 30490,
     "pooled_strategy": "recursive"
   },
-  "weights_source": "/Users/alejandro/work/portfolio/projects/02-demand-forecasting/reports_m5_full/metrics.json",
+  "weights_source": "projects/02-demand-forecasting/reports_m5_full/metrics.json",
   "weights_rule": "committed members/weights read from the committed run's metrics.json and reused verbatim \u2014 the catalog run does NOT re-select",
   "ensemble": {
     "members": [

@@ -5,13 +5,13 @@ targeting policy. Everything runs on the canonical Hillstrom email benchmark —
 fetched checksum-pinned, gated, modeled, and evaluated end-to-end in minutes,
 fully offline in CI.
 
-- **Problem:** who should get the next campaign email — and what is that worth?
+- **Problem:** who should get the next campaign email, and what is that worth?
 - **Why uplift > response modeling here:** a response model ranks *likely
   buyers*; the campaign's revenue minus send cost comes from *persuadables*
   (would not convert untreated). Ranking by P(convert) targets sure things the
   campaign can't create, and can target customers whose purchase probability
   the email actually *lowers*.
-- **Design:** [DESIGN.md](DESIGN.md) — meta-learners hand-rolled on sklearn,
+- **Design:** [DESIGN.md](DESIGN.md), meta-learners hand-rolled on sklearn,
   cost model rationale, Qini conventions
 - **Story:** [story.yaml](story.yaml) (served at `/projects/10-uplift-experimentation/story`)
 
@@ -35,26 +35,26 @@ uv run dvc repro                                      # the same, staged
 ## Results (Mens E-Mail vs No E-Mail, 42,613 customers, seed 42)
 
 **Experiment read.** Conversion 1.253% (treated, n=21,307) vs 0.573%
-(control, n=21,306): ATE **+0.68pp**, SE 0.09pp — a real but small effect on a
+(control, n=21,306): ATE **+0.68pp**, SE 0.09pp, a real but small effect on a
 ~1% base rate, exactly the regime where naive targeting wastes budget.
 
 **CUPED** (covariate `log_history` = log1p prior-year spend, strictly
 pre-treatment): the adjusted ATE is unchanged by construction (+0.00680 vs
-+0.00681), but the variance story is the lesson — prior spend explains almost
++0.00681), but the variance story is the lesson, prior spend explains almost
 none of conversion variance: **0.08% variance reduction**. On the secondary
 `visit` outcome, where history is informative, the same machinery removes
 **0.52%**. Adding `recency` as a second covariate (multivariate read,
 `_meta.cuped_multivariate`) moves conversion only to 0.12% and visit to
-**0.95%** — recency roughly doubles the (still small) visit read. CUPED is
+**0.95%**: recency roughly doubles the (still small) visit read. CUPED is
 exactly as good as its covariate; covariate selection is the design decision.
 
 **Power.** For the measured +0.68pp effect at α=0.05, power 0.8 (two-sided
 two-proportion, Fleiss variance form): **3,063 customers per arm required**;
-21,306 available → the experiment is comfortably overpowered — and the formula
+21,306 available → the experiment is comfortably overpowered, and the formula
 tells you the smallest effect this audience could ever resolve (~±0.26pp).
 
-**Uplift models** (out-of-fold Qini coefficient — area between the policy
-curve and the random line, in incremental conversions — with 95% CIs from a
+**Uplift models** (out-of-fold Qini coefficient, area between the policy
+curve and the random line, in incremental conversions, with 95% CIs from a
 paired row bootstrap of the out-of-fold scores, n=1000, seed 1041):
 
 | policy | Qini [95% CI] | revenue minus send cost @ 25% budget [95% CI] | Δ vs random |
@@ -66,13 +66,13 @@ paired row bootstrap of the out-of-fold scores, n=1000, seed 1041):
 | treat-everyone | 0.0 | — (full-mail: $16,103) | — |
 
 Cost model: **revenue** $114 per incremental conversion (measured mean spend
-among converters — this is revenue, not margin: the snapshot exposes no COGS,
+among converters, this is revenue, not margin: the snapshot exposes no COGS,
 so "revenue minus send cost" here means revenue minus the email send cost
 alone), $0.01 per email.
 `value(f) = inc(f)·revenue − mailed(f)·cost`.
 
 **Headline, honestly stated.** At the current $0.01 send cost, **mailing
-everyone maximizes revenue minus send cost** — $16,103 per wave vs $6,838 for
+everyone maximizes revenue minus send cost**, $16,103 per wave vs $6,838 for
 the top-25% policy. The uplift model's value at these prices is **efficiency,
 not the raw maximum**: the top-25% T-learner policy delivers ~61 of the ~145
 total incremental conversions (≈42%) while mailing a quarter of the list —
@@ -89,7 +89,7 @@ between a net gain and a net loss.
 **Ranking verdict, with the interval.** The response model's Qini area is
 nominally higher than the T-learner's (13.01 vs 12.03), but the 95% CI on
 the paired Qini difference (response − T-learner) is **[−8.18, 9.52] and
-spans zero — the curve-area ranking is not established**. What is
+spans zero, the curve-area ranking is not established**. What is
 established is the money: the paired at-budget difference CI for revenue minus
 send cost is [−$3,617, −$48] (response − T-learner), entirely below zero. The
 overlapping single-policy CIs ($4,881 vs $6,838) understate the separation;
@@ -99,9 +99,9 @@ rather than asserted.
 
 The recommendation is anchored against both non-model baselines on the same
 paired bootstrap (T-learner minus comparator): vs random targeting at the
-25% budget **+$2,812, 95% CI [+$718, +$4,767]** — the concentration
+25% budget **+$2,812, 95% CI [+$718, +$4,767]**, the concentration
 advantage is established; vs mail-everyone at $0.01/email **−$9,265, 95% CI
-[−$13,125, −$5,808]** — entirely below zero, consistent with the headline:
+[−$13,125, −$5,808]**, entirely below zero, consistent with the headline:
 at these prices mailing everyone maximizes revenue minus send cost, and the
 model's value is efficiency, not the raw maximum.
 
@@ -109,7 +109,7 @@ Qini area and revenue minus send cost at budget disagree for the response
 model (highest area, lowest budget value): the policy is chosen on the money,
 the curve explains why. The selection rule is fixed in advance: the
 recommended policy is the one with the highest revenue minus send cost at the
-25% budget — the response model is not chosen even though its Qini is
+25% budget, the response model is not chosen even though its Qini is
 nominally higher, because the paired Qini interval overlaps while the
 at-budget money interval does not.
 
@@ -169,7 +169,7 @@ Planning-only paired differences and the ≈$0.31 best-arm break-even must not b
 read as randomized outcomes. Full numbers live under `multi_arm.policy_value`
 (observed DR/IPW) and `multi_arm.policies` (planning) in `reports/metrics.json`.
 
-**The honest caveat:** predicting conversions ≠ changing them — same lesson
+**The honest caveat:** predicting conversions ≠ changing them, same lesson
 as Project 05's fairness finding on the retention side. The decile check
 (`uplift_by_decile`) shows predicted ordering only roughly tracking the
 empirical arm contrast; at a ~1% conversion base, per-decile empirical uplift
@@ -197,7 +197,7 @@ is noisy, and the X-learner's second stage adds variance without signal here
 ## Limits
 
 At $0.01 per email, mailing everyone beats uplift targeting (paired CI below
-zero) — targeting pays only when sending is costly (break-even ≈ $0.30). The
+zero), targeting pays only when sending is costly (break-even ≈ $0.30). The
 response-versus-T and per-arm AUUC rankings are not established. Multi-arm
 best-arm beats random on observed DR/IPW, but its advantage over single-arm Mens
 is inconclusive. Planning dollars remain model-estimated, and every row bootstrap

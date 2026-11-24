@@ -1,19 +1,19 @@
-# Agent Chat — an auditable chatbot-agent chassis you lift out and adapt
+# Agent Chat, an auditable chatbot-agent chassis you lift out and adapt
 
 **Domain:** agentic AI / LLM engineering ·
 **Stack:** pydantic-ai v2 · FastAPI · Postgres 16 + pgvector · React/TypeScript ·
 **Status:** working template —
 [App README + source](https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat) ·
-[Specs — architecture, decisions, operations, adapting](https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat/specs)
+[Specs, architecture, decisions, operations, adapting](https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat/specs)
 
 > A production-grade, lift-out-able chatbot-agent template: one generic,
 > modular agent you copy out of the repo and adapt. Built on pydantic-ai v2 +
 > FastAPI + Postgres/pgvector, with deterministic tests (a scripted fake
-> model — no network, no API keys) and a real eval suite behind the same
+> model, no network, no API keys) and a real eval suite behind the same
 > graders.
 
 **TL;DR:** this is for a team that needs an **auditable agent chassis, not a
-demo** — typed tools, disk-loaded skills, cited retrieval, a human approval
+demo**, typed tools, disk-loaded skills, cited retrieval, a human approval
 gate for consequential actions, and per-run budgets, all behind one FastAPI
 surface that streams every step as typed SSE events. The first edit is a
 string; the seams (provider, store, embedder, approvals) are protocols with
@@ -32,7 +32,7 @@ Every LLM engagement eventually needs the same plumbing: a model provider
 that can be swapped without touching the agent, tools whose schemas are
 honest docstrings, a knowledge base the agent cites instead of paraphrases,
 and a way to stop side-effecting actions until a human says yes. Agent Chat is
-that plumbing extracted as a template — the generic agent underneath a
+that plumbing extracted as a template, the generic agent underneath a
 customer-facing assistant, an internal ops copilot, or a policy-aware helpdesk
 bot. It is deliberately boring where it should be boring (storage,
 configuration, error envelopes) and explicit where production agents are
@@ -41,7 +41,7 @@ answer grounded itself on).
 
 ## What the chassis gives you
 
-One assembly point — `build_agent` in `agent.py` — wires the pydantic-ai
+One assembly point, `build_agent` in `agent.py`, wires the pydantic-ai
 agent: instructions, a structured `Answer` output (text + citations +
 self-reported uncertainty), named toolsets, deferred skills, and per-run
 usage budgets (30 requests / 100k input / 20k output tokens by default).
@@ -68,7 +68,7 @@ tool. Restyling is overriding one block of CSS variables. See the
 
 The loop is pydantic-ai's, constrained by the template's contracts: the model
 may call tools, load skills, or search the knowledge base, and must finish by
-producing a validated `Answer` — a schema, not a hope.
+producing a validated `Answer`, a schema, not a hope.
 
 ```mermaid
 flowchart TD
@@ -87,7 +87,7 @@ discipline:** the instructions assign each job to a tool ("never do math in
 your head when a tool can do it"), and the `tool_choice` graders assert the
 exact tool set per case. **Grounding:** `retrieve` returns passages as
 `source#chunk (score): text`, and answers that relied on them must carry
-citations — a dedicated grader fails answers that don't. **Honest gaps:**
+citations, a dedicated grader fails answers that don't. **Honest gaps:**
 when retrieval or a skill search comes back empty, the instructed behavior is
 to say the knowledge base does not cover it and set `uncertainty: high`; the
 suite includes refusal probes (a prompt-leak attempt, an out-of-catalogue
@@ -108,19 +108,19 @@ The decision rides the same SSE stream as the conversation:
    its own queue, so concurrent chats never cross streams.
 3. The human answers with `POST /approvals/{id}` and `{"approved": true}`; the
    decision comes back as `approval_response` on the same stream, and the tool
-   proceeds — recording a `SentMessage` in the run's deps — or reports the
+   proceeds, recording a `SentMessage` in the run's deps, or reports the
    denial as its result.
 4. **No answer within 120 seconds is a denial.** Default-deny is the
    contract: a lost connection, a closed laptop, or a distracted operator all
    land on the safe side. There is no approve-by-default path.
 
 Outside the API, the same protocol is satisfied by shipped doubles —
-`AutoApproval` for evals and scripts, `DenyAll` for audit paths — which is how
+`AutoApproval` for evals and scripts, `DenyAll` for audit paths, which is how
 the approval flow gets graded deterministically in the offline suite. The
 template documents the upgrade to pydantic-ai's native
 `ApprovalRequiredToolset` as a local swap behind that same protocol.
 
-![The approval card in the web UI: the send_message tool waits on a human approve/deny decision while the run is parked.](../assets/apps/agent-chat-approval.png){ width="100%" }
+![The approval card in the web UI: the restart_service tool waits on a human approve/deny decision while the run is parked.](../assets/apps/agent-chat-approval.png){ width="100%" }
 
 ## Adapting it
 
@@ -129,7 +129,7 @@ restyle, ship checklist) lives in
 [`specs/adapting.md`](https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat/specs/adapting.md).
 
 **Give it your identity.** Edit the `BASE_INSTRUCTIONS` string in
-`src/agent_chat/agent.py` — the first edit the README points every adopter
+`src/agent_chat/agent.py`, the first edit the README points every adopter
 at. Keep the tool-discipline shape and write your domain into it: what the
 agent is, what it must refuse, what it must escalate to a human.
 
@@ -154,7 +154,7 @@ async def create_ticket(ctx: RunContext[ChatDeps], subject: str, body: str) -> s
 `resources/*.md`. The first prose paragraph is the description the model sees;
 a folder with resources automatically gets a deterministic `search_<name>`
 tool; nothing else to wire. The shipped `handbook` skill is the worked
-example — policy questions route through `search_handbook` and get cited from
+example, policy questions route through `search_handbook` and get cited from
 it.
 
 ## Limits
@@ -166,18 +166,18 @@ The honest register, per the README and the specs:
   assistant; orchestration is out of scope by design.
 - **In-band approvals.** The approval gate rides the chat stream with a
   120-second default-deny timeout. That is right for a supervised assistant
-  and wrong as an audit system — pending decisions are not durably logged,
+  and wrong as an audit system, pending decisions are not durably logged,
   and a team that needs decision records should add logging at the hub.
 - **Embedding model choices.** The docker default embedder is a
   dependency-free hashing embedder: lexical overlap ranking, not semantics —
   fine for CI and first boots, wrong for real retrieval. MiniLM (the local
   default outside docker) is semantic but small; serious corpora deserve a
   stronger embedder, and any embedder swap requires clearing and re-ingesting
-  the store. The SQLite vector fallback scans in Python — dev and tests only;
+  the store. The SQLite vector fallback scans in Python, dev and tests only;
   production runs on pgvector's HNSW index.
 - **Template scale.** Ingest deduplicates nothing (re-ingesting duplicates
   chunks until you clear the store); document versioning, multi-user auth
   beyond a single API key, and out-of-band approvals are left to the adopter.
-  The eval suite grades behavior, not quality of prose — run
+  The eval suite grades behavior, not quality of prose, run
   `--model real` against your deployment and read the report before you
   trust it.

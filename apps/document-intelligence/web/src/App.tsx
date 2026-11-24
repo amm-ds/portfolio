@@ -22,7 +22,6 @@ export default function App() {
       <a className="skip-link" href="#document-workbench">Skip to document workbench</a>
       <header className="app-header">
         <div className="brand">
-          <span className="terminal-dots" aria-hidden="true"><span /><span /><span /></span>
           <div>
             <h1><span>&gt;</span> document-intelligence</h1>
             <p>page-level document analysis</p>

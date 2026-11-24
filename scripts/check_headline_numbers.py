@@ -12,9 +12,10 @@ Exit codes:
   1 — drift outside the KNOWN_DRIFT list (new drift: stop and triage,
       do not mass-edit copy).
 
-Coverage note: projects 01 and 04 have no single committed scalar headline
-(their cards lead with counts and deltas that are not cleanly derivable), so
-they are registered in KNOWN_DRIFT as "uncovered" and skipped.
+Coverage note: project 04 has no single committed scalar headline (its card
+leads with counts and deltas that are not cleanly derivable), so it is
+registered in KNOWN_DRIFT as "uncovered" and skipped. Project 01 is covered
+via its committed final_v3 F1 summary and the promoted S3 retrieval sweep.
 
 Run: uv run python scripts/check_headline_numbers.py [--check]
 """
@@ -29,7 +30,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # Entries here are drift the check KNOWS about and must not fail on.
 # "uncovered:<project>" marks projects without a clean scalar claim.
-KNOWN_DRIFT: set[str] = {"uncovered:01-rag-agent", "uncovered:04-nlp-classification"}
+KNOWN_DRIFT: set[str] = {"uncovered:04-nlp-classification"}
 
 
 def _load(rel: str) -> Any:
@@ -45,6 +46,14 @@ def _thousands(x: float) -> str:
 
 
 # --- per-project value extractors (committed source -> formatted strings) ---
+
+
+def _m01() -> list[str]:
+    f1 = _load("projects/01-rag-agent/reports/final_v3_e2e/f1_summary.json")
+    s3 = _load(
+        "projects/01-rag-agent/reports/retrieval_sweeps/s3_structure_hybrid_diverse__final_v3.json"
+    )
+    return [_fmt(f1["f1"], 4), _fmt(s3["metrics"]["recall_at_5"], 3)]
 
 
 def _m02() -> list[str]:
@@ -135,6 +144,12 @@ def _m13() -> list[str]:
 
 
 CLAIMS: list[dict[str, Any]] = [
+    {
+        "project": "01-rag-agent",
+        "label": "final_v3 F1 + promoted S3 recall@5",
+        "values": _m01,
+        "surfaces": ["README.md", "story.yaml"],
+    },
     {
         "project": "02-demand-forecasting",
         "label": "headline WRMSSE + reduction",

@@ -149,6 +149,24 @@ ADJACENT_TOPICS = [
 ACCESS: list[dict[str, Any]] = []
 FORBIDDEN_READ = re.compile(r"(eval_questions\.json|golden_.*\.json|stress.*\.json)$")
 ALLOWED_WRITE_ROOTS = ("data/", "reports/")
+REPO_ROOT = Path(__file__).resolve().parents[2]
+_HOME = str(Path.home())
+
+
+def _display_path(p: str) -> str:
+    """Repo-relative (or home-relative) path for the committed access log."""
+    if not p.startswith("/"):
+        return p
+    resolved = Path(p).resolve()
+    try:
+        return str(resolved.relative_to(REPO_ROOT))
+    except ValueError:
+        pass
+    if p == _HOME:
+        return "~"
+    if p.startswith(_HOME + "/"):
+        return "~" + p[len(_HOME) :]
+    return p
 
 
 def mark(phase: str) -> None:
@@ -168,7 +186,7 @@ def _orig_open(path: Any, *a: Any, **k: Any) -> Any:
 
 def guard_open(path: Any, *a: Any, **k: Any) -> Any:
     p = str(path)
-    ACCESS.append({"op": "open", "path": p, "ts": time.time()})
+    ACCESS.append({"op": "open", "path": _display_path(p), "ts": time.time()})
     if FORBIDDEN_READ.search(p):
         raise PermissionError(f"read-restriction: refusing to open question file {p}")
     return _orig_open(path, *a, **k)

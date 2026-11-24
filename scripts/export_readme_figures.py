@@ -26,21 +26,25 @@ RENDER_TIMEOUT_S = 300
 # README hero figures: output name → (project dir, preferred stem, fallback stem)
 FIGURES: dict[str, tuple[str, str, str]] = {
     "mobility-demand-map.png": ("07-open-data-mobility", "zone_demand_map", "zone_hour_heatmap"),
-    "rag-quality-cost-frontier.png": ("01-rag-agent", "retrieval_hpo_frontier", "chunk_size_sweep"),
+    "rag-retrieval-ladder.png": ("01-rag-agent", "retrieval_ladder", "final_outcome"),
     "anomaly-timelines.png": ("03-anomaly-detection", "nab_timelines", "nab_alert_budget"),
 }
 
 # Per-project figures embedded in the mkdocs case-study pages
 # (docs/projects/<id>.md): project dir → figure stems, in page order.
+# Stems listed here must actually be embedded in the page; unreferenced PNGs
+# are pruned (see collaboration/reviews/20261124-orchestrator-review 5.4/2.3).
 DOCS_FIGURES: dict[str, tuple[str, ...]] = {
-    "01-rag-agent": ("chunk_size_sweep", "failure_taxonomy"),
-    "02-demand-forecasting": (
-        "reports_uci/figures/forecast_vs_actual",
-        "reports_uci/figures/metrics_bars",
+    "01-rag-agent": (
+        "retrieval_ladder",
+        "final_outcome",
+        "failure_taxonomy",
+        "verify_funnel",
+        "chunk_size_sweep",
     ),
     "03-anomaly-detection": ("nab_timelines",),
-    "04-nlp-classification": ("confusion_matrix_selected", "training_curve", "epochs_probe"),
-    "05-ml-pipeline-churn": ("business_cost_curve", "bootstrap_ci", "cost_surface"),
+    "04-nlp-classification": ("confusion_matrix_selected", "training_curve"),
+    "05-ml-pipeline-churn": ("business_cost_curve", "bootstrap_ci"),
     "06-routing-optimization": ("route_map_C101", "family_gap"),
     "07-open-data-mobility": ("zone_demand_map", "gbm_vs_nn", "weather_elasticity"),
     "08-inference-serving": ("latency_concurrency", "engine_panel"),
@@ -50,7 +54,6 @@ DOCS_FIGURES: dict[str, tuple[str, ...]] = {
         "node_waterfall",
     ),
     "10-uplift-experimentation": ("qini_curves", "profit_frontier", "cost_sensitivity"),
-    "11-data-engineering": ("speedup_overview", "memory_lollipop", "normalized_heatmap"),
     "12-tabular-ml-lifecycle": ("model_comparison", "bootstrap_ci"),
     "13-model-serving": ("latency_concurrency_lines", "footprint_cost_bars"),
 }
