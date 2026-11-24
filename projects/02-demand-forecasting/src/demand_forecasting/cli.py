@@ -415,9 +415,7 @@ def evaluate_m5_erratic_challenger(
         stage=stage,
         n_estimators=n_estimators,
         max_origins=max_origins,
-        origin_indices=(
-            [int(x) for x in origin_indices.split(",")] if origin_indices else None
-        ),
+        origin_indices=([int(x) for x in origin_indices.split(",")] if origin_indices else None),
     )
     out = reports_dir / "erratic_challenger.json"
     out.parent.mkdir(parents=True, exist_ok=True)

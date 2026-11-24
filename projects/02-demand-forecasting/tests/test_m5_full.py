@@ -1085,22 +1085,16 @@ def test_cached_forecast_roundtrip(tmp_path: Path) -> None:
 def test_cached_forecast_rejects_series_mismatch(tmp_path: Path) -> None:
     from demand_forecasting.m5_full import _cached_forecast
 
-    _cached_forecast(
-        tmp_path, "key", "cand", 0, ["a", "b"], lambda: np.ones((2, H))
-    )
+    _cached_forecast(tmp_path, "key", "cand", 0, ["a", "b"], lambda: np.ones((2, H)))
     with pytest.raises(ValueError, match="series order mismatch"):
-        _cached_forecast(
-            tmp_path, "key", "cand", 0, ["b", "a"], lambda: np.ones((2, H))
-        )
+        _cached_forecast(tmp_path, "key", "cand", 0, ["b", "a"], lambda: np.ones((2, H)))
 
 
 def test_champion_blend_weights_reads_committed_metrics(tmp_path: Path) -> None:
     from demand_forecasting.m5_full import _champion_blend_weights
 
     metrics = tmp_path / "metrics.json"
-    metrics.write_text(
-        json.dumps({"ensemble": {"members": ["a", "b"], "weights": [0.9, 0.1]}})
-    )
+    metrics.write_text(json.dumps({"ensemble": {"members": ["a", "b"], "weights": [0.9, 0.1]}}))
     members, weights = _champion_blend_weights(metrics)
     assert members == ["a", "b"]
     assert weights == [0.9, 0.1]
