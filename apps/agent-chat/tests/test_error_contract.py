@@ -4,10 +4,13 @@ in ``test_api_admin`` (both exist and answer)."""
 
 import asyncio
 import json as jsonlib
+from collections.abc import Awaitable, Callable
 from pathlib import Path
+from typing import Any, Protocol, cast
 
 from fastapi.testclient import TestClient
 from starlette.requests import Request
+from starlette.responses import Response
 
 from agent_chat.api.app import create_app
 from agent_chat.config import Settings
@@ -15,11 +18,17 @@ from agent_chat.rag.embeddings import HashingEmbedder
 from tests import fakes
 
 
-def _envelope(response: TestClient) -> dict:  # type: ignore[type-arg]
+class _JsonBody(Protocol):
+    """The response surface this test needs; TestClient responses satisfy it."""
+
+    def json(self) -> Any: ...
+
+
+def _envelope(response: _JsonBody) -> dict[str, Any]:
     body = response.json()
     assert set(body) == {"error"}
     assert set(body["error"]) == {"code", "message", "request_id"}
-    return body["error"]
+    return cast("dict[str, Any]", body["error"])
 
 
 def test_unknown_path_returns_envelope_without_traceback(client: TestClient) -> None:
@@ -48,7 +57,6 @@ def test_unhandled_errors_return_envelope_with_type_name_only(tmp_path: Path) ->
         embedder="hashing",
     )
     app = create_app(settings=settings, model=fakes.app_model(), embedder=HashingEmbedder())
-    handler = app.exception_handlers[Exception]
 
     scope = {
         "type": "http",
@@ -59,11 +67,20 @@ def test_unhandled_errors_return_envelope_with_type_name_only(tmp_path: Path) ->
         "state": {"request_id": "rid-1"},
     }
     request = Request(scope)
-    response = asyncio.run(handler(request, RuntimeError("secret internal detail /Users/x")))
+    handler = cast(
+        "Callable[[Request, Exception], Awaitable[Response]]",
+        app.exception_handlers[Exception],
+    )
+
+    async def _invoke() -> Response:
+        return await handler(request, RuntimeError("secret internal detail /Users/x"))
+
+    response = asyncio.run(_invoke())
     assert response.status_code == 500
-    body = jsonlib.loads(bytes(response.body))
+    raw = bytes(response.body)
+    body = jsonlib.loads(raw)
     assert body["error"]["code"] == "internal_error"
     assert body["error"]["message"] == "RuntimeError"
-    assert "secret internal detail" not in response.body.decode()
-    assert "Traceback" not in response.body.decode()
+    assert "secret internal detail" not in raw.decode()
+    assert "Traceback" not in raw.decode()
     assert body["error"]["request_id"] == "rid-1"

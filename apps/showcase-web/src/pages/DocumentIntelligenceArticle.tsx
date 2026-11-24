@@ -189,11 +189,11 @@ export function DocumentIntelligenceArticle() {
             <div className="prose">
               <p>
                 The model receives a single page of text wrapped in untrusted-document
-                delimiters—no tools, no repository or blob access, no path to storage or
-                persistence. Documents may contain tables and images: table text is included
-                in the page context, and image regions are counted and flagged. A page
-                without an embedded text layer is flagged; raster OCR is never silently
-                claimed when it is unavailable.
+                delimiters. It has no tools, no repository or blob access, and no path
+                to storage or persistence. Documents may contain tables and images: table
+                text is included in the page context, and image regions are counted and
+                flagged. A page without an embedded text layer is flagged; raster OCR is
+                never silently claimed when it is unavailable.
               </p>
               <p>
                 Entity types use a controlled taxonomy mirrored by the workbench controls;
