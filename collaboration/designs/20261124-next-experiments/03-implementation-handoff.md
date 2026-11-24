@@ -3,8 +3,7 @@
 Date: 2026-11-24
 Designer: Claude Code
 Executor: Kimi Code
-Status: draft (owner approval requested). Kimi does not start until the
-owner sets this to `approved` and answers the decisions marked **blocking**.
+Status: approved (owner approved O1–O11 on 2026-11-24; start with S-0 and E2 / 15-dynamic-pricing-rl; Kimi stops at pre-registration gates E2-6 and E1-5 for owner commit).
 Source design: `collaboration/designs/20261124-next-experiments/01-design-brief.md`,
 `02-architecture-proposal.md`
 
@@ -55,7 +54,9 @@ decisions are answered.
 - root `pyproject.toml`: `[tool.importlinter]` `root_packages` and the
   independence contract `modules` (add `llm_finetuning`, `dynamic_pricing`);
   the shared-libs forbidden list (add both); `[[tool.mypy.overrides]]`
-  (`strict = true` for `llm_finetuning.*` and `dynamic_pricing.*`)
+  (`strict = true` for `llm_finetuning.*` and `dynamic_pricing.*`, plus
+  `ignore_missing_imports = true` for any untyped `scipy.*`, `sb3_contrib.*`,
+  `datasets.*`, `transformers.*` imports if needed)
 - `.github/workflows/ci.yml` and `nightly.yml` project matrices (add two rows
   next to `13-model-serving`, `cov: "--cov=src"`)
 - `apps/showcase-web/src/lib/cardCopy.ts` (`CARD_DOES`, `CARD_ACHIEVES`,
@@ -98,15 +99,28 @@ decisions are answered.
   sealed set appends `{ts, step, path (repo-relative), sha256, purpose}`.
   Purposes: `prepare` (E1 only: length and n-gram filtering, no labels
   inspected beyond class counts), `seal_read` (exactly one per sealed set).
-  A second `seal_read` voids the run.
+  `evaluate.py seal-read` MUST hard-fail if `sealed_access.json` already
+  contains a `seal_read` for that split; run `seal-read` explicitly rather
+  than re-running it inside `dvc repro` after code edits. A second
+  `seal_read` voids the run.
+- **Disk-space & checkpoint hygiene.** Before `E2-7` and `E1-2`, run `df -h .`
+  and verify `>= 25 GiB` free. In `E1`, process `Qwen3.5-4B` and
+  `Gemma-4-E4B-it` **sequentially** if free space is `< 35 GiB` (smoke/train/score
+  one family, evict its HF cache snapshot if needed, then pull the second).
+  Delete non-winning intermediate checkpoints (`E1-6`, `E2-7`) and **never**
+  persist fused bf16 weights to disk.
 - **Pre-registration.** A `preregistration:` block in `params.yaml` holding
   the hypotheses, thresholds, comparators, seeds and metric definitions
   exactly as in `02-architecture-proposal.md`. Its sha256 is logged in the
   ledger, and the **owner commits it before the seal read** (owner gate).
   Nothing in that block changes afterwards.
-- **Metrics.** `reports/metrics.json` in git, stamped with
-  `uv run python scripts/stamp_metrics_meta.py` after each write. Large
-  outputs (adapters, PPO checkpoints, raw dataset copies) are DVC outs.
+- **Metrics & `_meta` lineage.** `reports/metrics.json` in git, stamped with
+  `uv run python scripts/stamp_metrics_meta.py` after each write. Note:
+  `stamp_metrics_meta.py` / `check_release_artifacts.py` verify
+  `git show <_meta.git_sha>:<relpath>` — for a brand-new `metrics.json`,
+  commit `metrics.json` first, then run `stamp_metrics_meta.py` and commit
+  the updated `_meta` stamp (or amend before pushing). Large outputs
+  (adapters, PPO checkpoints, raw dataset copies) are DVC outs.
   Committed files must not contain absolute home paths
   (`git grep -c "/Users/" -- projects/14-llm-finetuning projects/15-dynamic-pricing-rl`
   must print nothing).
@@ -252,7 +266,8 @@ previous gate is green. Record every gate result in
 - Do: `figures.py` → `reports/figures/*.json` (≤ 3 per section):
   `profit_vs_baselines` (means + CIs), `price_traces` (3 test episodes chosen
   by fixed seed, not by outcome), `bound_share_by_rho`, plus EDA
-  `calibration_overview`. Then README (What it is / Why / Quickstart /
+  `calibration_overview`, plus `reports/report.html` (via `ReportBuilder`,
+  required by `check_release_artifacts.py`). Then README (What it is / Why / Quickstart /
   Results / Limits / Reproduce / Common errors), DESIGN.md (alternatives and
   changelog), `story.yaml` (eight sections; `short_version` ≤ 280 chars;
   5-card `roadmap` on the `Data -> Training -> Evaluation -> Production -> Next`
@@ -315,7 +330,9 @@ previous gate is green. Record every gate result in
     sheet's sha256, and the date. `unsure` items are excluded and counted.
     Kimi reports agreement between owner labels and `kind` (construction
     labels) as a data-quality note, and agreement on the 30 items of
-    `reports/judge_calibration_v2/owner_sample.json` as a by-product (O3).
+    `reports/judge_calibration_v2/owner_sample.json` as a by-product (O3;
+  verify the join key between `judge_v2_claims.json` and `owner_sample.json`
+  first).
 - Gate: tests prove group-split disjointness, the 13-gram filter on a toy
   pair, that `g1_ids.json` holds no text field, and that the G2 sheet has no
   label-revealing column.
@@ -368,7 +385,8 @@ previous gate is green. Record every gate result in
 
 **E1-8. Figures and article.**
 - Do: figures (`lift_by_arm` with CIs, `per_source_bacc` heatmap,
-  `g2_sens_spec`, EDA `dataset_composition`); README, DESIGN.md, story.yaml
+  `g2_sens_spec`, EDA `dataset_composition`) and `reports/report.html`
+  (via `ReportBuilder`, required by `check_release_artifacts.py`); README, DESIGN.md, story.yaml
   (eight sections; `short_version` ≤ 280 chars; 5-card `roadmap` on the
   `Data -> Training -> Evaluation -> Production -> Next` lifecycle arc, 4
   `shipped` + 1 `next`, verb-first title 3–6 words, detail ≤ 90 chars;
@@ -426,6 +444,9 @@ uv run python scripts/check_docs.py
 uv run python scripts/check_short_copy.py --check
 uv run python scripts/check_demo_contract.py
 uv run python scripts/check_headline_numbers.py
+uv run python scripts/check_figure_budget.py
+uv run python scripts/check_figure_axes.py
+uv run python scripts/check_release_artifacts.py
 uv run python scripts/gen_static_registry.py --check
 uv run python scripts/gen_story_short.py --check
 uv run python scripts/gen_route_manifest.py --check
@@ -501,7 +522,9 @@ Regenerate through scripts or pipelines only:
   `experiment_log.json`, `params.yaml: preregistration`, and the three E2
   price-trace figures.
 
-## Owner decisions
+## Owner decisions (Approved 2026-11-24)
+
+All `O1`–`O11` decisions below were **approved by the session owner on 2026-11-24** (with a disk-space guardrail: `qwen3.6:35b-a3b-q4_K_M` and `gpt-oss:20b` were removed from Ollama to free 35 GiB, leaving 58 GiB free; check `df -h` before `E1-2` and run models sequentially if `< 35 GiB` free). Only `E1-3` / `E1-7` still await the owner's Hugging Face AggreFact terms click (or Banking77 fallback) and 147-item G2 blind labelling when `E1` starts.
 
 | id | decision | recommendation | blocking for |
 |---|---|---|---|

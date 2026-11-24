@@ -2,7 +2,7 @@
 
 Date: 2026-11-24
 Designer: Claude Code
-Status: draft (owner approval requested)
+Status: approved (owner approved O1–O11 on 2026-11-24; build 15 first)
 Source design brief: `collaboration/designs/20261124-next-experiments/01-design-brief.md`
 
 Legend: **[V]** verified in this session; **[I]** inference or estimate.
@@ -37,7 +37,7 @@ prepare  →  data/ (DVC)  +  data/splits.json (ids + sha256, git)
    ▼
 train    →  reports/models/ (DVC)  +  ledger row
    ▼
-evaluate (dev/val only, many reads allowed)  →  reports/dev_metrics.json
+evaluate (dev/val only, many reads allowed)  →  reports/dev_metrics.json (E1) or reports/{baselines,ppo}_val.json (E2)
    ▼
 seal-read (once)  →  reports/metrics.json (git, _meta stamped)
                   →  reports/sealed_access.json (repo-relative paths)
