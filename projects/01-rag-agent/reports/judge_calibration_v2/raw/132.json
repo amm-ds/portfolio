@@ -1,0 +1,19 @@
+{
+  "index": 132,
+  "chunk_id": "renewable-energy-043#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 397,
+    "output_tokens": 96,
+    "reasoning_tokens": 37
+  },
+  "cost_usd_est": "0.000602",
+  "cumulative_usd_est": "0.087245",
+  "latency_s": 3.24,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage states the Éolienne Bollée is an example of a DAWT, and defines DAWT as Diffuser-Augmented Wind Turbines.\"}",
+  "label": "supported",
+  "reason": "Passage states the Éolienne Bollée is an example of a DAWT, and defines DAWT as Diffuser-Augmented Wind Turbines."
+}

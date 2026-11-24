@@ -4,7 +4,7 @@
 > reproducible case study per project, the platform's engineering record, and
 > the services page. Filed by Diátaxis: tutorials (how-this-was-built),
 > how-to (runbooks), reference (data registry, ADR index), explanation
-> (ADRs, audits).
+> (ADRs).
 
 ## Start here
 
@@ -35,7 +35,7 @@ conclusions), with the honest delta vs the naive baseline:
 
 - [engineering-playbook.md](engineering-playbook.md) — review culture and the PR bar.
 - [site/how-this-was-built.md](site/how-this-was-built.md) — the tools-and-process story, first person.
-- [audits/](audits/pre-publish-2026-10-14.md) — pre-publish review, external-audit response, productization gap report, 2026-11 production assessments.
+- [engineering/statistical-intervals.md](engineering/statistical-intervals.md) — the interval methods behind the reported deltas.
 
 ## Architecture (explanation + reference)
 

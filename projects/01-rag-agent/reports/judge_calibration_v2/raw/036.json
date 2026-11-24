@@ -1,0 +1,19 @@
+{
+  "index": 36,
+  "chunk_id": "climate-048#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 420,
+    "output_tokens": 61,
+    "reasoning_tokens": 9
+  },
+  "cost_usd_est": "0.000664",
+  "cumulative_usd_est": "0.025304",
+  "latency_s": 2.41,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage directly states Palm Springs averages high/low/mean of 75°F/50°F/63°F from November to April.\"}",
+  "label": "supported",
+  "reason": "Passage directly states Palm Springs averages high/low/mean of 75°F/50°F/63°F from November to April."
+}

@@ -1,0 +1,13 @@
+# Pinned retrieval baseline — params.yaml retrieval_best (step 2 of the
+# 20261122-rag-execution-plan handoff). Measurement ranks top_k=5 while the
+# production serving slice stays top_k=3 (see scripts/measure_retrieval.py).
+name: baseline
+chunk_size: 200
+chunk_overlap: 40
+chunk_mode: size
+embedding_model: sentence-transformers/all-MiniLM-L6-v2
+embedding_kind: local
+reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2
+top_k: 3
+measure_k: 5
+rerank_multiplier: 5

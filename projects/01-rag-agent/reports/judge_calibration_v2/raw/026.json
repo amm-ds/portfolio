@@ -1,0 +1,19 @@
+{
+  "index": 26,
+  "chunk_id": "machine-learning-040#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 372,
+    "output_tokens": 66,
+    "reasoning_tokens": 25
+  },
+  "cost_usd_est": "0.000636",
+  "cumulative_usd_est": "0.019066",
+  "latency_s": 2.81,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage explicitly states facial recognition systems have a 99% accuracy rate.\"}",
+  "label": "supported",
+  "reason": "Passage explicitly states facial recognition systems have a 99% accuracy rate."
+}

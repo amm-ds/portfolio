@@ -1,0 +1,25 @@
+{
+  "n_questions": 20,
+  "tp": 16,
+  "fp": 0,
+  "tn": 4,
+  "fn": 0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "overall_accuracy": 1.0,
+  "overall_accuracy_wilson95": [
+    0.8389,
+    1.0
+  ],
+  "errors": {
+    "unsupported_claim": 0,
+    "false_abstention": 0,
+    "wrong_abstention": 0,
+    "budget_terminated": 0,
+    "format_failure": 0,
+    "uncited_relevant": 0
+  },
+  "generated_at": "2026-11-23T15:37:48.712748+00:00",
+  "source_traces": "reports/e2e_dev_v1"
+}

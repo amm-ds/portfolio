@@ -1,0 +1,19 @@
+{
+  "index": 139,
+  "chunk_id": "aviation-000#c009",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 318,
+    "output_tokens": 68,
+    "reasoning_tokens": 23
+  },
+  "cost_usd_est": "0.000411",
+  "cumulative_usd_est": "0.090766",
+  "latency_s": 1.91,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says 'nowadays classified' as powered lift, not 'historically classified'.\"}",
+  "label": "unsupported",
+  "reason": "Passage says 'nowadays classified' as powered lift, not 'historically classified'."
+}

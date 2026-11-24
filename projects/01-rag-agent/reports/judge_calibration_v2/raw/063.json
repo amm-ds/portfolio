@@ -1,0 +1,19 @@
+{
+  "index": 63,
+  "chunk_id": "machine-learning-040#c006",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 464,
+    "output_tokens": 77,
+    "reasoning_tokens": 46
+  },
+  "cost_usd_est": "0.000772",
+  "cumulative_usd_est": "0.043203",
+  "latency_s": 2.42,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"supported\",\"reason\":\"The passage explicitly states this exact claim.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states this exact claim."
+}

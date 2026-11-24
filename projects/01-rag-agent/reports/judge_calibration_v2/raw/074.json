@@ -1,0 +1,19 @@
+{
+  "index": 74,
+  "chunk_id": "renewable-energy-055#c007",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 458,
+    "output_tokens": 102,
+    "reasoning_tokens": 59
+  },
+  "cost_usd_est": "0.000687",
+  "cumulative_usd_est": "0.051043",
+  "latency_s": 3.71,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"supported\",\"reason\":\"The passage directly states the same date, turbine count, and over 24.6 GW capacity.\"}",
+  "label": "supported",
+  "reason": "The passage directly states the same date, turbine count, and over 24.6 GW capacity."
+}

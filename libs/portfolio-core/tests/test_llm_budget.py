@@ -195,6 +195,18 @@ class TestBudgetLimits:
         # explicit None overrides a real .env in the working tree
         assert budget_limits(Settings(LLM_API_KEY=None, LLM_BASE_URL=None)) is None
 
+    def test_ledger_seeded_from_prior_spend(self) -> None:
+        # phase0-infra (2026-11-22): resume seeds cumulative spend so the cap
+        # applies to the whole run across processes.
+        reset_ledger()
+        ledger = get_ledger(seed_usd=1.25)
+        assert float(ledger.spend_usd) == pytest.approx(1.25)
+        assert float(ledger.budget_usd) > 1.25  # cap still enforced above the seed
+        reset_ledger()
+        # Default None keeps the fresh-process behaviour.
+        assert float(get_ledger().spend_usd) == 0.0
+        reset_ledger()
+
     def test_env_defaults(self) -> None:
         s = Settings()
         assert s.llm_cost_limit_usd == 3.0

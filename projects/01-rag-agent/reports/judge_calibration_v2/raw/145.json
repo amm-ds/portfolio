@@ -1,0 +1,19 @@
+{
+  "index": 145,
+  "chunk_id": "renewable-energy-025#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 450,
+    "output_tokens": 51,
+    "reasoning_tokens": 14
+  },
+  "cost_usd_est": "0.000475",
+  "cumulative_usd_est": "0.094034",
+  "latency_s": 2.52,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states this fact verbatim in its first sentence.\"}",
+  "label": "supported",
+  "reason": "The passage states this fact verbatim in its first sentence."
+}

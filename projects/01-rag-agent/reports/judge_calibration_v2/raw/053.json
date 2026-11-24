@@ -1,0 +1,19 @@
+{
+  "index": 53,
+  "chunk_id": "aviation-004#c001",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 364,
+    "output_tokens": 59,
+    "reasoning_tokens": 22
+  },
+  "cost_usd_est": "0.000421",
+  "cumulative_usd_est": "0.036911",
+  "latency_s": 2.22,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"The passage states 'specific aircraft,' not commercial helicopters.\"}",
+  "label": "unsupported",
+  "reason": "The passage states 'specific aircraft,' not commercial helicopters."
+}

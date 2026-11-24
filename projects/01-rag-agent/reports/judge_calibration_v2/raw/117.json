@@ -1,0 +1,19 @@
+{
+  "index": 117,
+  "chunk_id": "aviation-122#c007",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 471,
+    "output_tokens": 76,
+    "reasoning_tokens": 32
+  },
+  "cost_usd_est": "0.000596",
+  "cumulative_usd_est": "0.077607",
+  "latency_s": 3.03,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says Lilienthal's death marked when their serious interest began, not ended.\"}",
+  "label": "unsupported",
+  "reason": "Passage says Lilienthal's death marked when their serious interest began, not ended."
+}

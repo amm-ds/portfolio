@@ -1,0 +1,19 @@
+{
+  "index": 106,
+  "chunk_id": "climate-003#c000",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 428,
+    "output_tokens": 57,
+    "reasoning_tokens": 21
+  },
+  "cost_usd_est": "0.000477",
+  "cumulative_usd_est": "0.071240",
+  "latency_s": 2.58,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"supported\",\"reason\":\"The passage states adaptation actions are classified into exactly these four options.\"}",
+  "label": "supported",
+  "reason": "The passage states adaptation actions are classified into exactly these four options."
+}

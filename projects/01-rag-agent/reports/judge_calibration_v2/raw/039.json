@@ -1,0 +1,19 @@
+{
+  "index": 39,
+  "chunk_id": "machine-learning-000#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 436,
+    "output_tokens": 70,
+    "reasoning_tokens": 33
+  },
+  "cost_usd_est": "0.000537",
+  "cumulative_usd_est": "0.027461",
+  "latency_s": 2.37,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states the definition of ontology exactly as claimed.\"}",
+  "label": "supported",
+  "reason": "The passage states the definition of ontology exactly as claimed."
+}

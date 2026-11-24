@@ -1,0 +1,1 @@
+{"prompt_sha256": "e9a65a2f93683f56125331b40da74115dac5faa0949c2714b3b18f86a9475f44", "response": "{\"question\": \"How does an extension neural network determine its estimated class?\", \"answer\": \"By searching for the minimum extension distance among all classes.\"}"}

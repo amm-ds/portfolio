@@ -1,0 +1,25 @@
+{
+  "n_questions": 120,
+  "tp": 80,
+  "fp": 4,
+  "tn": 24,
+  "fn": 12,
+  "precision": 0.9524,
+  "recall": 0.8696,
+  "f1": 0.9091,
+  "overall_accuracy": 0.8667,
+  "overall_accuracy_wilson95": [
+    0.7944,
+    0.9162
+  ],
+  "errors": {
+    "unsupported_claim": 1,
+    "false_abstention": 10,
+    "wrong_abstention": 0,
+    "budget_terminated": 4,
+    "format_failure": 0,
+    "uncited_relevant": 8
+  },
+  "generated_at": "2026-11-23T16:49:33.872036+00:00",
+  "source_traces": "reports/final_v3_e2e"
+}

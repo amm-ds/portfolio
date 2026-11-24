@@ -1,0 +1,19 @@
+{
+  "index": 64,
+  "chunk_id": "climate-048#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 420,
+    "output_tokens": 94,
+    "reasoning_tokens": 55
+  },
+  "cost_usd_est": "0.000617",
+  "cumulative_usd_est": "0.043820",
+  "latency_s": 3.61,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Claim says high 74°F but passage states 75°F.\"}",
+  "label": "unsupported",
+  "reason": "Claim says high 74°F but passage states 75°F."
+}

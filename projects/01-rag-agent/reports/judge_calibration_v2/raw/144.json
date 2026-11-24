@@ -1,0 +1,19 @@
+{
+  "index": 144,
+  "chunk_id": "photosynthesis-057#c003",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 535,
+    "output_tokens": 46,
+    "reasoning_tokens": 12
+  },
+  "cost_usd_est": "0.000540",
+  "cumulative_usd_est": "0.093559",
+  "latency_s": 1.86,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states this exact sentence.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states this exact sentence."
+}

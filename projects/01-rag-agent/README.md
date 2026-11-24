@@ -2,15 +2,21 @@
 
 A grounded question-answering assistant over a pinned 593-article English
 Wikipedia corpus. `pydantic-ai` restricts corpus access to retrieval tools and
-returns structured, cited answers. Retrieval combines MiniLM embeddings, FAISS,
-and cross-encoder reranking.
+returns structured, cited answers. The promoted retriever is S3: title-anchored
+chunks, dense FAISS fused with BM25 by reciprocal rank fusion, cross-encoder
+reranking, and a per-article diversity cap.
+
+Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybrid retrieval (title-anchored chunks, BM25+dense RRF, diversity cap) reaches 0.946 recall@5. Judge calibrated 30/30 blind. Final 120-question pass: F1 0.909, precision 0.952, faithfulness 0.872, 1/120 unsupported.
 
 The runtime default is local Ollama (`qwen3.6:35b-a3b-q4_K_M`); any
 OpenAI-compatible endpoint uses the same path. There is no runtime mock.
-**`kimi-for-coding` is the selected provider for the reported evaluation**,
-which covers a 65-question tuning set and a sealed 55-question held-out set.
-The current production configuration adds the R6 grounding-hardening layer;
-its later stress and independent-set results are reported separately below.
+**`kimi-for-coding` is the selected provider for the reported evaluation**.
+The finalized pass scores the 120-question `final_v3` sealed set once:
+**F1 0.9091, precision 0.9524, faithfulness 0.8717, 1 unsupported claim in
+120**. The earlier 65-question tuning and 55-question held-out numbers below
+are prior baselines. The current production configuration adds the
+grounding-hardening verify loop and a bounded agent loop; earlier stress and
+independent-set results are reported separately below.
 
 - Design record and history: [DESIGN.md](DESIGN.md)
 - Evidence: `reports/metrics.json`, `reports/cost_telemetry.json`,
@@ -51,20 +57,45 @@ uv run pytest projects/01-rag-agent -q
 
 ## Design
 
-The pipeline filters five Wikipedia topics, applies data-quality gates, chunks
-articles at 200/400/800 tokens, builds one FAISS `IndexFlatIP` per chunk size,
-and reranks the top 5×k passages. The agent exposes only `search_documents`
-and `read_excerpt` and returns `AnalysisResult(summary, citations, confidence)`.
+The pipeline filters five Wikipedia topics, applies data-quality gates, and
+chunks articles at 200 tokens with structure awareness (every chunk carries
+its article title). Retrieval fuses the top-50 dense FAISS candidates with the
+top-50 BM25 word-search candidates by reciprocal rank fusion (k=60), reranks
+with `cross-encoder/ms-marco-MiniLM-L-6-v2`, and caps the top-k at two chunks
+per article with score-order backfill. The agent exposes only
+`search_documents` and `read_excerpt` and returns
+`AnalysisResult(summary, citations, confidence)`.
 
 The verify loop checks each drafted claim against its full cited chunks. It
 repairs or drops unsupported claims and abstains when surviving support falls
-below 0.6. Calibrated against labels by construction, the judges still miss
-often: the local judge accepts 0.4433 of unsupported claims, 95% Wilson
-[0.3752, 0.5136], kappa 0.5464; the hosted judge accepts 0.3966 [0.3269,
-0.4707], kappa 0.6052 [0.5262, 0.6831]. Provider selection, verification, and
-judging follow [DESIGN.md](DESIGN.md) and ADR-0004.
+below 0.6. The rebuilt judge_v2 calibration supersedes the earlier miss
+rates: the owner hand-labelled a 30-claim blind sample and agreement with the
+`kimi-for-coding` labels is 30/30, Wilson 95% [0.8865, 1.0], clearing the
+0.85 gate (`reports/judge_calibration_v2/owner_sample_validated.json`). The
+earlier calibration accepted about 44% of unsupported claims and stays in
+[DESIGN.md](DESIGN.md) as history. Provider selection, verification, and
+judging follow DESIGN.md and ADR-0004.
 
 ## Results
+
+### Finalized sealed pass (final_v3, 120 questions)
+
+The single official end-to-end pass over `data/golden_final_v3.json` uses the
+promoted S3 retriever, the verify loop, and the bounded agent loop (12
+requests, 16 tool calls, 200,000 input tokens, with a soft in-tool ceiling).
+It is checkpointed under `reports/runs/final_v3-432d6b705715/`.
+
+| metric | final_v3 result |
+|---|---:|
+| F1 / precision / recall | **0.9091 / 0.9524 / 0.8696** |
+| overall accuracy (95% CI) | **0.8667 [0.7944, 0.9162]** |
+| faithfulness (95% CI) | **0.8717 [0.7983, 0.9155]** |
+| failure taxonomy | 104 correct / 1 unsupported-claim / 10 empty-answer / 1 retrieval-miss / 4 budget-terminated |
+| single_hop / multi_hop / unanswerable correct | 60/68 / 20/24 / 24/28 |
+| judge blind-sample agreement | 30/30 [0.8865, 1.0] |
+| whole-wave meter | $2.0392 cumulative cloud-equivalent |
+
+### Tuning baseline (65 questions, prior)
 
 Retrieval is provider-independent. On the 65-question tuning set, recall@5 is
 **0.831 versus 0.031 for the random floor**. The selected provider is hosted

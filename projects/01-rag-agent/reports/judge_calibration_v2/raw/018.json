@@ -1,0 +1,19 @@
+{
+  "index": 18,
+  "chunk_id": "aviation-004#c001",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 363,
+    "output_tokens": 64,
+    "reasoning_tokens": 9
+  },
+  "cost_usd_est": "0.000619",
+  "cumulative_usd_est": "0.013499",
+  "latency_s": 1.98,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage explicitly states FlightAware and Flightradar24 made it possible for spotters to track and locate specific aircraft from all across the world.\"}",
+  "label": "supported",
+  "reason": "Passage explicitly states FlightAware and Flightradar24 made it possible for spotters to track and locate specific aircraft from all across the world."
+}

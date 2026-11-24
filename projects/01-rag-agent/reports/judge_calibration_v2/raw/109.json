@@ -1,0 +1,19 @@
+{
+  "index": 109,
+  "chunk_id": "climate-054#c000",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 463,
+    "output_tokens": 72,
+    "reasoning_tokens": 24
+  },
+  "cost_usd_est": "0.000572",
+  "cumulative_usd_est": "0.073314",
+  "latency_s": 2.33,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states the monsoon starts in late June and lasts until mid-September, matching the claim exactly.\"}",
+  "label": "supported",
+  "reason": "The passage states the monsoon starts in late June and lasts until mid-September, matching the claim exactly."
+}

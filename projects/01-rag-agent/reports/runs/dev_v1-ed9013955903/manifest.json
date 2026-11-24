@@ -1,0 +1,13 @@
+{
+  "run_id": "dev_v1-ed9013955903",
+  "config_hash": "d90692c99f650669",
+  "commit": "cc6ce8d846f179313fe8855f0a9f1b6e07437a2c",
+  "dirty": true,
+  "split": "dev_v1",
+  "set_sha256": "ed9013955903caa98a0dc9eaf5a366e151288ff8457afc690e2bec8d7371f13c",
+  "index_id": "minilm:200+rerank:True",
+  "judge_model": "kimi-for-coding",
+  "judge_prompt_hash": "dba00ba99d6d1561",
+  "created_at": "",
+  "cumulative_spend_usd": 0.0
+}

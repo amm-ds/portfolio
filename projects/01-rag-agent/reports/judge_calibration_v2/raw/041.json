@@ -1,0 +1,19 @@
+{
+  "index": 41,
+  "chunk_id": "climate-046#c001",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 455,
+    "output_tokens": 57,
+    "reasoning_tokens": 12
+  },
+  "cost_usd_est": "0.000683",
+  "cumulative_usd_est": "0.029008",
+  "latency_s": 1.87,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states the mesophytic ecosystem is also known as a semi-evergreen forest.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states the mesophytic ecosystem is also known as a semi-evergreen forest."
+}

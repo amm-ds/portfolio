@@ -1,0 +1,19 @@
+{
+  "index": 37,
+  "chunk_id": "aviation-122#c008",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 474,
+    "output_tokens": 61,
+    "reasoning_tokens": 21
+  },
+  "cost_usd_est": "0.000718",
+  "cumulative_usd_est": "0.026022",
+  "latency_s": 2.39,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states May 1899, not June 1899.\"}",
+  "label": "unsupported",
+  "reason": "Passage states May 1899, not June 1899."
+}

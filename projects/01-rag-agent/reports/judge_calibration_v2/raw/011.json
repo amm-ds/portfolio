@@ -1,0 +1,19 @@
+{
+  "index": 11,
+  "chunk_id": "photosynthesis-057#c010",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 482,
+    "output_tokens": 82,
+    "reasoning_tokens": 42
+  },
+  "cost_usd_est": "0.000810",
+  "cumulative_usd_est": "0.008753",
+  "latency_s": 2.29,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"supported\",\"reason\":\"The passage states C4 alone arose 62 times in 18 different plant families.\"}",
+  "label": "supported",
+  "reason": "The passage states C4 alone arose 62 times in 18 different plant families."
+}

@@ -1,0 +1,19 @@
+{
+  "index": 72,
+  "chunk_id": "machine-learning-121#c005",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 476,
+    "output_tokens": 178,
+    "reasoning_tokens": 134
+  },
+  "cost_usd_est": "0.001009",
+  "cumulative_usd_est": "0.049829",
+  "latency_s": 5.32,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says machine learning focuses on prediction, not classification; claim changes prediction to classification.\"}",
+  "label": "unsupported",
+  "reason": "Passage says machine learning focuses on prediction, not classification; claim changes prediction to classification."
+}

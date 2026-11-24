@@ -1,0 +1,19 @@
+{
+  "index": 50,
+  "chunk_id": "photosynthesis-028#c009",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 440,
+    "output_tokens": 163,
+    "reasoning_tokens": 108
+  },
+  "cost_usd_est": "0.001092",
+  "cumulative_usd_est": "0.035025",
+  "latency_s": 6.99,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage states pit connections and pit plugs are unique features of red algae forming during cytokinesis following mitosis, and that cytokinesis is incomplete.\"}",
+  "label": "supported",
+  "reason": "Passage states pit connections and pit plugs are unique features of red algae forming during cytokinesis following mitosis, and that cytokinesis is incomplete."
+}

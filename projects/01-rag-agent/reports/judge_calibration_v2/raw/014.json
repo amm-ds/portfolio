@@ -1,0 +1,19 @@
+{
+  "index": 14,
+  "chunk_id": "photosynthesis-000#c007",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 497,
+    "output_tokens": 63,
+    "reasoning_tokens": 18
+  },
+  "cost_usd_est": "0.000749",
+  "cumulative_usd_est": "0.010836",
+  "latency_s": 2.08,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"The passage states this occurred throughout the 20th century, not the 19th century.\"}",
+  "label": "unsupported",
+  "reason": "The passage states this occurred throughout the 20th century, not the 19th century."
+}

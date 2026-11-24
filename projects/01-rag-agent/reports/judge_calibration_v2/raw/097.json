@@ -1,0 +1,19 @@
+{
+  "index": 97,
+  "chunk_id": "machine-learning-075#c001",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 445,
+    "output_tokens": 82,
+    "reasoning_tokens": 32
+  },
+  "cost_usd_est": "0.000594",
+  "cumulative_usd_est": "0.065310",
+  "latency_s": 3.07,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states that in operations research and control literature, reinforcement learning is called approximate dynamic programming or neuro-dynamic programming.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states that in operations research and control literature, reinforcement learning is called approximate dynamic programming or neuro-dynamic programming."
+}

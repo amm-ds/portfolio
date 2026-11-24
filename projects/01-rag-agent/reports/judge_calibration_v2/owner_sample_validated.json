@@ -1,0 +1,289 @@
+{
+  "validated_at": "2026-11-23T14:45:22.703983+00:00",
+  "claims_sha256": "80d9d693ebf03600f0e6c62e7becfd78620e22f9cb80eb20d0734cfde98acfde",
+  "seed": 44,
+  "n_sample": 30,
+  "n_supported": 11,
+  "n_unsupported": 19,
+  "matches": 30,
+  "agreement": 1.0,
+  "agreement_wilson95": [
+    0.886487,
+    1.0
+  ],
+  "threshold": 0.85,
+  "passes_gate": true,
+  "items": [
+    {
+      "index": 2,
+      "claim": "Most researchers agree that deep learning involves CAP depth higher than 3.",
+      "chunk_id": "machine-learning-080#c003",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "Passage states researchers agree on CAP depth higher than 2, not higher than 3.",
+      "agree": true
+    },
+    {
+      "index": 7,
+      "claim": "About 80 per cent of EU citizens support wind power.",
+      "chunk_id": "renewable-energy-055#c010",
+      "validated_label": "supported",
+      "kimi_label": "supported",
+      "kimi_reason": "The passage explicitly states that about 80 per cent of EU citizens support wind power.",
+      "agree": true
+    },
+    {
+      "index": 8,
+      "claim": "Kelps, a type of brown algae, may reach 30 m in length.",
+      "chunk_id": "photosynthesis-000#c010",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "The passage states kelps may reach 50 m, not 30 m.",
+      "agree": true
+    },
+    {
+      "index": 9,
+      "claim": "By the beginning of March 2022, the UK had 11,091 wind turbines and over 30 GW capacity.",
+      "chunk_id": "renewable-energy-055#c007",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "Passage states 24.6 GW total installed capacity, not over 30 GW.",
+      "agree": true
+    },
+    {
+      "index": 14,
+      "claim": "Throughout the 19th century, most classifications treated cyanophytes and chlorophytes as divisions or classes of algae.",
+      "chunk_id": "photosynthesis-000#c007",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "The passage states this occurred throughout the 20th century, not the 19th century.",
+      "agree": true
+    },
+    {
+      "index": 20,
+      "claim": "The United States Navy operates 13 large nuclear-powered fleet carriers that carry around 80 fighters each.",
+      "chunk_id": "aviation-002#c003",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "Passage states 11 large nuclear-powered fleet carriers, not 13.",
+      "agree": true
+    },
+    {
+      "index": 25,
+      "claim": "Livestock production occupies 50% of all land used for agriculture worldwide.",
+      "chunk_id": "climate-000#c008",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "Passage states livestock occupies 70% of agricultural land, not 50%.",
+      "agree": true
+    },
+    {
+      "index": 29,
+      "claim": "Annual ski races are held on the Fourth of August in some high mountain areas.",
+      "chunk_id": "climate-048#c005",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "Passage states ski races on the Fourth of July, not August.",
+      "agree": true
+    },
+    {
+      "index": 36,
+      "claim": "Palm Springs averages high, low, and mean temperatures of 75°F, 50°F, and 63°F from November to April.",
+      "chunk_id": "climate-048#c002",
+      "validated_label": "supported",
+      "kimi_label": "supported",
+      "kimi_reason": "Passage directly states Palm Springs averages high/low/mean of 75°F/50°F/63°F from November to April.",
+      "agree": true
+    },
+    {
+      "index": 40,
+      "claim": "Machine learning focuses on prediction based on known properties, while data mining focuses on discovering previously unknown properties in the data.",
+      "chunk_id": "machine-learning-121#c005",
+      "validated_label": "supported",
+      "kimi_label": "supported",
+      "kimi_reason": "The passage explicitly states machine learning focuses on prediction based on known properties while data mining discovers previously unknown properties in the data.",
+      "agree": true
+    },
+    {
+      "index": 43,
+      "claim": "Amplified warming in the Arctic has contributed to freezing permafrost, glacial retreat, and sea ice loss.",
+      "chunk_id": "climate-011#c001",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "Passage says Arctic warming contributes to melting permafrost, not freezing permafrost.",
+      "agree": true
+    },
+    {
+      "index": 45,
+      "claim": "Hobbyists may travel short distances to view the remains of withdrawn aircraft.",
+      "chunk_id": "aviation-004#c005",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "The passage states hobbyists travel LONG distances to view withdrawn aircraft, not short distances.",
+      "agree": true
+    },
+    {
+      "index": 57,
+      "claim": "The Flettner airplane obtains lift from the Magnus effect using a stationary cylinder.",
+      "chunk_id": "aviation-000#c011",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "Passage says rotating cylinder, not stationary",
+      "agree": true
+    },
+    {
+      "index": 65,
+      "claim": "The Éolienne Bollée is an example of a Conventional Wind Turbine.",
+      "chunk_id": "renewable-energy-043#c002",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "Passage states Éolienne Bollée is an example of a DAWT, not a conventional wind turbine",
+      "agree": true
+    },
+    {
+      "index": 74,
+      "claim": "By the beginning of March 2022, the UK had 11,091 wind turbines and over 24.6 GW capacity.",
+      "chunk_id": "renewable-energy-055#c007",
+      "validated_label": "supported",
+      "kimi_label": "supported",
+      "kimi_reason": "The passage directly states the same date, turbine count, and over 24.6 GW capacity.",
+      "agree": true
+    },
+    {
+      "index": 75,
+      "claim": "There are two main complementary ways of measuring GHG emissions: production-based and consumption-based.",
+      "chunk_id": "climate-032#c007",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "The passage describes the two methods as 'conflicting,' not 'complementary.'",
+      "agree": true
+    },
+    {
+      "index": 77,
+      "claim": "In computational learning theory, a computation is considered feasible if it can be done in exponential time.",
+      "chunk_id": "machine-learning-121#c009",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "Passage states feasible means polynomial time, not exponential time.",
+      "agree": true
+    },
+    {
+      "index": 79,
+      "claim": "Affective computing comprises systems that recognize, interpret, process, or simulate animal feeling, emotion, and mood.",
+      "chunk_id": "machine-learning-000#c009",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "Passage says 'human' feeling/emotion/mood, not animal",
+      "agree": true
+    },
+    {
+      "index": 83,
+      "claim": "The Program Time Unit on the balancing market is of 30 minutes.",
+      "chunk_id": "renewable-energy-050#c006",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "Passage states PTU is 15 minutes, not 30.",
+      "agree": true
+    },
+    {
+      "index": 91,
+      "claim": "A 2015 review found that algae applications could play an important role in carbon sequestration.",
+      "chunk_id": "photosynthesis-000#c003",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "Passage states a 2020 review, not 2015.",
+      "agree": true
+    },
+    {
+      "index": 96,
+      "claim": "Adaptation actions are classified into three categories: infrastructural and technological, institutional, behavioural and cultural, and nature-based options.",
+      "chunk_id": "climate-003#c000",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "The passage says adaptation actions are classified in four ways, not three.",
+      "agree": true
+    },
+    {
+      "index": 97,
+      "claim": "In operations research and control literature, reinforcement learning is called approximate dynamic programming or neuro-dynamic programming.",
+      "chunk_id": "machine-learning-075#c001",
+      "validated_label": "supported",
+      "kimi_label": "supported",
+      "kimi_reason": "The passage explicitly states that in operations research and control literature, reinforcement learning is called approximate dynamic programming or neuro-dynamic programming.",
+      "agree": true
+    },
+    {
+      "index": 103,
+      "claim": "Pit connections and pit plugs are unique features of red algae that form during complete cytokinesis following mitosis.",
+      "chunk_id": "photosynthesis-028#c009",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "Passage states cytokinesis is incomplete, not complete.",
+      "agree": true
+    },
+    {
+      "index": 104,
+      "claim": "There are two main conflicting ways of measuring GHG emissions: production-based and consumption-based.",
+      "chunk_id": "climate-032#c007",
+      "validated_label": "supported",
+      "kimi_label": "supported",
+      "kimi_reason": "Passage directly states the two conflicting measurement methods as production-based and consumption-based.",
+      "agree": true
+    },
+    {
+      "index": 107,
+      "claim": "Multi-Regional Input-Output models trace products across production cycles to calculate emissions allocated to final consumers.",
+      "chunk_id": "climate-032#c009",
+      "validated_label": "supported",
+      "kimi_label": "supported",
+      "kimi_reason": "Passage states MRIO traces products across production cycles and calculates emissions allocated to the final consumer.",
+      "agree": true
+    },
+    {
+      "index": 131,
+      "claim": "Research on climate change adaptation has been ongoing since the 2000s.",
+      "chunk_id": "climate-003#c002",
+      "validated_label": "unsupported",
+      "kimi_label": "unsupported",
+      "kimi_reason": "Passage states adaptation research began in the 1990s, not the 2000s.",
+      "agree": true
+    },
+    {
+      "index": 133,
+      "claim": "Throughout the 20th century, most classifications treated cyanophytes and chlorophytes as divisions or classes of algae.",
+      "chunk_id": "photosynthesis-000#c007",
+      "validated_label": "supported",
+      "kimi_label": "supported",
+      "kimi_reason": "The passage explicitly states that throughout the 20th century most classifications treated cyanophytes and chlorophytes as divisions or classes of algae.",
+      "agree": true
+    },
+    {
+      "index": 138,
+      "claim": "The knowledge of the optimal action-value function alone suffices to know how to act optimally.",
+      "chunk_id": "machine-learning-075#c009",
+      "validated_label": "supported",
+      "kimi_label": "supported",
+      "kimi_reason": "The passage explicitly states the claim verbatim in its concluding sentence.",
+      "agree": true
+    },
+    {
+      "index": 140,
+      "claim": "The Program Time Unit on the balancing market is of 15 minutes.",
+      "chunk_id": "renewable-energy-050#c006",
+      "validated_label": "supported",
+      "kimi_label": "supported",
+      "kimi_reason": "The passage explicitly states the Program Time Unit (PTU) on the balancing market is of 15 minutes.",
+      "agree": true
+    },
+    {
+      "index": 143,
+      "claim": "Annual ski races are held on the Fourth of July in some high mountain areas.",
+      "chunk_id": "climate-048#c005",
+      "validated_label": "supported",
+      "kimi_label": "supported",
+      "kimi_reason": "The passage states heavy snow at high-mountain ski resorts leads to annual ski races on the Fourth of July.",
+      "agree": true
+    }
+  ],
+  "validated_by": "claude-role-audit (pending human owner hand-label confirmation)"
+}

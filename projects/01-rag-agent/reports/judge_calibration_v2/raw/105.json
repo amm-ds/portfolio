@@ -1,0 +1,19 @@
+{
+  "index": 105,
+  "chunk_id": "photosynthesis-016#c010",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 488,
+    "output_tokens": 146,
+    "reasoning_tokens": 88
+  },
+  "cost_usd_est": "0.000893",
+  "cumulative_usd_est": "0.070763",
+  "latency_s": 2.77,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states the Algenol system commercialized by BioFields in Puerto Libertad, Sonora, Mexico uses seawater and industrial exhaust to produce ethanol.\"}",
+  "label": "supported",
+  "reason": "The passage states the Algenol system commercialized by BioFields in Puerto Libertad, Sonora, Mexico uses seawater and industrial exhaust to produce ethanol."
+}

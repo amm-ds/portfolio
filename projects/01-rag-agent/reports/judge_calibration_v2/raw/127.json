@@ -1,0 +1,19 @@
+{
+  "index": 127,
+  "chunk_id": "climate-003#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 418,
+    "output_tokens": 110,
+    "reasoning_tokens": 66
+  },
+  "cost_usd_est": "0.000858",
+  "cumulative_usd_est": "0.084100",
+  "latency_s": 3.62,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states research on climate change adaptation has been ongoing since the 1990s.\"}",
+  "label": "supported",
+  "reason": "The passage states research on climate change adaptation has been ongoing since the 1990s."
+}

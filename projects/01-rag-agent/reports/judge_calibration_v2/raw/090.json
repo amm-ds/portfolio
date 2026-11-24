@@ -1,0 +1,19 @@
+{
+  "index": 90,
+  "chunk_id": "climate-032#c011",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 387,
+    "output_tokens": 99,
+    "reasoning_tokens": 57
+  },
+  "cost_usd_est": "0.000783",
+  "cumulative_usd_est": "0.061204",
+  "latency_s": 2.39,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"supported\",\"reason\":\"Passage states global emissions have risen 39% from 1990 to 2008.\"}",
+  "label": "supported",
+  "reason": "Passage states global emissions have risen 39% from 1990 to 2008."
+}

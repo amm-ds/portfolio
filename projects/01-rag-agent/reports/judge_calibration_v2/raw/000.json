@@ -1,0 +1,19 @@
+{
+  "index": 0,
+  "chunk_id": "machine-learning-075#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 448,
+    "output_tokens": 69,
+    "reasoning_tokens": 24
+  },
+  "cost_usd_est": "0.000724",
+  "cumulative_usd_est": "0.000724",
+  "latency_s": 2.68,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Contradicted: the passage states the agent maximizes expected cumulative reward, not minimizes it.\"}",
+  "label": "unsupported",
+  "reason": "Contradicted: the passage states the agent maximizes expected cumulative reward, not minimizes it."
+}

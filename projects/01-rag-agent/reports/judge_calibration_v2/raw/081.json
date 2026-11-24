@@ -1,0 +1,19 @@
+{
+  "index": 81,
+  "chunk_id": "aviation-000#c006",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 475,
+    "output_tokens": 57,
+    "reasoning_tokens": 19
+  },
+  "cost_usd_est": "0.000703",
+  "cumulative_usd_est": "0.055798",
+  "latency_s": 2.54,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states 1853, not 1863.\"}",
+  "label": "unsupported",
+  "reason": "Passage states 1853, not 1863."
+}

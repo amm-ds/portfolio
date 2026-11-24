@@ -1,0 +1,19 @@
+{
+  "index": 24,
+  "chunk_id": "climate-054#c000",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 462,
+    "output_tokens": 96,
+    "reasoning_tokens": 42
+  },
+  "cost_usd_est": "0.000846",
+  "cumulative_usd_est": "0.017686",
+  "latency_s": 4.5,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states the monsoon lasts until mid-September, not early October; late September to late October is the post-monsoon season.\"}",
+  "label": "unsupported",
+  "reason": "Passage states the monsoon lasts until mid-September, not early October; late September to late October is the post-monsoon season."
+}

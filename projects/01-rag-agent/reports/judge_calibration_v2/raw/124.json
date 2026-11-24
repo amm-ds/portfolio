@@ -1,0 +1,19 @@
+{
+  "index": 124,
+  "chunk_id": "renewable-energy-042#c007",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 454,
+    "output_tokens": 65,
+    "reasoning_tokens": 22
+  },
+  "cost_usd_est": "0.000535",
+  "cumulative_usd_est": "0.082030",
+  "latency_s": 2.57,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states turbines operate at variable speeds, contradicting the claim of fixed speeds.\"}",
+  "label": "unsupported",
+  "reason": "Passage states turbines operate at variable speeds, contradicting the claim of fixed speeds."
+}

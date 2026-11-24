@@ -29,17 +29,22 @@ bound hosted cost) with bootstrap CIs on faithfulness and the failure taxonomy.
 
 import hashlib
 import json
+import logging
 import random
 import subprocess
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import plotly.graph_objects as go
-from portfolio_core.llm_budget import BudgetExceededError, budget_limits
+from portfolio_core.llm_budget import (
+    BudgetExceededError,
+    get_ledger,
+)
 from portfolio_core.logging import get_logger
 from portfolio_eval.rag import RAGEvalResult
 from pydantic import ValidationError
@@ -47,11 +52,9 @@ from pydantic_ai import Agent, AgentRunResult
 from pydantic_ai.exceptions import UnexpectedModelBehavior, UsageLimitExceeded
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from pydantic_ai.models import Model
 
-from rag_agent.agent import build_agent
+from rag_agent.agent import agent_usage_limits, build_agent
 from rag_agent.config import RAGConfig, RetrievalBest
 from rag_agent.corpus import load_corpus
 from rag_agent.figures import (
@@ -101,11 +104,17 @@ from rag_agent.reporting import (
     recall_at_k,
     recall_at_k_from,
     topk_run_for_size,
+    trace_to_row,
     write_cost_telemetry,
     write_question_traces,
 )
 from rag_agent.reporting import (
     write_reports as _write_reports,
+)
+from rag_agent.runner import (
+    Checkpoint,
+    HostGrabber,
+    question_hash,
 )
 from rag_agent.schemas import AnalysisResult, Article, Citation, EvalQuestion
 from rag_agent.verify import ClaimJudge, VerifyReport, build_claim_judge, verify_result
@@ -159,10 +168,31 @@ logger = get_logger(__name__)
 MAX_OUTPUT_RETRIES = 2
 
 
+def _judge_context(evidence: list[Citation], cited: list[Citation], retriever: Retriever) -> str:
+    """Full chunk texts for the rubric judge: retrieved top-k union agent-cited chunks.
+
+    Phase E fix: the previous ``"\n".join(c.excerpt for c in evidence)`` passed
+    only the 240-char preview of the static initial search (truncating ~80% of
+    every chunk) and ignored the citations the agent actually used. Falls back
+    to ``c.excerpt`` only when ``retriever.get_chunk`` returns None (minimal
+    mock retrievers in unit tests).
+    """
+    seen: set[str] = set()
+    parts: list[str] = []
+    for c in [*evidence, *cited]:
+        if c.chunk_id in seen:
+            continue
+        seen.add(c.chunk_id)
+        chunk = retriever.get_chunk(c.chunk_id)
+        parts.append(chunk.text if chunk is not None else c.excerpt)
+    return "\n\n".join(parts)
+
+
 def answer_with_output_retries(
     agent: Agent[Retriever, AnalysisResult],
     question: str,
     retriever: Retriever,
+    config: RAGConfig,
     max_retries: int = MAX_OUTPUT_RETRIES,
 ) -> tuple[AgentRunResult[AnalysisResult] | None, int, str]:
     """Run the agent with ≤ ``max_retries`` output-retries on invalid output.
@@ -182,7 +212,7 @@ def answer_with_output_retries(
                 question,
                 deps=retriever,
                 retries={"output": 0},  # retries are explicit and counted here
-                usage_limits=budget_limits(),
+                usage_limits=agent_usage_limits(config),
             )
             return result, retries, ""
         except BudgetExceededError:
@@ -553,13 +583,48 @@ def run_retrieval_sweep(
     )
 
 
-def run_rag_eval(
+class _RowRecorder:
+    """Checkpoint row writer + request-host capture for one run (phase0-infra)."""
+
+    def __init__(self, checkpoint: "Checkpoint | None") -> None:
+        self._checkpoint = checkpoint
+        self._grabber = HostGrabber() if checkpoint is not None else None
+        self._seen = 0
+        if self._grabber is not None:
+            for name in ("httpx", "httpx2"):
+                logging.getLogger(name).addHandler(self._grabber)
+
+    def skipping(self, question: EvalQuestion, skip_hashes: "set[str] | None") -> bool:
+        return bool(skip_hashes and question_hash(question.question) in skip_hashes)
+
+    def record(self, trace: QuestionTrace) -> None:
+        if self._checkpoint is None or self._grabber is None:
+            return
+        hosts_now = list(self._grabber.hosts[self._seen :])
+        self._seen = len(self._grabber.hosts)
+        spend = 0.0
+        try:
+            from portfolio_core.llm_budget import is_hosted_active
+
+            if is_hosted_active():
+                spend = float(get_ledger().spend_usd)
+        except Exception:  # broad: spend in a row is best-effort bookkeeping
+            spend = 0.0
+        self._checkpoint.write_row(
+            question_hash(trace.question), trace.question, trace_to_row(trace), hosts_now, spend
+        )
+
+
+def run_rag_eval(  # noqa: C901 - established per-question state machine;
+    # the phase0-infra skip guard adds one branch, not worth splitting the loop.
     config: RAGConfig,
     agent: Agent[Retriever, AnalysisResult],
     retriever: Retriever,
     questions: list[EvalQuestion],
     judge: RubricJudge | None = None,
     verifier: ClaimJudge | None = None,
+    checkpoint: "Checkpoint | None" = None,
+    skip_hashes: "set[str] | None" = None,
 ) -> RAGRun:
     """Run the agent over the question set; collect traces + judge verdicts.
 
@@ -586,6 +651,9 @@ def run_rag_eval(
         claim_judge = verifier if verifier is not None else build_claim_judge()
         logger.info("claim verifier: %s", getattr(claim_judge, "name", type(claim_judge).__name__))
 
+    # phase0-infra: per-question checkpoint + request-host capture.
+    recorder = _RowRecorder(checkpoint)
+
     traces: list[QuestionTrace] = []
     ragas_rows: list[RagasRow] = []
     verify_reports: list[VerifyReport] = []
@@ -598,6 +666,8 @@ def run_rag_eval(
     n_answerable = 0
 
     for question in questions:
+        if recorder.skipping(question, skip_hashes):
+            continue
         start = time.perf_counter()
         # R6: retrieval first — the inference-time evidence gate decides, from
         # inference-observable signals only, whether generation may proceed.
@@ -632,6 +702,7 @@ def run_rag_eval(
                     gate_refused=True,
                 )
             )
+            recorder.record(traces[-1])
             continue
 
         output: AnalysisResult | None = None
@@ -639,7 +710,7 @@ def run_rag_eval(
         error = ""
         try:
             result, output_retries, error = answer_with_output_retries(
-                agent, question.question, retriever
+                agent, question.question, retriever, config
             )
             if result is not None:
                 output = result.output
@@ -680,12 +751,16 @@ def run_rag_eval(
                     ),
                 )
             )
+            recorder.record(traces[-1])
             continue
 
         summary = output.summary
         cited_relevant = any(c.article_id in relevant for c in output.citations)
+        # The agent cites what search_documents returned: a relevant citation
+        # means retrieval succeeded even when the static top-10 probe missed.
+        retrieved_relevant = retrieved_relevant or cited_relevant
         abstained = is_abstention(summary, output.confidence)
-        context = "\n".join(c.excerpt for c in evidence)
+        context = _judge_context(evidence, output.citations, retriever)
         faith = selected.judge(question.question, context, summary).score
         relevance = selected.judge(
             question.question, question.question + " " + context, summary
@@ -709,6 +784,7 @@ def run_rag_eval(
                 claim_states=_claim_states(vreport),
             )
         )
+        recorder.record(traces[-1])
         if question.expected_behavior == "answer":
             n_answerable += 1
             faith_scores.append(faith)
@@ -1148,6 +1224,13 @@ def _rag_ci(config: RAGConfig, rag_run: RAGRun) -> dict[str, Any]:
     }
 
 
+def write_trace_rows(rows: list[dict[str, Any]], path: Path) -> Path:
+    """Persist pre-serialized trace rows (checkpoint merge on resume)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
 def _taxonomy_counts(rag_run: RAGRun | None) -> dict[str, int]:
     """Failure-taxonomy histogram over the per-question traces."""
     counts: dict[str, int] = {}
@@ -1156,6 +1239,53 @@ def _taxonomy_counts(rag_run: RAGRun | None) -> dict[str, int]:
             label = classify_question(trace)
             counts[label] = counts.get(label, 0) + 1
     return counts
+
+
+def _taxonomy_counts_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for row in rows:
+        label = str(row.get("verdict") or "unknown")
+        counts[label] = counts.get(label, 0) + 1
+    return counts
+
+
+def _rag_block_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    answered = [
+        float(r["faithfulness"])
+        for r in rows
+        if r.get("expected_behavior") == "answer" and r.get("faithfulness") == r.get("faithfulness")
+    ]
+    # trace rows carry faithfulness only; answer relevance is recomputed on
+    # full runs and left null here (resume aggregates stay honest).
+    recall = [
+        1.0 for r in rows if r.get("expected_behavior") == "answer" and r.get("retrieved_relevant")
+    ]
+    n_answerable = sum(1 for r in rows if r.get("expected_behavior") == "answer")
+
+    def mean(xs: list[float]) -> float:
+        return sum(xs) / len(xs) if xs else float("nan")
+
+    return {
+        "n_questions": n_answerable,
+        "faithfulness": mean(answered),
+        "answer_relevance": None,
+        "context_recall": mean(recall),
+    }
+
+
+def _abstention_block_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    unanswerable = [r for r in rows if r.get("expected_behavior") == "abstain"]
+    answerable = [r for r in rows if r.get("expected_behavior") == "answer"]
+    refused = [1.0 if r.get("abstained") else 0.0 for r in unanswerable]
+    cited = [1.0 if r.get("cited_relevant") else 0.0 for r in answerable]
+    false_abs = [1.0 if r.get("abstained") else 0.0 for r in answerable]
+    return {
+        "n_unanswerable": len(unanswerable),
+        "n_answerable": len(answerable),
+        "refusal_accuracy": (sum(refused) / len(unanswerable) if unanswerable else float("nan")),
+        "cite_when_expected": (sum(cited) / len(answerable) if answerable else float("nan")),
+        "false_abstention_rate": (sum(false_abs) / len(answerable) if answerable else float("nan")),
+    }
 
 
 def _build_figures(
@@ -1458,6 +1588,9 @@ def run_heldout(
     rerank_fn: RerankFn | None = None,
     model: "Model | None" = None,
     meter_active: bool | None = None,
+    checkpoint: "Checkpoint | None" = None,
+    skip_hashes: "set[str] | None" = None,
+    section: str = "heldout",
 ) -> dict[str, Any]:
     """Evaluate the sealed held-out golden set (``evaluate --heldout``).
 
@@ -1536,32 +1669,63 @@ def run_heldout(
     logger.info("heldout retrieval: %s", retrieval)
 
     agent = build_agent(config, model=model)
-    rag_run = run_rag_eval(config, agent, retriever, heldout, judge=judge, verifier=verifier)
+    rag_run = run_rag_eval(
+        config,
+        agent,
+        retriever,
+        heldout,
+        judge=judge,
+        verifier=verifier,
+        checkpoint=checkpoint,
+        skip_hashes=skip_hashes,
+    )
 
-    correct_flags = [1.0 if classify_question(t) == "correct" else 0.0 for t in rag_run.traces]
-    taxonomy = _taxonomy_counts(rag_run)
     composition: dict[str, int] = {}
     for q in heldout:
         key = f"{q.category}/{q.expected_behavior}"
         composition[key] = composition.get(key, 0) + 1
-    traces_path = write_question_traces(
-        config, rag_run.traces, path=config.reports_dir / "question_traces_heldout.json"
-    )
+    correct_flags: list[float]
+    faith_rows: list[float]
+    if checkpoint is not None and checkpoint.completed:
+        # Resume: rebuild the headline aggregates from ALL rows (prior + new).
+        merged_rows = checkpoint.merged_traces([trace_to_row(t) for t in rag_run.traces])
+        traces_path = write_trace_rows(
+            merged_rows, config.reports_dir / "question_traces_heldout.json"
+        )
+        taxonomy = _taxonomy_counts_rows(merged_rows)
+        rag_block = _rag_block_rows(merged_rows)
+        abstention = _abstention_block_rows(merged_rows)
+        correct_flags = [1.0 if r.get("verdict") == "correct" else 0.0 for r in merged_rows]
+        faith_rows = [
+            float(r["faithfulness"])
+            for r in merged_rows
+            if r.get("faithfulness") == r.get("faithfulness")
+        ]
+    else:
+        merged_rows = [trace_to_row(t) for t in rag_run.traces]
+        traces_path = write_question_traces(
+            config, rag_run.traces, path=config.reports_dir / "question_traces_heldout.json"
+        )
+        taxonomy = _taxonomy_counts(rag_run)
+        rag_block = rag_run.eval_result.to_dict()
+        abstention = abstention_report(rag_run.traces, seed=config.seed)
+        correct_flags = [1.0 if classify_question(t) == "correct" else 0.0 for t in rag_run.traces]
+        faith_rows = rag_run.faithfulness_rows
     payload: dict[str, Any] = {
         "n_questions": len(heldout),
         "composition": composition,
         "retrieval": retrieval,
-        "rag": rag_run.eval_result.to_dict(),
+        "rag": rag_block,
         "faithfulness": {
-            "mean": rag_run.eval_result.faithfulness,
-            "ci95": list(bootstrap_ci(rag_run.faithfulness_rows, seed=config.seed)),
+            "mean": rag_block["faithfulness"],
+            "ci95": list(bootstrap_ci(faith_rows, seed=config.seed)),
         },
         "taxonomy": {
             "counts": taxonomy,
             "correct_share": (sum(correct_flags) / len(correct_flags) if correct_flags else 0.0),
             "correct_share_ci95": list(bootstrap_ci(correct_flags, seed=config.seed)),
         },
-        "abstention": abstention_report(rag_run.traces, seed=config.seed),
+        "abstention": abstention,
         "verify": _verify_stats(config, rag_run),
         "ops": {
             "backend": inference_backend(),
@@ -1570,9 +1734,16 @@ def run_heldout(
         },
         "meter": get_meter().snapshot(),
         "traces_path": str(traces_path),
+        "checkpoint": (
+            {"run_dir": str(checkpoint.run_dir), "resumed_rows": len(checkpoint.completed)}
+            if checkpoint is not None
+            else None
+        ),
         "note": (
             "sealed held-out set, reported separately from the tuning set; "
             "verify-on pass without RAGAS to bound hosted cost"
+            if section == "heldout"
+            else f"{section} run under --reports-dir; never writes detail.heldout"
         ),
     }
 
@@ -1582,7 +1753,7 @@ def run_heldout(
         metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     else:
         metrics = {"detail": {}}
-    metrics.setdefault("detail", {})["heldout"] = payload
+    metrics.setdefault("detail", {})[section] = payload
     # Provenance metadata for the judged arms: the hosted provider model behind
     # generation/verify-judge/RAGAS (traceable to the committed challenger
     # comparison) and the locked RAGAS version used for the evaluator scores.
@@ -1596,6 +1767,12 @@ def run_heldout(
     metrics["ragas_version"] = _pkg_version("ragas")
     metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
     meter = payload["meter"]
+    if checkpoint is not None:
+        checkpoint.update_spend(
+            meter["total"]["spend_usd"] + checkpoint.manifest.cumulative_spend_usd
+            if meter["active"]
+            else checkpoint.manifest.cumulative_spend_usd
+        )
     logger.info(
         "heldout run written: %s (backend=%s, metered spend=%.4f USD cloud-equivalent)",
         metrics_path,

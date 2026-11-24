@@ -79,7 +79,7 @@ its metadata stage.
 | `BUILD_SHA` | `dev` | SHA returned by `/health`; set it to the image's source commit. |
 | `IP_HASH_SALT` | required in prod compose | Salt for the 12-character client-IP hashes in logs. Use a long random value and rotate only deliberately. |
 | `RATE_LIMIT_PER_MINUTE` | `30` | Per-client-IP POST token-bucket refill rate; burst is 10. In-memory, per process, and reset on restart. |
-| `DAILY_LIVE_BUDGET` | `1000` | Per-process, per-UTC-day cap on the live POST inference calls (`/forecast`, `/score`, `/solve`). At 80% a WARNING logs once per day; past the cap the endpoints answer 503 (with the demo-replay hint) until the day rolls over. |
+| `DAILY_LIVE_BUDGET` | `10` in prod compose (application fallback `1000`) | Per-process, per-UTC-day cap on the live POST inference calls (`/forecast`, `/score`, `/solve`). At 80% a WARNING logs once per day; past the cap the endpoints answer 503 (with the demo-replay hint) until the day rolls over. The compose default is deliberately conservative; export a higher value with the other required variables to raise it. |
 | `LIVE_KILL_SWITCH` | unset | Circuit breaker: exactly `1` makes every live POST endpoint answer 503 immediately ("live inference temporarily disabled" + demo-replay hint). Recreate the container with the variable emptied to restore. |
 | `RAG_CHAT_ENABLED` | unset | Kill switch. Only exactly `1` registers `/rag/chat` and `/rag/chat/stream`; unset/empty disables them. |
 | `ENABLE_API_DOCS` | unset | Kill switch. Only exactly `1` registers `/docs`, `/redoc`, and `/openapi.json`; unset/empty disables them — API docs are disabled in production. |
@@ -129,7 +129,8 @@ two fail-closed guardrails (see the `LiveGuard` in `showcase_api.main`):
   LIVE_KILL_SWITCH=1 docker compose -f deploy/docker-compose.prod.yml up -d --no-deps api
   ```
 
-- Daily budget. `DAILY_LIVE_BUDGET` (default 1000) caps live POST calls per
+- Daily budget. `DAILY_LIVE_BUDGET` (compose default 10; the application
+  fallback outside compose is 1000) caps live POST calls per
   process per UTC day; the counter is in-memory and resets on restart/day
   rollover, and a one-time WARNING logs at 80%. It is a floor against
   runaway clients, not a quota system.

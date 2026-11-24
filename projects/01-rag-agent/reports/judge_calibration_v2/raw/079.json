@@ -1,0 +1,19 @@
+{
+  "index": 79,
+  "chunk_id": "machine-learning-000#c009",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 451,
+    "output_tokens": 83,
+    "reasoning_tokens": 43
+  },
+  "cost_usd_est": "0.000604",
+  "cumulative_usd_est": "0.054161",
+  "latency_s": 2.52,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says 'human' feeling/emotion/mood, not animal\"}",
+  "label": "unsupported",
+  "reason": "Passage says 'human' feeling/emotion/mood, not animal"
+}

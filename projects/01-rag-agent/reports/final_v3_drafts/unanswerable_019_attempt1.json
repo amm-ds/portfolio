@@ -1,0 +1,1 @@
+{"prompt_sha256": "81b76efb4b562c5945e06359c0233ae1a5727752655a6c14ae1d19ddff8fb2ab", "response": "{\n  \"question\": \"What is the scientific classification and current conservation status of the golden mantella frog found in Madagascar?\",\n  \"absent_terms\": [\n    \"Golden mantella\",\n    \"Madagascar\",\n    \"Conservation status\"\n  ]\n}"}

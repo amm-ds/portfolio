@@ -223,7 +223,7 @@
 .bi-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-left: 2px solid var(--accent);
+  border-left: 3px solid var(--card-accent);
   border-radius: var(--radius);
   padding: 1rem 1.25rem;
   margin: 0 0 var(--gap-card);
@@ -311,7 +311,7 @@ a.glossary-term:focus-visible {
   padding: 1rem 1.2rem;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-left: 2px solid var(--accent);
+  border-left: 3px solid var(--card-accent);
   border-radius: var(--radius);
 }
 

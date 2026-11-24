@@ -1,0 +1,19 @@
+{
+  "index": 16,
+  "chunk_id": "aviation-059#c008",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 311,
+    "output_tokens": 91,
+    "reasoning_tokens": 48
+  },
+  "cost_usd_est": "0.000675",
+  "cumulative_usd_est": "0.012260",
+  "latency_s": 2.46,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"unsupported\",\"reason\":\"Passage says the 717 was the last, not first, commercial airplane produced at Long Beach.\"}",
+  "label": "unsupported",
+  "reason": "Passage says the 717 was the last, not first, commercial airplane produced at Long Beach."
+}

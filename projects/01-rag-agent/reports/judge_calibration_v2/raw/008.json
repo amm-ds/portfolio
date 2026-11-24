@@ -1,0 +1,19 @@
+{
+  "index": 8,
+  "chunk_id": "photosynthesis-000#c010",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 367,
+    "output_tokens": 68,
+    "reasoning_tokens": 26
+  },
+  "cost_usd_est": "0.000639",
+  "cumulative_usd_est": "0.006349",
+  "latency_s": 4.43,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"The passage states kelps may reach 50 m, not 30 m.\"}",
+  "label": "unsupported",
+  "reason": "The passage states kelps may reach 50 m, not 30 m."
+}

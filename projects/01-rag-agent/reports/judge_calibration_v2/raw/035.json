@@ -1,0 +1,19 @@
+{
+  "index": 35,
+  "chunk_id": "climate-003#c000",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 427,
+    "output_tokens": 98,
+    "reasoning_tokens": 50
+  },
+  "cost_usd_est": "0.000819",
+  "cumulative_usd_est": "0.024640",
+  "latency_s": 2.75,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage lists 'infrastructural and technological' not 'economic and financial' as the first category.\"}",
+  "label": "unsupported",
+  "reason": "Passage lists 'infrastructural and technological' not 'economic and financial' as the first category."
+}

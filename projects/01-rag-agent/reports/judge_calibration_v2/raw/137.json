@@ -1,0 +1,19 @@
+{
+  "index": 137,
+  "chunk_id": "renewable-energy-042#c011",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 436,
+    "output_tokens": 68,
+    "reasoning_tokens": 33
+  },
+  "cost_usd_est": "0.000529",
+  "cumulative_usd_est": "0.089797",
+  "latency_s": 2.88,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says approximately proportional, not exactly proportional\"}",
+  "label": "unsupported",
+  "reason": "Passage says approximately proportional, not exactly proportional"
+}

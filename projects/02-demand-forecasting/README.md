@@ -62,8 +62,8 @@ The headline experiment is the committed Walmart M5 **full panel** — 30,490
 daily store-item series across 1,969 days, 2011-01-29..2016-06-19 (47,649,940
 rows, 59.5%
 zero-demand days) — scored under the official hierarchical WRMSSE over all
-42,840 revenue-weighted nodes. Protocol: **3 weekly rolling origins**
-(2 SELECTION + the last scored once as TEST — 2016-05-22, the competition
+42,840 revenue-weighted nodes. Protocol: **10 weekly rolling origins**
+(9 SELECTION + the last scored once as TEST — 2016-05-22, the competition
 window), each training on ≥ 1,096 days and scoring the next **28 days** (the
 M5 evaluation horizon). Candidates: per-series statistical floor
 (`seasonal_naive`), a global **LightGBM** and a **Tweedie-loss** twin
@@ -87,32 +87,32 @@ the artifacts byte-for-byte.
 
 Headline table — official hierarchical WRMSSE on the scored-once test origin
 (42,840 revenue-weighted nodes; vs floor = relative cut; stability =
-population std of the per-origin official WRMSSE over the 2 selection
+population std of the per-origin official WRMSSE over the 9 selection
 origins):
 
 | candidate | official WRMSSE | vs floor | bottom WAPE | bias | stability |
 |---|---|---|---|---|---|
-| **convex_ensemble (champion)** | **0.6161**¹ | **−31.0%** | **0.7633** | **+0.0328** | **0.0001** |
-| lgbm_pool_store (best single) | 0.6217 | −30.4% | 0.7641 | +0.0265 | 0.0126 |
-| lgbm_pool_dept | 0.6313 | −29.3% | 0.7608 | +0.0041 | 0.0214 |
-| lgbm_tweedie | 0.6473 | −27.5% | 0.7642 | +0.0122 | 0.0219 |
-| lgbm_pool_storecat | 0.6575 | −26.4% | 0.7674 | +0.0482 | 0.0179 |
-| lgbm | 0.6601 | −26.1% | 0.7626 | +0.0041 | 0.0210 |
-| auto_ets | 0.7093 | −20.6% | 0.7710 | −0.0063 | 0.0161 |
-| seasonal_naive (floor) | 0.8929 | — | 0.9159 | −0.0120 | 0.0108 |
+| **convex_ensemble (champion)** | **0.6211**¹ | **−30.4%** | **0.7623** | **+0.0222** | **0.0538** |
+| lgbm_pool_store (best single) | 0.6219 | −30.3% | 0.7617 | +0.0177 | **0.0549** |
+| lgbm_pool_storecat | 0.6225 | −30.3% | 0.7626 | +0.0228 | 0.0540 |
+| lgbm_pool_dept | 0.6459 | −27.7% | 0.7615 | +0.0116 | 0.0470 |
+| lgbm_tweedie | 0.6473 | −27.5% | 0.7642 | +0.0122 | 0.0555 |
+| lgbm | 0.6601 | −26.1% | 0.7626 | +0.0041 | 0.0347 |
+| auto_ets | 0.7093 | −20.6% | 0.7710 | −0.0063 | 0.0525 |
+| seasonal_naive (floor) | 0.8929 | — | 0.9159 | −0.0120 | 0.0577 |
 
-¹ **One scored test origin; no bootstrap interval** — 0.6161 is a single
+¹ **One scored test origin; no bootstrap interval** — 0.6211 is a single
 evaluation on the final 28 days, so the ensemble–floor gap carries no
 uncertainty bound.
 
 - **The committed comparison is the seasonal-naive floor** — the convex
-  ensemble lands at **0.6161**, a **−31.0%** cut over the floor's 0.8929,
+  ensemble lands at **0.6211**, a **−30.4%** cut over the floor's 0.8929,
   scored once on the final 28 days under the official revenue-weighted scheme
   across all 42,840 nodes. This is not a leaderboard or competition-winner
   comparison: no equivalent external run is evaluated by this project. Protocol
   reference: [Makridakis et al., IJF 2022](https://doi.org/10.1016/j.ijforecast.2021.11.013).
 - **Pooled beats global at full scale — the key lesson.** All three pooled
-  arms (0.6217 / 0.6313 / 0.6575) land ahead of the single global model
+  arms (0.6219 / 0.6225 / 0.6459) land ahead of the single global model
   (0.6601): with 30,490 series, one fit per store, cell, or department shares
   strength where it exists and keeps fits local where it does not. This is the
   inverse of the subset-era finding (600 series, top-volume items), where
@@ -122,27 +122,27 @@ uncertainty bound.
   posts 0.6473 — ahead of the global model, behind the pooled arms. AutoETS
   clears the floor comfortably (0.7093 vs 0.8929) but trails every boosting
   arm; on zero-actual days it stays right 60.9% of the time against the
-  ensemble's 57.3% — and the floor itself leads there at 66.6%.
+  ensemble's 57.2% — and the floor itself leads there at 66.6%.
 - **Where the win is made.** The per-level breakdown (story conclusions) shows
   the blend's edge broadest at the aggregate levels the competition weights
-  most — total 0.3501 vs the floor's 0.5600 — while at item level the learned
+  most — total 0.3143 vs the floor's 0.5600 — while at item level the learned
   candidates cluster between 1.04 and 1.15 and the floor sits at 1.38–1.39:
   series-level noise dominates there, and full-scale accuracy is decided by
   the hierarchy, not by any single series.
 - **Intermittency is priced in, not solved.** 91% of series are intermittent
   and 59.5% of panel days are zero. On zero-actual days the ensemble is right
-  57.3% of the time (intermittent class 58.9%) against the floor's 66.6%
+  57.2% of the time (intermittent class 58.8%) against the floor's 66.6%
   (67.8%) — the quiet days still belong to the floor; the ensemble wins by
   getting the aggregate levels right.
 
-The ensemble composition: **lgbm_pool_storecat × 0.60 + lgbm_pool_store ×
-0.10 + lgbm_pool_dept × 0.30** — the best three of the six-candidate pool by
+The ensemble composition: **lgbm_pool_storecat × 0.95 + lgbm_pool_store ×
+0.00 + lgbm_pool_dept × 0.05** — the best three of the six-candidate pool by
 the stability screen (mean + 1.0×std of the per-origin official WRMSSE over
-the 2 selection origins), weights on a 0.05 simplex grid minimising the same
+the 9 selection origins), weights on a 0.05 simplex grid minimising the same
 screen, computed exactly from the forecast-level blend re-aggregated through
 the hierarchy.
 
-Stated limits: the selection screen is thin (2 selection origins — a protocol
+Stated limits: the selection screen is thin (9 selection origins — a protocol
 limit, not a tight selection bound); the full track commits point estimates
 only, no bootstrap CIs; the demo band is the per-day min/max envelope of the
 blend members, not a calibrated prediction interval; neural global models

@@ -1,0 +1,19 @@
+{
+  "index": 15,
+  "chunk_id": "climate-016#c006",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 461,
+    "output_tokens": 72,
+    "reasoning_tokens": 28
+  },
+  "cost_usd_est": "0.000749",
+  "cumulative_usd_est": "0.011585",
+  "latency_s": 3.01,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"supported\",\"reason\":\"The passage explicitly states the thermohaline circulation transports heat from the tropics to the polar regions.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states the thermohaline circulation transports heat from the tropics to the polar regions."
+}

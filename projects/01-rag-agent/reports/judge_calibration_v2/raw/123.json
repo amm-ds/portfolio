@@ -1,0 +1,19 @@
+{
+  "index": 123,
+  "chunk_id": "renewable-energy-050#c010",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 465,
+    "output_tokens": 89,
+    "reasoning_tokens": 46
+  },
+  "cost_usd_est": "0.000642",
+  "cumulative_usd_est": "0.081495",
+  "latency_s": 3.42,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"unsupported\",\"reason\":\"Passage states forecast length is 48 to 172 hours, not up to 200 hours.\"}",
+  "label": "unsupported",
+  "reason": "Passage states forecast length is 48 to 172 hours, not up to 200 hours."
+}

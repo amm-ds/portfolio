@@ -1,0 +1,19 @@
+{
+  "index": 43,
+  "chunk_id": "climate-011#c001",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 364,
+    "output_tokens": 65,
+    "reasoning_tokens": 21
+  },
+  "cost_usd_est": "0.000445",
+  "cumulative_usd_est": "0.029963",
+  "latency_s": 2.21,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says Arctic warming contributes to melting permafrost, not freezing permafrost.\"}",
+  "label": "unsupported",
+  "reason": "Passage says Arctic warming contributes to melting permafrost, not freezing permafrost."
+}

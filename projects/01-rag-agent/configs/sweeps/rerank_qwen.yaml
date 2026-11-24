@@ -1,0 +1,13 @@
+# Step 3 sweep: Qwen3-Reranker-0.6B (pinned revision e61197ed…, NO
+# trust_remote_code — snapshot reviewed: no remote-code files) vs the incumbent
+# ms-marco cross-encoder. Candidate count held fixed at 15 = 3 x 5.
+name: rerank_qwen
+chunk_size: 200
+chunk_overlap: 40
+chunk_mode: size
+embedding_model: sentence-transformers/all-MiniLM-L6-v2
+embedding_kind: local
+reranker_model: Qwen/Qwen3-Reranker-0.6B
+top_k: 3
+measure_k: 5
+rerank_multiplier: 5

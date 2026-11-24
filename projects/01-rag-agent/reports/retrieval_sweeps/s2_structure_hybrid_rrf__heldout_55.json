@@ -1,0 +1,66 @@
+{
+  "schema_version": "measure-retrieval-v1",
+  "generated_at": "2026-11-23T12:53:24.887620+00:00",
+  "step": "sweep",
+  "split": "heldout_55",
+  "config": {
+    "chunk_size": 200,
+    "chunk_overlap": 40,
+    "chunk_mode": "structure",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "embedding_kind": "local",
+    "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    "top_k": 3,
+    "measure_k": 5,
+    "rerank_multiplier": 6,
+    "fusion_rrf": true,
+    "rrf_pool_size": 50,
+    "max_per_article": null,
+    "name": "s2_structure_hybrid_rrf"
+  },
+  "config_sha256": "c02fa40c573f94dd5d6f96fa8ce7c1858cdbf2c8550aee036218eaa12f41b017",
+  "set_sha256": "281650865d47ffd68aeee85c87e596cc528a1073182bf4b634c3ba976161a174",
+  "set_note": "golden_heldout.json (article-level gold)",
+  "commit": "4b0ba51aca994256ea7a26a6b90c1b7fc4a6ba1a",
+  "dirty": true,
+  "index_note": "sweep index under data/index/sweeps/",
+  "method": "retrieval-only; no LLM calls. Measurement ranks top_k=5 (30 candidates fetched = measure_k x rerank_multiplier, README '5xk'); production serving slice is top_k=3 \u2014 both token means reported. Dev gold is article-level (all chunks of relevant_titles articles); final_v3 gold is exact gold_chunk_ids.",
+  "rerank_review": null,
+  "request_hosts": [],
+  "metrics": {
+    "n_answerable": 42,
+    "gold_modes": [
+      "article_level"
+    ],
+    "recall_at_5": 1.0,
+    "recall_at_5_wilson95": [
+      0.916201209134296,
+      0.9999999999999999
+    ],
+    "mrr_at_5": 0.9821428571428571,
+    "all_articles_at_5": 0.9285714285714286,
+    "article_coverage_at_5": 0.9642857142857143,
+    "gold_chunk_coverage_at_5": null,
+    "mean_context_tokens_top3": 449.4047619047619,
+    "mean_context_tokens_top5": 730.047619047619,
+    "slices": {
+      "multi_hop": {
+        "n": 10,
+        "recall_at_5": 1.0,
+        "mrr_at_5": 1.0,
+        "all_articles_at_5": 0.7,
+        "article_coverage_at_5": 0.85,
+        "gold_chunk_coverage_at_5": null
+      },
+      "single_hop": {
+        "n": 32,
+        "recall_at_5": 1.0,
+        "mrr_at_5": 0.9765625,
+        "all_articles_at_5": 1.0,
+        "article_coverage_at_5": 1.0,
+        "gold_chunk_coverage_at_5": null
+      }
+    },
+    "n_abstain_false_evidence": 0
+  }
+}

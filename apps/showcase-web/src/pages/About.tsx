@@ -12,7 +12,7 @@ const ROLES = [
     dates: "sep 2026 — now",
     title: "Lead ML/AI engineer — alejandromerida.dev (independent)",
     points: [
-      "Independent ML/AI engineering practice — this site is the showroom: two production-grade app templates and 13 reproducible experiments, every claim traced to a committed artifact.",
+      "Independent ML/AI engineering practice: this site is the showroom (two production-grade app templates, 13 reproducible experiments), every claim traced to a committed artifact.",
       "End-to-end delivery across the stack: agentic systems, page-level document AI, forecasting, optimization and model serving, deployed and measured.",
       "Engagements run discovery-first with fixed budgets, named baselines and stated limits.",
     ],

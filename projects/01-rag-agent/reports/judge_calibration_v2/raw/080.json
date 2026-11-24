@@ -1,0 +1,19 @@
+{
+  "index": 80,
+  "chunk_id": "climate-016#c006",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 461,
+    "output_tokens": 163,
+    "reasoning_tokens": 123
+  },
+  "cost_usd_est": "0.000934",
+  "cumulative_usd_est": "0.055095",
+  "latency_s": 3.28,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage says thermohaline circulation transports heat, not freshwater.\"}",
+  "label": "unsupported",
+  "reason": "Passage says thermohaline circulation transports heat, not freshwater."
+}

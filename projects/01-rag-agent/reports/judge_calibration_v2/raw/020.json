@@ -1,0 +1,19 @@
+{
+  "index": 20,
+  "chunk_id": "aviation-002#c003",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 498,
+    "output_tokens": 164,
+    "reasoning_tokens": 123
+  },
+  "cost_usd_est": "0.001154",
+  "cumulative_usd_est": "0.015336",
+  "latency_s": 3.07,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states 11 large nuclear-powered fleet carriers, not 13.\"}",
+  "label": "unsupported",
+  "reason": "Passage states 11 large nuclear-powered fleet carriers, not 13."
+}

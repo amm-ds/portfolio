@@ -4,7 +4,7 @@
 full scale (30,490 daily store-item series) · **Status:** working showcase on
 the standard platform (flagships: [01](01-rag-agent.md), [07](07-open-data-mobility.md))
 
-> M5 full panel: 30,490 series, one scored test origin (final 28 days) with official 42,840-node WRMSSE. Pooled LightGBM ensemble: 0.6161 vs seasonal-naive 0.8929 (−31.0%); no bootstrap interval bounds the result; quiet days favor the floor.
+> M5 full panel: 30,490 series, one scored test origin (final 28 days) with official 42,840-node WRMSSE. Pooled LightGBM ensemble: 0.6211 vs seasonal-naive 0.8929 (−30.4%); no bootstrap interval bounds the result; quiet days favor the floor.
 
 [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
 
@@ -16,14 +16,14 @@ and per department), a
 Tweedie-loss variant for skewed intermittent demand, per-series AutoETS, and a
 seasonal-naive floor, combined by a stability-screened convex ensemble and
 scored through the full 12-level, 42,840-node hierarchy with revenue weights.
-Everything is reproducible from sha-pinned data: one command, deterministic,
-~13 h on one machine.
+Everything is reproducible from sha-pinned data: one command, deterministic;
+the committed 10-origin run logged about 1.35M seconds.
 
 ## Protocol (`m5_full_v1`, committed `reports_m5_full/`)
 
 The full bottom-level panel (30,490 series × 1,969 days, 2011-01-29..2016-06-19,
-zero share 59.5%) is evaluated over 3 weekly rolling origins (7-day spacing,
-min 1,096 days of history), forecasting 28 days. The first two origins select
+zero share 59.5%) is evaluated over 10 weekly rolling origins (7-day spacing,
+min 1,096 days of history), forecasting 28 days. The first nine origins select
 the ensemble (stability screen: mean + 1.0 × population std of per-origin
 official WRMSSE); the last origin — the literal M5 competition window
 (2016-05-23..2016-06-19) — is scored once. The machine-readable record is
@@ -41,28 +41,28 @@ Lower is better; weights are revenue-based across all 42,840 nodes.
 | auto_ets | 0.7093 | −20.6% |
 | lgbm (global) | 0.6601 | −26.1% |
 | lgbm_tweedie | 0.6473 | −27.5% |
-| lgbm_pool_storecat | 0.6575 | −26.4% |
-| lgbm_pool_store | 0.6217 | −30.4% |
-| lgbm_pool_dept | 0.6313 | −29.3% |
-| **convex_ensemble (champion)** | **0.6161** | **−31.0%** |
+| lgbm_pool_storecat | 0.6225 | −30.3% |
+| lgbm_pool_store | 0.6219 | −30.3% |
+| lgbm_pool_dept | 0.6459 | −27.7% |
+| **convex_ensemble (champion)** | **0.6211** | **−30.4%** |
 
 Ensemble composition (selection screen, test never consulted): lgbm_pool_storecat
-× 0.60 + lgbm_pool_store × 0.10 + lgbm_pool_dept × 0.30.
+× 0.95 + lgbm_pool_store × 0.00 + lgbm_pool_dept × 0.05.
 
 - **The internal baseline is the supported comparison** — the ensemble improves
-  −31.0% over the seasonal-naive floor on the same full hierarchy and scored-once
+  −30.4% over the seasonal-naive floor on the same full hierarchy and scored-once
   window. No competition-winner or leaderboard equivalence is claimed.
 - **Pooling wins at full scale** — all three pooled fits beat the single global
-  model (0.6217–0.6575 vs 0.6601) in this committed run; the 600-series subset
+  model (0.6219–0.6459 vs 0.6601) in this committed run; the 600-series subset
   measured the opposite, which is why the conclusion is stated at full scale only.
 - **The hierarchy is the hard part** — the ensemble's biggest edge sits at the
-  aggregate levels (total 0.350 vs floor 0.560; store level 0.459 vs 0.718);
+  aggregate levels (total 0.314 vs floor 0.560; store level 0.461 vs 0.718);
   at the item×store leaves every learned candidate lands at 1.04–1.15 while the
   floor scores 1.38–1.39: intermittent leaves stay noisy for everyone.
 - **91% of the panel is intermittent** (27,736 of 30,490 series by ADI/CV²) —
   on zero-actual days the naive floor still wins (66.6% vs 57.3% accuracy);
   full scale prices that in instead of solving it.
-- **Stated limits** — the selection screen runs on two origins and the headline
+- **Stated limits** — the selection screen runs on nine origins and the headline
   has no bootstrap confidence interval. The demo envelope is member spread, not
   a calibrated interval; neural global models (N-HiTS/TFT/foundation) are not
   benchmarked, and stockouts, promotions, and returns remain unmodeled.

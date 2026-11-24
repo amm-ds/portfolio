@@ -1,0 +1,19 @@
+{
+  "index": 55,
+  "chunk_id": "photosynthesis-000#c000",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 436,
+    "output_tokens": 50,
+    "reasoning_tokens": 14
+  },
+  "cost_usd_est": "0.000457",
+  "cumulative_usd_est": "0.038150",
+  "latency_s": 2.48,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The first sentence of the passage states this verbatim.\"}",
+  "label": "supported",
+  "reason": "The first sentence of the passage states this verbatim."
+}

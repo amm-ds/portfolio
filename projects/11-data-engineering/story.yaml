@@ -401,21 +401,21 @@ sections:
       The parity gate caught real dropped rows before timing was accepted.
     figures: []
 roadmap:
-  - status: shipped
-    title: "Gate every timing on identical rows."
-    detail: "SHA-256-pinned input; 39/39 measured cells passed the canonical gate."
-  - status: shipped
-    title: "Untraced medians keep timings honest."
-    detail: "Median of 5 warm repeats; tracing stays outside the timed region."
-  - status: shipped
-    title: "Parity checks catch real dropped rows."
-    detail: "Cross-engine comparison exposed 1,658 hidden N/A-borough trips."
-  - status: shipped
-    title: "Polars and DuckDB scale better than linearly."
-    detail: "Log-log slopes 0.31-0.76; pandas and sqlite hold 0.98-1.09."
-  - status: next
-    title: "Benchmark real trips at 10M rows."
-    detail: "The 10M track is seeded synthetic, not real trips."
+- status: shipped
+  title: "Gated every timing on identical rows."
+  detail: "SHA-256-pinned input; 39 of 39 measured cells passed the canonical gate."
+- status: shipped
+  title: "Kept timings honest with untraced medians."
+  detail: "Median of 5 warm repeats; tracing stays outside the timed region."
+- status: shipped
+  title: "Caught dropped rows with parity checks."
+  detail: "Cross-engine comparison exposed 1,658 hidden N/A-borough trips."
+- status: shipped
+  title: "Showed the fast two scale sub-linearly."
+  detail: "Log-log slopes 0.31-0.76 for Polars and DuckDB; pandas and sqlite ~1."
+- status: next
+  title: "Benchmark real trips at 10M rows."
+  detail: "The 10M track is seeded synthetic, not real trips."
 key_concepts:
   - "**Wall-time speedup:** divide one engine's median elapsed time by another's. Read it per task; the geomean is the geometric mean of those ratios."
   - "**Peak RSS (resident set size):** the most physical memory a process holds. A fresh process per task keeps earlier tasks out of the measurement."

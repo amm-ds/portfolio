@@ -378,21 +378,21 @@ sections:
       target host before quoting capacity or cost numbers.
     figures: []
 roadmap:
-  - status: shipped
-    title: "Reproduced the champion; gated the export."
-    detail: "Parity max-abs 7.2e-07 on 512 seeded probe rows against the 1e-4 gate."
-  - status: shipped
-    title: "Served both backends from one schema."
-    detail: "Only the --backend flag differs; readiness gates traffic."
-  - status: shipped
-    title: "Paired backends passed the load test."
-    detail: "4,320 requests per backend, zero errors; median of 3 repeats."
-  - status: shipped
-    title: "Image bloat measured; slim variant shipped."
-    detail: "Slim image 291 MB, 22.2× smaller, smoke-passed."
-  - status: next
-    title: "Re-measure on the target deployment host."
-    detail: "Absolute numbers are host-specific; the paired harness travels."
+- status: shipped
+  title: "Reproduced the champion; gated the export."
+  detail: "Parity max-abs 7.2e-07 on 512 seeded probe rows against the 1e-4 gate."
+- status: shipped
+  title: "Passed both backends through load testing."
+  detail: "4,320 requests per backend, zero errors; median of 3 repeats."
+- status: shipped
+  title: "Served both backends from one schema."
+  detail: "Only the --backend flag differs; readiness gates traffic."
+- status: shipped
+  title: "Measured image bloat; shipped slim variant."
+  detail: "Slim image 291 MB, 22.2x smaller, smoke-passed."
+- status: next
+  title: "Re-measure on the target deployment host."
+  detail: "Absolute numbers are host-specific; the paired harness travels."
 key_concepts:
   - "**Reproduction gate:** The same pinned data, recipe, and seed must reproduce the champion's committed test MAE exactly before export."
   - "**Parity gate:** The export must match native predictions on a fixed probe grid within an absolute plus relative float32 tolerance."

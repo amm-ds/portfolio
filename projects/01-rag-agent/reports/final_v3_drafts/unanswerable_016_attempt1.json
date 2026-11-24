@@ -1,0 +1,1 @@
+{"prompt_sha256": "5f7ad6cb67c2d9a50864ce7f0fb22bc79d0905ad97aee437d7b84ce9a8cf0ff1", "response": "{\n\"question\": \"Which team won the penalty shootout against Argentina in the final of the 2022 FIFA World Cup?\",\n\"absent_terms\": [\n\"Argentina\",\n\"penalty shootout\",\n\"France\"\n]\n}"}

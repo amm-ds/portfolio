@@ -1,0 +1,19 @@
+{
+  "index": 118,
+  "chunk_id": "climate-003#c005",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 474,
+    "output_tokens": 61,
+    "reasoning_tokens": 9
+  },
+  "cost_usd_est": "0.000539",
+  "cumulative_usd_est": "0.078146",
+  "latency_s": 2.14,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states verbatim that the Paris Agreement requires keeping temperature rise this century to less than 2°C above pre-industrial levels.\"}",
+  "label": "supported",
+  "reason": "The passage states verbatim that the Paris Agreement requires keeping temperature rise this century to less than 2°C above pre-industrial levels."
+}

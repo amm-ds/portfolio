@@ -73,9 +73,8 @@ describe("ChannelCards", () => {
   it("renders the phone card locked by default — no tel link, a gate form instead", () => {
     renderCards();
     expect(screen.getByText(/share your email or phone to unlock/i)).toBeInTheDocument();
-    expect(screen.getByText(/your email\/phone, its type and the timestamp are stored/i)).toBeInTheDocument();
-    expect(screen.getByText(/invalid values are not stored/i)).toBeInTheDocument();
-    const deletionLink = screen.getByRole("link", { name: /request deletion by email/i });
+    expect(screen.getByText(/requests are logged for ~30 days/i)).toBeInTheDocument();
+    const deletionLink = screen.getByRole("link", { name: /request deletion/i });
     expect(deletionLink).toHaveAttribute(
       "href",
       expect.stringContaining(`mailto:${CONTACT_EMAIL}`),

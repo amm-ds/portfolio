@@ -1,0 +1,19 @@
+{
+  "index": 96,
+  "chunk_id": "climate-003#c000",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 428,
+    "output_tokens": 68,
+    "reasoning_tokens": 31
+  },
+  "cost_usd_est": "0.000521",
+  "cumulative_usd_est": "0.064716",
+  "latency_s": 2.66,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"unsupported\",\"reason\":\"The passage says adaptation actions are classified in four ways, not three.\"}",
+  "label": "unsupported",
+  "reason": "The passage says adaptation actions are classified in four ways, not three."
+}

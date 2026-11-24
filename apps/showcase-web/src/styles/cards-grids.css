@@ -23,6 +23,7 @@
   overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--border);
+  border-left: 3px solid var(--card-accent);
   border-radius: var(--radius);
   color: inherit;
   transition: border-color 0.15s ease, transform 0.15s ease;

@@ -1,0 +1,19 @@
+{
+  "index": 51,
+  "chunk_id": "photosynthesis-016#c010",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 489,
+    "output_tokens": 54,
+    "reasoning_tokens": 13
+  },
+  "cost_usd_est": "0.000705",
+  "cumulative_usd_est": "0.035730",
+  "latency_s": 2.19,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states the Algenol system produces ethanol, not biodiesel.\"}",
+  "label": "unsupported",
+  "reason": "Passage states the Algenol system produces ethanol, not biodiesel."
+}

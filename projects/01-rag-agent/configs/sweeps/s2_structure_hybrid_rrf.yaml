@@ -1,0 +1,14 @@
+# SOTA ladder S2: S1 + hybrid dense/BM25 fusion (RRF k=60, pool 50) before
+# reranking; wider candidate net (rerank_multiplier 6).
+name: s2_structure_hybrid_rrf
+chunk_size: 200
+chunk_overlap: 40
+chunk_mode: structure
+embedding_model: sentence-transformers/all-MiniLM-L6-v2
+embedding_kind: local
+reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2
+top_k: 3
+measure_k: 5
+rerank_multiplier: 6
+fusion_rrf: true
+rrf_pool_size: 50

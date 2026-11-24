@@ -1,0 +1,19 @@
+{
+  "index": 33,
+  "chunk_id": "climate-011#c001",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 364,
+    "output_tokens": 66,
+    "reasoning_tokens": 10
+  },
+  "cost_usd_est": "0.000373",
+  "cumulative_usd_est": "0.023136",
+  "latency_s": 1.92,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The claim matches the passage exactly: 'Amplified warming in the Arctic has contributed to melting permafrost, glacial retreat and sea ice loss.'\"}",
+  "label": "supported",
+  "reason": "The claim matches the passage exactly: 'Amplified warming in the Arctic has contributed to melting permafrost, glacial retreat and sea ice loss.'"
+}

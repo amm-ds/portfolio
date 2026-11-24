@@ -1,0 +1,19 @@
+{
+  "index": 13,
+  "chunk_id": "climate-003#c008",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 315,
+    "output_tokens": 55,
+    "reasoning_tokens": 26
+  },
+  "cost_usd_est": "0.000535",
+  "cumulative_usd_est": "0.010087",
+  "latency_s": 2.52,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"supported\",\"reason\":\"The passage states this exactly.\"}",
+  "label": "supported",
+  "reason": "The passage states this exactly."
+}

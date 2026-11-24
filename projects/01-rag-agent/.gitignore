@@ -60,3 +60,28 @@ data/*
 # …and its fixed 58-question subset (r3-sealed-v2-58 handoff; same rules).
 !data/golden_sealed_v2_58.json
 !data/golden_sealed_v2_58.sha256.json
+
+# phase0-infra (2026-11-22): final_v3 set + manifests + overlap, raw
+# drafts + review sample, dev_v1 manifest + report, and run checkpoints.
+!data/golden_final_v3.json
+!data/golden_final_v3.sha256.json
+!data/golden_final_v3.overlap.json
+!data/dev_v1.sha256.json
+!/reports/final_v3_drafts/
+!/reports/final_v3_file_access.json
+!/reports/final_v3_review_sample.md
+!/reports/dev_v1_report.md
+!/reports/runs/
+
+# 2026-11-23 roadmap & SOTA ladder: judge_v2 calibration claims/manifests,
+# owner sample + raw judge receipts (excluding local draft cache & superseded v2a),
+# retrieval sweep reports, and the iteration experiment log.
+!data/judge_v2_claims.json
+!data/judge_v2_claims.sha256.json
+!/reports/experiment_log.json
+!/reports/retrieval_sweeps/
+!/reports/judge_calibration_v2/
+/reports/judge_calibration_v2/drafts/
+/reports/judge_calibration_v2/superseded_v2a/
+!/reports/e2e_dev_v1/
+!/reports/final_v3_e2e/

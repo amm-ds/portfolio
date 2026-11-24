@@ -1,0 +1,19 @@
+{
+  "index": 46,
+  "chunk_id": "photosynthesis-000#c003",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 439,
+    "output_tokens": 96,
+    "reasoning_tokens": 47
+  },
+  "cost_usd_est": "0.000823",
+  "cumulative_usd_est": "0.032323",
+  "latency_s": 2.3,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states a 2020 review found algae applications could play an important role in carbon sequestration.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states a 2020 review found algae applications could play an important role in carbon sequestration."
+}

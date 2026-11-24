@@ -479,18 +479,18 @@ key_concepts:
   - "**CUPED:** A method that uses pre-campaign information to reduce noise. Here it left the estimate unchanged and removed almost no conversion variance."
   - "**Cost-sweep break-even:** The send cost, ≈$0.30, above which targeted sending beats mailing everyone."
 roadmap:
-  - status: shipped
-    title: "Validated randomization and sized the read."
-    detail: "ATE +0.68 pp; power needs 3,063 per arm, 21,306 available."
-  - status: shipped
-    title: "Cross-fitted three rankers on pre-treatment features."
-    detail: "Five-fold splits; paired bootstraps judge every policy gap."
-  - status: shipped
-    title: "Targeting wins once email costs exceed about $0.30."
-    detail: "Top-25% targeting overtakes mail-everyone above ≈$0.30 per email."
-  - status: shipped
-    title: "Kept observed and estimated value separate."
-    detail: "Best-arm beats random on DR/IPW; not established over single-arm."
-  - status: next
-    title: "Decide the next live-campaign test."
-    detail: "Needs a fresh randomized holdout, per-order margin, fatigue data."
+- status: shipped
+  title: "Validated randomization and sized the read."
+  detail: "ATE +0.68 pp; power needs 3,063 per arm, 21,306 available."
+- status: shipped
+  title: "Cross-fitted three rankers on pre-treatment features."
+  detail: "Five-fold splits; paired bootstraps judge every policy gap."
+- status: shipped
+  title: "Kept observed and estimated value separate."
+  detail: "Best-arm beats random on DR/IPW; not established over single-arm."
+- status: shipped
+  title: "Priced the win against email costs."
+  detail: "Top-25% targeting overtakes mail-everyone above about $0.30 per email."
+- status: next
+  title: "Decide the next live-campaign test."
+  detail: "Needs a fresh randomized holdout, per-order margin, fatigue data."

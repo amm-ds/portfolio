@@ -1,0 +1,19 @@
+{
+  "index": 126,
+  "chunk_id": "photosynthesis-057#c010",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 482,
+    "output_tokens": 75,
+    "reasoning_tokens": 29
+  },
+  "cost_usd_est": "0.000603",
+  "cumulative_usd_est": "0.083242",
+  "latency_s": 3.39,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"The passage states C4 arose 62 times, not 45, in 18 plant families.\"}",
+  "label": "unsupported",
+  "reason": "The passage states C4 arose 62 times, not 45, in 18 plant families."
+}

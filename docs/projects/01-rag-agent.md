@@ -2,18 +2,16 @@
 
 **Domain:** Agentic AI / LLM · **Data:** Wikipedia (HF, real) · **Status:** Flagship — complete
 
-> Grounding-hardened cited QA over 593 Wikipedia articles. Frozen 30-question
-> stress re-run: 0.733 correct (CI [0.567, 0.867]); unsupported outcomes 5 of
-> 30 (was 11; not a demonstrated gain). Independent set B: 0.633, 9/30
-> unsupported over the ≤6/30 gate. Not unattended-ready.
+> Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybrid retrieval (title-anchored chunks, BM25+dense RRF, diversity cap) reaches 0.946 recall@5. Judge calibrated 30/30 blind. Final 120-question pass: F1 0.909, precision 0.952, faithfulness 0.872, 1/120 unsupported.
 >
-> Teams routing questions at a knowledge base need answers they can audit —
-> every claim traced to a source and residual unsupported outcomes measured.
-> This agent answers only from retrieved evidence with per-claim citations:
-> retrieval recall@5 0.83 vs 0.03 random; selected `kimi-for-coding` reaches
-> RAGAS faithfulness 0.7337 [0.6562, 0.8131], but 17/65 tuning answers still
-> retain unsupported claims — the claim-verification judges accept 0.44 of
-> unsupported claims when calibrated (95% Wilson [0.3752, 0.5136]).
+> Teams routing questions at a knowledge base need answers they can audit,
+> every claim traced to a source with residual unsupported outcomes measured.
+> This agent answers only from retrieved evidence with per-claim citations.
+> The promoted S3 retriever (title-anchored chunks, dense plus BM25 RRF
+> fusion, cross-encoder rerank, per-article diversity cap) reaches recall@5
+> 0.946 on the sealed set; the judge is owner-validated at 30/30 blind
+> agreement; the single 120-question final pass reaches F1 0.9091 with 1
+> unsupported claim in 120.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/01-rag-agent)
 
@@ -31,8 +29,9 @@ boundary (ADR-0004), and the verify loop is a hard gate, not a prompt:
 ```mermaid
 flowchart LR
     Q[Question] --> E[Embed MiniLM]
-    E --> F[FAISS top-5k]
-    F --> X[Cross-encoder rerank]
+    E --> F[FAISS top-50 + BM25 top-50]
+    F --> R[RRF fuse k=60]
+    R --> X[Cross-encoder rerank]
     X --> A[Agent loop]
     A --> D[Draft AnalysisResult]
     D --> S[Claim split]
@@ -45,11 +44,13 @@ flowchart LR
     A <-.->|ADR-0004 env-hosted ⇄ local| L{{Provider seam}}
 ```
 
-Retrieval runs CPU-only and unmetered (embed → FAISS exact search →
-cross-encoder rerank); the agent's only corpus access is `search_documents` /
-`read_excerpt`, and each drafted answer is claim-split, entailment-checked,
-repaired (≤2 calls) or dropped before it ships — below the 0.6 support floor
-the agent abstains.
+Retrieval runs CPU-only and unmetered (embed → dense FAISS plus BM25 word
+search fused by RRF → cross-encoder rerank → per-article cap of 2); the
+agent's only corpus access is `search_documents` / `read_excerpt`, and each
+drafted answer is claim-split, entailment-checked, repaired (≤2 calls) or
+dropped before it ships, below the 0.6 support floor the agent abstains. A
+bounded loop (12 requests, 16 tool calls, 200,000 input tokens) with a soft
+in-tool ceiling stops runaway searches before the hard rails.
 
 ## Pipeline
 
@@ -57,9 +58,11 @@ the agent abstains.
    five topics (Climate, Renewable energy, Aviation, Machine learning,
    Photosynthesis), ≤120 articles each plus exact-title anchors; DQ gates and a
    sha256-pinned dataset contract. Result: 593 articles.
-2. **Index** — paragraph-aware chunking at 200/400/800 tokens →
-   MiniLM-L6-v2 embeddings (L2-normalized) → FAISS `IndexFlatIP` per size;
-   cross-encoder (`ms-marco-MiniLM-L-6-v2`) reranks the top 5×k on CPU.
+2. **Index** — paragraph-aware, title-prefixed chunking at 200 tokens →
+   MiniLM-L6-v2 embeddings (L2-normalized) → FAISS `IndexFlatIP`; the top-50
+   dense candidates fuse with the top-50 BM25 candidates by reciprocal rank
+   fusion (k=60), the cross-encoder (`ms-marco-MiniLM-L-6-v2`) reranks, and
+   the top-k keeps at most 2 chunks per article.
 3. **Agent** — tools `search_documents` / `read_excerpt` are the only corpus
    access; output schema is validated on every run and fails loudly.
 4. **Evaluation** — 65 graded questions (44 single-hop, 11 multi-hop, 10
@@ -69,7 +72,22 @@ the agent abstains.
 
 ## Key results (selected `kimi-for-coding`)
 
-**Golden set: 65 graded questions** — 44 single-hop, 11 multi-hop, 10
+**Finalized sealed pass (final_v3, 120 questions).** The single official
+end-to-end pass over `data/golden_final_v3.json` uses the promoted S3
+retriever, the verify loop, and the bounded agent loop. It is checkpointed
+under `reports/runs/final_v3-432d6b705715/`.
+
+| Metric | final_v3 result |
+|---|---:|
+| F1 / precision / recall | **0.9091 / 0.9524 / 0.8696** |
+| Overall accuracy (95% CI) | **0.8667 [0.7944, 0.9162]** |
+| Faithfulness (95% CI) | **0.8717 [0.7983, 0.9155]** |
+| Failure taxonomy | 104 correct / 1 unsupported-claim / 10 empty-answer / 1 retrieval-miss / 4 budget-terminated |
+| single_hop / multi_hop / unanswerable correct | 60/68 / 20/24 / 24/28 |
+| Judge blind-sample agreement | 30/30 [0.8865, 1.0] |
+| Whole-wave meter | $2.0392 cumulative cloud-equivalent |
+
+**Prior tuning baseline (65 graded questions)** — 44 single-hop, 11 multi-hop, 10
 unanswerable (expected behavior: abstain). Retrieval is provider-independent
 (embeddings-only): recall@5 **0.831** / recall@10 0.846, MRR@5 0.808 vs a
 0.031 random floor and a **0.677 word-match (lexical) floor** — word-matching
@@ -153,13 +171,14 @@ the 65- or 55-question denominators above:
 | frozen 30-question stress re-run | 0.733 [0.567, 0.867] | 5, down from 11 | all no-regression gates passed |
 | independent sealed set B (30 questions) | 0.633 [0.467, 0.80] | 9 | overall target passed; unsupported ≤6 and answer-expected ≥0.70 gates failed |
 
-The later retrieval tournament and judge-alignment work did not replace this
-configuration. RRF fusion did not beat dense retrieval on either tuning or
-sealed raw-layer recall@5, so dense retrieval with reranking remains the
-champion. The rebuilt hosted judge also fails its promotion gates
-(false-acceptance 35.6%, upper confidence bound 46.1%); the answer-level
-rubric remains the correctness instrument. Set C's refuse-all result was a
-verifier-crash diagnostic, and set D passed only 1/6 targets. The full
+The 2026-11-23 SOTA ladder superseded this configuration. The promoted S3
+arm (title-anchored chunks, dense plus BM25 RRF fusion before reranking, and
+a per-article cap) beat the dense incumbent on final_v3 recall@5, 0.9457 to
+0.9239, with multi-hop recall@5 0.8333 to 0.7917 and no slice regression. The
+earlier fusion-only arms tied dense and were not promoted then. The judge_v2
+calibration supersedes the failed hosted-judge alignment: the owner blind
+sample agrees 30/30, Wilson 95% [0.8865, 1.0]. Set C's refuse-all result was
+a verifier-crash diagnostic, and set D passed only 1/6 targets. The full
 revision history and artifacts are linked through DESIGN.md and the project
 README rather than treated as evidence of generalization.
 

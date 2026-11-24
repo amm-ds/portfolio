@@ -1,0 +1,19 @@
+{
+  "index": 129,
+  "chunk_id": "climate-011#c013",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 443,
+    "output_tokens": 64,
+    "reasoning_tokens": 17
+  },
+  "cost_usd_est": "0.000520",
+  "cumulative_usd_est": "0.085553",
+  "latency_s": 2.74,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"supported\",\"reason\":\"The passage states exactly that from 1961 to 1990 a gradual reduction in sunlight reaching Earth's surface was observed.\"}",
+  "label": "supported",
+  "reason": "The passage states exactly that from 1961 to 1990 a gradual reduction in sunlight reaching Earth's surface was observed."
+}

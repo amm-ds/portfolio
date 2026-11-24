@@ -260,6 +260,16 @@ This package is its own uv workspace (not part of the repo root workspace);
 run everything from this directory. A root-level pytest run skips this tree
 by design (see the collection guard in `conftest.py`).
 
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| `/ready` returns 503 "database not reachable" | the db container is still starting or is down | `cd infra && docker compose ps`; wait for the healthcheck, or `docker compose up -d db` |
+| `/chat` streams an `error` event (`APIConnectionError` or similar) | Ollama is not running, the model is not pulled, or it is unreachable from the container | `ollama list` to verify the model; on stock Linux Docker add `extra_hosts: ["host.docker.internal:host-gateway"]` to the `api` service — the shortcut hostname is not resolvable there |
+| 401 on chat/mutations | `AGENT_CHAT_API_KEY` is set and `X-API-Key` is missing or mismatched | send the header, or unset the variable |
+| 404 "unknown conversation '…'" | stale `conversation_id` from an old store | list via `GET /conversations` and start a new one |
+| 404 "no pending approval '…'" | the approval id settled already or was typo'd | decisions are one-shot; settle each id once |
+
 ## Notes and honest limits
 
 - The SQLite stores are for local dev/tests; production uses Postgres

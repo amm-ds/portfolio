@@ -1,0 +1,19 @@
+{
+  "index": 91,
+  "chunk_id": "photosynthesis-000#c003",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 439,
+    "output_tokens": 58,
+    "reasoning_tokens": 18
+  },
+  "cost_usd_est": "0.000492",
+  "cumulative_usd_est": "0.061696",
+  "latency_s": 3.13,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states a 2020 review, not 2015.\"}",
+  "label": "unsupported",
+  "reason": "Passage states a 2020 review, not 2015."
+}

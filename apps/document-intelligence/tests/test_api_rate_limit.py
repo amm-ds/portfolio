@@ -5,6 +5,7 @@ disables). The limiter is per process and not shared across replicas.
 """
 
 from pathlib import Path
+from typing import Any, cast
 
 from fastapi.testclient import TestClient
 
@@ -124,7 +125,7 @@ def test_page_chat_is_limited(tmp_path: Path) -> None:
         from tests.conftest import process
 
         doc = process(client)
-        doc_id = doc["document"]["id"]
+        doc_id = cast("dict[str, Any]", doc["document"])["id"]
         url = f"/documents/{doc_id}/pages/1/chat"
         body = {
             "messages": [{"role": "user", "content": "Which organization produced the report?"}]

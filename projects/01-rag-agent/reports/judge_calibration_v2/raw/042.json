@@ -1,0 +1,19 @@
+{
+  "index": 42,
+  "chunk_id": "climate-003#c007",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 294,
+    "output_tokens": 54,
+    "reasoning_tokens": 17
+  },
+  "cost_usd_est": "0.000510",
+  "cumulative_usd_est": "0.029518",
+  "latency_s": 2.62,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states low-income, not high-income, neighbourhoods\"}",
+  "label": "unsupported",
+  "reason": "Passage states low-income, not high-income, neighbourhoods"
+}

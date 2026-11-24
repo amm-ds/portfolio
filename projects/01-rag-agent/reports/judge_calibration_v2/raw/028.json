@@ -1,0 +1,19 @@
+{
+  "index": 28,
+  "chunk_id": "machine-learning-121#c003",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 335,
+    "output_tokens": 83,
+    "reasoning_tokens": 40
+  },
+  "cost_usd_est": "0.000488",
+  "cumulative_usd_est": "0.020151",
+  "latency_s": 3.06,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"The passage says machine learning grew out of the quest for artificial intelligence, not robotics.\"}",
+  "label": "unsupported",
+  "reason": "The passage says machine learning grew out of the quest for artificial intelligence, not robotics."
+}

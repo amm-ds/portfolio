@@ -413,21 +413,21 @@ sections:
       the same frozen-window protocol before it replaces the current comparison.
     figures: [bootstrap_ci]
 roadmap:
-  - status: shipped
-    title: "Reproducible, leakage-safe training pipeline."
-    detail: "Frozen test window; 26 DQ gates; sha256-pinned source; contract features; CI twin."
-  - status: shipped
-    title: "Served MLP ties LightGBM on validation."
-    detail: "MAE 25.4 vs 83.2 for the seasonal-naive floor."
-  - status: shipped
-    title: "Gap to the floor holds under resampling."
-    detail: "Every 95% CI excludes zero (hourly and week-block)."
-  - status: shipped
-    title: "Ablation scores labelled as post-freeze diagnostics."
-    detail: "Variant test scores never select a variant; diagnostics only."
-  - status: next
-    title: "External TabPFN-2 challenger"
-    detail: "Dropped by owner decision; the TabPFN-2 route is not pursued."
+- status: shipped
+  title: "Built the leakage-safe training pipeline."
+  detail: "Frozen test window; 26 DQ gates; sha256-pinned source; CI twin."
+- status: shipped
+  title: "Served the validation-tied MLP champion."
+  detail: "MAE 25.4 vs 83.2 for the seasonal-naive floor."
+- status: shipped
+  title: "Held the floor gap under resampling."
+  detail: "Every 95% CI excludes zero (hourly and week-block)."
+- status: shipped
+  title: "Labelled ablation scores as post-freeze diagnostics."
+  detail: "Variant test scores never select a variant; diagnostics only."
+- status: next
+  title: "Drop the external TabPFN-2 challenger route."
+  detail: "Dropped by owner decision; the TabPFN-2 route is not pursued."
 key_concepts:
   - "**Seasonal-naive floor:** predict the count at the same hour last week. Every candidate must beat this simple baseline, with an interval on the gain."
   - "**Frozen test window:** each candidate receives one final-window score. Every modeling choice uses validation; ablation test scores are post-freeze diagnostics."

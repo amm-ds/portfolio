@@ -31,10 +31,6 @@ markdown_extensions:
       alternate_style: true
   - pymdownx.details
 
-exclude_docs: |
-  repository_setup_report_senior_data_scientist.md
-  portfolio_audit_amm-ds.md
-
 extra:
   seo:
     title: "amm-ds — ML/AI Engineering Portfolio"
@@ -71,10 +67,7 @@ nav:
   - Engineering:
       - Playbook: engineering-playbook.md
       - How this was built: site/how-this-was-built.md
-      - Pre-publish review (2026-10-14): audits/pre-publish-2026-10-14.md
-      - Productization gap report: audits/productization-gap-report.md
       - Statistical intervals: engineering/statistical-intervals.md
-      - External audit response (2026-10-15): audits/2026-10-15-external-audit-response.md
   - Projects:
       - projects/index.md
   - Apps:

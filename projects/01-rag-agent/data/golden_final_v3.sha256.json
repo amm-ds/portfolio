@@ -1,0 +1,13 @@
+{
+  "file": "golden_final_v3.json",
+  "sha256": "432d6b7057159c93982e62db3d17ea49027ec2f6e0a9cd315a78d99c365acc00",
+  "n_questions": 120,
+  "counts": {
+    "single_hop": 68,
+    "multi_hop": 24,
+    "unanswerable": 28
+  },
+  "model": "qwen3.6:35b-a3b-q4_K_M",
+  "seed": 42,
+  "note": "Owner accepted the owner review sample (2026-11-22). Designer verdict on that sample: 27 of 30 pass; borderline items single 44, multi 73, multi 80. Sample file: reports/final_v3_review_sample.md. This manifest supersedes the sha in commit 791cf78, which froze an earlier version of the set."
+}

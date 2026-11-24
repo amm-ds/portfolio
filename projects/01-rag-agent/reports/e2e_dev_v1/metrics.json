@@ -1,0 +1,16 @@
+{
+  "generated_at": "2026-11-23T15:37:48.712015+00:00",
+  "split": "dev_v1",
+  "run_id": "dev_v1-ed9013955903",
+  "set_sha256": "ed9013955903caa98a0dc9eaf5a366e151288ff8457afc690e2bec8d7371f13c",
+  "commit": "cc6ce8d846f179313fe8855f0a9f1b6e07437a2c",
+  "dirty": true,
+  "n_questions": 20,
+  "request_hosts": [
+    "api.kimi.com",
+    "huggingface.co"
+  ],
+  "faithfulness_rows": 2,
+  "p50_latency_s": 30.48376433411613,
+  "verify_reports": 3
+}

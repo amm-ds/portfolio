@@ -72,6 +72,7 @@ Protocol (machine-readable in evaluation_metadata.json):
 
 import json
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -1679,6 +1680,442 @@ def run_m5_full(
         metrics["test"]["convex_ensemble"]["official_wrmsse"],
     )
     return M5FullResult(metrics=metrics, metadata=metadata)
+
+
+# ---------------------------------------------------------------------------
+# Wave-34 erratic challenger (20261123 wave-3 handoff, 100% local)
+# ---------------------------------------------------------------------------
+
+ERRATIC_CHALLENGER = "lgbm_erratic_huber"
+ROUTED_HUBER = "erratic_huber_routed"
+HUBER_ALPHA = 0.9
+CHALLENGER_CACHE_VERSION = 1
+
+
+def _champion_blend_weights(metrics_path: Path) -> tuple[list[str], list[float]]:
+    """Committed convex-ensemble members/weights, never re-selected here."""
+    m = json.loads(Path(metrics_path).read_text())
+    members = [str(x) for x in m["ensemble"]["members"]]
+    weights = [float(x) for x in m["ensemble"]["weights"]]
+    if len(members) != len(weights) or not members:
+        raise ValueError("ensemble members/weights mismatch in metrics.json")
+    return members, weights
+
+
+def _panel_cache_key(raw_dir: Path) -> str:
+    """Verify the pinned panel and return the cache key for its checksums."""
+    import hashlib
+
+    verify_m5_full_checksums(raw_dir)  # raises loudly on any drift
+    payload = json.dumps(FULL_CHECKSUMS, sort_keys=True).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()[:12]
+
+
+def _cached_forecast(
+    cache_dir: Path,
+    panel_key: str,
+    name: str,
+    o: int,
+    series_ids: list[str],
+    compute: Callable[[], np.ndarray],
+) -> tuple[np.ndarray, bool]:
+    """Load a per-candidate per-origin forecast matrix, or compute and store it.
+
+    Parquet cache keyed by (cache version, panel checksums, candidate, origin);
+    the matrix round-trips as a unique_id + h1..h28 frame so cache hits are
+    byte-identical to fresh fits. ``compute`` is a zero-arg callable returning
+    the (n_series, HORIZON) matrix.
+    """
+    path = Path(cache_dir) / f"v{CHALLENGER_CACHE_VERSION}-{panel_key}" / f"{name}@{o}.parquet"
+    if path.exists():
+        frame = pd.read_parquet(path)
+        if list(frame["unique_id"]) != list(series_ids):
+            raise ValueError(f"cache series order mismatch at {path}")
+        return frame[[f"h{h}" for h in range(1, HORIZON + 1)]].to_numpy(float), True
+    mat = np.asarray(compute(), dtype=float)
+    if mat.shape != (len(series_ids), HORIZON):
+        raise ValueError(f"forecast shape {mat.shape} != {(len(series_ids), HORIZON)}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    frame = pd.DataFrame({"unique_id": series_ids})
+    for h in range(1, HORIZON + 1):
+        frame[f"h{h}"] = mat[:, h - 1]
+    frame.to_parquet(path, index=False)
+    return mat, False
+
+
+def _erratic_challenger_forecast(
+    prep: pd.DataFrame,
+    seed: int,
+    *,
+    erratic_ids: list[str],
+    storecat_groups: dict[str, list[str]],
+    lgbm_params: dict[str, Any],
+    n_estimators: int | None = None,
+) -> np.ndarray:
+    """Wave-34 challenger: the pooled store-x-category direct arm restricted to
+    the erratic dense stratum (ADI < 1.32, CV2 >= 0.49) under a Huber objective
+    (alpha 0.9), robust to the spike amplitude that squared loss over-weights.
+    The existing lag/rolling feature space already carries the spike history
+    (lags 1/7/14/21/28 + rolling means/stds + calendar), so the lever pair is
+    stratum-restricted training plus the robust objective, nothing else.
+    """
+    params = dict(lgbm_params)
+    params["objective"] = "huber"
+    params["alpha"] = HUBER_ALPHA
+    if n_estimators is not None:
+        params["n_estimators"] = n_estimators
+    erratic_set = set(erratic_ids)
+    groups = {k: [m for m in members if m in erratic_set] for k, members in storecat_groups.items()}
+    groups = {k: v for k, v in groups.items() if v}
+    return _lgbm_pool_direct_forecast(
+        prep,
+        seed,
+        series_ids=erratic_ids,
+        groups=groups,
+        lgbm_params=params,
+        name=ERRATIC_CHALLENGER,
+    )
+
+
+def _pool_member_fit(
+    prep: pd.DataFrame,
+    *,
+    seed: int,
+    series_ids: list[str],
+    groups: dict[str, list[str]],
+    lgbm_params: dict[str, Any],
+    name: str,
+    n_estimators: int | None,
+) -> np.ndarray:
+    """One pooled direct arm fit at an origin (cache-compute wrapper)."""
+    return _lgbm_pool_direct_forecast(
+        prep,
+        seed,
+        series_ids=series_ids,
+        groups=groups,
+        lgbm_params=lgbm_params,
+        name=name,
+        n_estimators=n_estimators,
+    )
+
+
+def _challenger_origin_block(
+    panel: Any,
+    o: int,
+    *,
+    seed: int,
+    panel_key: str,
+    cache_dir: Path,
+    active: list[tuple[str, float]],
+    erratic_mask: np.ndarray,
+    erratic_ids: list[str],
+    n_estimators: int | None,
+) -> tuple[dict[str, Any], np.ndarray, np.ndarray, np.ndarray]:
+    """Fit (or load) every needed arm at one origin and score champion vs routed.
+
+    Returns ``(block, champion_blend, routed, naive)`` — the matrices are
+    returned so the test stage can run the paired bootstrap and the adoption
+    gate without recomputing (the caller at non-test origins discards them).
+    """
+    from functools import partial
+
+    series_ids, dates = panel.series_ids, panel.dates
+    a_all, y_wide, x_wide = panel.a_all, panel.y_wide, panel.x_wide
+    odate = pd.Timestamp(dates[o])
+    t_o = time.time()
+    train_nodes = np.asarray(a_all @ y_wide[:, : o + 1])
+    actual_nodes = np.asarray(a_all @ y_wide[:, o + 1 : o + 1 + HORIZON])
+    scale = first_diff_scale(train_nodes)
+    w = revenue_weights(y_wide, x_wide, slice(o - HORIZON + 1, o + 1), a_all)
+    actuals = _actual_window(panel.y_all, series_ids, odate, HORIZON)
+    train = panel.y_all[panel.y_all["ds"] <= odate]
+    hist_exog, future_exog = split_exogenous(panel.x_enc, series_ids, odate, HORIZON)
+    _attach_panel_features(train, hist_exog, future_exog, panel.s_all)
+
+    naive = _cached_forecast(
+        cache_dir,
+        panel_key,
+        NAIVE,
+        o,
+        series_ids,
+        partial(_seasonal_naive_forecast, y_wide[:, : o + 1], HORIZON),
+    )[0]
+    prep = _direct_prep(train, hist_exog, seed)
+    blend = np.zeros((len(series_ids), HORIZON))
+    hits = 0
+    for name, wgt in active:
+        mat, hit = _cached_forecast(
+            cache_dir,
+            panel_key,
+            name,
+            o,
+            series_ids,
+            partial(
+                _pool_member_fit,
+                prep,
+                seed=seed,
+                series_ids=series_ids,
+                groups=panel.group_maps[name],
+                lgbm_params=panel.lgbm_params,
+                name=name,
+                n_estimators=n_estimators,
+            ),
+        )
+        blend += wgt * mat
+        hits += int(hit)
+    challenger = _cached_forecast(
+        cache_dir,
+        panel_key,
+        ERRATIC_CHALLENGER,
+        o,
+        erratic_ids,
+        partial(
+            _erratic_challenger_forecast,
+            prep,
+            seed,
+            erratic_ids=erratic_ids,
+            storecat_groups=panel.group_maps["lgbm_pool_storecat"],
+            lgbm_params=panel.lgbm_params,
+            n_estimators=n_estimators,
+        ),
+    )[0]
+    routed = blend.copy()
+    routed[erratic_mask] = challenger
+    block: dict[str, Any] = {
+        "date": str(odate.date()),
+        "official_wrmsse": {
+            "champion_blend": float(official_wrmsse(blend, actual_nodes, scale, w, a_all)[0]),
+            ROUTED_HUBER: float(official_wrmsse(routed, actual_nodes, scale, w, a_all)[0]),
+        },
+        "zero_day_accuracy": {
+            "champion_blend": float(zero_day_accuracy(actuals, blend)),
+            ROUTED_HUBER: float(zero_day_accuracy(actuals, routed)),
+        },
+        "erratic_win_rate_vs_naive": {
+            "champion_blend": _class_win_rate(blend, naive, actuals, erratic_mask),
+            ROUTED_HUBER: _class_win_rate(routed, naive, actuals, erratic_mask),
+        },
+        "cache_hits_members": f"{hits}/{len(active)}",
+        "wall_s": round(time.time() - t_o, 1),
+    }
+    logger.info(
+        "erratic challenger origin %s: champion %.4f routed %.4f (%.1fs)",
+        odate.date(),
+        block["official_wrmsse"]["champion_blend"],
+        block["official_wrmsse"][ROUTED_HUBER],
+        time.time() - t_o,
+    )
+    return block, blend, routed, naive
+
+
+def _challenger_summary(
+    per_origin: dict[str, dict[str, Any]], origins: list[int]
+) -> dict[str, dict[str, Any]]:
+    def _one(cand: str) -> dict[str, Any]:
+        vals = np.array([per_origin[str(o)]["official_wrmsse"][cand] for o in origins])
+        zda = np.array([per_origin[str(o)]["zero_day_accuracy"][cand] for o in origins])
+        wr = [per_origin[str(o)]["erratic_win_rate_vs_naive"][cand]["win_rate"] for o in origins]
+        return {
+            "pooled_wrmsse_mean": float(vals.mean()),
+            "wave30_screen_mean_plus_1std": _screen(vals),
+            "zero_day_accuracy_mean": float(zda.mean()),
+            "erratic_win_rate_vs_naive_mean": float(np.mean([x for x in wr if x is not None])),
+        }
+
+    return {"champion_blend": _one("champion_blend"), ROUTED_HUBER: _one(ROUTED_HUBER)}
+
+
+def run_erratic_challenger(
+    raw_dir: Path,
+    *,
+    metrics_path: Path,
+    cache_dir: Path,
+    stage: Literal["selection", "test", "all"] = "selection",
+    n_estimators: int | None = None,
+    seed: int = SEED,
+    params_path: Path | str = "params.yaml",
+    max_origins: int | None = None,
+    origin_indices: list[int] | None = None,
+) -> dict[str, Any]:
+    """Score the wave-34 erratic challenger against the committed champion.
+
+    Champion = the committed convex-ensemble blend (members/weights read from
+    ``metrics_path``, never re-selected). Routed = the blend with erratic-class
+    rows swapped for the challenger arm. The selection stage scores the 9
+    selection origins (pooled mean, wave-30 screen mean + 1.0 x population std,
+    zero-day accuracy, erratic win-rate vs the seasonal-naive floor); the test
+    stage scores the held-out origin once with the paired-bootstrap noise band.
+    Per-candidate per-origin forecasts are parquet-cached so interrupted
+    overnight runs resume without refits.
+    """
+    t0 = time.time()
+    raw_dir = Path(raw_dir)
+    panel_key = _panel_cache_key(raw_dir)
+    members, weights = _champion_blend_weights(Path(metrics_path))
+    active = [(m, w) for m, w in zip(members, weights, strict=True) if w > 0]
+    if not active:
+        raise ValueError("committed ensemble has no positive-weight members")
+    panel = _prepare_panel(
+        raw_dir,
+        series_cap=None,
+        seed=seed,
+        params_path=params_path,
+        n_estimators=n_estimators,
+    )
+    origins_all = m5_full_origins(
+        panel.n_dates, N_ORIGINS, HORIZON, MIN_TRAIN_DAYS, ORIGIN_SPACING_DAYS
+    )
+    selection, test = origins_all[:-1], origins_all[-1]
+    if stage == "selection":
+        origins: list[int] = list(selection)
+    elif stage == "test":
+        origins = [test]
+    else:
+        origins = list(origins_all)
+    if max_origins is not None:
+        origins = origins[:max_origins]
+    partial_screen = False
+    if origin_indices is not None:
+        wanted = set(origin_indices)
+        unknown = wanted - set(origins)
+        if unknown:
+            raise ValueError(f"origin indices not in stage {stage}: {sorted(unknown)}")
+        origins = [o for o in origins if o in wanted]
+        partial_screen = len(origins) < len(selection)
+
+    # Class mask on history to the LAST SELECTION origin, same rule as
+    # run_m5_full, so the erratic set is identical for selection and test.
+    hist = _series_train_history(
+        panel.y_all, panel.series_ids, pd.Timestamp(panel.dates[selection[-1]])
+    )
+    classes = {sid: classify_demand(hist[sid]) for sid in panel.series_ids}
+    classes_arr = np.array([classes[sid]["class"] for sid in panel.series_ids], dtype=object)
+    erratic_mask = classes_arr == "erratic"
+    erratic_ids = [sid for sid, m in zip(panel.series_ids, erratic_mask, strict=True) if m]
+    if not erratic_ids:
+        raise ValueError("no erratic-class series in the panel window")
+    logger.info(
+        "erratic challenger: %d erratic series | %d origins (stage=%s) | active members %s",
+        len(erratic_ids),
+        len(origins),
+        stage,
+        [m for m, _ in active],
+    )
+
+    blocks: dict[int, tuple[dict[str, Any], np.ndarray, np.ndarray, np.ndarray]] = {
+        o: _challenger_origin_block(
+            panel,
+            o,
+            seed=seed,
+            panel_key=panel_key,
+            cache_dir=cache_dir,
+            active=active,
+            erratic_mask=erratic_mask,
+            erratic_ids=erratic_ids,
+            n_estimators=n_estimators,
+        )
+        for o in origins
+    }
+    per_origin = {str(o): blocks[o][0] for o in origins}
+    summary = _challenger_summary(per_origin, origins)
+    champion = summary["champion_blend"]
+    routed_s = summary[ROUTED_HUBER]
+    screen_passed = (
+        routed_s["pooled_wrmsse_mean"] < champion["pooled_wrmsse_mean"]
+        and routed_s["zero_day_accuracy_mean"] >= champion["zero_day_accuracy_mean"]
+    )
+    verdict: dict[str, Any] = {
+        "stage": stage,
+        "screen_passed": bool(screen_passed),
+        "rule": "promote to the test origin only if the routed arm improves the "
+        "selection pooled official WRMSSE without regressing zero-day accuracy",
+    }
+    if stage in ("test", "all"):
+        o_t = origins[-1]
+        _block_t, blend_t, routed_t, naive_t = blocks[o_t]
+        a_all, y_wide = panel.a_all, panel.y_wide
+        actual_nodes = np.asarray(a_all @ y_wide[:, o_t + 1 : o_t + 1 + HORIZON])
+        ctx_t = {
+            "actual_nodes": actual_nodes,
+            "scale": first_diff_scale(np.asarray(a_all @ y_wide[:, : o_t + 1])),
+            "weights": revenue_weights(
+                y_wide, panel.x_wide, slice(o_t - HORIZON + 1, o_t + 1), a_all
+            ),
+        }
+        actuals_t = _actual_window(
+            panel.y_all, panel.series_ids, pd.Timestamp(panel.dates[o_t]), HORIZON
+        )
+        champion_w = float(
+            official_wrmsse(
+                blend_t, ctx_t["actual_nodes"], ctx_t["scale"], ctx_t["weights"], a_all
+            )[0]
+        )
+        routed_w = float(
+            official_wrmsse(
+                routed_t,
+                ctx_t["actual_nodes"],
+                ctx_t["scale"],
+                ctx_t["weights"],
+                a_all,
+            )[0]
+        )
+        delta_boot = _wrmsse_delta_bootstrap(
+            routed_t, blend_t, ctx_t, a_all, n_boot=ERRATIC_BOOT_REPS, seed=seed + 3401
+        )
+        gate = _erratic_gate(
+            win_rate_champion=_class_win_rate(blend_t, naive_t, actuals_t, erratic_mask)[
+                "win_rate"
+            ],
+            win_rate_routed=_class_win_rate(routed_t, naive_t, actuals_t, erratic_mask)["win_rate"],
+            wrmsse_delta=routed_w - champion_w,
+            noise_tol=delta_boot["noise_tol"],
+        )
+        verdict["test_origin"] = {
+            "date": str(pd.Timestamp(panel.dates[o_t]).date()),
+            "official_wrmsse": {"champion_blend": champion_w, ROUTED_HUBER: routed_w},
+            "zero_day_accuracy": {
+                "champion_blend": float(zero_day_accuracy(actuals_t, blend_t)),
+                ROUTED_HUBER: float(zero_day_accuracy(actuals_t, routed_t)),
+            },
+            "delta_bootstrap": delta_boot,
+            "adoption_gate": gate,
+        }
+        verdict["adopted"] = bool(gate["adopted"])
+        logger.info(
+            "erratic challenger test origin: champion %.4f routed %.4f | adopted %s",
+            champion_w,
+            routed_w,
+            verdict["adopted"],
+        )
+    result = {
+        "protocol": f"{PROTOCOL}-wave34-erratic-challenger",
+        "stage": stage,
+        "panel_cache_key": panel_key,
+        "champion_members": members,
+        "champion_weights": weights,
+        "challenger": {
+            "name": ERRATIC_CHALLENGER,
+            "objective": f"huber(alpha={HUBER_ALPHA})",
+            "stratum": "erratic dense series (ADI < 1.32, CV2 >= 0.49)",
+            "n_erratic_series": len(erratic_ids),
+            "features": "subset-track lag/rolling space (lags 1/7/14/21/28 + "
+            "rolling means/stds + calendar); no new feature columns",
+        },
+        "n_origins_scored": len(origins),
+        "origin_indices": [int(o) for o in origins],
+        "partial_screen": partial_screen,
+        "per_origin": per_origin,
+        "summary": summary,
+        "verdict": verdict,
+        "wall_s": round(time.time() - t0, 1),
+    }
+    logger.info(
+        "erratic challenger %s done in %.1fs: screen_passed=%s",
+        stage,
+        time.time() - t0,
+        screen_passed,
+    )
+    return result
 
 
 def write_m5_full_artifacts(result: M5FullResult, reports_dir: Path) -> None:

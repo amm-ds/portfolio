@@ -8,8 +8,8 @@
 // produces byte-identical output.
 
 export const STORY_SHORT: Record<string, string | null> = {
-  "01-rag-agent": "Grounding-hardened cited QA over 593 Wikipedia articles. Frozen 30-question stress re-run: 0.733 correct (CI [0.567, 0.867]); unsupported outcomes 5 of 30 (was 11; not a demonstrated gain). Independent set B: 0.633, 9/30 unsupported over the ≤6/30 gate. Not unattended-ready.",
-  "02-demand-forecasting": "M5 full panel: 30,490 series, one scored test origin (final 28 days) with official 42,840-node WRMSSE. Pooled LightGBM ensemble: 0.6161 vs seasonal-naive 0.8929 (−31.0%); no bootstrap interval bounds the result; quiet days favor the floor.",
+  "01-rag-agent": "Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybrid retrieval (title-anchored chunks, BM25+dense RRF, diversity cap) reaches 0.946 recall@5. Judge calibrated 30/30 blind. Final 120-question pass: F1 0.909, precision 0.952, faithfulness 0.872, 1/120 unsupported.",
+  "02-demand-forecasting": "M5 full panel: 30,490 series, one scored test origin (final 28 days) with official 42,840-node WRMSSE. Pooled LightGBM ensemble: 0.6211 vs seasonal-naive 0.8929 (−30.4%); no bootstrap interval bounds the result; quiet days favor the floor.",
   "03-anomaly-detection": "NAB (9 series): IsolationForest touches 16/17 incidents with 1,609 raw alerts. One fit per series; no-skill = 16 seeded baselines. Budgeting cuts to 80 pages; like-for-like, the ensemble halves 66 budgeted pages to 35 at recall 0.604, range-F1 0.533. NAB score not reported.",
   "04-nlp-classification": "AG News sorter: the selected transformer + selective LLM cascade shows no measurable change in fresh macro-F1 (0.953 → 0.954, +0.001) and accuracy (0.953 → 0.954), reviewing 22 of 1,000 fresh items. Full evaluation: $0.023671 cloud-equivalent. License: research purposes.",
   "05-ml-pipeline-churn": "On 7,043 IBM telco customers, a calibrated churn policy frozen at 0.175 from training OOF predictions costs 601 versus 1,035 for contact-everyone (95% paired bootstrap CI -508 to -353). Re-select the cutoff when missed-churner cost changes.",

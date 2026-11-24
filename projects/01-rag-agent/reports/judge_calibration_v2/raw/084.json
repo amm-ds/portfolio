@@ -1,0 +1,19 @@
+{
+  "index": 84,
+  "chunk_id": "renewable-energy-050#c010",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 465,
+    "output_tokens": 61,
+    "reasoning_tokens": 10
+  },
+  "cost_usd_est": "0.000709",
+  "cumulative_usd_est": "0.058037",
+  "latency_s": 2.8,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states the forecast length of most operational models is between 48 and 172 hours ahead, matching the claim exactly.\"}",
+  "label": "supported",
+  "reason": "The passage states the forecast length of most operational models is between 48 and 172 hours ahead, matching the claim exactly."
+}

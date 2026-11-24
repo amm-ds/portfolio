@@ -32,15 +32,29 @@
     "citation": "Makridakis et al., M5 competition companion, International Journal of Forecasting (2022); research use with attribution per competition terms"
   },
   "split": {
-    "n_origins": 3,
-    "n_selection": 2,
+    "n_origins": 10,
+    "n_selection": 9,
     "n_test": 1,
     "origin_dates": [
+      "2016-03-20",
+      "2016-03-27",
+      "2016-04-03",
+      "2016-04-10",
+      "2016-04-17",
+      "2016-04-24",
+      "2016-05-01",
       "2016-05-08",
       "2016-05-15",
       "2016-05-22"
     ],
     "selection_dates": [
+      "2016-03-20",
+      "2016-03-27",
+      "2016-04-03",
+      "2016-04-10",
+      "2016-04-17",
+      "2016-04-24",
+      "2016-05-01",
       "2016-05-08",
       "2016-05-15"
     ],
@@ -62,42 +76,110 @@
     "datasetsforecast": "1.0.2",
     "numpy": "2.5.4"
   },
-  "runtime_seconds": 46508.693,
+  "runtime_seconds": 1348530.613,
   "runtime_seconds_per_candidate_origin": {
     "seasonal_naive": {},
     "lgbm": {
-      "1926": 873.622,
-      "1933": 852.909,
-      "1940": 851.817
+      "1877": 870.465,
+      "1884": 853.373,
+      "1891": 849.696,
+      "1898": 886.987,
+      "1905": 885.906,
+      "1912": 906.787,
+      "1919": 878.792,
+      "1926": 938.312,
+      "1933": 871.393,
+      "1940": 874.367
     },
     "lgbm_tweedie": {
-      "1926": 1125.279,
-      "1933": 1092.147,
-      "1940": 1088.541
+      "1877": 1148.983,
+      "1884": 1088.67,
+      "1891": 1082.995,
+      "1898": 1140.462,
+      "1905": 1111.241,
+      "1912": 1152.047,
+      "1919": 1123.569,
+      "1926": 1201.806,
+      "1933": 1094.202,
+      "1940": 1109.416
     },
     "lgbm_pool_store": {
-      "1926": 961.964,
-      "1933": 936.819,
-      "1940": 928.812
+      "1877": 22770.609,
+      "1884": 23444.053,
+      "1891": 23042.728,
+      "1898": 23456.054,
+      "1905": 24443.382,
+      "1912": 23218.999,
+      "1919": 23420.502,
+      "1926": 23618.95,
+      "1933": 22618.342,
+      "1940": 23341.316
     },
     "lgbm_pool_storecat": {
-      "1926": 1052.7,
-      "1933": 1004.903,
-      "1940": 1014.543
+      "1877": 25903.312,
+      "1884": 25219.593,
+      "1891": 25540.084,
+      "1898": 25328.942,
+      "1905": 26616.512,
+      "1912": 25734.992,
+      "1919": 26008.243,
+      "1926": 26423.865,
+      "1933": 24611.67,
+      "1940": 25967.966
     },
     "lgbm_pool_dept": {
-      "1926": 903.148,
-      "1933": 865.916,
-      "1940": 870.583
+      "1877": 21114.689,
+      "1884": 21608.677,
+      "1891": 21970.599,
+      "1898": 22357.386,
+      "1905": 21656.324,
+      "1912": 28875.564,
+      "1919": 23000.619,
+      "1926": 22789.116,
+      "1933": 21668.344,
+      "1940": 22376.811
     },
     "auto_ets": {
-      "1926": 13086.648,
-      "1933": 9497.68,
-      "1940": 9289.889
+      "1877": 4538.791,
+      "1884": 4984.904,
+      "1891": 4466.803,
+      "1898": 4610.579,
+      "1905": 4621.729,
+      "1912": 4547.466,
+      "1919": 4562.5,
+      "1926": 4578.952,
+      "1933": 4608.975,
+      "1940": 4582.296
     },
     "convex_ensemble": {}
   },
-  "determinism": "VECLIB_MAXIMUM_THREADS=1 pinned in cli.py before numpy; every LightGBM fit n_jobs=1 + fixed seed + force_row_wise (direct pooled arms iterate sorted group keys and h=1..28 in fixed order); auto_ets may run n_jobs>1 (ETS selection is closed-form/seed-free \u2014 parallelism changes wall time only); seasonal_naive is numpy-vectorized; ensemble grid is lexicographic deterministic",
+  "runtime_seconds_peak_variant_origin": {
+    "2.0": {
+      "1877": 25199.443,
+      "1884": 25698.597,
+      "1891": 25335.154,
+      "1898": 26345.619,
+      "1905": 25363.739,
+      "1912": 65293.144,
+      "1919": 26632.89,
+      "1926": 26784.192,
+      "1933": 25865.332,
+      "1940": 26292.504
+    },
+    "3.0": {
+      "1877": 25662.63,
+      "1884": 25416.737,
+      "1891": 26537.208,
+      "1898": 26504.123,
+      "1905": 26490.911,
+      "1912": 28626.723,
+      "1919": 26593.329,
+      "1926": 27062.873,
+      "1933": 26017.596,
+      "1940": 27124.646
+    }
+  },
+  "determinism": "VECLIB_MAXIMUM_THREADS=1 pinned in cli.py before numpy; every LightGBM fit n_jobs=1 + fixed seed + force_row_wise (direct pooled arms iterate sorted group keys and h=1..28 in fixed order); auto_ets may run n_jobs>1 (ETS selection is closed-form/seed-free \u2014 parallelism changes wall time only); seasonal_naive is numpy-vectorized; ensemble grid is lexicographic deterministic; the peak-weight variants add a deterministic per-row sample_weight (fixed grid {2, 3}, chosen on selection origins)",
   "lgbm_params": {
     "n_estimators": 279,
     "learning_rate": 0.027961422706101635,
@@ -105,6 +187,6 @@
     "min_child_samples": 226,
     "colsample_bytree": 0.43564738242134776
   },
-  "pooled_strategy": "recursive",
+  "pooled_strategy": "direct",
   "n_jobs_ets": 1
 }

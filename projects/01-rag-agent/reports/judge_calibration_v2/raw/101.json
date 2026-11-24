@@ -1,0 +1,19 @@
+{
+  "index": 101,
+  "chunk_id": "photosynthesis-000#c011",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 416,
+    "output_tokens": 163,
+    "reasoning_tokens": 118
+  },
+  "cost_usd_est": "0.000889",
+  "cumulative_usd_est": "0.068052",
+  "latency_s": 2.89,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\":\"supported\",\"reason\":\"The passage states algal turfs are thick, carpet-like seaweed beds usually less than 15 cm tall.\"}",
+  "label": "supported",
+  "reason": "The passage states algal turfs are thick, carpet-like seaweed beds usually less than 15 cm tall."
+}

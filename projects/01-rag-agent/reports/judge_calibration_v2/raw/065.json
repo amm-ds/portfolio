@@ -1,0 +1,19 @@
+{
+  "index": 65,
+  "chunk_id": "renewable-energy-043#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 395,
+    "output_tokens": 88,
+    "reasoning_tokens": 39
+  },
+  "cost_usd_est": "0.000747",
+  "cumulative_usd_est": "0.044567",
+  "latency_s": 2.11,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states Éolienne Bollée is an example of a DAWT, not a conventional wind turbine\"}",
+  "label": "unsupported",
+  "reason": "Passage states Éolienne Bollée is an example of a DAWT, not a conventional wind turbine"
+}

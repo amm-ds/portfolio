@@ -1,0 +1,1 @@
+{"prompt_sha256": "e87d1ef1d0932f00aa62ba8cac696a2787e73b527f2b0b25c8efd2bec5486ba2", "response": "{\"question\": \"Why does a single rule fail to function as a complete model on its own?\", \"answer\": \"Because it is only applicable when its condition is satisfied.\"}"}

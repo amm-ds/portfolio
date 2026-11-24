@@ -1,0 +1,19 @@
+{
+  "index": 1,
+  "chunk_id": "aviation-122#c002",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 465,
+    "output_tokens": 83,
+    "reasoning_tokens": 36
+  },
+  "cost_usd_est": "0.000797",
+  "cumulative_usd_est": "0.001521",
+  "latency_s": 3.36,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states that shop mechanic Charles Taylor built their first airplane engine in close collaboration with the brothers.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states that shop mechanic Charles Taylor built their first airplane engine in close collaboration with the brothers."
+}

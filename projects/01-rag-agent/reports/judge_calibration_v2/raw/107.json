@@ -1,0 +1,19 @@
+{
+  "index": 107,
+  "chunk_id": "climate-032#c009",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 429,
+    "output_tokens": 119,
+    "reasoning_tokens": 74
+  },
+  "cost_usd_est": "0.000726",
+  "cumulative_usd_est": "0.071966",
+  "latency_s": 2.78,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage states MRIO traces products across production cycles and calculates emissions allocated to the final consumer.\"}",
+  "label": "supported",
+  "reason": "Passage states MRIO traces products across production cycles and calculates emissions allocated to the final consumer."
+}

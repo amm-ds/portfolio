@@ -1,0 +1,19 @@
+{
+  "index": 67,
+  "chunk_id": "aviation-122#c012",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 314,
+    "output_tokens": 74,
+    "reasoning_tokens": 26
+  },
+  "cost_usd_est": "0.000610",
+  "cumulative_usd_est": "0.045729",
+  "latency_s": 2.29,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage directly states the date and the brothers building and flying a biplane kite to test wing warping.\"}",
+  "label": "supported",
+  "reason": "The passage directly states the date and the brothers building and flying a biplane kite to test wing warping."
+}

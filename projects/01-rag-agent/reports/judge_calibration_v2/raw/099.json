@@ -1,0 +1,19 @@
+{
+  "index": 99,
+  "chunk_id": "climate-000#c008",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 516,
+    "output_tokens": 88,
+    "reasoning_tokens": 42
+  },
+  "cost_usd_est": "0.000689",
+  "cumulative_usd_est": "0.066649",
+  "latency_s": 2.19,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states that worldwide, livestock production occupies 70% of all land used for agriculture.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states that worldwide, livestock production occupies 70% of all land used for agriculture."
+}

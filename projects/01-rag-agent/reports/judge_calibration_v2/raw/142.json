@@ -1,0 +1,19 @@
+{
+  "index": 142,
+  "chunk_id": "photosynthesis-042#c005",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 410,
+    "output_tokens": 78,
+    "reasoning_tokens": 38
+  },
+  "cost_usd_est": "0.000543",
+  "cumulative_usd_est": "0.092451",
+  "latency_s": 2.4,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"Passage states fluorescence can measure the efficiency of PSII photochemistry.\"}",
+  "label": "supported",
+  "reason": "Passage states fluorescence can measure the efficiency of PSII photochemistry."
+}

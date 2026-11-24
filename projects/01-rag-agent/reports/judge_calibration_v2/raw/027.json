@@ -1,0 +1,19 @@
+{
+  "index": 27,
+  "chunk_id": "climate-032#c006",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 301,
+    "output_tokens": 74,
+    "reasoning_tokens": 27
+  },
+  "cost_usd_est": "0.000597",
+  "cumulative_usd_est": "0.019663",
+  "latency_s": 2.0,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"The passage states emissions slowed since 2007, not 2015; the date does not match.\"}",
+  "label": "unsupported",
+  "reason": "The passage states emissions slowed since 2007, not 2015; the date does not match."
+}

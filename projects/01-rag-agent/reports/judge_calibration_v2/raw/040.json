@@ -1,0 +1,19 @@
+{
+  "index": 40,
+  "chunk_id": "machine-learning-121#c005",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 476,
+    "output_tokens": 97,
+    "reasoning_tokens": 47
+  },
+  "cost_usd_est": "0.000864",
+  "cumulative_usd_est": "0.028325",
+  "latency_s": 3.37,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage explicitly states machine learning focuses on prediction based on known properties while data mining discovers previously unknown properties in the data.\"}",
+  "label": "supported",
+  "reason": "The passage explicitly states machine learning focuses on prediction based on known properties while data mining discovers previously unknown properties in the data."
+}

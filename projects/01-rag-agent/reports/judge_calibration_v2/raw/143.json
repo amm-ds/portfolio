@@ -1,0 +1,19 @@
+{
+  "index": 143,
+  "chunk_id": "climate-048#c005",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 319,
+    "output_tokens": 107,
+    "reasoning_tokens": 59
+  },
+  "cost_usd_est": "0.000568",
+  "cumulative_usd_est": "0.093019",
+  "latency_s": 3.75,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states heavy snow at high-mountain ski resorts leads to annual ski races on the Fourth of July.\"}",
+  "label": "supported",
+  "reason": "The passage states heavy snow at high-mountain ski resorts leads to annual ski races on the Fourth of July."
+}

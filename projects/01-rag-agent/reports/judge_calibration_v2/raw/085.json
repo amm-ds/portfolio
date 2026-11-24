@@ -1,0 +1,19 @@
+{
+  "index": 85,
+  "chunk_id": "renewable-energy-025#c007",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 362,
+    "output_tokens": 65,
+    "reasoning_tokens": 22
+  },
+  "cost_usd_est": "0.000443",
+  "cumulative_usd_est": "0.058480",
+  "latency_s": 2.06,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"Passage states NASA initiated SERT in 1999, not 2005.\"}",
+  "label": "unsupported",
+  "reason": "Passage states NASA initiated SERT in 1999, not 2005."
+}

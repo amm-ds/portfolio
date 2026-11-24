@@ -1,0 +1,19 @@
+{
+  "index": 125,
+  "chunk_id": "aviation-011#c006",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 488,
+    "output_tokens": 75,
+    "reasoning_tokens": 32
+  },
+  "cost_usd_est": "0.000609",
+  "cumulative_usd_est": "0.082639",
+  "latency_s": 2.5,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"The passage states the R101 crashed in 1930, not 1932.\"}",
+  "label": "unsupported",
+  "reason": "The passage states the R101 crashed in 1930, not 1932."
+}

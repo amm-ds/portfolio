@@ -1,0 +1,19 @@
+{
+  "index": 93,
+  "chunk_id": "machine-learning-000#c006",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 370,
+    "output_tokens": 62,
+    "reasoning_tokens": 13
+  },
+  "cost_usd_est": "0.000618",
+  "cumulative_usd_est": "0.063078",
+  "latency_s": 2.66,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states verbatim that machine learning is the study of programs that can improve their performance on a given task automatically.\"}",
+  "label": "supported",
+  "reason": "The passage states verbatim that machine learning is the study of programs that can improve their performance on a given task automatically."
+}

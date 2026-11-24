@@ -205,3 +205,13 @@ reference changes.
 - `web/` — React PDF viewer and page-analysis workbench (separate owner).
 - `specs/architecture.md` — trust boundaries and data model.
 - `specs/operations.md` — setup, deployment, recovery, and evaluation.
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| a document sits `uploaded` or `processing` with no pages completing | the bare `uvicorn` command does not start a worker; nothing consumes the queue | run the full stack: `docker compose -f infra/docker-compose.yml up --build` so the `worker` service processes jobs |
+| `document_busy` 409 on `POST /documents/{id}/reanalyze` | a run for that document is still in flight | wait for the current run to finish, then re-run; reanalysis returns 202 and is idempotent per stage |
+| one page shows an error while the document still completes | that page exhausted its bounded retries; the failure stays on the page by design | inspect the per-page `error` in `progress`, then request `/documents/{id}/reanalyze` for a fresh run |
+| 401 "Missing development identity" or "Invalid gateway signature" | development headers are missing, or gateway identity is mis-signed | in development send `X-Dev-Tenant`/`X-Dev-Actor`; in production sign tenant headers with `DOCUMENT_INTELLIGENCE_GATEWAY_SHARED_SECRET` (see `specs/operations.md`) |
+| 401 with `X-Dev-Tenant` set | the environment is production, where development identity is rejected | use gateway identity in production; development headers work only with `DOCUMENT_INTELLIGENCE_ENVIRONMENT=development` |

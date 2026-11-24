@@ -1,0 +1,19 @@
+{
+  "index": 4,
+  "chunk_id": "climate-011#c001",
+  "model": "kimi-for-coding",
+  "usage": {
+    "input_tokens": 364,
+    "output_tokens": 66,
+    "reasoning_tokens": 33
+  },
+  "cost_usd_est": "0.000628",
+  "cumulative_usd_est": "0.003592",
+  "latency_s": 2.37,
+  "request_hosts": [
+    "api.kimi.com"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states the claim verbatim.\"}",
+  "label": "supported",
+  "reason": "The passage states the claim verbatim."
+}

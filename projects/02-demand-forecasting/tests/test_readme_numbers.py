@@ -150,7 +150,7 @@ def test_story_per_level_quotes_match_committed_metrics() -> None:
     story = " ".join(_story().split())
     total_ens = test["convex_ensemble"]["per_level_wrmsse"]["total"]
     total_floor = test[NAIVE]["per_level_wrmsse"]["total"]
-    assert total_ens == pytest.approx(0.3501, abs=5e-5)
+    assert total_ens == pytest.approx(0.3143, abs=5e-5)
     assert total_floor == pytest.approx(0.5600, abs=5e-5)
     assert f"{total_ens:.3f}" in story, "story lost the per-level ensemble quote"
     assert f"{total_floor:.3f}" in story, "story lost the per-level floor quote"
@@ -164,7 +164,7 @@ def test_honest_comparison_quotes_match_committed_metrics() -> None:
     naive = test[NAIVE]["official_wrmsse"]
     ens = test["convex_ensemble"]["official_wrmsse"]
     rel = _pct1(ens, naive)
-    assert rel == pytest.approx(-31.0, abs=0.05)  # the headline cut itself
+    assert rel == pytest.approx(-30.4, abs=0.05)  # the headline cut itself
     readme = _readme_m5_section()
     story = _story()
     for where, text in (("README", readme), ("story", story)):
@@ -182,7 +182,7 @@ def test_ensemble_composition_quotes_match_committed_metrics() -> None:
     ens = metrics["ensemble"]
     members, weights = ens["members"], ens["weights"]
     assert members == ["lgbm_pool_storecat", "lgbm_pool_store", "lgbm_pool_dept"]
-    assert [round(w, 2) for w in weights] == [0.60, 0.10, 0.30]
+    assert [round(w, 2) for w in weights] == [0.95, 0.00, 0.05]
     quote = (
         f"{members[0]} {MULT} {weights[0]:.2f} + {members[1]} {MULT} {weights[1]:.2f} "
         f"+ {members[2]} {MULT} {weights[2]:.2f}"
@@ -190,7 +190,7 @@ def test_ensemble_composition_quotes_match_committed_metrics() -> None:
     assert quote in " ".join(_story().split())
     assert quote in " ".join(_readme_m5_section().split())
     # the screen rule itself is pinned: mean + 1.0 x population std over the
-    # 2 selection origins
+    # 9 selection origins
     screen = metrics["ensemble"]["selection_screen"]
     for block in screen.values():
         assert block["score"] == pytest.approx(block["mean"] + 1.0 * block["std"], abs=1e-12)
@@ -206,9 +206,9 @@ def test_panel_and_class_quotes_match_committed_artifacts() -> None:
     assert counts == {"dense": 2754, "intermittent": 27736}
     assert metrics["hierarchy"]["n_nodes_total"] == 42840
     assert len(metrics["candidates"]) == 8
-    assert len(metrics["origins"]["dates"]) == 3
-    assert len(metrics["origins"]["selection"]) == 2 and len(metrics["origins"]["test"]) == 1
-    assert meta["runtime_seconds"] == pytest.approx(46509, abs=1)
+    assert len(metrics["origins"]["dates"]) == 10
+    assert len(metrics["origins"]["selection"]) == 9 and len(metrics["origins"]["test"]) == 1
+    assert meta["runtime_seconds"] == pytest.approx(1348530.6, abs=1)
     readme = _readme_m5_section()
     for token in ("30,490", "1,969", "47,649,940", "59.5%", "42,840", "2,754 dense + 27,736"):
         assert token in readme, f"README lost the panel/class quote {token!r}"
@@ -228,12 +228,12 @@ def test_zero_day_quotes_match_committed_metrics() -> None:
         "auto_ets": 100.0 * test["auto_ets"]["zero_day_accuracy"],
     }
     assert expected["floor"] == pytest.approx(66.6, abs=0.05)
-    assert expected["ensemble"] == pytest.approx(57.3, abs=0.05)
+    assert expected["ensemble"] == pytest.approx(57.2, abs=0.05)
     assert expected["auto_ets"] == pytest.approx(60.9, abs=0.05)
     for where, text in (("README", _readme_m5_section()), ("story", " ".join(_story().split()))):
-        assert "66.6%" in text and "57.3%" in text, f"{where}: zero-day quote missing"
+        assert "66.6%" in text and "57.2%" in text, f"{where}: zero-day quote missing"
     assert "60.9%" in _readme_m5_section()
-    assert "67.8%" in _readme_m5_section() and "58.9%" in _readme_m5_section()
+    assert "67.8%" in _readme_m5_section() and "58.8%" in _readme_m5_section()
 
 
 def test_pooled_beats_global_claim_is_live() -> None:

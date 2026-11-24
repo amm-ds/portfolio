@@ -11,7 +11,7 @@
  *  (rendered by StudyCard through renderInlineMarkdown). */
 export const CARD_DOES: Record<string, string> = {
   "01-rag-agent":
-    "Built a question-answering agent that answers only from a pinned **593-article** Wikipedia corpus and cites every claim.",
+    "Built a question-answering agent that answers only from a pinned **593-article** Wikipedia corpus, cites every claim, and retrieves with title-anchored hybrid search (dense plus BM25 fused by RRF, reranked, per-article cap).",
   "02-demand-forecasting":
     "Forecasts all **30,490** Walmart M5 store-item series through a **42,840-node hierarchy** and grades every candidate under the competition's official weighted error.",
   "03-anomaly-detection":
@@ -42,9 +42,9 @@ export const CARD_DOES: Record<string, string> = {
  *  **bold** so the result scans at a glance. */
 export const CARD_ACHIEVES: Record<string, string> = {
   "01-rag-agent":
-    "On the **65-question tuning set** the right passage is found **83% of the time**, yet **17 of 65** audited answers kept unsupported claims; the sealed **55-question held-out** pass keeps **44 of 55** correct, and **9 of 11 failures** kept unsupported claims despite rank-1 retrieval — auditable, not yet trustworthy unattended.",
+    "The finalized **120-question sealed pass** reaches **F1 0.909** (precision **0.952**, faithfulness **0.872**) with **1 of 120** unsupported claims; the promoted S3 retriever hits **0.946 recall@5** and the judge is owner-validated at **30/30** blind agreement.",
   "02-demand-forecasting":
-    "A stability-screened ensemble of pooled LightGBM fits reaches **0.6161** vs the naive floor's **0.8929** official WRMSSE (**−31.0%**) on the scored-once competition window.",
+    "A stability-screened ensemble of pooled LightGBM fits reaches **0.6211** vs the naive floor's **0.8929** official WRMSSE (**−30.4%**) on the scored-once competition window.",
   "03-anomaly-detection":
     "On NAB, IsolationForest catches **16 of 17** labelled incident windows but fires 1,609 raw alerts; deduplication plus a one-page-per-day cap cuts the stream to **80 pages** at modest recall cost.",
   "04-nlp-classification":
@@ -74,7 +74,7 @@ export const CARD_ACHIEVES: Record<string, string> = {
  *  grid). Unknown ids fall back to the first four techniques the registry
  *  serves. */
 const CARD_TAGS: Record<string, string[]> = {
-  "01-rag-agent": ["RAG", "vector search", "reranking", "RAG evals"],
+  "01-rag-agent": ["RAG", "hybrid retrieval", "claim verification", "RAG evals"],
   "02-demand-forecasting": ["GBM", "MinT", "hyperparameter search", "deep learning"],
   "03-anomaly-detection": ["IsolationForest", "LOF", "alert budgeting", "deduplication"],
   "04-nlp-classification": ["TF-IDF", "language model", "deep learning", "calibration"],
