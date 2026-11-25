@@ -1,0 +1,216 @@
+[
+  {
+    "change": "Calibrated M5 demand, weekday profiles, NB dispersion, and reference prices",
+    "config_sha256": "9ba20c1958e304af069b100e68aff3b7aed840dfad8f5c1fec0fa01b57895ddd",
+    "decision": "calibration complete; no policy evaluated",
+    "headline": {
+      "distributions": {
+        "base": {
+          "max": 96.541209,
+          "median": 7.133242,
+          "min": 0.184066,
+          "p25": 4.732143,
+          "p75": 11.006181
+        },
+        "k": {
+          "max": 32.445189,
+          "median": 1.294808,
+          "min": 0.5,
+          "p25": 0.5,
+          "p75": 2.875804
+        },
+        "p_ref": {
+          "max": 14.97,
+          "median": 1.64,
+          "min": 0.2,
+          "p25": 0.97,
+          "p75": 2.5
+        }
+      },
+      "n_series": 600,
+      "n_source_items": 308,
+      "series_by_split": {
+        "test": 58,
+        "train": 267,
+        "val": 57
+      }
+    },
+    "n": 600,
+    "report_path": "projects/15-dynamic-pricing-rl/data/calibration.json",
+    "request_hosts": [],
+    "set_sha256": "bcd585c4b72fd7024cc10b0911edb3e8b9767c1b8e34b1d40e4879f1c83b3d1f",
+    "split": "calibration",
+    "step": "E2-2",
+    "ts": "2026-11-25T00:27:46.190769+00:00",
+    "wall_clock_s": 0.7252567500108853
+  },
+  {
+    "change": "Calibrated M5 demand, weekday profiles, NB dispersion, and reference prices",
+    "config_sha256": "9ba20c1958e304af069b100e68aff3b7aed840dfad8f5c1fec0fa01b57895ddd",
+    "decision": "calibration complete; no policy evaluated",
+    "headline": {
+      "distributions": {
+        "base": {
+          "max": 96.541209,
+          "median": 7.133242,
+          "min": 0.184066,
+          "p25": 4.732143,
+          "p75": 11.006181
+        },
+        "k": {
+          "max": 32.445189,
+          "median": 1.294808,
+          "min": 0.5,
+          "p25": 0.5,
+          "p75": 2.875804
+        },
+        "p_ref": {
+          "max": 14.97,
+          "median": 1.64,
+          "min": 0.2,
+          "p25": 0.97,
+          "p75": 2.5
+        }
+      },
+      "n_series": 600,
+      "n_source_items": 308,
+      "series_by_split": {
+        "test": 58,
+        "train": 267,
+        "val": 57
+      }
+    },
+    "n": 600,
+    "report_path": "projects/15-dynamic-pricing-rl/data/calibration.json",
+    "request_hosts": [],
+    "set_sha256": "bcd585c4b72fd7024cc10b0911edb3e8b9767c1b8e34b1d40e4879f1c83b3d1f",
+    "split": "calibration",
+    "step": "E2-2",
+    "ts": "2026-11-25T00:29:09.339622+00:00",
+    "wall_clock_s": 0.7224098330043489
+  },
+  {
+    "change": "Benchmarked 8-copy SB3 vector environments over 10,000 transitions each",
+    "config_sha256": "5b009e7cfcad7895f7cb230df995cee4fcd1cb679bdca1f15168a7b37beaff02",
+    "decision": "select SubprocVecEnv for E2-7",
+    "headline": {
+      "dummy_steps_per_second": 47352.12818268815,
+      "n_envs": 8,
+      "selected_wrapper": "SubprocVecEnv",
+      "steps_per_wrapper": 10000,
+      "subproc_steps_per_second": 57543.30362471139
+    },
+    "n": 10000,
+    "report_path": "projects/15-dynamic-pricing-rl/reports/env_benchmark.json",
+    "request_hosts": [],
+    "set_sha256": "bcd585c4b72fd7024cc10b0911edb3e8b9767c1b8e34b1d40e4879f1c83b3d1f",
+    "split": "train series only",
+    "step": "E2-3",
+    "ts": "2026-11-25T00:37:58.427222+00:00",
+    "wall_clock_s": 0.38496591699367855
+  },
+  {
+    "change": "Tuned B1 and B2 on 2,000 common-random-number train episodes",
+    "config_sha256": "34e43a6a50ce389093648c243acf52d5a7791687ba74569a27767df5f476fd9f",
+    "decision": "train tuning complete; no sealed evaluation",
+    "headline": {
+      "best_b1": {
+        "action": 6,
+        "mean_normalised_profit": 0.5237723604451462
+      },
+      "best_b2": {
+        "ahead_pct": 5.0,
+        "behind_pct": 20.0,
+        "mean_normalised_profit": 0.4022833578587548
+      }
+    },
+    "n": 2000,
+    "report_path": "projects/15-dynamic-pricing-rl/reports/baselines_val.json",
+    "request_hosts": [],
+    "set_sha256": "2b6664b7e147a94e5ce1bb1e8488d1b0e0b01e808a53a0e8acbd65535049e00b",
+    "split": "train",
+    "step": "E2-5-train",
+    "ts": "2026-11-25T00:53:13.245120+00:00",
+    "wall_clock_s": 85.85323500000231
+  },
+  {
+    "change": "Evaluated B0-B3 on 300 validation episodes and locked the comparator",
+    "config_sha256": "ade270b1c5f24f57943cfd9c157f9450622ee9dfb4b006f4caace5aeb1f90ce0",
+    "decision": "comparator locked to B1; no sealed evaluation",
+    "headline": {
+      "comparator": "B1",
+      "policies": {
+        "B0": {
+          "mean_by_rho": {
+            "0.7": 0.5290548484355648,
+            "1.0": 0.3967620138479495,
+            "1.3": 0.3075920771865818
+          },
+          "mean_normalised_profit": 0.4111363131566987,
+          "mean_raw_gross_profit": 632.0354666666667,
+          "violations": 0
+        },
+        "B1": {
+          "mean_by_rho": {
+            "0.7": 0.6375978460168343,
+            "1.0": 0.49739809428738757,
+            "1.3": 0.4324430812743863
+          },
+          "mean_normalised_profit": 0.5224796738595361,
+          "mean_raw_gross_profit": 631.5525700000002,
+          "violations": 0
+        },
+        "B2": {
+          "mean_by_rho": {
+            "0.7": 0.3931609032717796,
+            "1.0": 0.4139594573166623,
+            "1.3": 0.38925507257539754
+          },
+          "mean_normalised_profit": 0.39879181105461314,
+          "mean_raw_gross_profit": 629.2519900000001,
+          "violations": 0
+        },
+        "B3": {
+          "mean_by_rho": {
+            "0.7": 0.6290791319114027,
+            "1.0": 0.4807783849134406,
+            "1.3": 0.39456379645643225
+          },
+          "mean_normalised_profit": 0.5014737710937586,
+          "mean_raw_gross_profit": 656.4989600000001,
+          "violations": 0
+        }
+      }
+    },
+    "n": 300,
+    "report_path": "projects/15-dynamic-pricing-rl/reports/baselines_val.json",
+    "request_hosts": [],
+    "set_sha256": "2b6664b7e147a94e5ce1bb1e8488d1b0e0b01e808a53a0e8acbd65535049e00b",
+    "split": "val",
+    "step": "E2-5-val",
+    "ts": "2026-11-25T00:53:48.460512+00:00",
+    "wall_clock_s": 35.21393899999384
+  },
+  {
+    "change": "Pre-registered P1/P2/P3 and generated untouched test and stress specs",
+    "config_sha256": "dd26430a57dc98db9e920f68c9771a8d2990879f011ae395225f844938cea75b",
+    "decision": "owner review and commit required; stopped before E2-7 and E2-8",
+    "headline": {
+      "comparator": "B1",
+      "preregistration_sha256": "c94f0f97c37afd2788760356b31d89de8fb3d1790b9fc0685bdbcc15bd9cf627",
+      "specs_sha256": {
+        "stress_mean_m1_5": "cec1622e42ade7081b9b5ec6b8723669805b573814874ef89581ccc3216efb58",
+        "stress_mean_m3_5": "128bab06ae88f4c28a790102b8c593dde99b479544f3c595d8956932f60a6731",
+        "test": "fb69ba9b96b0224b1d35273d3894f7eaa0351d6c0de4be392ab54f2ff5fb4746"
+      }
+    },
+    "n": 2000,
+    "report_path": "projects/15-dynamic-pricing-rl/params.yaml",
+    "request_hosts": [],
+    "set_sha256": "8d2c7bd9608b1f1d4a0e9f1c421044c37307af1b58f1982f1d4b22fc06eec886",
+    "split": "test and stress specs generated; never evaluated",
+    "step": "E2-6",
+    "ts": "2026-11-25T00:57:39.289772+00:00",
+    "wall_clock_s": 0.02328008301265072
+  }
+]

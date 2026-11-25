@@ -1,0 +1,97 @@
+seed: 42
+elasticity_prior:
+  distribution: truncated_normal
+  mean: -2.5
+  sd: 0.8
+  lower: -5.0
+  upper: -0.8
+  stress_means:
+  - -1.5
+  - -3.5
+baselines:
+  b3_observation_sd: 0.35
+tuning:
+  train_episodes: 2000
+  val_episodes: 300
+  train_stream: 0
+  val_stream: 1
+  b2_thresholds_pct:
+  - 5
+  - 10
+  - 15
+  - 20
+calibration:
+  window_start: '2011-01-29'
+  window_end: '2016-04-24'
+  recent_days: 364
+  k_floor: 0.5
+  k_cap: 100.0
+  split_items:
+    train: 140
+    val: 30
+    test: 30
+  source_files:
+    Y:
+      path: projects/02-demand-forecasting/data_m5/subset_Y.parquet
+      sha256: 52dfc7d31d830d37f7b8b7b3ea886e353699816ab3bc56702c5e1c77b3a2a2b7
+    X:
+      path: projects/02-demand-forecasting/data_m5/subset_X.parquet
+      sha256: 6bac678a3dd6aadc161422c90bc072464039e0a7eee0dd89ebd084a61124ff06
+    S:
+      path: projects/02-demand-forecasting/data_m5/subset_S.parquet
+      sha256: 01a1593870f1f89531738cecce793e4b7d6804abdaa25a134e624b7a0884cf25
+comparator: B1
+preregistration:
+  protocol_version: 1
+  seed: 42
+  comparator: B1
+  policies:
+  - B0
+  - B1
+  - B2
+  - B3
+  - RL
+  - UB
+  hypotheses:
+    P1:
+      role: primary
+      statement: RL beats the validation-selected best non-RL baseline
+      comparison: RL minus B1
+      metric: mean_normalised_profit
+      relative_lift_min: 0.01
+      paired_difference_ci_lower_exclusive: 0.0
+    P2:
+      role: hard
+      statement: Every policy has zero constraint violations on every test episode
+      violations_exactly: 0
+      action_masks_required: true
+    P3:
+      role: context_no_gate
+      statement: Report fluid-bound share by rho bucket and shifted stress prior
+  metric_definitions:
+    mean_normalised_profit: Mean sum of daily (price-cost)*sales/R_ref plus terminal
+      salvage*leftover/R_ref
+    raw_gross_profit: Mean unnormalised (price-cost)*sales, excluding salvage
+    fluid_bound_share: mean_normalised_profit divided by known-epsilon fluid LP profit
+    relative_lift: (RL mean - comparator mean) / comparator mean
+  paired_bootstrap:
+    unit: episode
+    n_resamples: 2000
+    seed: 42
+    confidence: 0.95
+  seed_formula: stream * 1000000 + episode_index
+  evaluation_sets:
+    test:
+      n: 1000
+      stream: 2
+      specs_sha256: fb69ba9b96b0224b1d35273d3894f7eaa0351d6c0de4be392ab54f2ff5fb4746
+    stress_mean_m1_5:
+      n: 500
+      stream: 3
+      elasticity_mean: -1.5
+      specs_sha256: cec1622e42ade7081b9b5ec6b8723669805b573814874ef89581ccc3216efb58
+    stress_mean_m3_5:
+      n: 500
+      stream: 4
+      elasticity_mean: -3.5
+      specs_sha256: 128bab06ae88f4c28a790102b8c593dde99b479544f3c595d8956932f60a6731
