@@ -1,0 +1,14 @@
+id: 15-dynamic-pricing-rl
+title: Dynamic Pricing with RL
+domain: Reinforcement learning & pricing simulation
+topic: Decision Science
+techniques:
+- constrained Gymnasium environment
+- masked PPO with convolutional history encoder
+- fluid linear-programming upper bound
+- tuned static, markdown, and Thompson baselines
+- common random numbers and paired bootstrap
+- pre-registered single sealed evaluation
+data: 600 M5 store-item series; calibrated demand and prices with assumed elasticity
+status: working
+order: 15

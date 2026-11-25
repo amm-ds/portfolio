@@ -1,0 +1,169 @@
+project_id: 15-dynamic-pricing-rl
+short_version: "Masked PPO for constrained pricing on 600 M5-calibrated series reaches 0.5120 sealed mean profit, but trails tuned static B1 by -1.86% (paired 95% CI [-0.0114, -0.0080]); zero violations across all executable policies."
+sections:
+- id: background
+  text_md: |
+    **Can a learned pricing policy beat a strong fixed rule without breaking the rules?**
+    A pricing demo can seem smart while it breaks stock limits or beats only a weak rival. This study gives a learned agent `91` days to price M5-calibrated products. It then faces tuned rules on one sealed test.
+
+    ```diagram 15-pricing-pipeline
+    ```
+
+    Follow three steps:
+
+    - **Calibrate:** Derive demand, weekday patterns, and reference prices from `600` M5 series.
+    - **Train safely:** Give `MaskablePPO` recent history; an action mask blocks each illegal move.
+    - **Test once:** Lock `B1` as comparator and score `1,000` test episodes plus two `500`-episode stress sets.
+
+    The answer is negative: `RL` reaches `0.5120` mean normalised profit while `B1` reaches `0.5217`. Next, we define success ([Objectives →](#sec-objectives)).
+
+    **In plain terms:** We taught a system to change prices over 91 days without breaking stock or pricing rules. It learned well, but a simple fixed price still made more money in the final test.
+  figures: []
+- id: objectives
+  text_md: |
+    **The goal is to beat the best tuned rule, not the weakest one.**
+    We fix one profit test, one safety test, and one set of context checks before the final run.
+
+    ```diagram auto-15-dynamic-pricing-rl-1
+    ```
+
+    - **P1, primary:** `RL` must beat validation-selected `B1` by at least `1.0%`. The paired `95%` bootstrap interval for `RL - B1` must also lie above zero.
+    - **P2, hard gate:** `B0`, `B1`, `B2`, `B3`, and `RL` must each have `0` violations on all `1,000` test episodes. Every learned prediction receives `action_masks`.
+    - **P3, context only:** Report bound share by stock pressure `rho`. Also test elasticity means `-1.5` and `-3.5`. Neither check can turn a failed P1 into a pass.
+
+    Normalised profit is daily margin plus final stock value, divided by reference revenue. Raw gross profit leaves out final stock value. The fluid upper bound (`UB`) knows elasticity and relaxes execution. It is a ceiling, not a real rival. This order stops a weak baseline or stress result from replacing the locked target. Next, the frozen inputs ([Data →](#sec-data)).
+
+    **In plain terms:** The learned system had to earn at least 1% more than the best simple rule, with a clear statistical win and no rule-breaking. Extra charts could explain the result but could not rescue it.
+  figures: []
+- id: data
+  text_md: |
+    **M5 tells us about demand, but not how price changes cause demand to move.**
+    Calibration reads the [Walmart M5 data card](https://amm-ds.github.io/portfolio/data-registry/m5-nixtla-mirror/) and three pinned files from project 02. It uses only `2011-01-29` through `2016-04-24`. A SHA-256 check rejects any changed file.
+
+    ```diagram auto-15-dynamic-pricing-rl-2
+    ```
+
+    Each of `600` series supplies mean daily units, seven weekday shares, spread `k`, and reference price `p_ref`. We split by `item_id`, not by series. Seed `42` assigns `140` items to train, `30` to validation, and `30` to test. The splits hold `267/57/58` series. No item crosses a split, and unused items stay out.
+
+    Price response is an assumption. We use a truncated normal prior with mean `-2.5`, standard deviation `0.8`, and range `[-5.0, -0.8]`. It is anchored to Bijmolt et al. (`2005`). M5 sales history cannot prove what a new price causes. We also freeze and hash `1,000` test specs and `500` specs for each stress mean before the read.
+
+    With real data and assumptions kept apart, we can inspect the panel without overclaiming ([EDA →](#sec-eda)).
+
+    **In plain terms:** Real shop data sets typical sales, weekly rhythms, and prices. How strongly shoppers react to a price change is an assumption, not something this data proves, so we test two extra reaction settings.
+  figures: []
+- id: eda
+  text_md: |
+    **The products vary too much for one average to tell the whole story.**
+    `calibration_overview` shows all `600` series. Median recent demand is `7.13` units a day. The middle half runs from `4.73` to `11.01`, while the largest value is `96.54`. Spread `k` has median `1.29` and reaches `32.45`. A quarter of series sit at its `0.5` floor. Reference price has median `1.64`, a middle half from `0.97` to `2.50`, and maximum `14.97`.
+
+    These values describe the panel. They do not measure forecast skill or price response. Weekday shares sum to `7` for each series. Each `91`-day episode has a fixed random stream. Two policies with the same `EpisodeSpec` thus face the same demand draws.
+
+    Stock pressure `rho ∈ {0.7, 1.0, 1.3}` covers easier and harder cases. Bound share by `rho` checks whether the total score hides a weak case. Next, we choose how much past data the learner sees ([Training →](#sec-training)).
+
+    **In plain terms:** The 600 products vary widely: a typical one sells about 7 units a day, while the busiest sells about 97. We keep those differences and repeat the same random conditions for every pricing method.
+  figures: [calibration_overview]
+- id: training
+  text_md: |
+    **Training uses masked actions; validation alone picks the model.**
+    `PricingEnv` runs for `91` days. Seven price steps run from `0.70×` to `1.30×`. Masks block jumps of more than one step and changes within a seven-day wait. Sales cannot exceed stock. A fixed uniform stream drives daily demand through an inverse-CDF negative-binomial model.
+
+    ```diagram auto-15-dynamic-pricing-rl-3
+    ```
+
+    `HistoryEncoder` reads `14` days of price and demand. Two one-dimensional convolution layers use `16` channels and kernel `3`. Their features join the current scalars. `MaskablePPO` then uses separate `[64, 64]` policy and value networks. `SubprocVecEnv(8)` reached `57,543` steps/s in a `10,000`-step test; `DummyVecEnv(8)` reached `47,352`.
+
+    Seeds `0`, `1`, and `2` each request `3,000,000` steps. Their validation means over `300` episodes are `0.512536`, `0.514370`, and `0.514288`. Seed `1` wins, and only its checkpoint stays. All seeds have `0` validation violations. A separate `2,000` train episodes tune the rules: `B1` picks `1.30×`; `B2` picks `20%` behind and `5%` ahead thresholds.
+
+    Training is frozen. The last protocol guards the single final comparison ([Evaluation →](#sec-evaluation)).
+
+    **In plain terms:** Three copies of the learner trained on 3 million steps each. The copy that did best on 300 practice games was kept, and no final-test game helped choose it.
+  figures: []
+- id: evaluation
+  text_md: |
+    **One invocation consumed every sealed set; code computed both verdicts.**
+    The owner committed the frozen params, calibration, and splits before evaluation. `seal-read` then ran `B0`–`B3`, selected masked PPO seed `1`, and `UB` on `1,000` test specs and `2 × 500` stress specs. `reports/sealed_access.json` records exactly three ordered reads; a second invocation hard-fails.
+
+    `profit_vs_baselines` compares test means with per-policy episode-bootstrap intervals. The primary interval is different: it resamples paired `RL - B1` episode differences `2,000` times with seed `42`. Its point estimate is `-0.009696` and its `95%` CI is `[-0.011437, -0.007998]`. Relative lift is `-1.86%`, below the required `+1.0%`, and the interval excludes zero in the wrong direction: **P1 fails**.
+
+    | Policy | Mean normalised profit | 95% mean CI | Bound share | Violations |
+    |---|---:|---:|---:|---:|
+    | B0 reference | 0.4105 | [0.4052, 0.4160] | 77.59% | 0 |
+    | B1 static 1.30× | **0.5217** | [0.5160, 0.5277] | **98.60%** | 0 |
+    | B2 markdown | 0.3978 | [0.3933, 0.4022] | 75.19% | 0 |
+    | B3 Thompson | 0.5028 | [0.4970, 0.5090] | 95.03% | 0 |
+    | RL masked PPO | 0.5120 | [0.5065, 0.5177] | 96.76% | 0 |
+    | UB fluid ceiling | 0.5291 | [0.5237, 0.5348] | 100.00% | n/a |
+
+    Every executable policy has `0` test violations: **P2 passes**. `reports/test_episodes.json` (`1.2 MiB`) retains per-episode results and the fixed-seed traces. Next, we examine where RL helps and where static margin wins ([Results →](#sec-results)).
+
+    **In plain terms:** The learner scored 0.5120 against 0.5217 for the fixed-price rule, about 1.86% less. That gap is consistent across repeated checks, while every method followed every pricing rule.
+  figures: [profit_vs_baselines]
+- id: results
+  text_md: |
+    **The learned policy beats three baselines, but not the one that matters.**
+    Against `B0`, `B2`, and `B3`, RL's relative gains are `24.72%`, `28.69%`, and `1.82%`. These secondary wins do not satisfy P1. The static `B1` policy captures margin under the assumed elasticity prior; adaptive pricing does not recover its `0.009696` mean advantage.
+
+    `price_traces` shows fixed-seed test episodes `89`, `654`, and `773`, each with `91` days for `B1` and `RL`. The episodes were selected by seed before outcomes were inspected and captured during the single sealed pass. `bound_share_by_rho` shows RL attaining `97.36%`, `96.90%`, and `95.74%` of the relaxed ceiling at `rho` `0.7`, `1.0`, and `1.3`; overall shares are `96.76%` for RL and `98.60%` for B1.
+
+    Stress tests preserve the main lesson. At elasticity mean `-1.5`, RL reaches `0.5450` versus B1 `0.5649` and B3 `0.5356`: `-3.52%` versus B1 and `+1.75%` versus B3. At mean `-3.5`, RL reaches `0.4817` versus B1 `0.4837` and B3 `0.4753`: `-0.40%` and `+1.34%`. Stress has no gate and cannot overturn P1.
+
+    | Comparison on sealed test | Result |
+    |---|---:|
+    | RL versus locked B1 | **-1.86%; P1 fail** |
+    | RL versus B0 / B2 / B3 | +24.72% / +28.69% / +1.82% |
+    | Executable-policy violations | **0; P2 pass** |
+    | P3 stress and bound analysis | Context only |
+
+    The result supports disciplined comparison more than learned deployment; next, the limits and reusable lessons ([Conclusions →](#sec-conclusions)).
+
+    **In plain terms:** The learner beat three other methods by up to 29%, but still lost to the simple fixed price. It stayed close to the theoretical ceiling and never broke a rule, including when shopper reactions changed.
+  figures: [price_traces, bound_share_by_rho]
+- id: conclusions
+  text_md: |
+    **A negative primary result is still a useful engineering result.**
+    Masked PPO learned a competent, constraint-safe policy and outperformed `B0`, `B2`, and adaptive `B3`. It did not beat tuned static `B1`; the paired interval is entirely negative. Under this simulator, a fixed `1.30×` multiplier captures margin that the learned policy does not recover.
+
+    ```diagram auto-15-dynamic-pricing-rl-4
+    ```
+
+    The reusable assets are the calibrated environment, common-random-number pairing, action masks, fluid ceiling, baseline tournament, and one-read audit trail. Future work should test richer demand mechanisms or different training objectives on development splits, then create a fresh sealed protocol. This consumed test set must not become a tuning loop.
+
+    ## Limits
+
+    - **Simulator results only:** no real prices were changed and no actual revenue was measured.
+    - Elasticity is an assumption anchored to Bijmolt et al. (`2005`), not causal M5 elasticity.
+    - The simulator omits reference-price and substitution effects; shoppers neither remember earlier prices nor switch products.
+    - `UB` is a relaxed known-elasticity ceiling, not an achievable service level.
+
+    Full evidence lives in `reports/metrics.json`, `reports/test_episodes.json`, `reports/sealed_access.json`, and the [standalone report](reports/report.html). Rebuild the presentation without another policy evaluation ([Reproduce →](README.md#reproduce)).
+
+    **In plain terms:** A simple fixed price won this simulation, so we would not deploy the learner. The useful result is a fair testing setup that proves safe behaviour and makes the loss clear instead of hiding it.
+  figures: []
+key_concepts:
+- "**Common random numbers:** Every policy receives the same episode uniform stream, so demand randomness cannot explain paired profit differences."
+- "**Action masking:** Legal price actions are supplied during learning and prediction; P2 measures violations separately rather than hiding them in reward penalties."
+- "**Fluid upper bound:** A known-elasticity linear program provides a relaxed ceiling for context, not an executable comparator."
+- "**Locked comparator:** B1 was selected on validation before PPO training and sealed evaluation; test results cannot redefine the primary opponent."
+- "**Single sealed read:** Frozen hashes and an append-only access log protect 1,000 test and two 500-episode stress sets from repeated tuning."
+- "**Negative result:** RL trails B1 by 1.86% with a negative paired interval; beating weaker baselines does not satisfy P1."
+roadmap:
+- status: shipped
+  title: Calibrate and split M5
+  detail: Pin demand summaries and keep every item within one split.
+- status: shipped
+  title: Train masked pricing policies
+  detail: Compare three seeds on validation and retain only the winner.
+- status: shipped
+  title: Evaluate the frozen protocol
+  detail: Read each sealed set once and compute both verdicts in code.
+- status: shipped
+  title: Publish the negative result
+  detail: Ship traces, figures, report, and honest simulator limits.
+- status: next
+  title: Test richer demand mechanisms
+  detail: Add price memory or substitution before a fresh sealed study.
+figure_captions:
+  calibration_overview: "Distributions for all 600 calibrated M5 series: recent mean daily demand, negative-binomial dispersion, and modal reference price. Median base demand is 7.13 units/day; long tails are retained."
+  profit_vs_baselines: "Mean normalised profit on 1,000 sealed test episodes with per-policy episode-bootstrap 95% intervals. RL reaches 0.5120 and trails locked B1 at 0.5217; UB is a relaxed ceiling."
+  price_traces: "B1 and RL price multipliers over 91 days for fixed-seed test episodes 89, 654, and 773. Episodes were selected before outcomes were inspected and traced during the single sealed pass."
+  bound_share_by_rho: "Ratio of mean policy profit to mean relaxed fluid upper bound by inventory pressure rho. RL reaches 96.76% overall versus 98.60% for B1; UB is not executable."

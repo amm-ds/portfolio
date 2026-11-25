@@ -1,0 +1,177 @@
+{
+  "comparator": "B1",
+  "seed": 42,
+  "train": {
+    "b1_grid": [
+      {
+        "action": 0,
+        "mean_normalised_profit": 0.14099919102520012
+      },
+      {
+        "action": 1,
+        "mean_normalised_profit": 0.22413478778065218
+      },
+      {
+        "action": 2,
+        "mean_normalised_profit": 0.3198273351717599
+      },
+      {
+        "action": 3,
+        "mean_normalised_profit": 0.41081146930748685
+      },
+      {
+        "action": 4,
+        "mean_normalised_profit": 0.4736917931725991
+      },
+      {
+        "action": 5,
+        "mean_normalised_profit": 0.5073859685802196
+      },
+      {
+        "action": 6,
+        "mean_normalised_profit": 0.5237723604451462
+      }
+    ],
+    "b2_grid": [
+      {
+        "ahead_pct": 5.0,
+        "behind_pct": 5.0,
+        "mean_normalised_profit": 0.3672696721903192
+      },
+      {
+        "ahead_pct": 10.0,
+        "behind_pct": 5.0,
+        "mean_normalised_profit": 0.360626054586425
+      },
+      {
+        "ahead_pct": 15.0,
+        "behind_pct": 5.0,
+        "mean_normalised_profit": 0.35451276234955614
+      },
+      {
+        "ahead_pct": 20.0,
+        "behind_pct": 5.0,
+        "mean_normalised_profit": 0.34606500912600285
+      },
+      {
+        "ahead_pct": 5.0,
+        "behind_pct": 10.0,
+        "mean_normalised_profit": 0.3782865757703109
+      },
+      {
+        "ahead_pct": 10.0,
+        "behind_pct": 10.0,
+        "mean_normalised_profit": 0.37170151290066655
+      },
+      {
+        "ahead_pct": 15.0,
+        "behind_pct": 10.0,
+        "mean_normalised_profit": 0.36495366617648584
+      },
+      {
+        "ahead_pct": 20.0,
+        "behind_pct": 10.0,
+        "mean_normalised_profit": 0.35638552570292903
+      },
+      {
+        "ahead_pct": 5.0,
+        "behind_pct": 15.0,
+        "mean_normalised_profit": 0.3891432101455255
+      },
+      {
+        "ahead_pct": 10.0,
+        "behind_pct": 15.0,
+        "mean_normalised_profit": 0.3826480501213846
+      },
+      {
+        "ahead_pct": 15.0,
+        "behind_pct": 15.0,
+        "mean_normalised_profit": 0.3753187788754673
+      },
+      {
+        "ahead_pct": 20.0,
+        "behind_pct": 15.0,
+        "mean_normalised_profit": 0.36731651013725714
+      },
+      {
+        "ahead_pct": 5.0,
+        "behind_pct": 20.0,
+        "mean_normalised_profit": 0.4022833578587548
+      },
+      {
+        "ahead_pct": 10.0,
+        "behind_pct": 20.0,
+        "mean_normalised_profit": 0.3950957796486578
+      },
+      {
+        "ahead_pct": 15.0,
+        "behind_pct": 20.0,
+        "mean_normalised_profit": 0.3866552208190202
+      },
+      {
+        "ahead_pct": 20.0,
+        "behind_pct": 20.0,
+        "mean_normalised_profit": 0.37955229646835337
+      }
+    ],
+    "best_b1": {
+      "action": 6,
+      "mean_normalised_profit": 0.5237723604451462
+    },
+    "best_b2": {
+      "ahead_pct": 5.0,
+      "behind_pct": 20.0,
+      "mean_normalised_profit": 0.4022833578587548
+    },
+    "n_episodes": 2000
+  },
+  "val": {
+    "n_episodes": 300,
+    "policies": {
+      "B0": {
+        "mean_by_rho": {
+          "0.7": 0.5290548484355648,
+          "1.0": 0.3967620138479495,
+          "1.3": 0.3075920771865818
+        },
+        "mean_normalised_profit": 0.4111363131566987,
+        "mean_raw_gross_profit": 632.0354666666667,
+        "violations": 0
+      },
+      "B1": {
+        "mean_by_rho": {
+          "0.7": 0.6375978460168343,
+          "1.0": 0.49739809428738757,
+          "1.3": 0.4324430812743863
+        },
+        "mean_normalised_profit": 0.5224796738595361,
+        "mean_raw_gross_profit": 631.5525700000002,
+        "violations": 0
+      },
+      "B2": {
+        "mean_by_rho": {
+          "0.7": 0.3931609032717796,
+          "1.0": 0.4139594573166623,
+          "1.3": 0.38925507257539754
+        },
+        "mean_normalised_profit": 0.39879181105461314,
+        "mean_raw_gross_profit": 629.2519900000001,
+        "violations": 0
+      },
+      "B3": {
+        "mean_by_rho": {
+          "0.7": 0.6290791319114027,
+          "1.0": 0.4807783849134406,
+          "1.3": 0.39456379645643225
+        },
+        "mean_normalised_profit": 0.5014737710937586,
+        "mean_raw_gross_profit": 656.4989600000001,
+        "violations": 0
+      }
+    }
+  },
+  "wall_clock_s": {
+    "train_tuning": 85.85323500000231,
+    "validation": 35.21393899999384
+  }
+}

@@ -395,6 +395,7 @@ jobs:
           - { name: 11-data-engineering, path: projects/11-data-engineering, cov: "--cov=src" }
           - { name: 12-tabular-ml-lifecycle, path: projects/12-tabular-ml-lifecycle, cov: "--cov=src" }
           - { name: 13-model-serving, path: projects/13-model-serving, cov: "--cov=src" }
+          - { name: 15-dynamic-pricing-rl, path: projects/15-dynamic-pricing-rl, cov: "--cov=src" }
           - { name: showcase-api, path: apps/showcase-api, cov: "--cov=src" }
     name: tests · ${{ matrix.suite.name }}
     steps:

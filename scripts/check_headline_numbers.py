@@ -143,7 +143,21 @@ def _m13() -> list[str]:
     return [f"{p50_ms:.1f}"]
 
 
+def _m15() -> list[str]:
+    m = _load("projects/15-dynamic-pricing-rl/reports/metrics.json")
+    return [
+        _fmt(m["test"]["policies"]["RL"]["mean_normalised_profit"], 4),
+        _fmt(m["primary"]["relative_lift_pct"], 2),
+    ]
+
+
 CLAIMS: list[dict[str, Any]] = [
+    {
+        "project": "15-dynamic-pricing-rl",
+        "label": "sealed RL mean + relative lift versus B1",
+        "values": _m15,
+        "surfaces": ["README.md", "story.yaml"],
+    },
     {
         "project": "01-rag-agent",
         "label": "final_v3 F1 + promoted S3 recall@5",

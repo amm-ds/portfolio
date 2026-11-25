@@ -8,7 +8,8 @@
   cite Makridakis, S. et al. (2022), "M5 accuracy competition: Results,
   findings, and conclusions", International Journal of Forecasting 38(4),
   1346–1364.
-- **Used by:** Project 02 (canonical M5 track, full bottom-level panel)
+- **Used by:** Project 02 (canonical M5 track, full bottom-level panel); Project 15
+  (read-only calibration of the pricing simulator from the pinned 600-series subset)
 - **Size:** 30,490 daily store-item series × 1,969 days (2011-01-29..2016-06-19,
   includes the 28-day competition evaluation window), with calendar, SNAP and
   sell-price exogenous and item/department/category/store/state statics.

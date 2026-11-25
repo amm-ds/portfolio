@@ -1,0 +1,8 @@
+{
+  "projected_hours_for_3_by_3m": 3.2900040499872496,
+  "recommended_steps_per_seed": 3000000,
+  "seed": 0,
+  "steps": 16384,
+  "wall_clock_s": 21.56137054199644,
+  "within_24h": true
+}

@@ -1,0 +1,36 @@
+schema: '2.0'
+stages:
+  figures:
+    cmd: uv run python -m dynamic_pricing.cli figures
+    deps:
+    - path: data/calibration.json
+      hash: md5
+      md5: 047a9716e3bebb541eb7eee8ca979a31
+      size: 169815
+    - path: params.yaml
+      hash: md5
+      md5: 80d69ba7187286f70a19747f8d2d1e47
+      size: 2730
+    - path: reports/metrics.json
+      hash: md5
+      md5: 3403a7603e61b455649fcf8c9febef8b
+      size: 13828
+    - path: reports/test_episodes.json
+      hash: md5
+      md5: 4f07258fb4699e2690584fea63c4fec3
+      size: 1297936
+    - path: src/dynamic_pricing
+      hash: md5
+      md5: 7fdeeb037808db11c4716f910a054f06.dir
+      size: 147250
+      nfiles: 25
+    outs:
+    - path: reports/figures
+      hash: md5
+      md5: 9a5c7e40a80ead876890be57ebb836c5.dir
+      size: 147184
+      nfiles: 8
+    - path: reports/report.html
+      hash: md5
+      md5: 9ee759c369a05ca26be227df03270da5
+      size: 77116

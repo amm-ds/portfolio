@@ -12,7 +12,7 @@ const ROLES = [
     dates: "sep 2026 — now",
     title: "Lead ML/AI engineer — alejandromerida.dev (independent)",
     points: [
-      "Independent ML/AI engineering practice: this site is the showroom (two production-grade app templates, 13 reproducible experiments), every claim traced to a committed artifact.",
+      "Independent ML/AI engineering practice: this site is the showroom (two production-grade app templates, 14 reproducible experiments), every claim traced to a committed artifact.",
       "End-to-end delivery across the stack: agentic systems, page-level document AI, forecasting, optimization and model serving, deployed and measured.",
       "Engagements run discovery-first with fixed budgets, named baselines and stated limits.",
     ],
@@ -175,7 +175,7 @@ export function About() {
         AI use, disclosed
       </h2>
       <p className="section-intro">
-        This site and its thirteen case studies were built with AI coding agents under
+        This site and its fourteen case studies were built with AI coding agents under
         human direction — the workflow behind the work, stated plainly rather than
         polished over.
       </p>

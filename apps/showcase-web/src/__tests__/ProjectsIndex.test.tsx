@@ -636,8 +636,8 @@ describe("ProjectsIndex", () => {
       screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
     ).toEqual(["apps", "experiments", "live demos"]);
     expect(screen.getByRole("heading", { level: 3, name: "Machine learning" })).toBeInTheDocument();
-    // all thirteen snapshot projects render as cards
-    await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(13));
+    // all fourteen snapshot projects render as cards
+    await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(14));
     // Retry re-fetches (the failing mock is called again)
     const callsBefore = (global.fetch as ReturnType<typeof vi.fn>).mock.calls.length;
     screen.getByRole("button", { name: "Retry" }).click();
@@ -662,7 +662,7 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
 
-    await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(13));
+    await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(14));
     expect(screen.getByText(/live project index is unreachable/i)).toBeInTheDocument();
     expect(screen.getByText(/no demos published yet/i)).toBeInTheDocument();
     expect(screen.queryByText(/live demo registry is unreachable/i)).toBeNull();

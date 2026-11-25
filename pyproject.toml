@@ -103,6 +103,7 @@ root_packages = [
     "data_engineering",
     "tabular_ml_lifecycle",
     "model_serving",
+    "dynamic_pricing",
     "showcase_api",
 ]
 
@@ -123,6 +124,7 @@ modules = [
     "data_engineering",
     "tabular_ml_lifecycle",
     "model_serving",
+    "dynamic_pricing",
 ]
 # Documented exception — 09's evaluation corpus is the committed Wikipedia
 # slice built by 01 (README: "read-only Wikipedia slice from 01"); it reads
@@ -151,6 +153,7 @@ forbidden_modules = [
     "data_engineering",
     "tabular_ml_lifecycle",
     "model_serving",
+    "dynamic_pricing",
     "showcase_api",
 ]
 
@@ -179,11 +182,20 @@ module = [
     "data_engineering.*",
     "tabular_ml_lifecycle.*",
     "model_serving.*",
+    "dynamic_pricing.*",
 ]
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["plotly.*", "sklearn.*", "joblib.*", "pandas.*", "pyarrow.*"]
+module = [
+    "plotly.*",
+    "sklearn.*",
+    "joblib.*",
+    "pandas.*",
+    "pyarrow.*",
+    "sb3_contrib.*",
+    "stable_baselines3.*",
+]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

@@ -1,0 +1,65 @@
+stages:
+  calibrate:
+    cmd: uv run python -m dynamic_pricing.cli calibrate
+    deps:
+      - src/dynamic_pricing
+      - params.yaml
+      - ../02-demand-forecasting/data_m5/subset_Y.parquet
+      - ../02-demand-forecasting/data_m5/subset_X.parquet
+      - ../02-demand-forecasting/data_m5/subset_S.parquet
+    outs:
+      - data/calibration.json:
+          cache: false
+      - data/splits.json:
+          cache: false
+  baselines:
+    cmd: uv run python -m dynamic_pricing.cli tune-baselines
+    deps:
+      - src/dynamic_pricing
+      - params.yaml
+      - data/calibration.json
+      - data/splits.json
+    outs:
+      - reports/baselines_val.json:
+          cache: false
+  train:
+    cmd: uv run python -m dynamic_pricing.cli train
+    deps:
+      - src/dynamic_pricing
+      - params.yaml
+      - data/calibration.json
+      - data/splits.json
+    outs:
+      - reports/models
+      - reports/train_curves.json:
+          cache: false
+      - reports/ppo_val.json:
+          cache: false
+  seal_read:
+    cmd: uv run python -m dynamic_pricing.cli seal-read
+    deps:
+      - src/dynamic_pricing
+      - params.yaml
+      - data/calibration.json
+      - data/splits.json
+      - reports/models
+    outs:
+      - reports/metrics.json:
+          cache: false
+      - reports/test_episodes.json:
+          cache: false
+      - reports/sealed_access.json:
+          cache: false
+  figures:
+    cmd: uv run python -m dynamic_pricing.cli figures
+    deps:
+      - src/dynamic_pricing
+      - params.yaml
+      - reports/metrics.json
+      - reports/test_episodes.json
+      - data/calibration.json
+    outs:
+      - reports/figures:
+          cache: false
+      - reports/report.html:
+          cache: false
