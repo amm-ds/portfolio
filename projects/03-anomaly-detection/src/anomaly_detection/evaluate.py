@@ -222,76 +222,123 @@ def pr_figure(
 
 
 def telemetry_figure(config: AnomalyConfig, scores: np.ndarray) -> go.Figure:
-    """Test-window telemetry with the best model's flags marked.
+    """Test-window telemetry with the best model's flags marked per signal panel.
 
-    Ground-truth anomalies sit on a strip below the signal traces so the
-    detector's flags can be eyeballed against them.
+    Each signal gets its own y-axis scale so low-magnitude channels are never
+    flattened by latency spikes. Ground-truth anomalies and champion flags are
+    overlaid on every signal panel.
     """
     df = load_features(config)
     _, test = split_train_test(df, config.train_frac)
     ts = test["ts"].to_numpy()
     flags = predict_at_contamination(scores, config.contamination)
     y_true = test["is_anomaly"].to_numpy().astype(int)
-
-    fig = go.Figure()
-    for sig in SIGNALS:
-        fig.add_scatter(x=ts, y=test[sig].to_numpy(), mode="lines", name=sig)
     flagged = flags == 1
-    fig.add_scatter(
-        x=ts[flagged],
-        y=test["cpu"].to_numpy()[flagged],
-        mode="markers",
-        name="flagged (best model)",
-        marker={"color": "#f472b6", "size": 7, "symbol": "x"},
-    )
     truth = y_true == 1
-    fig.add_scatter(
-        x=ts[truth],
-        y=np.full(int(truth.sum()), -8.0),
-        mode="markers",
-        name="ground truth anomaly",
-        marker={"color": "#fbbf24", "size": 6},
+    sig_colors = ("#2dd4bf", "#38bdf8", "#a78bfa")
+
+    fig = make_subplots(
+        rows=len(SIGNALS),
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.07,
+        subplot_titles=[f"{sig} (own scale)" for sig in SIGNALS],
     )
-    fig.update_layout(
-        title="Champion flags on the test window",
-        xaxis_title="time",
-        yaxis_title="value",
+    for row_idx, sig in enumerate(SIGNALS, start=1):
+        vals = test[sig].to_numpy()
+        fig.add_scatter(
+            x=ts,
+            y=vals,
+            mode="lines",
+            name=sig,
+            line={"color": sig_colors[(row_idx - 1) % len(sig_colors)], "width": 1.6},
+            row=row_idx,
+            col=1,
+        )
+        fig.add_scatter(
+            x=ts[flagged],
+            y=vals[flagged],
+            mode="markers",
+            name="flagged (best model)",
+            legendgroup="flagged",
+            showlegend=row_idx == 1,
+            marker={"color": "#f472b6", "size": 7, "symbol": "x"},
+            row=row_idx,
+            col=1,
+        )
+        fig.add_scatter(
+            x=ts[truth],
+            y=vals[truth],
+            mode="markers",
+            name="ground truth anomaly",
+            legendgroup="truth",
+            showlegend=row_idx == 1,
+            marker={"color": "#fbbf24", "size": 5, "symbol": "circle-open", "line": {"width": 1.5}},
+            row=row_idx,
+            col=1,
+        )
+        fig.update_yaxes(title_text=sig, row=row_idx, col=1)
+    fig.update_xaxes(title_text="time", row=len(SIGNALS), col=1)
+    fig.update_layout(title="Champion flags on the test window (independent channel scales)")
+    add_takeaway(
+        fig,
+        "test window at the fixed 2% alert budget — each channel on its own scale; "
+        "pink crosses = champion flags, amber rings = ground truth",
     )
-    add_takeaway(fig, "test window at the fixed 2% alert budget — flags vs the ground-truth strip")
-    return apply_theme(fig, height=620)
+    return apply_theme(fig, height=760)
 
 
 def eda_signals_overview(raw: pl.DataFrame, max_rows: int = 2_880) -> go.Figure:
-    """Raw telemetry over an initial window with injected anomalies marked.
+    """Raw telemetry over an initial window with injected anomalies marked per channel.
 
-    Two days (2 880 minutes) of the prepared stream: the daily CPU/memory
-    seasonality is visible, and latency spikes align with the injected
-    anomalies (pink markers).
+    Two days (2 880 minutes) of the prepared stream plotted as stacked small
+    multiples so CPU, memory, and latency each use their own y-axis scale.
     """
     window = raw.head(max_rows)
     ts = window["ts"].to_numpy()
-    fig = go.Figure()
-    for sig in SIGNALS:
-        fig.add_scatter(x=ts, y=window[sig].to_numpy(), mode="lines", name=sig)
     anom = window["is_anomaly"].to_numpy()
-    fig.add_scatter(
-        x=ts[anom],
-        y=window["cpu"].to_numpy()[anom],
-        mode="markers",
-        name="injected anomaly",
-        marker={"color": "#f472b6", "size": 7, "symbol": "x"},
+    sig_colors = ("#2dd4bf", "#38bdf8", "#a78bfa")
+
+    fig = make_subplots(
+        rows=len(SIGNALS),
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.07,
+        subplot_titles=[f"{sig} (own scale)" for sig in SIGNALS],
     )
-    fig.update_layout(
-        title="Raw telemetry — first 48 hours",
-        xaxis_title="time",
-        yaxis_title="value",
-    )
+    for row_idx, sig in enumerate(SIGNALS, start=1):
+        vals = window[sig].to_numpy()
+        fig.add_scatter(
+            x=ts,
+            y=vals,
+            mode="lines",
+            name=sig,
+            line={"color": sig_colors[(row_idx - 1) % len(sig_colors)], "width": 1.6},
+            row=row_idx,
+            col=1,
+        )
+        fig.update_yaxes(title_text=sig, row=row_idx, col=1)
+    for row_idx, sig in enumerate(SIGNALS, start=1):
+        vals = window[sig].to_numpy()
+        fig.add_scatter(
+            x=ts[anom],
+            y=vals[anom],
+            mode="markers",
+            name="injected anomaly",
+            legendgroup="injected",
+            showlegend=row_idx == 1,
+            marker={"color": "#f472b6", "size": 7, "symbol": "x"},
+            row=row_idx,
+            col=1,
+        )
+    fig.update_xaxes(title_text="time", row=len(SIGNALS), col=1)
+    fig.update_layout(title="Raw telemetry — first 48 hours (independent channel scales)")
     add_takeaway(
         fig,
-        f"CPU, memory and latency, first {window.height:,} minutes — "
+        f"CPU, memory and latency on separate scales, first {window.height:,} minutes — "
         "pink crosses mark injected anomalies",
     )
-    return apply_theme(fig, height=620)
+    return apply_theme(fig, height=760)
 
 
 def threshold_sweep_figure(

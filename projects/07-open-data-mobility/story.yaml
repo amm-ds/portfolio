@@ -1,501 +1,469 @@
 project_id: 07-open-data-mobility
-short_version: >-
-  Next-hour NYC taxi demand by zone, built on 41.2M real 2024 yellow-taxi
-  trips and public weather: on a strict Oct–Dec test holdout the served
-  GBM cuts error 28.3% vs the persistence floor (4.68 vs 6.52 MAE); its
-  90% band reached 91% coverage (no-borough zones excepted).
+short_version: 'Next-hour NYC taxi demand by zone, built on 41.2M real 2024 yellow-taxi trips and public weather: on a strict
+  Oct–Dec test holdout the served GBM cuts error 28.3% vs the persistence floor (4.68 vs 6.52 MAE); its 90% band reached 91%
+  coverage (no-borough zones excepted).'
 figure_captions:
-  hour_borough_heatmap: >-
-    Full-year mean pickups by hour and borough. Manhattan peaks at 103.7
-    pickups/zone-hour at 18:00; the Bronx tops out at 0.73.
-  zone_hour_heatmap: >-
-    Demand for the 30 zones with the highest weekly volume in the week of
-    2024-10-07. Rows are zones, columns run Monday through Sunday, and color
-    shows pickups/hour. Midtown's weekday evening peak contrasts with flatter
-    airport demand.
-  zone_demand_map: >-
-    Full-year mean pickups for the 263 TLC zones with official boundaries.
-    Demand concentrates in Manhattan and at JFK/EWR; the busiest zone averages 213.9 pickups/hour.
-  actual_vs_pred_top5: >-
-    Fourteen days of actual, served-GBM and TemporalNet demand in the five busiest
-    zones. City-wide served `gbm_tuned` MAE is 4.676 versus 6.517 for same hour yesterday.
-  borough_mae: >-
-    Test MAE by borough and run, with same-hour-yesterday lag-24 persistence in grey.
-    Manhattan's volume drives absolute error; persistence still edges the default GBM in the Bronx.
-  gbm_vs_nn: >-
-    Q4 run ladder with same-hour-yesterday lag-24 in grey. Served `gbm_tuned` removes
-    28.3% of MAE (MASE 0.763); xGB (XGBoost) is best on test at −31.2%. MAPE is secondary
-    because zero and low-demand zone-hours make percentage errors unstable.
-  p90_band: >-
-    City-wide actual, served-GBM mean and p90 upper band over 14 test days.
-    The band covers 90.8% of zone-hours against a 90% target.
-  conformal_coverage: >-
-    Left: second-half coverage by calibration-half demand tercile. Right: the
-    overall band-height cost. Overall coverage moves from 90.7% to 91.5%, while
-    mean band height rises from 7.032 to 7.124 pickups (+0.091). Sparse, mid,
-    and dense are demand groups, not borough assignments.
-  weather_elasticity: >-
-    Raw rain-versus-dry pickup ratios on the test window. N/A, Queens, and Staten
-    Island sit at 0.89–0.93×, Manhattan at 0.97×, and EWR at 1.08×; descriptive,
-    not causal.
+  hour_borough_heatmap: Full-year mean pickups by hour and borough. Manhattan peaks at 103.7 pickups/zone-hour at 18:00; the
+    Bronx tops out at 0.73.
+  zone_hour_heatmap: Demand for the 30 zones with the highest weekly volume in the week of 2024-10-07. Rows are zones, columns
+    run Monday through Sunday, and color shows pickups/hour. Midtown's weekday evening peak contrasts with flatter airport
+    demand.
+  zone_demand_map: Full-year mean pickups for the 263 TLC zones with official boundaries. Demand concentrates in Manhattan
+    and at JFK/EWR; the busiest zone averages 213.9 pickups/hour.
+  actual_vs_pred_top5: Fourteen days of actual, served-GBM and TemporalNet demand in the five busiest zones. City-wide served
+    `gbm_tuned` MAE is 4.676 versus 6.517 for same hour yesterday.
+  borough_mae: Test MAE by borough and run, with same-hour-yesterday lag-24 persistence in grey. Manhattan's volume drives
+    absolute error; persistence still edges the default GBM in the Bronx.
+  gbm_vs_nn: Q4 run ladder with same-hour-yesterday lag-24 in grey. Served `gbm_tuned` removes 28.3% of MAE (MASE 0.763);
+    xGB (XGBoost) is best on test at −31.2%. MAPE is secondary because zero and low-demand zone-hours make percentage errors
+    unstable.
+  p90_band: City-wide actual, served-GBM mean and p90 upper band over 14 test days. The band covers 90.8% of zone-hours against
+    a 90% target.
+  conformal_coverage: 'Left: second-half coverage by calibration-half demand tercile. Right: the overall band-height cost.
+    Overall coverage moves from 90.7% to 91.5%, while mean band height rises from 7.032 to 7.124 pickups (+0.091). Sparse,
+    mid, and dense are demand groups, not borough assignments.'
+  weather_elasticity: Raw rain-versus-dry pickup ratios on the test window. N/A, Queens, and Staten Island sit at 0.89–0.93×,
+    Manhattan at 0.97×, and EWR at 1.08×; descriptive, not causal.
 key_concepts:
-  - "**Embargoed holdout:** a time gap separates model tuning from the test months, which are scored once."
-  - "**Serving rule over leaderboard:** the validation winner serves even when another candidate tests better. Choosing on test data would leak information into model selection."
-  - "**Coverage-calibrated band:** the p90 upper forecast is judged by how often it contains actual outcomes. The no-borough bucket with low coverage is flagged separately from demand-sparse strata."
-  - "**Retrain, don't transfer:** yellow-trained weights lose to the simple yesterday rule on green taxis. The recipe must be refit on two months of green-taxi history."
-  - "**Drift observatory:** a monthly check scores the saved model on new data within a ±15% tolerance. A breach opens the response runbook."
+- '**Embargoed holdout:** a time gap separates model tuning from the test months, which are scored once.'
+- '**Serving rule over leaderboard:** the validation winner serves even when another candidate tests better. Choosing on test
+  data would leak information into model selection.'
+- '**Coverage-calibrated band:** the p90 upper forecast is judged by how often it contains actual outcomes. The no-borough
+  bucket with low coverage is flagged separately from demand-sparse strata.'
+- '**Retrain, don''t transfer:** yellow-trained weights lose to the simple yesterday rule on green taxis. The recipe must
+  be refit on two months of green-taxi history.'
+- '**Drift observatory:** a monthly check scores the saved model on new data within a ±15% tolerance. A breach opens the response
+  runbook.'
 sections:
-  - id: background
-    text_md: |
-      **Next-hour taxi demand, zone by zone, on one laptop.** A zone-hour is
-      one zone during one hour. The pipeline diagram joins 41.2M real 2024
-      yellow-taxi trips and public Central Park weather into one table.
+- id: background
+  text_md: |
+    **Next-hour taxi demand, zone by zone, on one laptop.**
+    The pipeline joins `41.2M` real `2024` NYC yellow-taxi trips with public Central Park weather into one zone-hour table. On a strict `Oct–Dec` holdout (`584,855` zone-hours), the served `GBM` misses `4.68` pickups per zone-hour — `28%` below repeating yesterday's hour.
 
-      The model box holds a gradient-boosting model (GBM) that combines
-      small decision trees. Served means chosen for use. On a strict
-      October–December holdout, meaning data reserved for final checks, it
-      averages 4.68 missed pickups per zone-hour across 584,855 cases, 28%
-      below the same-hour-yesterday rule repeating the previous day's
-      value.
+    ```diagram 07-mobility-pipeline
+    ```
 
-      The model box also reports the p90 band, an upper forecast meant to
-      exceed 90% of outcomes. Coverage, the share contained, is 90.8%.
-      No-borough zones under-cover at 84.7%.
+    Follow the pipeline in three steps:
 
-      ```diagram 07-mobility-pipeline
-      ```
+    - **Join & grid:** Align `41.2M` trips and hourly weather onto a zero-filled zone-hour grid.
+    - **Forecast & band:** Train gradient-boosted trees (`GBM`) for next-hour demand plus a `p90` upper staffing band.
+    - **Outcome:** Error drops `28%` vs yesterday (`4.68` `MAE`), with `90.8%` `p90` coverage (`84.7%` in no-borough zones).
 
-      Next, the success bars and time rules
-      ([Objectives →](#sec-objectives)).
+    Next, the success bars and time rules ([Objectives →](#sec-objectives)).
 
-      **In plain terms:** The diagram's model misses 1.8 fewer pickups per
-      zone-hour than yesterday. Its 90% band works except in the no-borough bucket.
-    figures: []
-    metrics_keys: []
-  - id: objectives
-    text_md: |
-      **The goal is a next-hour forecast for all 265 zones, with an upper
-      band that a dispatcher can use for staffing, on one laptop.** A
-      calibrated band has observed coverage close to its target. Four bars
-      define success. The evaluation contract diagram shows the accuracy and
-      coverage gates. The last two bullets add practical limits:
+    **In plain terms:** Forecasting next-hour taxi demand from 41.2 million trips and weather cuts average errors by 28% (1.8 fewer missed pickups per zone-hour) compared with repeating yesterday, and its 90% safety band holds across busy zones.
+  figures: []
+  metrics_keys: []
+- id: objectives
+  text_md: |
+    **The goal is a next-hour forecast for all 265 zones, with an upper
+    band that a dispatcher can use for staffing, on one laptop.** A
+    calibrated band has observed coverage close to its target. Four bars
+    define success. The evaluation contract diagram shows the accuracy and
+    coverage gates. The last two bullets add practical limits:
 
-      - Cut error by at least 20% against the same-hour-yesterday baseline.
-        A baseline is a simple reference method that the model must beat.
-      - Reach 90% band coverage within about 2 percentage points of target.
-      - Keep the full pipeline under 8 GB of RAM. RAM is the computer's
-        working memory, and GB means gigabytes. This limit rules out cloud
-        instances, meaning rented remote computers, and keeps the study
-        replayable on ordinary hardware.
-      - Replay the full study with one command.
+    - Cut error by at least `20%` against the same-hour-yesterday baseline.
+      A baseline is a simple reference method that the model must beat.
+    - Reach `90%` band coverage within about 2 percentage points of target.
+    - Keep the full pipeline under `8 GB` of RAM. RAM is the computer's
+      working memory, and GB means gigabytes. This limit rules out cloud
+      instances, meaning rented remote computers, and keeps the study
+      replayable on ordinary hardware.
+    - Replay the full study with one command.
 
-      The diagram also fixes the time rules. On the left, training uses
-      January through September 2024 features. All tuning happens in an
-      embargoed, expanding validation window. Validation estimates model
-      quality before the final test. Embargoed means a time gap separates
-      tuning from the test data. Expanding means the training window grows
-      as validation moves forward.
+    The diagram also fixes the time rules. On the left, training uses
+    January through September 2024 features. All tuning happens in an
+    embargoed, expanding validation window. Validation estimates model
+    quality before the final test. Embargoed means a time gap separates
+    tuning from the test data. Expanding means the training window grows
+    as validation moves forward.
 
-      In the middle, October through December supplies 584,855 zone-hours
-      and is scored once. Only the frozen winner crosses from validation to
-      this test side. On the right, the judge applies four error readings
-      and the band-coverage check. Nothing learned on test data flows back
-      into selection. The p90 judge checks calibration, not causation.
-      Weather remains an association-only side question.
+    In the middle, October through December supplies `584,855` zone-hours
+    and is scored once. Only the frozen winner crosses from validation to
+    this test side. On the right, the judge applies four error readings
+    and the band-coverage check. Nothing learned on test data flows back
+    into selection. The `p90` judge checks calibration, not causation.
+    Weather remains an association-only side question.
 
-      ```diagram auto-07-open-data-mobility-1
-      ```
+    ```diagram auto-07-open-data-mobility-1
+    ```
 
-      The bars set the contract; next, the two public feeds behind the
-      panel ([Data →](#sec-data)).
+    The bars set the contract; next, the two public feeds behind the
+    panel ([Data →](#sec-data)).
 
-      **In plain terms:** The bars are a fifth less error than the
-      dispatcher's rule, an honest 90% band, laptop-class memory, and a
-      one-command replay.
-    figures: []
-    metrics_keys: [naive_lag24, gbm_mean, temporal_net]
-  - id: data
-    text_md: |
-      The lineage diagram starts with two public feeds. **NYC TLC yellow
-      taxis** supplies 12 monthly 2024 Parquet files with 41.2M trips
-      ([dataset card](https://amm-ds.github.io/portfolio/data-registry/nyc-tlc/)).
-      TLC is the New York City Taxi and Limousine Commission. Parquet is a
-      file format for large tables. Checksum pinning verifies each download
-      against a fixed digital fingerprint. **NOAA GHCN-Daily** supplies
-      public-domain Central Park rain, snow, and temperature
-      ([dataset card](https://amm-ds.github.io/portfolio/data-registry/noaa-ghcn/)).
-      This is the National Oceanic and Atmospheric Administration's Global
-      Historical Climatology Network Daily data. Failed weather checks
-      become missing values.
+    **In plain terms:** Beat a dispatcher's simple 'same hour yesterday' rule by at least 20%, build an honest 90% peak-demand safety band, and keep everything runnable on one laptop.
+  figures: []
+  metrics_keys: []
+- id: data
+  text_md: |
+    The lineage diagram starts with two public feeds. **`NYC TLC` yellow
+    taxis** supplies 12 monthly 2024 `Parquet` files with 41.2M trips
+    ([dataset card](https://amm-ds.github.io/portfolio/data-registry/nyc-tlc/)).
+    TLC is the New York City Taxi and Limousine Commission. `Parquet` is a
+    file format for large tables. Checksum pinning verifies each download
+    against a fixed digital fingerprint. **NOAA GHCN-Daily** supplies
+    public-domain Central Park rain, snow, and temperature
+    ([dataset card](https://amm-ds.github.io/portfolio/data-registry/noaa-ghcn/)).
+    This is the National Oceanic and Atmospheric Administration's Global
+    Historical Climatology Network Daily data. Failed weather checks
+    become missing values.
 
-      Follow both feeds into the row-check box. Taxi checks cover keys,
-      zones, and timestamps. Weather checks use station quality flags. The
-      next box joins trips to the official zone lookup, a table that maps
-      location identifiers to zones. It keeps 263 mapped zones plus two
-      separate buckets, N/A and Unknown, for trips with no matching zone.
-      Assigning those trips to a nearest zone would invent demand.
+    Follow both feeds into the row-check box. Taxi checks cover keys,
+    zones, and timestamps. Weather checks use station quality flags. The
+    next box joins trips to the official zone lookup, a table that maps
+    location identifiers to zones. It keeps 263 mapped zones plus two
+    separate buckets, N/A and Unknown, for trips with no matching zone.
+    Assigning those trips to a nearest zone would invent demand.
 
-      The next box reindexes the joined data into a zero-filled grid.
-      Reindexing creates a row for every zone and hour, including hours with
-      no pickups. The final box stores a partitioned panel, which splits the
-      table into reusable files. Later runs use pinned local copies, so the
-      roughly 1.5 GB download happens once.
+    The next box reindexes the joined data into a zero-filled grid.
+    Reindexing creates a row for every zone and hour, including hours with
+    no pickups. The final box stores a partitioned panel, which splits the
+    table into reusable files. Later runs use pinned local copies, so the
+    roughly `1.5 GB` download happens once.
 
-      The input boxes also set the scope: one vehicle class, one city, and
-      one year.
+    The input boxes also set the scope: one vehicle class, one city, and
+    one year.
 
-      ```diagram auto-07-open-data-mobility-2
-      ```
+    ```diagram auto-07-open-data-mobility-2
+    ```
 
-      The panel sets the evidence base; next, the two figures that show
-      hotspots and weekly rhythm ([EDA →](#sec-eda)).
+    The panel sets the evidence base; next, the two figures that show
+    hotspots and weekly rhythm ([EDA →](#sec-eda)).
 
-      **In plain terms:** The diagram joins 41.2M taxi trips and Central
-      Park weather into one reusable zone-hour panel. Nothing downloads
-      twice.
-    figures: []
-    metrics_keys: []
-  - id: eda
-    text_md: |
-      Both figures come from a grid of all 265 × 8,784 = 2,327,760
-      zone-hours. Empty cells contain explicit zeros. This makes a lag
-      feature, meaning an earlier value used as a model input, point to the
-      true previous hour. Without the grid, a lag could skip an empty hour
-      and use the wrong time.
+    **In plain terms:** We combine 41.2 million NYC yellow-taxi trips with hourly Central Park weather into one clean zone-by-hour table that never needs re-downloading.
+  figures: []
+  metrics_keys: []
+- id: eda
+  text_md: |
+    Both figures come from a grid of all `265 ×` `8,784` = `2,327,760`
+    zone-hours. Empty cells contain explicit zeros. This makes a lag
+    feature, meaning an earlier value used as a model input, point to the
+    true previous hour. Without the grid, a lag could skip an empty hour
+    and use the wrong time.
 
-      In the zone demand map, look at where the bright colors concentrate.
-      Manhattan and the two airports stand out, while most of the 263 mapped
-      zones stay dark. The busiest zone averages 213.9 pickups per hour.
-      This shows why one city-wide error number cannot describe every zone.
+    In the zone demand map, look at where the bright colors concentrate.
+    Manhattan and the two airports stand out, while most of the 263 mapped
+    zones stay dark. The busiest zone averages 213.9 pickups per hour.
+    This shows why one city-wide error number cannot describe every zone.
 
-      In the zone-hour heatmap, color shows demand, each row is one zone, and
-      columns are hours of the week. Follow Midtown across the week. Its
-      weekday evenings burn bright, while the airport bands stay comparatively
-      flat. That visible weekly rhythm is what the calendar features must capture.
+    In the zone-hour heatmap, color shows demand, each row is one zone, and
+    columns are hours of the week. Follow Midtown across the week. Its
+    weekday evenings burn bright, while the airport bands stay comparatively
+    flat. That visible weekly rhythm is what the calendar features must capture.
 
-      The figures frame the candidate comparison; next, the run ladder
-      and the serving rule ([Training →](#sec-training)).
+    The figures frame the candidate comparison; next, the run ladder
+    and the serving rule ([Training →](#sec-training)).
 
-      **In plain terms:** The map shows a few demand hotspots, and the
-      heatmap shows a strong weekly rhythm. The zero-filled grid keeps every
-      time-based input aligned to the correct hour.
-    figures: [zone_hour_heatmap, zone_demand_map]
-    metrics_keys: []
-  - id: training
-    text_md: |
-      The run-ladder figure compares every candidate on the same holdout.
-      MAE means mean absolute error, measured here in missed pickups. Read
-      the grey same-hour-yesterday bar first, then compare each model bar.
-      Lower is better. The served `gbm_tuned` bar reaches 4.676 MAE, 28.3%
-      below the persistence baseline — the headline comparison is against
-      persistence only. Its MASE is 0.763. MASE is an error ratio where
-      1.0 means parity with the baseline. The 90% band covers 90.8% of
-      holdout zone-hours overall; the no-borough bucket (84.7%) and Staten
-      Island (98.5%) are the coverage outliers.
+    **In plain terms:** A few Manhattan hotspots drive most rides and demand follows a strong weekly rhythm; filling empty hours with zeros keeps every time lag aligned.
+  figures: [zone_hour_heatmap, zone_demand_map]
+  metrics_keys: []
+- id: training
+  text_md: |
+    The run-ladder figure compares every candidate on the same holdout.
+    `MAE` means mean absolute error, measured here in missed pickups. Read
+    the grey same-hour-yesterday bar first, then compare each model bar.
+    Lower is better. The served `gbm_tuned` bar reaches `4.676` `MAE`, `28.3%`
+    below the persistence baseline — the headline comparison is against
+    persistence only. Its `MASE` is 0.763. `MASE` is an error ratio where
+    1.0 means parity with the baseline. The `90%` band covers `90.8%` of
+    holdout zone-hours overall; the no-borough bucket (`84.7%`) and Staten
+    Island (`98.5%`) are the coverage outliers.
 
-      The ladder also shows two challengers with lower test error. This does
-      not change the serving choice. Selection uses the best embargoed
-      validation score among candidates that beat the baseline. The xGB
-      challenger scores 3.182, LightGBM scores 3.173, and the incumbent
-      scores 3.165. xGB is XGBoost, and LightGBM is another
-      gradient-boosting implementation. Tuning means searching over model
-      settings. The default and tuned GBMs sit −0.2% apart, flat within
-      noise.
+    The ladder also shows two challengers with lower test error. This does
+    not change the serving choice. Selection uses the best embargoed
+    validation score among candidates that beat the baseline. The xGB
+    challenger scores `3.182`, `LightGBM` scores `3.173`, and the incumbent
+    scores 3.165. xGB is `XGBoost`, and `LightGBM` is another
+    gradient-boosting implementation. Tuning means searching over model
+    settings. The default and tuned GBMs sit `−0.2%` apart, flat within
+    noise.
 
-      On the ladder, xGB has the best test MAE at 4.487 (−31.2%). Picking a
-      model because it wins on test data would cause leakage. Leakage means
-      using information reserved for evaluation to make a modeling choice.
-      The TemporalNet challenger is a neural network, which learns patterns
-      through layered numerical transformations. It trails on MAE at 5.178
-      versus 4.676. It wins only MAPE, or mean absolute percentage error,
-      which measures the average absolute percentage miss. MAPE is secondary:
-      zero and low-demand zone-hours make percentage errors unstable.
+    On the ladder, xGB has the best test `MAE` at `4.487` (`−31.2%`). Picking a
+    model because it wins on test data would cause leakage. Leakage means
+    using information reserved for evaluation to make a modeling choice.
+    The TemporalNet challenger is a neural network, which learns patterns
+    through layered numerical transformations. It trails on `MAE` at `5.178`
+    versus 4.676. It wins only `MAPE`, or mean absolute percentage error,
+    which measures the average absolute percentage miss. `MAPE` is secondary:
+    zero and low-demand zone-hours make percentage errors unstable.
 
-      For uncertainty rather than selection, the post-freeze protocol
-      predeclares two comparisons, xGB versus naive and LightGBM versus naive.
-      It uses 2,000 paired resamples with seed 42, circular seven-day blocks,
-      and whole-zone clusters. Each interval describes the challenger-minus-naive
-      MAE delta in pickups/hour; negative values favor the challenger. The frozen
-      predictions supply every score, and no interval feeds model selection.
+    For uncertainty rather than selection, the post-freeze protocol
+    predeclares two comparisons, xGB versus naive and `LightGBM` versus naive.
+    It uses `2,000` paired resamples with seed 42, circular seven-day blocks,
+    and whole-zone clusters. Each interval describes the challenger-minus-naive
+    `MAE` delta in pickups/hour; negative values favor the challenger. The frozen
+    predictions supply every score, and no interval feeds model selection.
 
-      **Serving selection: validation ranks candidates, and artifacts gate
-      deployment.** An artifact is a saved model file needed for serving.
-      The code below applies the same rule that selects the served bar in
-      the ladder. The holdout has no vote, and an incomplete challenger
-      cannot serve.
+    **Serving selection: validation ranks candidates, and artifacts gate
+    deployment.** An artifact is a saved model file needed for serving.
+    The code below applies the same rule that selects the served bar in
+    the ladder. The holdout has no vote, and an incomplete challenger
+    cannot serve.
 
-      ```python
-      best: tuple[str, str, str] | None = None
-      best_mae = float("inf")
-      for kind, (run, stem, p90_stem) in _ARMS.items():
-          result = hpo_result(cfg, kind)
-          mean_ok = (cfg.models_dir / f"{stem}.joblib").exists()
-          p90_ok = (cfg.models_dir / f"{p90_stem}.joblib").exists()
-          if result is None or not (mean_ok and p90_ok):
-              continue
-          mae = float(result["best_val_mae"])
-          if mae < best_mae:
-              best_mae = mae
-              best = (run, stem, p90_stem)
-      if best is None:
-          raise FileNotFoundError("no servable arm — run tune + train-baselines first")
-      return best
-      ```
+    ```python
+    best: tuple[str, str, str] | None = None
+    best_mae = float("inf")
+    for kind, (run, stem, p90_stem) in _ARMS.items():
+        result = hpo_result(cfg, kind)
+        mean_ok = (cfg.models_dir / f"{stem}.joblib").exists()
+        p90_ok = (cfg.models_dir / f"{p90_stem}.joblib").exists()
+        if result is None or not (mean_ok and p90_ok):
+            continue
+        mae = float(result["best_val_mae"])
+        if mae < best_mae:
+            best_mae = mae
+            best = (run, stem, p90_stem)
+    if best is None:
+        raise FileNotFoundError("no servable arm — run tune + train-baselines first")
+    return best
+    ```
 
-      Excerpt from [serving.py](https://github.com/amm-ds/portfolio/blob/main/projects/07-open-data-mobility/src/mobility/serving.py).
+    Excerpt from [serving.py](https://github.com/amm-ds/portfolio/blob/main/projects/07-open-data-mobility/src/mobility/serving.py).
 
-      The serving rule is set; next, the figures that turn error into a
-      staffing view ([Evaluation →](#sec-evaluation)).
+    The serving rule is set; next, the figures that turn error into a
+    staffing view ([Evaluation →](#sec-evaluation)).
 
-      **In plain terms:** The ladder supports a tuned booster with 28%
-      less error than the yesterday rule. Validation, not the test
-      leaderboard, decides which model serves.
-    figures: [gbm_vs_nn]
-    metrics_keys: []
-  - id: evaluation
-    text_md: |
-      The actual-versus-predicted figure turns error into a visible staffing
-      gap. Follow one zone's lines across the 14 test days. The served model
-      tracks the actual curve through weekday swings, and the remaining gaps
-      are forecast errors. City-wide, −28.3% means 1.8 fewer missed pickups
-      per zone-hour, against a baseline miss of 6.5.
+    **In plain terms:** A tuned tree model cuts next-hour forecast error by 28% compared with repeating yesterday, chosen strictly on validation data rather than peeking at the test leaderboard.
+  figures: [gbm_vs_nn]
+  metrics_keys: []
+- id: evaluation
+  text_md: |
+    The actual-versus-predicted figure turns error into a visible staffing
+    gap. Follow one zone's lines across the 14 test days. The served model
+    tracks the actual curve through weekday swings, and the remaining gaps
+    are forecast errors. City-wide, `−28.3%` means 1.8 fewer missed pickups
+    per zone-hour, against a baseline miss of 6.5.
 
-      In the borough error figure, compare each colored bar with the grey
-      persistence bar. Persistence is another name for repeating an earlier
-      observed value, here the same hour yesterday. Manhattan's absolute
-      error is largest because its volume is largest. The Bronx is the one
-      place where persistence still edges the default GBM.
+    In the borough error figure, compare each colored bar with the grey
+    persistence bar. Persistence is another name for repeating an earlier
+    observed value, here the same hour yesterday. Manhattan's absolute
+    error is largest because its volume is largest. The Bronx is the one
+    place where persistence still edges the default GBM.
 
-      The conformal coverage figure shows where the upper band needs
-      adjustment. Split conformal uses one data slice to choose an offset
-      and a separate slice to check coverage. Demand terciles are three
-      groups split by demand level. The sparse third is over-covered at
-      94.3%, while mid and dense coverage sit below target at 88.2% and
-      89.6%.
+    The conformal coverage figure shows where the upper band needs
+    adjustment. Split conformal uses one data slice to choose an offset
+    and a separate slice to check coverage. Demand terciles are three
+    groups split by demand level. The sparse third is over-covered at
+    `94.3%`, while mid and dense coverage sit below target at `88.2%` and
+    89.6%.
 
-      Look at the adjusted mid and dense bars next. Offsets of +0.09 and
-      +0.18 pickups/hour, fit on the first test half and judged on the
-      second, lift coverage to 89.9% and 90.3% at the same nominal level.
-      Overall second-half coverage rises from 90.7% to 91.5%, while mean band
-      height above the point forecast rises from 7.032 to 7.124 pickups. That
-      +0.091-pickup width cost accompanies the coverage gain. The separate
-      no-borough bucket remains under 85% at 84.7%, so it stays flagged rather
-      than hidden or conflated with the demand-sparse tercile.
+    Look at the adjusted mid and dense bars next. Offsets of `+0.09` and
+    `+0.18` pickups/hour, fit on the first test half and judged on the
+    second, lift coverage to `89.9%` and `90.3%` at the same nominal level.
+    Overall second-half coverage rises from `90.7%` to `91.5%`, while mean band
+    height above the point forecast rises from `7.032` to `7.124` pickups. That
+    +0.091-pickup width cost accompanies the coverage gain. The separate
+    no-borough bucket remains under `85%` at `84.7%`, so it stays flagged rather
+    than hidden or conflated with the demand-sparse tercile.
 
-      The figures qualify the band; next, the demand scale and the
-      weather ratios behind the limits ([Results →](#sec-results)).
+    The figures qualify the band; next, the demand scale and the
+    weather ratios behind the limits ([Results →](#sec-results)).
 
-      **In plain terms:** The figures support yellow-taxi next-hour
-      planning and staffing from the 90% band. Keep the flagged no-borough
-      zones on manual watch.
-    figures: [actual_vs_pred_top5, borough_mae, conformal_coverage]
-    metrics_keys: [naive_lag24, gbm_mean, temporal_net]
-  - id: results
-    text_md: |
-      The hour-borough heatmap gives the demand scale behind the errors.
-      Rows are boroughs, columns are hours, and color shows pickups per
-      zone-hour. Manhattan peaks at 103.7 at 18:00, while the Bronx tops out
-      at 0.73. The color scale spans two orders of magnitude, so the model
-      must handle very different demand levels.
+    **In plain terms:** The model works well for next-hour staffing across busy taxi zones using its 90% upper safety band, while unmapped no-borough zones still need manual oversight.
+  figures: [actual_vs_pred_top5, borough_mae, conformal_coverage]
+  metrics_keys: []
+- id: results
+  text_md: |
+    The hour-borough heatmap gives the demand scale behind the errors.
+    Rows are boroughs, columns are hours, and color shows pickups per
+    zone-hour. Manhattan peaks at 103.7 at 18:00, while the Bronx tops out
+    at 0.73. The color scale spans two orders of magnitude, so the model
+    must handle very different demand levels.
 
-      In the city-wide band figure, compare actual outcomes with the p90
-      upper line. Coverage is 90.8%, on target on average. The named
-      boroughs range from 88.6% in Brooklyn to 98.5% in Staten Island. The
-      only bucket under 85% is zones without a borough assignment at 84.7%.
-      That visible exception limits where the band can guide decisions.
+    In the city-wide band figure, compare actual outcomes with the `p90`
+    upper line. Coverage is `90.8%`, on target on average. The named
+    boroughs range from `88.6%` in Brooklyn to `98.5%` in Staten Island. The
+    only bucket under `85%` is zones without a borough assignment at 84.7%.
+    That visible exception limits where the band can guide decisions.
 
-      The weather elasticity figure compares wet and dry hours. The plotted
-      value is the ratio of rainy-hour mean pickups to dry-hour mean pickups.
-      N/A, Queens, and Staten Island sit at 0.89–0.93×, Manhattan at 0.97×,
-      and EWR at 1.08×. These ratios have no hour-of-week normalization. They
-      show association, not a causal weather effect.
+    The weather elasticity figure compares wet and dry hours. The plotted
+    value is the ratio of rainy-hour mean pickups to dry-hour mean pickups.
+    N/A, Queens, and Staten Island sit at `0.89`–`0.93`×, Manhattan at `0.97`×,
+    and EWR at `1.08`×. These ratios have no hour-of-week normalization. They
+    show association, not a causal weather effect.
 
-      The figures bound the claims; next, the exact records and protocol
-      ([Conclusions →](#sec-conclusions)).
+    The figures bound the claims; next, the exact records and protocol
+    ([Conclusions →](#sec-conclusions)).
 
-      **In plain terms:** The figures support the band where zones are
-      busy and expose where it falls short. Wet and dry hours have different
-      mean demand in some groups, but the evidence is descriptive only.
-    figures: [hour_borough_heatmap, p90_band, weather_elasticity]
-    metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
-  - id: conclusions
-    text_md: |
-      The conclusion diagram turns the evidence into operating rules. Follow
-      dense zones to the served mean and p90 model. Follow the no-borough
-      bucket to manual watch because band coverage is 84.7%. Follow a new
-      service to retraining on two months of its own history. Every path
-      then enters the monthly drift check with a ±15% tolerance. A drift
-      check compares new scores with the saved model's reference scores. A
-      breach opens a response runbook, which is a documented set of response
-      steps. The exact records below support each path.
+    **In plain terms:** The 90% safety band covers 90.8% of actual demand in busy zones but drops to 84.7% in no-borough zones; rainy and dry hours differ in averages, though that link is descriptive only.
+  figures: [hour_borough_heatmap, p90_band, weather_elasticity]
+  metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
+- id: conclusions
+  text_md: |
+    The conclusion diagram turns the evidence into operating rules. Follow
+    dense zones to the served mean and `p90` model. Follow the no-borough
+    bucket to manual watch because band coverage is 84.7%. Follow a new
+    service to retraining on two months of its own history. Every path
+    then enters the monthly drift check with a ±`15%` tolerance. A drift
+    check compares new scores with the saved model's reference scores. A
+    breach opens a response runbook, which is a documented set of response
+    steps. The exact records below support each path.
 
-      ## Results summary
+    ## Results summary
 
-      The diagram's serve box is the tuned gradient-boosting regressor with
-      a quantile-0.9 p90 twin. On the strict October–December holdout of
-      584,855 zone-hours, `gbm_tuned` reaches 4.676 MAE. That is 28.3% below
-      the same-hour-yesterday baseline. Default and tuned GBMs sit 0.2%
-      apart, flat within noise. The 90% band covers 0.9079 of outcomes
-      city-wide and 84.7% in the flagged no-borough bucket. The pipeline uses
-      streaming Polars scans and peaks at ≈2 GB RAM against an 8 GB budget.
-      Polars is a data-processing library, and streaming processes data in
-      batches rather than loading it all at once.
-      [full evaluation report](https://amm-ds.github.io/portfolio/projects/07-open-data-mobility/)
+    The diagram's serve box is the tuned gradient-boosting regressor with
+    a quantile-0.9 `p90` twin. On the strict October–December holdout of
+    `584,855` zone-hours, `gbm_tuned` reaches `4.676` MAE. That is `28.3%` below
+    the same-hour-yesterday baseline. Default and tuned GBMs sit `0.2%`
+    apart, flat within noise. The `90%` band covers `0.9079` of outcomes
+    city-wide and `84.7%` in the flagged no-borough bucket. The pipeline uses
+    streaming `Polars` scans and peaks at ≈`2 GB` RAM against an `8 GB` budget.
+    `Polars` is a data-processing library, and streaming processes data in
+    batches rather than loading it all at once.
+    [full evaluation report](https://amm-ds.github.io/portfolio/projects/07-open-data-mobility/)
 
-      ## What the experiment taught
+    ## What the experiment taught
 
-      - The serve box follows validation, not the test leaderboard. xGB
-        tested better, but choosing it after seeing test results would leak
-        evaluation information into selection.
-      - The manual-watch path matters. The band has 90.8% coverage
-        city-wide, but the no-borough bucket under-covers at 84.7% and stays
-        flagged. This bucket is not the demand-sparse conformal tercile.
-      - The new-service path is necessary. Yellow-trained weights lose to
-        persistence on green taxis until retrained on two months of green
-        history. Weights are the model's learned numerical parameters.
-      - The drift path covers 2024-11, 2024-12, and the first unseen
-        2025-01 month. All three scored in-window at ±15% tolerance.
-      - Feature checks help explain the served model. Last week's hour
-        matters most: lag_168 (0.80) tops lag_24 (0.64), and weather adds
-        about zero to point accuracy. The exact feature records appear
-        below.
+    - The serve box follows validation, not the test leaderboard. xGB
+      tested better, but choosing it after seeing test results would leak
+      evaluation information into selection.
+    - The manual-watch path matters. The band has `90.8%` coverage
+      city-wide, but the no-borough bucket under-covers at `84.7%` and stays
+      flagged. This bucket is not the demand-sparse conformal tercile.
+    - The new-service path is necessary. Yellow-trained weights lose to
+      persistence on green taxis until retrained on two months of green
+      history. Weights are the model's learned numerical parameters.
+    - The drift path covers 2024-11, 2024-12, and the first unseen
+      2025-01 month. All three scored in-window at ±`15%` tolerance.
+    - Feature checks help explain the served model. Last week's hour
+      matters most: lag_168 (`0.80`) tops lag_24 (`0.64`), and weather adds
+      about zero to point accuracy. The exact feature records appear
+      below.
 
-      ## Exact numbers
+    ## Exact numbers
 
-      RMSE means root-mean-square error and gives more weight to large
-      misses. ΔMAE means the change in MAE against same-hour-yesterday
-      lag-24. Q4-2024 is the October–December temporal holdout, with train
-      < 2024-10-01 ≤ test and 584,855 zone-hours. **Served is `gbm_tuned`,
-      selected on embargoed validation, not the better-on-test challenger.**
+    `RMSE` means root-mean-square error and gives more weight to large
+    misses. ΔMAE means the change in `MAE` against same-hour-yesterday
+    lag-24. Q4-2024 is the October–December temporal holdout, with train
+    < 2024-10-01 ≤ test and `584,855` zone-hours. **Served is `gbm_tuned`,
+    selected on embargoed validation, not the better-on-test challenger.**
 
-      | run | MAE | RMSE | MAPE | MASE | ΔMAE |
-      |---|---|---|---|---|---|
-      | naive_lag24 (same hour yesterday) | 6.517 | 23.367 | 89.4% | 1.063 | — |
-      | gbm_mean | 4.667 | 15.096 | 62.0% | 0.761 | −28.4% |
-      | gbm_tuned ← served | 4.676 | 15.189 | 61.6% | 0.763 | −28.3% |
-      | **gbm_xgb_tuned ← best test MAE** | **4.487** | **14.785** | **58.2%** | **0.732** | **−31.2%** |
-      | temporal_net_tuned | 5.178 | 21.580 | 57.5% | 0.845 | −20.5% |
+    | run | MAE | RMSE | MAPE | MASE | ΔMAE |
+    |---|---|---|---|---|---|
+    | naive_lag24 (same hour yesterday) | 6.517 | 23.367 | 89.4% | 1.063 | — |
+    | gbm_mean | 4.667 | 15.096 | 62.0% | 0.761 | −28.4% |
+    | gbm_tuned ← served | 4.676 | 15.189 | 61.6% | 0.763 | −28.3% |
+    | **gbm_xgb_tuned ← best test MAE** | **4.487** | **14.785** | **58.2%** | **0.732** | **−31.2%** |
+    | temporal_net_tuned | 5.178 | 21.580 | 57.5% | 0.845 | −20.5% |
 
-      These records explain the serve box. Validation MAE is 3.165 for the
-      incumbent, 3.173 for the LightGBM challenger, and 3.182 for the xGB
-      challenger. The serving rule keeps `gbm_tuned` even though both
-      challengers beat it on test. xGB improves relative test MAE by −4.1%.
-      Default versus tuned GBM is −0.2% relative MAE, flat within noise.
+    These records explain the serve box. Validation `MAE` is `3.165` for the
+    incumbent, `3.173` for the `LightGBM` challenger, and `3.182` for the xGB
+    challenger. The serving rule keeps `gbm_tuned` even though both
+    challengers beat it on test. xGB improves relative test `MAE` by −4.1%.
+    Default versus tuned `GBM` is `−0.2%` relative `MAE`, flat within noise.
 
-      Paired holdout intervals use challenger-minus-naive MAE deltas, so
-      negative values favor the challenger. Both protocols exclude zero for
-      both predeclared comparisons; neither interval changes serving selection.
+    Paired holdout intervals use challenger-minus-naive `MAE` deltas, so
+    negative values favor the challenger. Both protocols exclude zero for
+    both predeclared comparisons; neither interval changes serving selection.
 
-      | comparison | point ΔMAE | seven-day block 95% CI | zone-cluster 95% CI |
-      |---|---:|---:|---:|
-      | xGB versus naive | −2.031 | [−2.503, −1.495] | [−2.691, −1.421] |
-      | LightGBM versus naive | −1.935 | [−2.433, −1.350] | [−2.606, −1.340] |
+    | comparison | point ΔMAE | seven-day block 95% CI | zone-cluster 95% CI |
+    |---|---:|---:|---:|
+    | xGB versus naive | −2.031 | [−2.503, −1.495] | [−2.691, −1.421] |
+    | LightGBM versus naive | −1.935 | [−2.433, −1.350] | [−2.606, −1.340] |
 
-      These records explain the dense-zone and no-borough paths. p90 coverage
-      is 90.8% overall against a 90% target. Manhattan is 91.4%, Queens 89.6%,
-      Brooklyn 88.6%, Bronx 91.4%, EWR 94.5%, Staten Island 98.5%, Unknown
-      93.8%, and N/A (no borough) 84.7%. The last group under-covers and is
-      flagged separately from demand-sparse zones.
+    These records explain the dense-zone and no-borough paths. `p90` coverage
+    is `90.8%` overall against a `90%` target. Manhattan is `91.4%`, Queens `89.6%`,
+    Brooklyn `88.6%`, Bronx `91.4%`, EWR `94.5%`, Staten Island `98.5%`, Unknown
+    `93.8%`, and N/A (no borough) 84.7%. The last group under-covers and is
+    flagged separately from demand-sparse zones.
 
-      Permutation importance measures how much error rises after a feature's
-      values are shuffled. For the tuned GBM in the serve box, the last hour
-      adds 3.31 mean MAE, last week's hour 2.58, yesterday's hour 2.48, and
-      hour of day 1.12. Weather adds approximately zero. A second summary
-      ranks lag_168 at 0.80, lag_24 at 0.64, lag_1 at 0.55, and hour at
-      0.32. Weather is ≈ 0 for point MAE. Its value is the rain/dry association,
-      not point accuracy.
+    Permutation importance measures how much error rises after a feature's
+    values are shuffled. For the tuned `GBM` in the serve box, the last hour
+    adds `3.31` mean `MAE`, last week's hour `2.58`, yesterday's hour `2.48`, and
+    hour of day 1.12. Weather adds approximately zero. A second summary
+    ranks lag_168 at `0.80`, lag_24 at `0.64`, lag_1 at `0.55`, and hour at
+    0.32. Weather is ≈ 0 for point MAE. Its value is the rain/dry association,
+    not point accuracy.
 
-      The weather records remain associative. Rain-versus-dry ratios on the
-      test window are N/A (no borough) 0.89×, Queens 0.92×, Staten Island 0.93×,
-      Manhattan 0.97×, Bronx 1.03×, and EWR 1.08×. These are raw group means,
-      not estimated weather effects.
+    The weather records remain associative. Rain-versus-dry ratios on the
+    test window are N/A (no borough) `0.89`×, Queens `0.92`×, Staten Island `0.93`×,
+    Manhattan `0.97`×, Bronx `1.03`×, and EWR `1.08`×. These are raw group means,
+    not estimated weather effects.
 
-      The drift records below support the observatory path. Each uses the
-      persisted model and a ±15% tolerance:
+    The drift records below support the observatory path. Each uses the
+    persisted model and a ±`15%` tolerance:
 
-      - **2024-11:** MAE 5.0592 versus pinned 4.6763 (+8.19%), MAPE 65.45%,
-        p90 coverage 90.6%, and 152,110 zone-hours. In-window.
-      - **2024-12:** MAE 5.0458 (+7.90%), MAPE 65.59%, coverage 91.2%, and
-        152,375 zone-hours. In-window.
-      - **2025-01:** fetched live as the first genuinely unseen month. MAE
-        4.4420 (−5.01%), MAPE 59.60%, ΔMAE versus naive +34.6%, and
-        coverage 87.4%. In-window.
+    - **2024-11:** `MAE` `5.0592` versus pinned `4.6763` (`+8.19%`), `MAPE` `65.45%`,
+      `p90` coverage `90.6%`, and `152,110` zone-hours. In-window.
+    - **2024-12:** `MAE` `5.0458` (`+7.90%`), `MAPE` `65.59%`, coverage `91.2%`, and
+      `152,375` zone-hours. In-window.
+    - **2025-01:** fetched live as the first genuinely unseen month. `MAE`
+      `4.4420` (`−5.01%`), `MAPE` `59.60%`, ΔMAE versus naive `+34.6%`, and
+      coverage 87.4%. In-window.
 
-      The green-transfer records support the retraining path. In the
-      2024-03 green window of 197,160 zone-hours, the yellow-trained GBM
-      loses average error to persistence (0.296 versus 0.212) but wins RMSE
-      (−17%) and MAPE (−19%). After retraining on green January–February
-      data with 337,080 zone-hours, average error is 0.1805 versus 0.212,
-      RMSE is 0.688 versus 1.100, and MAPE is 66.4% versus 81.8%. It wins
-      all three metrics. The production bundle `gbm_green_served` is fit on
-      all 534,240 curated green zone-hours in the identical three-file
-      contract. This contract is the fixed three-file bundle format used
-      for serving.
+    The green-transfer records support the retraining path. In the
+    2024-03 green window of `197,160` zone-hours, the yellow-trained `GBM`
+    loses average error to persistence (`0.296` versus `0.212`) but wins `RMSE`
+    (`−17%`) and `MAPE` (`−19%`). After retraining on green January–February
+    data with `337,080` zone-hours, average error is `0.1805` versus `0.212`,
+    `RMSE` is `0.688` versus `1.100`, and `MAPE` is `66.4%` versus 81.8%. It wins
+    all three metrics. The production bundle `gbm_green_served` is fit on
+    all `534,240` curated green zone-hours in the identical three-file
+    contract. This contract is the fixed three-file bundle format used
+    for serving.
 
-      ## Protocol
+    ## Protocol
 
-      - Split: temporal holdout, with train < 2024-10-01 ≤ test and 584,855
-        scored zone-hours. MASE normalizes by the in-sample
-        same-hour-yesterday error of ≈6.13 pickups/hour, so 1.0 means parity
-        with the baseline.
-      - Tuning: Optuna, a tool that searches model settings, runs on an
-        embargoed, expanding, train-side validation window. It uses 30
-        boosting trials, 10 neural-net trials, and challenger arms. The test
-        window is never visible to tuning.
-      - Paired intervals: predeclared xGB-versus-naive and LightGBM-versus-naive
-        MAE deltas use 2,000 frozen-prediction resamples, seed 42, circular
-        seven-day blocks, and 265 whole-zone clusters. The percentile intervals
-        are 95% and do not participate in selection or tuning.
-      - Band: a quantile-0.9 GBM twin is fit with the served recipe and judged
-        by empirical coverage against the 90% target. Split conformal fits
-        demand-tercile offsets on the first test half and reports coverage and
-        mean band height on the second half.
-      - Grid: every panel is reindexed to 265 zones × 8,784 hours with
-        explicit zeros, so lag features are true one-hour steps. Lazy,
-        streaming Polars scans keep peak RAM at ≈2 GB against the 8 GB
-        budget. Lazy processing delays work until results are needed.
-      - Drift: a scheduled observatory scores each published month against
-        the persisted model at a ±15% tolerance. A regression opens the
-        response runbook.
+    - Split: temporal holdout, with train < 2024-10-01 ≤ test and `584,855`
+      scored zone-hours. `MASE` normalizes by the in-sample
+      same-hour-yesterday error of `≈6.13` pickups/hour, so 1.0 means parity
+      with the baseline.
+    - Tuning: `Optuna`, a tool that searches model settings, runs on an
+      embargoed, expanding, train-side validation window. It uses 30
+      boosting trials, 10 neural-net trials, and challenger arms. The test
+      window is never visible to tuning.
+    - Paired intervals: predeclared xGB-versus-naive and LightGBM-versus-naive
+      `MAE` deltas use `2,000` frozen-prediction resamples, seed 42, circular
+      seven-day blocks, and 265 whole-zone clusters. The percentile intervals
+      are `95%` and do not participate in selection or tuning.
+    - Band: a quantile-0.9 `GBM` twin is fit with the served recipe and judged
+      by empirical coverage against the `90%` target. Split conformal fits
+      demand-tercile offsets on the first test half and reports coverage and
+      mean band height on the second half.
+    - Grid: every panel is reindexed to 265 zones × `8,784` hours with
+      explicit zeros, so lag features are true one-hour steps. Lazy,
+      streaming `Polars` scans keep peak RAM at ≈`2 GB` against the `8 GB`
+      budget. Lazy processing delays work until results are needed.
+    - Drift: a scheduled observatory scores each published month against
+      the persisted model at a ±`15%` tolerance. A regression opens the
+      response runbook.
 
-      ## Limits
+    ## Limits
 
-      - The input scope in the data path remains one city, one vehicle
-        class, one year, and one hour ahead. There is no claim for other
-        fleets, cities, or longer horizons.
-      - The weather evidence is association only. Ratios lack hour-of-week
-        normalization, and the band under-covers the no-borough bucket at
-        84.7%; that bucket is distinct from demand-sparse zones.
-      - The retraining path is required because trained weights are
-        per-service. Yellow models lose to persistence on green taxis until
-        retrained on that service's own history.
-      - The borough evidence shows that Manhattan volume dominates absolute
-        error. In the Bronx, the default GBM still trails persistence.
-      - Causal weather claims and longer-horizon forecasts remain unproven.
-        They need a different study contract with a causal identification
-        strategy and a multi-hour forecasting setup.
+    - The input scope in the data path remains one city, one vehicle
+      class, one year, and one hour ahead. There is no claim for other
+      fleets, cities, or longer horizons.
+    - The weather evidence is association only. Ratios lack hour-of-week
+      normalization, and the band under-covers the no-borough bucket at
+      `84.7%`; that bucket is distinct from demand-sparse zones.
+    - The retraining path is required because trained weights are
+      per-service. Yellow models lose to persistence on green taxis until
+      retrained on that service's own history.
+    - The borough evidence shows that Manhattan volume dominates absolute
+      error. In the Bronx, the default `GBM` still trails persistence.
+    - Causal weather claims and longer-horizon forecasts remain unproven.
+      They need a different study contract with a causal identification
+      strategy and a multi-hour forecasting setup.
 
-      ```diagram auto-07-open-data-mobility-3
-      ```
+    ```diagram auto-07-open-data-mobility-3
+    ```
 
-      **In plain terms:** The diagram supports serving a tuned booster for
-      next-hour yellow-taxi demand at 4.676 MAE, 28.3% below the yesterday
-      rule. Its 90% band reaches 90.8% coverage where zones are busy.
-    figures: []
-    metrics_keys: [naive_lag24, gbm_mean, temporal_net]
+    **In plain terms:** Use the tuned tree model for next-hour yellow-taxi demand—it misses 28% fewer pickups than repeating yesterday (4.68 vs 6.52 per zone-hour) and keeps 90.8% safety-band coverage in busy zones.
+  figures: []
+  metrics_keys: []
 roadmap:
 - status: shipped
-  title: "Replay the study with one command"
-  detail: "41.2M trips zero-filled into one replayable zone-hour panel."
+  title: Replay the study with one command
+  detail: 41.2M trips zero-filled into one replayable zone-hour panel.
 - status: shipped
-  title: "Serve the validation winner, not the test leader"
-  detail: "The test leader tested better; the holdout has no vote."
+  title: Serve the validation winner, not the test leader
+  detail: The test leader tested better; the holdout has no vote.
 - status: shipped
-  title: "Calibrate the band; flag no-borough zones"
-  detail: "Coverage lands on target; the no-borough bucket stays flagged."
+  title: Calibrate the band; flag no-borough zones
+  detail: Coverage lands on target; the no-borough bucket stays flagged.
 - status: shipped
-  title: "Retrain per service; keep drift in-window"
-  detail: "Green refit wins on its own history; drift months stay in-window."
+  title: Retrain per service; keep drift in-window
+  detail: Green refit wins on its own history; drift months stay in-window.
 - status: next
-  title: "Test causal weather and longer horizons"
-  detail: "Needs a new study contract with causal identification and multi-hour setup."
+  title: Test causal weather and longer horizons
+  detail: Needs a new study contract with causal identification and multi-hour setup.

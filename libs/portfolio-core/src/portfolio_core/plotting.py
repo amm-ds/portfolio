@@ -6,18 +6,31 @@ from typing import Any
 import plotly.graph_objects as go
 import plotly.io as pio
 
+CATEGORICAL_PALETTE: list[str] = [
+    "#2dd4bf",  # teal   (light: #0f766e)
+    "#38bdf8",  # sky    (light: #0284c7)
+    "#f472b6",  # pink   (light: #db2777)
+    "#fbbf24",  # amber  (light: #b45309)
+    "#a78bfa",  # violet (light: #7c3aed)
+    "#34d399",  # emerald (light: #059669)
+]
+
+# Unified sequential heatmap gradient across all portfolio projects.
+# Deep navy -> ocean -> teal -> soft mint avoids blinding yellow cells so
+# per-cell contrast labels read cleanly in both dark and light UI themes.
+HEATMAP_COLORSCALE: list[list[Any]] = [
+    [0.0, "#132238"],
+    [0.25, "#155e75"],
+    [0.5, "#0d9488"],
+    [0.75, "#2dd4bf"],
+    [1.0, "#a7f3d0"],
+]
+
 _TEMPLATE: dict[str, Any] = {
     "layout": {
         "template": "plotly_dark",
         "font": {"family": "Inter, system-ui, sans-serif", "size": 14, "color": "#e2e8f0"},
-        "colorway": [
-            "#2dd4bf",  # teal
-            "#38bdf8",  # sky
-            "#f472b6",  # pink
-            "#fbbf24",  # amber
-            "#a78bfa",  # violet
-            "#34d399",  # emerald
-        ],
+        "colorway": list(CATEGORICAL_PALETTE),
         "paper_bgcolor": "#0f172a",
         "plot_bgcolor": "#0f172a",
         "margin": {"l": 60, "r": 30, "t": 60, "b": 50},

@@ -299,7 +299,7 @@ def test_multi_arm_read_block_shape_references_and_bounds() -> None:
     assert "separate" in block["note"] and "summed predicted uplift" in block["note"]
     figure = qini_per_arm_figure(block["per_arm"])
     assert len(figure.data) == 1
-    assert figure.data[0].type == "bar"
+    assert figure.data[0].type == "scatter"
     assert list(figure.data[0].x) == ["mens", "womens"]
     assert figure.data[0].error_y.array is not None
 

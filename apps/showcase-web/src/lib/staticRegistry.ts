@@ -514,9 +514,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "tool_usage_matrix"
     ],
     "has_roadmap": true,
-    "metrics_keys": [
-      "agentic_suite"
-    ],
+    "metrics_keys": [],
     "project_id": "09-agentic-workflows",
     "section_ids": [
       "background",
@@ -542,13 +540,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "uplift_by_decile"
     ],
     "has_roadmap": true,
-    "metrics_keys": [
-      "random",
-      "response",
-      "t_learner",
-      "treat-everyone",
-      "x_learner"
-    ],
+    "metrics_keys": [],
     "project_id": "10-uplift-experimentation",
     "section_ids": [
       "background",
@@ -570,11 +562,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "task_times_dotplot"
     ],
     "has_roadmap": true,
-    "metrics_keys": [
-      "groupby",
-      "read_csv",
-      "window"
-    ],
+    "metrics_keys": [],
     "project_id": "11-data-engineering",
     "section_ids": [
       "background",

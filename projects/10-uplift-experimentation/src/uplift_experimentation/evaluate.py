@@ -903,36 +903,55 @@ def cuped_figure(reads: dict[str, dict[str, float]]) -> go.Figure:
 
 
 def qini_per_arm_figure(per_arm: dict[str, Any]) -> go.Figure:
-    """Per-arm AUUC with paired-bootstrap intervals on randomized arm/control pairs."""
+    """Per-arm AUUC horizontal forest plot with 95% paired-bootstrap CIs."""
     fig = go.Figure()
     arms = ("mens", "womens")
     points = [float(per_arm[arm]["qini_coefficient"]) for arm in arms]
     cis = [per_arm[arm]["qini_ci"] for arm in arms]
-    fig.add_bar(
-        x=list(arms),
-        y=points,
-        marker_color=["#fbbf24", "#f472b6"],
-        error_y={
+    lo_vals = [float(ci[0]) for ci in cis]
+    hi_vals = [float(ci[1]) for ci in cis]
+    x_min = min(*lo_vals, 0.0) - 3.0
+    x_max = max(*hi_vals, 0.0) + 4.0
+    fig.add_vline(x=0.0, line_dash="dash", line_color="#64748b")
+    fig.add_scatter(
+        x=points,
+        y=list(arms),
+        mode="markers+text",
+        marker={
+            "color": ["#2dd4bf", "#f472b6"],
+            "size": 14,
+            "line": {"width": 1.5, "color": "#0f172a"},
+        },
+        error_x={
             "type": "data",
             "symmetric": False,
-            "array": [max(0.0, ci[1] - point) for ci, point in zip(cis, points, strict=True)],
-            "arrayminus": [max(0.0, point - ci[0]) for ci, point in zip(cis, points, strict=True)],
+            "array": [max(0.0, hi - point) for hi, point in zip(hi_vals, points, strict=True)],
+            "arrayminus": [max(0.0, point - lo) for lo, point in zip(lo_vals, points, strict=True)],
+            "color": "#94a3b8",
+            "thickness": 2.2,
+            "width": 8,
         },
-        text=[f"{point:.2f}" for point in points],
-        textposition="outside",
+        text=[
+            f"{point:.2f} [{lo:.2f}, {hi:.2f}]"
+            for point, lo, hi in zip(points, lo_vals, hi_vals, strict=True)
+        ],
+        textposition="top center",
         name="AUUC [95% CI]",
     )
-    apply_theme(fig)
+    apply_theme(fig, height=420)
     fig.update_layout(
         title="Per-arm AUUC on randomized arm vs control pairs",
-        xaxis_title="email arm (each compared with shared control)",
-        yaxis_title="area under Qini curve minus random (conversions)",
+        xaxis_title="area under Qini curve minus random (conversions)",
+        yaxis_title="",
+        xaxis={"range": [x_min, x_max]},
+        yaxis={"range": [-0.5, 1.75]},
+        margin={"l": 100, "r": 60, "t": 110, "b": 70},
         showlegend=False,
     )
     add_takeaway(
         fig,
-        "cross-fitted T-learner ranking per arm; error bars = paired row-bootstrap 95% CIs; "
-        "Mens duplicates the primary two-arm score and is not overlaid again",
+        "cross-fitted T-learner point estimates with paired row-bootstrap 95% CIs; "
+        "dashed line = zero (both intervals span zero)",
     )
     return fig
 

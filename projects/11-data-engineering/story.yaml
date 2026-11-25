@@ -2,478 +2,444 @@ project_id: 11-data-engineering
 short_version: |
   Ten data tasks over 2.96M NYC taxi trips, parity-checked on pandas, Polars, DuckDB and stdlib sqlite: Polars 19x, DuckDB 15x pandas; sqlite answers every SQL task but file conversion leaves it ~29x slower; 1M-10M tracks show the fast two scaling sub-linearly. NYC TLC 2024-01.
 sections:
-  - id: background
-    text_md: |
-      **Pandas and Polars are Python tools for working with tables.** DuckDB
-      and sqlite are database engines that use SQL, a language for querying
-      tables. This case study compares all four on ten identical tasks over
-      2,964,624 New York City taxi trips.
+- id: background
+  text_md: |
+    **Speed claims mean little unless every engine returns the exact same table.**
+    Local data work often starts in `pandas`, yet `Polars`, `DuckDB`, and `sqlite` trade speed, `SQL`, and load cost very differently. We run all four on ten shared tasks over `2,964,624` pinned NYC taxi trips (`January 2024`, `43 MB` parquet).
 
-      ```diagram 11-engine-benchmark
-      ```
+    ```diagram 11-engine-benchmark
+    ```
 
-      Follow one task through the benchmark diagram. Each engine receives the
-      same pinned input, must return the same rows, and only then earns a
-      timing and memory measurement. The comparison covers file reading,
-      grouping, joining, filtering, sorting, and writing. It reports both
-      overall speed and differences by task, so one average cannot hide a
-      slow case.
+    Follow one task through the test in three steps:
 
-      The diagram sets the shared contract; next, the protocol rules every
-      measurement must satisfy ([Objectives →](#sec-objectives)).
+    - **Same pinned files:** Every engine reads the exact same `SHA-256`-checked parquet, `CSV`, and `31`-file layout.
+    - **Match check first:** Counts and keys must match, and float sums must stay within `1e-5`, before timing starts.
+    - **Clean speed & RAM:** We log median-of-`5` warm time and fresh-process `peak RSS` (`Polars` `x19.2`, `DuckDB` `x14.9` vs `pandas`).
 
-      **In plain terms:** One pinned month of real taxi trips, ten tasks,
-      and four engines share one contract. Results must match before any
-      stopwatch starts.
-    figures: []
-  - id: objectives
-    text_md: |
-      The protocol diagram below shows the rules every measurement must
-      satisfy:
+    Next, the rules every run must pass ([Objectives →](#sec-objectives)).
 
-      - Run ten tasks on all four engines. Parquet is a column-oriented file
-        format, and CSV stores a table as text. The tasks read both formats,
-        group trips by day, join trips to zone names, rank trips within each
-        day, filter rows, summarize payment type by vendor, sort distinct
-        values, write parquet, and read a 31-file partition. A join matches
-        rows between tables. sqlite runs every task except parquet write,
-        which is n/a (not applicable) because Python's standard sqlite3 has
-        no parquet writer.
-      - Require the same rows from every engine. Dates, counts, and keys
-        match exactly. Floating-point numbers, which store decimals with
-        limited precision, must agree within a tight band. This is the
-        canonical result contract: a shared definition of the right answer.
-      - Measure wall time, the elapsed time a user waits, as the median of 5
-        warm repeats. Warm means the task has already run once. Keep tracing
-        outside the timed region. Use one extra untimed pass to measure
-        Python memory allocations. I/O tasks, which read or write files,
-        also get one cold read in a fresh process. A cold read starts a new
-        interpreter rather than reusing its state. Memory is peak RSS
-        (resident set size), the most physical memory the process holds.
-      - Reproduce the benchmark from a clean clone. Use the pinned download
-        for real data and synthetic data generated from a fixed random seed
-        for continuous integration (CI), the automatic checks run on code
-        changes. The CI track takes about 26 seconds. Separate seeded tracks
-        with 1M / 3M / 10M rows support the scalability study.
-      - Fail the run if any repeat changes the result structure.
+    **In plain terms:** Four data tools run the same 10 tasks on one month of real NYC taxi trips (2.96 million rows); every tool must produce identical answers before any speed test counts.
+  figures: []
+- id: objectives
+  text_md: |
+    The protocol diagram below shows the rules every measurement must
+    satisfy:
 
-      ```diagram auto-11-data-engineering-1
-      ```
+    - Run ten tasks on all four engines. Parquet is a column-oriented file
+      format, and CSV stores a table as text. The tasks read both formats,
+      group trips by day, join trips to zone names, rank trips within each
+      day, filter rows, summarize payment type by vendor, sort distinct
+      values, write parquet, and read a 31-file partition. A join matches
+      rows between tables. `sqlite` runs every task except parquet write,
+      which is n/a (not applicable) because Python's standard `sqlite3` has
+      no parquet writer.
+    - Require the same rows from every engine. Dates, counts, and keys
+      match exactly. Floating-point numbers, which store decimals with
+      limited precision, must agree within a tight band. This is the
+      canonical result contract: a shared definition of the right answer.
+    - Measure wall time, the elapsed time a user waits, as the median of 5
+      warm repeats. Warm means the task has already run once. Keep tracing
+      outside the timed region. Use one extra untimed pass to measure
+      Python memory allocations. I/O tasks, which read or write files,
+      also get one cold read in a fresh process. A cold read starts a new
+      interpreter rather than reusing its state. Memory is `peak RSS`
+      (resident set size), the most physical memory the process holds.
+    - Reproduce the benchmark from a clean clone. Use the pinned download
+      for real data and synthetic data generated from a fixed random seed
+      for continuous integration (CI), the automatic checks run on code
+      changes. The CI track takes about 26 seconds. Separate seeded tracks
+      with 1M / 3M / 10M rows support the scalability study.
+    - Fail the run if any repeat changes the result structure.
 
-      Read the diagram from input to accepted measurement. Correctness comes
-      before speed at every step.
+    ```diagram auto-11-data-engineering-1
+    ```
 
-      The protocol needs one fixed input; next, the pinned January file and
-      its projection ([Data →](#sec-data)).
+    Read the diagram from input to accepted measurement. Correctness comes
+    before speed at every step.
 
-      **In plain terms:** Ten shared tasks, equal results as a hard gate,
-      untraced median-of-5 timing, cold reads, true peak memory, and a fully
-      rerunnable offline CI track.
-    figures: []
-  - id: data
-    text_md: |
-      The data diagram traces one fixed input into every engine. The source
-      is the NYC TLC (New York City Taxi and Limousine Commission)
-      yellow-taxi file for January 2024: 2,964,624 trips in 43 MB of parquet.
-      It belongs to the same snapshot family pinned for project 07
-      ([registry card](https://amm-ds.github.io/portfolio/data-registry/nyc-tlc/),
-      `registry/nyc-tlc-yellow-2024-01.dvc`). SHA-256 is a digital fingerprint
-      for a file. The fetch script pins that fingerprint and checks it on
-      every run. A republished upstream file therefore fails loudly instead
-      of silently changing the benchmark.
+    The protocol needs one fixed input; next, the pinned January file and
+    its projection ([Data →](#sec-data)).
 
-      ```diagram auto-11-data-engineering-2
-      ```
+    **In plain terms:** Every tool must return matching results across all 10 tasks, timed over 5 warm runs with clean memory checks and an offline test mode that finishes in 26 seconds.
+  figures: []
+- id: data
+  text_md: |
+    The data diagram traces one fixed input into every engine. The source
+    is the `NYC TLC` (New York City Taxi and Limousine Commission)
+    yellow-taxi file for January 2024: `2,964,624` trips in `43 MB` of parquet.
+    It belongs to the same snapshot family pinned for project 07
+    ([registry card](https://amm-ds.github.io/portfolio/data-registry/nyc-tlc/),
+    `registry/nyc-tlc-yellow-2024-01.dvc`). SHA-256 is a digital fingerprint
+    for a file. The fetch script pins that fingerprint and checks it on
+    every run. A republished upstream file therefore fails loudly instead
+    of silently changing the benchmark.
 
-      Follow the projection branch of the diagram. The tasks need eight
-      columns: pickup time, both zone ids, passengers, distance, fare, vendor,
-      and payment type. Vendor and payment type become strings once, up
-      front, so the real and synthetic tracks have the same string-categorical
-      input. Selecting only these columns keeps the derived CSV at 157 MB
-      instead of roughly 700 MB. Every engine reads byte-identical input.
+    ```diagram auto-11-data-engineering-2
+    ```
 
-      The zone branch shows one important detail: a borough is literally
-      named "N/A". The CI and scalability branches regenerate the same schema
-      from a seed, with a deterministic checksum.
+    Follow the projection branch of the diagram. The tasks need eight
+    columns: pickup time, both zone ids, passengers, distance, fare, vendor,
+    and payment type. Vendor and payment type become strings once, up
+    front, so the real and synthetic tracks have the same string-categorical
+    input. Selecting only these columns keeps the derived CSV at `157 MB`
+    instead of roughly 700 MB. Every engine reads byte-identical input.
 
-      The fixed input sets the month; next, the EDA diagram that reads its
-      patterns ([EDA →](#sec-eda)).
+    The zone branch shows one important detail: a borough is literally
+    named "N/A". The `CI` and scalability branches regenerate the same schema
+    from a seed, with a deterministic checksum.
 
-      **In plain terms:** January 2024 yellow-taxi trips are SHA-256-pinned
-      from the same snapshot family project 07 uses. One derived CSV and a
-      31-file partitioned layout give every engine identical input.
-    figures: []
-  - id: eda
-    text_md: |
-      Exploratory data analysis (EDA) means inspecting the data before
-      comparing methods. Use the EDA diagram to read the month. The raw
-      records span 35 distinct pickup dates: all 31 January dates plus four
-      out-of-month dates. The roughly 95,600 daily average uses January's 31
-      calendar days, not the 35 raw dates. The daily pattern is quiet at
-      4 a.m., has two evening peaks, and is busier on business days than
-      weekends.
+    The fixed input sets the month; next, the EDA diagram that reads its
+    patterns ([EDA →](#sec-eda)).
 
-      The fare view in the diagram shows a typical fare near $16. A long tail
-      of airport and late-night rides stretches past $200. A handful of fares
-      are negative because they are real fare adjustments, so they stay in
-      the data. The filtered scan uses this tail: fares over $50 and trips
-      over 10 miles.
+    **In plain terms:** All four tools read the exact same verified January 2024 taxi dataset (2.96 million trips) across parquet, CSV, and daily file layouts so no tool gets an unfair shortcut.
+  figures: []
+- id: eda
+  text_md: |
+    Exploratory data analysis (EDA) means inspecting the data before
+    comparing methods. Use the EDA diagram to read the month. The raw
+    records span 35 distinct pickup dates: all 31 January dates plus four
+    out-of-month dates. The roughly `95,600` daily average uses January's 31
+    calendar days, not the 35 raw dates. The daily pattern is quiet at
+    4 a.m., has two evening peaks, and is busier on business days than
+    weekends.
 
-      Three measurement rules support the diagram and every later figure:
+    The fare view in the diagram shows a typical fare near `$16.` A long tail
+    of airport and late-night rides stretches past `$200.` A handful of fares
+    are negative because they are real fare adjustments, so they stay in
+    the data. The filtered scan uses this tail: fares over `$50` and trips
+    over 10 miles.
 
-      - Results match across engines before a number counts. Counts and keys
-        are exact. Float sums agree within a relative band of 1e-5, meaning
-        a difference of at most 0.00001 times the value.
-      - Timings are untraced medians of 5 on one shared machine. Trust their
-        ordering and magnitude, not the third decimal. Timing excludes
-        tracing so profiling cannot skew the medians.
-      - Each task measures memory in a fresh process. Otherwise, an earlier
-        task's peak could be charged to a later one.
+    Three measurement rules support the diagram and every later figure:
 
-      ```diagram auto-11-data-engineering-3
-      ```
+    - Results match across engines before a number counts. Counts and keys
+      are exact. Float sums agree within a relative band of `1e-5`, meaning
+      a difference of at most `0.00001` times the value.
+    - Timings are untraced medians of 5 on one shared machine. Trust their
+      ordering and magnitude, not the third decimal. Timing excludes
+      tracing so profiling cannot skew the medians.
+    - Each task measures memory in a fresh process. Otherwise, an earlier
+      task's peak could be charged to a later one.
 
-      The diagram sets the measurement rules; next, the speedup figure and
-      the parity catches ([Training →](#sec-training)).
+    ```diagram auto-11-data-engineering-3
+    ```
 
-      **In plain terms:** The diagram covers 2.96 million real trips with
-      strong daily patterns and skewed fares. Every measurement uses an
-      untraced median on a shared machine after results match.
-    figures: []
-  - id: training
-    text_md: |
-      The speedup figure compares four engines running their normal execution
-      styles. pandas reads with PyArrow, a library for columnar data, and
-      parses CSV timestamps. Polars uses lazy evaluation: it builds a query
-      plan first and executes it at `collect`, so the timed region includes
-      the whole plan. DuckDB runs parameterized SQL, which passes values
-      separately from the query, over one in-memory connection. In-memory
-      means the database lives in RAM rather than in a persistent file. It
-      uses `read_parquet`, `read_csv_auto`, and `COPY ... TO` for writing.
+    The diagram sets the measurement rules; next, the speedup figure and
+    the parity catches ([Training →](#sec-training)).
 
-      Python's standard-library sqlite3 cannot read parquet or CSV directly.
-      Each timed task first loads the prepared file into a fresh in-memory
-      database through pandas, then runs plain SQL, including window
-      functions. This measures the full from-files workflow rather than
-      hiding its conversion cost.
+    **In plain terms:** The 2.96 million real taxi trips show clear daily rush-hour patterns and a long tail of high fares; every speed test checks for exact matches first.
+  figures: []
+- id: training
+  text_md: |
+    The speedup figure compares four engines running their normal execution
+    styles. `pandas` reads with `PyArrow`, a library for columnar data, and
+    parses `CSV` timestamps. `Polars` uses lazy evaluation: it builds a query
+    plan first and executes it at `collect`, so the timed region includes
+    the whole plan. `DuckDB` runs parameterized `SQL`, which passes values
+    separately from the query, over one in-memory connection. In-memory
+    means the database lives in RAM rather than in a persistent file. It
+    uses `read_parquet`, `read_csv_auto`, and `COPY ... TO` for writing.
 
-      The code shows identical logical work in Polars and DuckDB. Polars
-      executes its lazy plan. DuckDB scans parquet directly with bound paths.
-      Both return rows through the same canonical-result contract.
+    Python's standard-library `sqlite3` cannot read parquet or `CSV` directly.
+    Each timed task first loads the prepared file into a fresh in-memory
+    database through `pandas`, then runs plain `SQL`, including window
+    functions. This measures the full from-files workflow rather than
+    hiding its conversion cost.
 
-      ```python
-      # Polars: build the plan, execute at the boundary
-      out = (
-          ad.scan_parquet(str(bundle.trips_parquet))
-          .group_by(pl.col("tpep_pickup_datetime").dt.date().alias("day"))
-          .agg(
-              pl.len().alias("trips"),
-              pl.sum("fare_amount").alias("total_fare"),
-              pl.mean("trip_distance").alias("mean_distance"),
-              pl.mean("passenger_count").alias("mean_passengers"),
-          )
-      )
-      result = canonical_rows(ad.to_polars(out.collect()))
+    The code shows identical logical work in `Polars` and DuckDB. `Polars`
+    executes its lazy plan. `DuckDB` scans parquet directly with bound paths.
+    Both return rows through the same canonical-result contract.
 
-      # DuckDB: the same aggregation as parameterized SQL
-      frame = ad.query(
-          "SELECT CAST(tpep_pickup_datetime AS DATE) AS day, count(*) AS trips,"
-          " sum(fare_amount) AS total_fare, avg(trip_distance) AS mean_distance,"
-          " avg(passenger_count) AS mean_passengers"
-          " FROM read_parquet($1) GROUP BY 1",
-          (str(bundle.trips_parquet),),
-      )
-      result = canonical_rows(frame)
-      ```
+    ```python
+    # Polars: build the plan, execute at the boundary
+    out = (
+        ad.scan_parquet(str(bundle.trips_parquet))
+        .group_by(pl.col("tpep_pickup_datetime").dt.date().alias("day"))
+        .agg(
+            pl.len().alias("trips"),
+            pl.sum("fare_amount").alias("total_fare"),
+            pl.mean("trip_distance").alias("mean_distance"),
+            pl.mean("passenger_count").alias("mean_passengers"),
+        )
+    )
+    result = canonical_rows(ad.to_polars(out.collect()))
 
-      Excerpt from [tasks.py](https://github.com/amm-ds/portfolio/blob/main/projects/11-data-engineering/src/data_engineering/tasks.py).
-      In the speedup figure, x19.2 means 19.2 times as fast as pandas. The
-      summary uses a geometric mean, or geomean, which combines ratios
-      without letting one large ratio dominate an arithmetic average. Polars
-      finishes all ten tasks in 0.16 s of median work against pandas's
-      2.99 s, for geomean x19.2. DuckDB totals 0.22 s, for geomean x14.9.
-      Polars's per-task speedups range from x6.7 to x43.5; DuckDB's range
-      from x4.1 to x38.4.
+    # DuckDB: the same aggregation as parameterized SQL
+    frame = ad.query(
+        "SELECT CAST(tpep_pickup_datetime AS DATE) AS day, count(*) AS trips,"
+        " sum(fare_amount) AS total_fare, avg(trip_distance) AS mean_distance,"
+        " avg(passenger_count) AS mean_passengers"
+        " FROM read_parquet($1) GROUP BY 1",
+        (str(bundle.trips_parquet),),
+    )
+    result = canonical_rows(frame)
+    ```
 
-      The sqlite bars show the cost of conversion. sqlite returns correct
-      answers, but conversions take 1.9-5.9 s per task and 40.55 s for the
-      ladder. Its geomean is x0.035, about 29x slower than pandas. Parquet
-      write remains n/a.
+    Excerpt from [tasks.py](https://github.com/amm-ds/portfolio/blob/main/projects/11-data-engineering/src/data_engineering/tasks.py).
+    In the speedup figure, x19.2 means 19.2 times as fast as pandas. The
+    summary uses a geometric mean, or geomean, which combines ratios
+    without letting one large ratio dominate an arithmetic average. `Polars`
+    finishes all ten tasks in `0.16 s` of median work against `pandas`'s
+    `2.99 s`, for geomean x19.2. `DuckDB` totals `0.22 s`, for geomean x14.9.
+    `Polars`'s per-task speedups range from x6.7 to x43.5; `DuckDB`'s range
+    from x4.1 to x38.4.
 
-      Read the per-task spread in the same figure:
+    The `sqlite` bars show the cost of conversion. `sqlite` returns correct
+    answers, but conversions take 1.9-5.9 s per task and `40.55 s` for the
+    ladder. Its geomean is x0.035, about `29x` slower than pandas. `Parquet`
+    write remains n/a.
 
-      - pandas spends 1.16 s of its 2.99 s total on CSV reads, with more cost
-        in its object-heavy group-by and window paths. Python objects carry
-        more per-value overhead than packed columns.
-      - Raw parquet reads take single-digit milliseconds for both columnar
-        engines. At that size, the operating system's page cache, which keeps
-        recently read file data in memory, sets more of the cost than the
-        engine.
-      - sqlite's join is its best cell at 3.65 s. Its SQL engine performs the
-        join, but the per-task import dominates the measured workflow.
+    Read the per-task spread in the same figure:
 
-      The speedup map is measured; next, the protocol evidence behind the
-      sizing decision ([Evaluation →](#sec-evaluation)).
+    - `pandas` spends `1.16 s` of its `2.99 s` total on `CSV` reads, with more cost
+      in its object-heavy group-by and window paths. Python objects carry
+      more per-value overhead than packed columns.
+    - Raw parquet reads take single-digit milliseconds for both columnar
+      engines. At that size, the operating system's page cache, which keeps
+      recently read file data in memory, sets more of the cost than the
+      engine.
+    - `sqlite`'s join is its best cell at `3.65` s. Its `SQL` engine performs the
+      join, but the per-task import dominates the measured workflow.
 
-      **In plain terms:** The speedup figure shows Polars at x19.2 and
-      DuckDB at x14.9 over pandas by geomean. Their per-task ranges differ,
-      while sqlite remains correct but pays a measured conversion cost.
-    figures: [speedup_overview]
-    metrics_keys: [groupby, read_csv, window]
-  - id: evaluation
-    text_md: |
-      The protocol diagram and scalability figure support a platform sizing
-      decision. They show what an engine change buys on analytics-shaped
-      work, what sqlite's from-files workflow costs, and how much memory each
-      choice needs. Read the per-task evidence beside the geomean rather than
-      treating one summary number as a universal result.
+    The speedup map is measured; the headline summary table below pairs with
+    `speedup_overview` before we inspect the protocol and scalability
+    evidence ([Evaluation →](#sec-evaluation)).
 
-      Follow one cell through the protocol diagram. It runs five warm repeats
-      without tracing the timed region. One untimed tracemalloc pass measures
-      Python allocations; tracemalloc is Python's memory-allocation tracker.
-      A fresh-process probe measures true peak RSS and provides the cold read
-      for I/O tasks. A determinism gate compares runs to catch changed
-      results.
+    | Engine | Total median time (10 tasks) | Geomean speedup vs pandas | Fastest tasks |
+    |---|---:|---:|---:|
+    | Polars | **0.16 s** | **x19.2** | **9 / 10** |
+    | DuckDB | **0.22 s** | **x14.9** | 1 / 10 (distinct_sort) |
+    | pandas | 2.99 s | x1.0 | 0 / 10 |
+    | sqlite | 40.55 s (9 SQL tasks) | x0.035 | 0 / 10 |
 
-      ```diagram auto-11-data-engineering-4
-      ```
+    **In plain terms:** Polars runs about 19× faster and DuckDB about 15× faster than pandas on the exact same 10 tasks, while sqlite gets the right answers but spends most of its time importing files.
+  figures: [speedup_overview]
+  metrics_keys: []
+- id: evaluation
+  text_md: |
+    The protocol diagram and scalability figure support a platform sizing
+    decision. They show what an engine change buys on analytics-shaped
+    work, what `sqlite`'s from-files workflow costs, and how much memory each
+    choice needs. Read the per-task evidence beside the geomean rather than
+    treating one summary number as a universal result.
 
-      The diagram's correctness gates protect two subtle cases. First, the
-      parity check caught pandas silently dropping every trip whose borough
-      is the literal string "N/A". The default CSV parser treats that text as
-      missing, and the group-by discards those rows. Cross-engine comparison
-      exposed 1,658 hidden trips. Second, the repeat check exposed parallel
-      floating-point drift. DuckDB and Polars can reorder summation between
-      runs. The 295-trip EWR borough sum sat within one ulp of a rounding
-      cliff. An ulp (unit in last place) is the smallest step between nearby
-      floating-point numbers. This was rounding noise, not structural drift,
-      so the gate allows a tight float band and fails on structural change.
+    Follow one cell through the protocol diagram. It runs five warm repeats
+    without tracing the timed region. One untimed `tracemalloc` pass measures
+    Python allocations; `tracemalloc` is Python's memory-allocation tracker.
+    A fresh-process probe measures true `peak RSS` and provides the cold read
+    for I/O tasks. A determinism gate compares runs to catch changed
+    results.
 
-      The scalability figure shows measured growth on seeded synthetic 1M /
-      3M / 10M tracks for the five most discriminating tasks. A log-log slope
-      describes how time grows with row count when both axes use logarithmic
-      scales. Slope 1 means linear growth: 10x rows cost about 10x time.
-      pandas and sqlite have slopes of 0.98-1.00 and 1.00-1.09. Polars
-      (0.44-0.76) and DuckDB (0.31-0.65) grow sub-linearly in these tests, so
-      their per-row advantage widens with size. At 10M rows, the group-by
-      costs pandas 1.15 s, Polars 0.031 s, DuckDB 0.020 s, and sqlite 26.4 s.
-      sqlite's CSV read needs 19.4 s against Polars's 0.12 s.
+    ```diagram auto-11-data-engineering-4
+    ```
 
-      The evidence supports sizing; next, the three figures that read time,
-      memory, and patterns together ([Results →](#sec-results)).
+    The diagram's correctness gates protect two subtle cases. First, the
+    parity check caught `pandas` silently dropping every trip whose borough
+    is the literal string "N/A". The default `CSV` parser treats that text as
+    missing, and the group-by discards those rows. Cross-engine comparison
+    exposed `1,658` hidden trips. Second, the repeat check exposed parallel
+    floating-point drift. `DuckDB` and `Polars` can reorder summation between
+    runs. The 295-trip EWR borough sum sat within one `ulp` of a rounding
+    cliff. An `ulp` (unit in last place) is the smallest step between nearby
+    floating-point numbers. This was rounding noise, not structural drift,
+    so the gate allows a tight float band and fails on structural change.
 
-      **In plain terms:** Per-task speedups and memory support platform
-      sizing. The measured growth curves show the columnar engines pulling
-      away with scale while pandas and sqlite stay linear.
-    figures: [scalability_lines]
-  - id: results
-    text_md: |
-      Read the three figures together. The dot plot shows absolute task time
-      and repeat-to-repeat whiskers. The lollipop chart shows peak memory.
-      The heatmap divides each task's time by its fastest engine, making the
-      pattern readable on a logarithmic color scale.
+    The scalability figure shows measured growth on seeded synthetic 1M /
+    3M / 10M tracks for the five most discriminating tasks. A log-log slope
+    describes how time grows with row count when both axes use logarithmic
+    scales. Slope 1 means linear growth: `10x` rows cost about `10x` time.
+    `pandas` and `sqlite` have slopes of 0.98-1.00 and 1.00-1.09. `Polars`
+    (0.44-0.76) and `DuckDB` (0.31-0.65) grow sub-linearly in these tests, so
+    their per-row advantage widens with size. At 10M rows, the group-by
+    costs `pandas` `1.15 s`, `Polars` `0.031 s`, `DuckDB` `0.020 s`, and `sqlite` 26.4 s.
+    `sqlite`'s `CSV` read needs `19.4 s` against `Polars`'s `0.12` s.
 
-      - In the task-time dot plot, pandas's CSV read (1.16 s) towers over the
-        columnar band of 2-83 ms (milliseconds). sqlite forms a second,
-        higher band at 1.9-5.9 s. That gap is the measured conversion cost.
-      - In the memory lollipops, pandas peaks at 549-945 MB depending on the
-        task, with 945 MB on the join. Polars stays near 200-529 MB, DuckDB
-        near 178-633 MB, and sqlite at 396-1520 MB. sqlite holds both the
-        loaded frame and its database in one process. On the write task, the
-        three applicable engines tie at 529-633 MB because the frame must
-        exist somewhere.
-      - In the heatmap, sqlite is the slowest cell in 9 of 10 tasks. pandas
-        is slowest only on parquet write, where sqlite is n/a. Polars takes
-        9 of 10 fastest cells, and DuckDB takes the sorted distinct rollup.
-        The write_parquet × sqlite square is an n/a gap, not a zero.
-      - Beside the warm CSV dots, the cold-read record shows little change on
-        this machine because files sit in the OS page cache. pandas's cold CSV
-        read (1.23 s) is the one place interpreter startup visibly registers.
-        sqlite's cold and warm reads are almost identical (5.82 vs 5.75 s)
-        because conversion, not startup, dominates its cost.
+    The scalability table below pairs with `scalability_lines` before we
+    read time, memory, and normalized patterns together
+    ([Results →](#sec-results)).
 
-      Use the dot plot and heatmap to interpret each geomean alongside its
-      spread. Polars's task speedups span 6.7x on parquet write to 43.5x on
-      the window task; DuckDB's span 4.1x to 38.4x. For identical results,
-      the absolute totals are 2.99 s of median pandas work versus 0.16 s for
-      Polars, 0.22 s for DuckDB, and 40.55 s for sqlite.
+    | Scaled task (1M–10M rows) | Polars slope | DuckDB slope | pandas slope | sqlite slope |
+    |---|---:|---:|---:|---:|
+    | filter | 0.47 | 0.65 | 0.99 | 1.00 |
+    | groupby | 0.73 | 0.63 | 1.00 | 1.09 |
+    | join | 0.67 | 0.52 | 0.98 | 1.01 |
+    | read_csv | 0.76 | 0.31 | 1.00 | 1.00 |
+    | window | 0.44 | 0.46 | 1.00 | 1.08 |
 
-      The figures complete the map; next, the exact tables and protocol
-      ([Conclusions →](#sec-conclusions)).
+    **In plain terms:** As data grows from 1 million to 10 million rows, Polars and DuckDB pull further ahead while pandas and sqlite slow down directly in proportion to file size.
+  figures: [scalability_lines]
+- id: results
+  text_md: |
+    Read the three figures together. The dot plot shows absolute task time
+    and repeat-to-repeat whiskers. The lollipop chart shows peak memory.
+    The heatmap divides each task's time by its fastest engine, making the
+    pattern readable on a logarithmic color scale.
 
-      **In plain terms:** Identical results take 0.16-0.22 s instead of
-      2.99 s. The figures show distinct per-task spreads for Polars and
-      DuckDB, 2-3x memory headroom for the columnar engines, and sqlite's
-      measured conversion cost.
-    figures: [task_times_dotplot, memory_lollipop, normalized_heatmap]
-  - id: conclusions
-    text_md: |
-      ## Results summary
+    - In `task_times_dotplot`, `pandas` `CSV` read (`1.16 s`) towers over the columnar band (`2–83 ms`), while `sqlite` sits in a higher band (`1.9–5.9 s`) due to file conversion.
+    - In `memory_lollipop`, `pandas` peaks at `549–945 MB` (`945 MB` on `join`). `Polars` stays at `200–529 MB`, `DuckDB` at `178–633 MB`, and `sqlite` at `396–1,520 MB` because it holds both frame and database in one process. On `write_parquet`, all three applicable engines sit near `529–633 MB`.
+    - In `normalized_heatmap`, `sqlite` is slowest in `9` of `10` tasks and `pandas` is slowest on `write_parquet` (where `sqlite` is `n/a`). `Polars` wins `9` of `10` tasks and `DuckDB` wins `distinct_sort`.
+    - Cold reads barely shift on this machine because files sit in the OS page cache: `pandas` cold `CSV` is `1.23 s` vs `1.16 s` warm, and `sqlite` is `5.82 s` vs `5.75 s`.
 
-      Read the summary diagram and exact tables below as the full record.
-      They cover ten shared tasks on 2,964,624 real January-2024 taxi trips,
-      parity-checked across four engines. Polars totals 0.16 s of median work
-      against pandas's 2.99 s (geomean x19.2). DuckDB totals 0.22 s (geomean
-      x14.9). sqlite is correct on every SQL task and totals 40.55 s (geomean
-      x0.035, about 29x slower than pandas). Fresh-process peak RSS is
-      549-945 MB for pandas, 200-529 MB for Polars, 178-633 MB for DuckDB,
-      and 396-1520 MB for sqlite. Every figure passed the canonical-result
-      gate.
-      [full evaluation report](https://amm-ds.github.io/portfolio/projects/11-data-engineering/)
+    Use the dot plot and heatmap to interpret each geomean alongside its
+    spread. `Polars`'s task speedups span `6.7x` on parquet write to `43.5x` on
+    the window task; `DuckDB`'s span `4.1x` to 38.4x. For identical results,
+    the absolute totals are `2.99 s` of median `pandas` work versus `0.16 s` for
+    `Polars`, `0.22 s` for `DuckDB`, and `40.55 s` for sqlite.
 
-      ## What the experiment taught
+    The figures complete the map; next, the exact tables and protocol
+    ([Conclusions →](#sec-conclusions)).
 
-      The summary diagram and per-task tables support six lessons:
+    **In plain terms:** Getting the exact same answers takes 0.16–0.22 seconds with Polars or DuckDB instead of 2.99 seconds with pandas, using 2–3× less memory, while sqlite spends ~41 seconds mostly converting files.
+  figures: [task_times_dotplot, memory_lollipop, normalized_heatmap]
+- id: conclusions
+  text_md: |
+    ## Results summary
 
-      - The map matters more than the mean. Polars's per-task speedups run
-        6.7-43.5x, so one number cannot describe every task.
-      - Parity checks catch lost data. pandas's default CSV parsing silently
-        dropped the literal "N/A" borough, hiding 1,658 trips until the
-        cross-engine comparison caught it.
-      - Exact float equality is the wrong determinism bar. Parallel engines
-        reorder summation, and the 295-trip EWR sum sat on a rounding cliff.
-        The gate compares counts and keys exactly and floats within 1e-5.
-      - Profiling can change the measurement. Timing excludes tracing, with
-        a separate untimed allocation pass.
-      - sqlite is a correct classical baseline with linear growth and a
-        per-task conversion cost of seconds. Parquet write stays n/a because
-        standard-library sqlite3 cannot do it.
-      - Growth separates the engines by shape. Polars and DuckDB scale
-        sub-linearly (log-log slopes 0.31-0.76), while pandas and sqlite stay
-        linear (0.98-1.09). In these measurements, their migration case
-        strengthens with data volume.
+    Read the summary diagram and exact tables below as the full record. They cover `10` shared tasks on `2,964,624` real January `2024` taxi trips, parity-checked across `4` engines. `Polars` totals `0.16 s` of median work against `pandas`'s `2.99 s` (geomean `x19.2`), and `DuckDB` totals `0.22 s` (`x14.9`). `sqlite` is correct on every `SQL` task and totals `40.55 s` (`x0.035`, `~29×` slower than `pandas`). Fresh-process `peak RSS` is `549–945 MB` for `pandas`, `200–529 MB` for `Polars`, `178–633 MB` for `DuckDB`, and `396–1,520 MB` for `sqlite`. Every cell passed the canonical-result gate.
+    [full evaluation report](https://amm-ds.github.io/portfolio/projects/11-data-engineering/)
 
-      ## Exact numbers
+    ## What the experiment taught
 
-      Headline: geomean speedup vs pandas x19.2 (Polars), x14.9 (DuckDB);
-      medians of 5 untraced warm repeats on one shared machine (macOS on
-      ARM64, a 64-bit processor design, with 16 cores; pandas 2.3.3, Polars
-      2.0.0, DuckDB 2.0.0, sqlite 3.47.1, pyarrow 26).
-      Terms: **speedup**, median pandas time divided by the engine's;
-      **peak RSS**, high-water mark of one fresh process per task;
-      **cold read**, the same task in a fresh interpreter.
+    The summary diagram and per-task tables support six lessons:
 
-      ```diagram auto-11-data-engineering-5
-      ```
+    - The map matters more than the mean. `Polars`'s per-task speedups run
+      6.7-43.5x, so one number cannot describe every task.
+    - Parity checks catch lost data. `pandas`'s default `CSV` parsing silently
+      dropped the literal "N/A" borough, hiding `1,658` trips until the
+      cross-engine comparison caught it.
+    - Exact float equality is the wrong determinism bar. Parallel engines
+      reorder summation, and the 295-trip EWR sum sat on a rounding cliff.
+      The gate compares counts and keys exactly and floats within 1e-5.
+    - Profiling can change the measurement. Timing excludes tracing, with
+      a separate untimed allocation pass.
+    - `sqlite` is a correct classical baseline with linear growth and a
+      per-task conversion cost of seconds. `Parquet` write stays n/a because
+      standard-library `sqlite3` cannot do it.
+    - Growth separates the engines by shape. `Polars` and `DuckDB` scale
+      sub-linearly (log-log slopes 0.31-0.76), while `pandas` and `sqlite` stay
+      linear (0.98-1.09). In these measurements, their migration case
+      strengthens with data volume.
 
-      **Headline table** (median wall time, seconds; x = speedup vs pandas;
-      run ids in `reports/metrics.json`):
+    ## Exact numbers
 
-      | task | pandas | Polars | DuckDB | sqlite | Polars x | DuckDB x |
-      |---|---|---|---|---|---|---|
-      | read_parquet | 0.044 | 0.002 | 0.003 | 4.869 | 18.0 | 15.4 |
-      | read_csv | 1.165 | 0.040 | 0.077 | 5.753 | 29.4 | 15.2 |
-      | groupby | 0.374 | 0.009 | 0.010 | 5.179 | 40.7 | 36.2 |
-      | join | 0.242 | 0.010 | 0.010 | 3.650 | 25.3 | 23.8 |
-      | window | 0.341 | 0.008 | 0.009 | 5.882 | 43.5 | 38.4 |
-      | filter | 0.048 | 0.004 | 0.012 | 1.947 | 11.0 | 4.1 |
-      | strings_groupby | 0.149 | 0.006 | 0.006 | 4.212 | 25.1 | 25.0 |
-      | distinct_sort | 0.075 | 0.007 | 0.005 | 3.866 | 11.4 | 14.3 |
-      | write_parquet | 0.500 | 0.074 | 0.083 | n/a | 6.7 | 6.0 |
-      | partitioned_read | 0.048 | 0.004 | 0.006 | 5.190 | 13.3 | 7.9 |
-      | **total / geomean** | **2.99** | **0.16** | **0.22** | **40.55** | **x19.2** | **x14.9** |
+    Headline: geomean speedup vs `pandas` x19.2 (`Polars`), x14.9 (`DuckDB`);
+    medians of 5 untraced warm repeats on one shared machine (macOS on
+    ARM64, a 64-bit processor design, with 16 cores; `pandas` 2.3.3, `Polars`
+    2.0.0, `DuckDB` 2.0.0, `sqlite` 3.47.1, pyarrow 26).
+    Terms: **speedup**, median `pandas` time divided by the engine's;
+    **`peak RSS`**, high-water mark of one fresh process per task;
+    **cold read**, the same task in a fresh interpreter.
 
-      **Record** (peak RSS, MB, fresh-process probes; cold reads for I/O):
+    ```diagram auto-11-data-engineering-5
+    ```
 
-      | finding | record |
-      |---|---|
-      | peak RSS | pandas 549-945 MB (join worst); Polars 200-529; DuckDB 178-633; sqlite 396-1520 (read_csv worst: frame and database coexist) |
-      | cold CSV read | pandas 1.23 s cold vs 1.16 s warm; Polars 0.048 s; DuckDB 0.080 s; sqlite 5.82 s (conversion-bound) |
-      | fastest per task | Polars takes 9 of 10; DuckDB takes the sorted distinct rollup |
-      | scalability | pandas slopes 0.98-1.00 and sqlite 1.00-1.09 (linear); Polars 0.44-0.76 and DuckDB 0.31-0.65 (sub-linear) |
-      | parity + determinism | 39/39 measured cells passed the canonical gate; 0 structural mismatches across 5 repeats + traced pass + probe each |
+    **Headline table** (median wall time, seconds; x = speedup vs `pandas`;
+    run ids in `reports/metrics.json`):
 
-      ## Protocol
+    | task | pandas | Polars | DuckDB | sqlite | Polars x | DuckDB x |
+    |---|---|---|---|---|---|---|
+    | read_parquet | 0.044 | 0.002 | 0.003 | 4.869 | 18.0 | 15.4 |
+    | read_csv | 1.165 | 0.040 | 0.077 | 5.753 | 29.4 | 15.2 |
+    | groupby | 0.374 | 0.009 | 0.010 | 5.179 | 40.7 | 36.2 |
+    | join | 0.242 | 0.010 | 0.010 | 3.650 | 25.3 | 23.8 |
+    | window | 0.341 | 0.008 | 0.009 | 5.882 | 43.5 | 38.4 |
+    | filter | 0.048 | 0.004 | 0.012 | 1.947 | 11.0 | 4.1 |
+    | strings_groupby | 0.149 | 0.006 | 0.006 | 4.212 | 25.1 | 25.0 |
+    | distinct_sort | 0.075 | 0.007 | 0.005 | 3.866 | 11.4 | 14.3 |
+    | write_parquet | 0.500 | 0.074 | 0.083 | n/a | 6.7 | 6.0 |
+    | partitioned_read | 0.048 | 0.004 | 0.006 | 5.190 | 13.3 | 7.9 |
+    | **total / geomean** | **2.99** | **0.16** | **0.22** | **40.55** | **x19.2** | **x14.9** |
 
-      - **Benchmark:** 10 tasks x 4 engines (39 timed cells; write_parquet x
-        sqlite is n/a) over the pinned January-2024 slice (2,964,624 rows,
-        8-column projection); 5 untraced warm repeats, median wall time; 1
-        untimed tracemalloc pass per cell; 1 fresh-process probe per cell
-        for peak RSS; cold read for the 4 I/O tasks.
-      - **Scalability:** the 5 most discriminating tasks x 4 engines on
-        seeded synthetic tracks at 1M / 3M / 10M rows; median of 2 warm
-        repeats, no probes; per-cell log-log slopes committed.
-      - **Correctness:** every task returns canonical rows; counts, keys and
-        dates must match exactly across engines and repeats, float sums
-        within a 1e-5 relative band (parallel summation reorder is noise).
-      - **Synthetic tracks:** same schema from a seeded generator; the CI
-        path runs the full protocol in ~26 s; the scalability datasets cache
-        under `data/scalability/`, verified against the seeded checksum.
-      - **Artifacts:** `reports/metrics.json`, `reports/evaluation_metadata.json`
-        (versions + hardware), 5 figures, `report.html`.
+    **Record** (`peak RSS`, MB, fresh-process probes; cold reads for I/O):
 
-      ## Limits
+    | finding | record |
+    |---|---|
+    | peak RSS | pandas 549-945 MB (join worst); Polars 200-529; DuckDB 178-633; sqlite 396-1520 (read_csv worst: frame and database coexist) |
+    | cold CSV read | pandas 1.23 s cold vs 1.16 s warm; Polars 0.048 s; DuckDB 0.080 s; sqlite 5.82 s (conversion-bound) |
+    | fastest per task | Polars takes 9 of 10; DuckDB takes the sorted distinct rollup |
+    | scalability | pandas slopes 0.98-1.00 and sqlite 1.00-1.09 (linear); Polars 0.44-0.76 and DuckDB 0.31-0.65 (sub-linear) |
+    | parity + determinism | 39/39 measured cells passed the canonical gate; 0 structural mismatches across 5 repeats + traced pass + probe each |
 
-      - One month of one city's taxis: the map is shaped by this schema and
-        this machine; other shapes (deeper joins, wider rows) move the
-        numbers.
-      - Wall-clock medians on a shared laptop: ordering and magnitude are
-        stable, the third decimal is not.
-      - Cold reads do not drop the OS page cache (not portable without
-        root); "cold" means a fresh interpreter, not a cold disk.
-      - sqlite's numbers are the from-files workflow (load, then query); a
-        long-lived sqlite database would pay the conversion once, not per
-        task; that is a different benchmark.
-      - The scalability tracks are synthetic (seeded, same schema); they
-        measure growth shape, not real-trip behavior at 10M.
+    ## Protocol
 
-      **In plain terms:** The measured map shows x19.2 / x14.9 geomean
-      speedups, a 7-44x spread by task, and linear-versus-sub-linear growth.
-      The parity gate caught real dropped rows before timing was accepted.
-    figures: []
+    - **Benchmark:** 10 tasks x 4 engines (39 timed cells; write_parquet x
+      `sqlite` is n/a) over the pinned January-2024 slice (`2,964,624` rows,
+      8-column projection); 5 untraced warm repeats, median wall time; 1
+      untimed `tracemalloc` pass per cell; 1 fresh-process probe per cell
+      for `peak RSS`; cold read for the 4 I/O tasks.
+    - **Scalability:** the 5 most discriminating tasks x 4 engines on
+      seeded synthetic tracks at 1M / 3M / 10M rows; median of 2 warm
+      repeats, no probes; per-cell log-log slopes committed.
+    - **Correctness:** every task returns canonical rows; counts, keys and
+      dates must match exactly across engines and repeats, float sums
+      within a `1e-5` relative band (parallel summation reorder is noise).
+    - **Synthetic tracks:** same schema from a seeded generator; the `CI`
+      path runs the full protocol in ~`26 s`; the scalability datasets cache
+      under `data/scalability/`, verified against the seeded checksum.
+    - **Artifacts:** `reports/metrics.json`, `reports/evaluation_metadata.json`
+      (versions + hardware), 5 figures, `report.html`.
+
+    ## Limits
+
+    - One month of one city's taxis: the map is shaped by this schema and
+      this machine; other shapes (deeper joins, wider rows) move the
+      numbers.
+    - Wall-clock medians on a shared laptop: ordering and magnitude are
+      stable, the third decimal is not.
+    - Cold reads do not drop the OS page cache (not portable without
+      root); "cold" means a fresh interpreter, not a cold disk.
+    - `sqlite`'s numbers are the from-files workflow (load, then query); a
+      long-lived `sqlite` database would pay the conversion once, not per
+      task; that is a different benchmark.
+    - The scalability tracks are synthetic (seeded, same schema); they
+      measure growth shape, not real-trip behavior at 10M.
+
+    **In plain terms:** Polars (19× faster) and DuckDB (15× faster) outperform pandas across every task and pull further ahead as files grow, while checking for matching results first caught 1,658 silently dropped trips.
+  figures: []
 roadmap:
 - status: shipped
-  title: "Gate every timing on identical rows"
-  detail: "Pinned input; every measured cell passed the canonical gate."
+  title: Gate every timing on identical rows
+  detail: Pinned input; every measured cell passed the canonical gate.
 - status: shipped
-  title: "Keep timings honest with untraced medians"
-  detail: "Median of 5 warm repeats; tracing stays outside the timed region."
+  title: Keep timings honest with untraced medians
+  detail: Median of 5 warm repeats; tracing stays outside the timed region.
 - status: shipped
-  title: "Catch dropped rows with parity checks"
-  detail: "Cross-engine comparison exposed 1,658 hidden N/A-borough trips."
+  title: Catch dropped rows with parity checks
+  detail: Cross-engine comparison exposed 1,658 hidden N/A-borough trips.
 - status: shipped
-  title: "Show the fast two scale sub-linearly"
-  detail: "The two columnar engines grow sub-linearly; pandas and sqlite stay linear."
+  title: Show the fast two scale sub-linearly
+  detail: The two columnar engines grow sub-linearly; pandas and sqlite stay linear.
 - status: next
-  title: "Benchmark real trips at 10M rows"
-  detail: "The 10M track is seeded synthetic, not real trips."
+  title: Benchmark real trips at 10M rows
+  detail: The 10M track is seeded synthetic, not real trips.
 key_concepts:
-  - "**Wall-time speedup:** divide one engine's median elapsed time by another's. Read it per task; the geomean is the geometric mean of those ratios."
-  - "**Peak RSS (resident set size):** the most physical memory a process holds. A fresh process per task keeps earlier tasks out of the measurement."
-  - "**Canonical result contract:** every engine must return the same rows, with exact counts and floats within a tight band, before timing counts."
-  - "**Lazy evaluation:** build a query plan first and execute it later. Polars uses this approach, so timing includes its whole plan."
-  - "**sqlite conversion cost:** standard-library sqlite cannot read parquet or CSV directly, so each timed task loads the file into an in-memory database first."
-  - "**Log-log slope:** the growth rate of time versus row count on logarithmic axes. A slope of 1.0 is linear; lower measured slopes are sub-linear."
+- '**Wall-time speedup:** divide one engine''s median elapsed time by another''s. Read it per task; the geomean is the geometric
+  mean of those ratios.'
+- '**Peak RSS (resident set size):** the most physical memory a process holds. A fresh process per task keeps earlier tasks
+  out of the measurement.'
+- '**Canonical result contract:** every engine must return the same rows, with exact counts and floats within a tight band,
+  before timing counts.'
+- '**Lazy evaluation:** build a query plan first and execute it later. Polars uses this approach, so timing includes its whole
+  plan.'
+- '**sqlite conversion cost:** standard-library sqlite cannot read parquet or CSV directly, so each timed task loads the file
+  into an in-memory database first.'
+- '**Log-log slope:** the growth rate of time versus row count on logarithmic axes. A slope of 1.0 is linear; lower measured
+  slopes are sub-linear.'
 figure_captions:
-  task_times_dotplot: >-
-    Median wall time per task and engine. Each dot is the median of 5 untraced
-    warm repeats, and the whiskers span the fastest and slowest repeat on a log
-    scale. Read top to bottom: pandas's CSV read (1.16 s) towers over the
-    columnar band at 2-83 ms. sqlite forms a higher band at 1.9-5.9 s, showing
-    the measured cost of loading files into its in-memory database.
-  speedup_overview: >-
-    Speedup versus the two classical baselines, using median wall time on a log
-    scale. pandas is on the left and sqlite is on the SQL tasks on the right;
-    the dashed line is x1. Against pandas, Polars spans x6.7-x43.5 and DuckDB
-    spans x4.1-x38.4; both reach up to three orders of magnitude past sqlite
-    (75-1985x). sqlite never crosses x1 against pandas (0.01-0.2x, or 5-110x
-    slower), with one n/a exception.
-  scalability_lines: >-
-    The left panel summarizes committed log-log growth exponents for all five
-    tasks; the dashed reference at 1.0 means linear growth. The right panel
-    shows the representative group-by curves on seeded 1M / 3M / 10M row
-    tracks. pandas and sqlite hold slope ~1.0; Polars and DuckDB are sub-linear
-    (0.31-0.76). At 10M rows, group-by takes 0.020-0.031 s versus pandas's
-    1.15 s and sqlite's 26.4 s.
-  memory_lollipop: >-
-    Peak RSS per task from fresh-process probes. Each stem runs from zero to
-    the process high-water mark, so compare heights across tasks. pandas
-    reaches 549-945 MB (945 MB on the join); Polars and DuckDB stay near
-    178-529 MB; sqlite runs 396-1520 MB because the loaded frame and its
-    database share the process.
-  normalized_heatmap: >-
-    Each task's median time is scaled to its fastest engine. The log color
-    scale makes a one-step darker cell 10x slower. Read a row left to right to
-    rank engines on that task, or a column to see one engine across tasks. The
-    write_parquet x sqlite square is n/a because standard-library sqlite has no
-    parquet writer; it is not a zero.
+  task_times_dotplot: 'Median wall time per task and engine. Each dot is the median of 5 untraced warm repeats, and the whiskers
+    span the fastest and slowest repeat on a log scale. Read top to bottom: pandas''s CSV read (1.16 s) towers over the columnar
+    band at 2-83 ms. sqlite forms a higher band at 1.9-5.9 s, showing the measured cost of loading files into its in-memory
+    database.'
+  speedup_overview: Speedup versus the two classical baselines, using median wall time on a log scale. pandas is on the left
+    and sqlite is on the SQL tasks on the right; the dashed line is x1. Against pandas, Polars spans x6.7-x43.5 and DuckDB
+    spans x4.1-x38.4; both reach up to three orders of magnitude past sqlite (75-1985x). sqlite never crosses x1 against pandas
+    (0.01-0.2x, or 5-110x slower), with one n/a exception.
+  scalability_lines: The left panel summarizes committed log-log growth exponents for all five tasks; the dashed reference
+    at 1.0 means linear growth. The right panel shows the representative group-by curves on seeded 1M / 3M / 10M row tracks.
+    pandas and sqlite hold slope ~1.0; Polars and DuckDB are sub-linear (0.31-0.76). At 10M rows, group-by takes 0.020-0.031
+    s versus pandas's 1.15 s and sqlite's 26.4 s.
+  memory_lollipop: Peak RSS per task from fresh-process probes. Each stem runs from zero to the process high-water mark, so
+    compare heights across tasks. pandas reaches 549-945 MB (945 MB on the join); Polars and DuckDB stay near 178-529 MB;
+    sqlite runs 396-1520 MB because the loaded frame and its database share the process.
+  normalized_heatmap: Each task's median time is scaled to its fastest engine. The log color scale makes a one-step darker
+    cell 10x slower. Read a row left to right to rank engines on that task, or a column to see one engine across tasks. The
+    write_parquet x sqlite square is n/a because standard-library sqlite has no parquet writer; it is not a zero.

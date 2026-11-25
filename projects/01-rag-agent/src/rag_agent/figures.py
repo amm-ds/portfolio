@@ -118,7 +118,13 @@ def sweep_figure(
                 mode="lines+markers+text",
                 text=[f"{v:.3f}" for v in lex_recall],
                 textposition="top center",
-                line={"dash": "dash", "color": "#a78bfa", "width": 2},
+                line={"dash": "dash", "color": "#fbbf24", "width": 2.8},
+                marker={
+                    "color": "#fbbf24",
+                    "size": 8,
+                    "symbol": "diamond",
+                    "line": {"width": 1.5, "color": "#0f172a"},
+                },
             )
         )
         fig.add_trace(
@@ -129,7 +135,13 @@ def sweep_figure(
                 mode="lines+markers+text",
                 text=[f"{v:.3f}" for v in lex_mrr],
                 textposition="bottom center",
-                line={"dash": "dot", "color": "#34d399", "width": 2},
+                line={"dash": "dot", "color": "#a78bfa", "width": 2.8},
+                marker={
+                    "color": "#a78bfa",
+                    "size": 8,
+                    "symbol": "circle",
+                    "line": {"width": 1.5, "color": "#0f172a"},
+                },
             )
         )
     fig.update_layout(

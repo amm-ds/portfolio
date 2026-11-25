@@ -149,6 +149,8 @@ def adaptive_stream_figure(result: dict[str, Any]) -> go.Figure:
             col=1,
         )
     drift = result["chunk_drift_z"]
+    drift_max = max(drift) if drift else 0.1
+    thresh = float(result["drift_z_max"])
     fig.add_scatter(
         x=list(range(1, len(drift) + 1)),
         y=drift,
@@ -159,16 +161,22 @@ def adaptive_stream_figure(result: dict[str, Any]) -> go.Figure:
         row=1,
         col=2,
     )
-    fig.add_hline(
-        y=result["drift_z_max"],
-        line={"dash": "dot", "color": "#fbbf24"},
-        row=1,
-        col=2,
-    )
+    if thresh <= drift_max * 2.5:
+        fig.add_hline(
+            y=thresh,
+            line={"dash": "dot", "color": "#fbbf24"},
+            row=1,
+            col=2,
+        )
+        y2_upper = max(drift_max, thresh) * 1.15
+        thresh_note = "dotted = drift trigger threshold"
+    else:
+        y2_upper = drift_max * 1.35
+        thresh_note = f"trigger threshold {thresh:.2f} sits off-scale above the data"
     fig.update_xaxes(title="outcome", row=1, col=1)
     fig.update_xaxes(title="chunk", row=1, col=2, dtick=1)
     fig.update_yaxes(title="minutes", row=1, col=1)
-    fig.update_yaxes(title="|median shift| / train IQR", row=1, col=2)
+    fig.update_yaxes(title="|median shift| / train IQR", range=[0.0, y2_upper], row=1, col=2)
     fig.update_layout(title="Fixed vs adaptive stream outcomes and drift", barmode="group")
     fixed, adaptive = result["fixed"], result["adaptive"]
     add_takeaway(
@@ -176,7 +184,7 @@ def adaptive_stream_figure(result: dict[str, Any]) -> go.Figure:
         f"{len(result['drift_events'])} of {result['n_chunks']} chunks trigger drift; "
         f"fixed precision/recall {fixed['precision']:.3f}/{fixed['recall']:.3f}; "
         f"adaptive {adaptive['precision']:.3f}/{adaptive['recall']:.3f}; "
-        "dotted = drift trigger threshold",
+        f"{thresh_note}",
     )
     return apply_theme(fig)
 

@@ -4,19 +4,20 @@ sections:
 - id: background
   text_md: |
     **When every answer carries a citation, what can still go wrong?**
-    A footnote looks safe, yet a model can misread a source or stitch two unrelated facts into a false bridge. Because readers trust linked citations, a guess hidden behind a real page causes real harm. This assistant answers from 593 pinned Wikipedia articles, citing each claim or declining when evidence fails.
+    A footnote looks safe, yet a model can misread a source or stitch two facts into a false bridge. This assistant answers from `593` pinned Wikipedia pages, citing each claim or declining when proof fails.
 
     ```diagram 01-rag-pipeline
     ```
 
-    CPU hybrid search pairs with a bounded repair loop before returning text.
+    Follow the pipeline in three steps:
 
-    - Across 120 questions, 104 finish cleanly (`F1 0.9091`), and 1 keeps an unsupported claim.
-    - One model family drafted and graded answers, and the final set ran four times, so scores act as an upper estimate.
+    - **Hybrid search (`S3`):** Blend `FAISS` vectors and `BM25` keywords over titled chunks, rerank, and cap at `2` chunks per page.
+    - **Draft & verify:** Run code span checks and verify each claim against full text, with at most `2` repairs.
+    - **Outcome (`n = 120`):** `104` finish cleanly (`F1 0.9091`) and `1` keeps an unsupported claim; single-family judging and `4` reads make this an upper bound.
 
     Next, we set the rules each answer must clear ([Objectives →](#sec-objectives)).
 
-    **In plain terms:** The assistant answers from checked passages or refuses honestly, holding unsupported answers to 1 in 120 on a fixed slice.
+    **In plain terms:** The assistant answers only from checked Wikipedia passages and says "I don't know" when proof is missing, keeping unsupported answers down to 1 out of 120 questions.
   figures: []
 - id: objectives
   text_md: |
@@ -36,13 +37,13 @@ sections:
 
     | Target | Threshold | Final test result |
     |---|---|---|
-    | Retrieval `recall@5` (92 answerable) | >= 0.60 | **0.9457** |
+    | Retrieval recall@5 (92 answerable) | >= 0.60 | **0.9457** |
     | Unanswerable refusals | high recall | **24 / 28** |
     | Answer-path cost (agent + verify) | <= $0.01 / query | **$0.0084 / query** |
     | Unsupported answers | none stated | **1 / 120** |
-    | Answer latency (`p50` / `p95`, n = 120) | bounded | **16.5 s / 40.5 s** |
+    | Answer latency (p50 / p95, n = 120) | bounded | **16.5 s / 40.5 s** |
 
-    **In plain terms:** The contract puts verifiable citations and honest refusals ahead of fluent guessing, meeting both search and `$0.01` cost goals.
+    **In plain terms:** The rules put checked sources and honest "I don't know" replies ahead of smooth guessing, while keeping search accurate and cost under 1 cent per question.
   figures: []
 - id: data
   text_md: |
@@ -52,11 +53,11 @@ sections:
     ```diagram auto-01-rag-agent-2
     ```
 
-    DVC tracks each build step from raw Wikipedia dump scan to chunk index, while snapshot dates and licenses sit in the [data registry](https://amm-ds.github.io/portfolio/data-registry/wikipedia/). Articles span five contrasting subjects: Climate, Renewable energy, Aviation, Machine learning, and Photosynthesis (up to 120 pages per topic plus required anchor titles).
+    `DVC` tracks each build step from raw Wikipedia dump scan to chunk index, while snapshot dates and licenses sit in the [data registry](https://amm-ds.github.io/portfolio/data-registry/wikipedia/). Articles span five contrasting subjects: `Climate`, `Renewable energy`, `Aviation`, `Machine learning`, and `Photosynthesis` (up to `120` pages per topic plus required anchor titles).
 
-    - Cutting pages at 12,000 characters fits each one into a single prompt window. That bounds search memory and prompt cost while preserving a long tail of rich flagship entries.
-    - Empty or oversized files fail loudly before indexing. SHA-256 hashes lock corpus files and question splits so any changed byte forces a clean rebuild rather than shifting a metric quietly.
-    - A local model drafted the 120 final questions straight from ground-truth corpus chunks (one chunk per single-hop question, two per multi-hop). Meanwhile, the 28 unanswerable questions ask about off-topic subjects such as Charon's orbit to test clear boundary refusals.
+    - Cutting pages at `12,000` characters fits each one into a single prompt window. That bounds search memory and prompt cost while preserving a long tail of rich flagship entries.
+    - Empty or oversized files fail loudly before indexing. `SHA-256` hashes lock corpus files and question splits so any changed byte forces a clean rebuild rather than shifting a metric quietly.
+    - A local model drafted the `120` final questions straight from ground-truth corpus chunks (one chunk per single-hop question, two per multi-hop). Meanwhile, the `28` unanswerable questions ask about off-topic subjects such as Charon's orbit to test clear boundary refusals.
 
     The question-set table below logs each split's size, role, and read count before we audit topic balance and page lengths in [EDA →](#sec-eda).
 
@@ -64,9 +65,9 @@ sections:
     |---|---:|---|---|
     | Tuning set | 65 (44 / 11 / 10) | Search & prompt tuning | Multiple |
     | Earlier gate set | 55 (32 / 10 / 13) | Early end-to-end gate | Consumed (1) |
-    | Final test set (`final_v3`) | 120 (68 / 24 / 28) | Headline retrieval & final run | Consumed (4) |
+    | Final test set (final_v3) | 120 (68 / 24 / 28) | Headline retrieval & final run | Consumed (4) |
 
-    **In plain terms:** Pinning 593 articles and a three-way question mix ensures search, synthesis, and refusals are measured on identical text.
+    **In plain terms:** Freezing 593 Wikipedia articles and testing a mix of simple, multi-page, and unanswerable questions ensures every run is judged on the exact same text.
   figures: []
 - id: eda
   text_md: |
@@ -75,11 +76,11 @@ sections:
 
     Because the raw Wikipedia export is not sorted by topic, taking top-N pages in file order would pack the slice with unrelated early entries. We matched each topic explicitly and checked every resulting title against the slice.
 
-    - All five subjects hold between 102 and 125 indexed pages. That tight spread forces search to handle science, clean energy, flight, and machine learning terms alike.
-    - Word counts form a long tail that stops sharply at the 12,000-character cutoff. That hard edge reflects our curation cap, not natural article lengths on the web.
-    - Several expected flagship titles were missing from the first automated scan. Checking anchor titles and test questions straight against the corpus prevented scoring questions on pages that were never indexed.
+    - All five subjects hold between `102` and `125` indexed pages. That tight spread forces search to handle science, clean energy, flight, and machine learning terms alike.
+    - Word counts form a long tail that stops sharply at the `12,000`-character cutoff. That hard edge reflects our curation cap, not natural article lengths on the web.
+    - Several expected flagship titles were missing from the first automated scan. Checking anchor titles and test questions straight against the `593`-page corpus prevented scoring questions on pages that were never indexed.
 
-    The corpus table and `eda_corpus_composition` chart below confirm even topic counts and bounded lengths across all 593 pages, setting a clean base for search tuning ([Training →](#sec-training)).
+    The corpus table and `eda_corpus_composition` chart below confirm even topic counts and bounded lengths across all `593` pages, setting a clean base for search tuning ([Training →](#sec-training)).
 
     | Corpus stat | Measured value |
     |---|---|
@@ -87,7 +88,7 @@ sections:
     | Pages per topic | 102–125 |
     | Maximum page length | 12,000 characters |
 
-    **In plain terms:** Early checks confirmed balanced topic counts and bounded page lengths across all 593 articles before training began.
+    **In plain terms:** Checking the 593 pages first confirmed that all five topics are evenly represented and every page fits within a safe reading length.
   figures: [eda_corpus_composition]
 - id: training
   text_md: |
@@ -135,7 +136,7 @@ sections:
 
     Excerpt from [index.py](https://github.com/amm-ds/portfolio/blob/main/projects/01-rag-agent/src/rag_agent/index.py). Below, `retrieval_ladder` charts the baseline-to-hybrid tournament with Wilson 95% whiskers while `chunk_size_sweep` and `model_comparison` show the earlier tuning runs; next, we examine how final answers are judged ([Evaluation →](#sec-evaluation)).
 
-    **In plain terms:** Prefixing titles, blending keyword and vector search, reranking, and capping chunks per page lifted final recall to 94.6% on CPU.
+    **In plain terms:** Adding page titles to each passage, combining keyword and meaning search, re-sorting top hits, and limiting results per page lifted search accuracy to 95% on a normal CPU.
   figures: [retrieval_ladder, chunk_size_sweep, model_comparison]
 - id: evaluation
   text_md: |
@@ -153,15 +154,15 @@ sections:
     - The owner then hand-checked 30 claims blind to model tags (11 supported, 19 unsupported). Seven items were reconciled against passage text with the reviewer audit, hitting `30/30` (`Wilson 95% [0.8865, 1.0]`, well over `0.85`).
     - Hard loop rails (12 requests, 16 tool calls, 200k input tokens, plus an in-tool ceiling) block runaway searches. Verification abstained twice and skipped 33 claim-free outputs such as refusals.
 
-    **How clean are the test set and judge?** Not fully independent. One model (`kimi-for-coding`) drafted, verified, and graded the answers, and `final_v3` was read four times (`R0`, `S3` gate, held-out check, and final run). These figures therefore represent an optimistic upper estimate pending a fresh test set and cross-model judge ([Results →](#sec-results)).
+    **How clean are the test set and judge?** The `30`-claim blind owner audit is complete (`30/30`), yet full end-to-end independence is still open. One model (`kimi-for-coding`) drafted, verified, and graded the `120`-question run, and `final_v3` was read four times (`R0`, `S3` gate, held-out check, and final run). Treat these scores as an upper estimate until a second model family grades a fresh `final_v4` split ([Results →](#sec-results)).
 
     | Check | Role | Model | Audit status |
     |---|---|---|---|
-    | Claim verifier | Passage support (`>= 0.6` answer floor) | `kimi-for-coding` | 30/30 owner-labelled (blind to model labels) |
-    | Rubric judge | Answer vs. abstain failure class | `kimi-for-coding` | Calibrated on `judge_v2` |
-    | RAGAS suite | Faithfulness & answer relevance | `kimi-for-coding` | Library v0.3.1 (tuning pass) |
+    | Claim verifier | Passage support (>= 0.6 answer floor) | kimi-for-coding | 30/30 owner-labelled (blind to model labels) |
+    | Rubric judge | Answer vs. abstain failure class | kimi-for-coding | Calibrated on judge_v2 |
+    | RAGAS suite | Faithfulness & answer relevance | kimi-for-coding | Library v0.3.1 (tuning pass) |
 
-    **In plain terms:** Every output faces search baselines, code span checks, and a 30/30 owner-audited verifier, with single-family judging and test reuse openly disclosed.
+    **In plain terms:** Every answer is checked against simple baselines, exact text rules, and a human-audited verifier (30 out of 30 matched), while openly noting that one model family handled both writing and grading.
   figures: []
 - id: results
   text_md: |
@@ -180,16 +181,16 @@ sections:
 
     The headline table and three charts below (`final_outcome`, `failure_taxonomy`, `verify_funnel`) trace every verdict and claim step before we summarize lessons learned ([Conclusions →](#sec-conclusions)).
 
-    | Final pass metric (`final_v3`, n = 120) | Value |
+    | Final pass metric (final_v3, n = 120) | Value |
     |---|---:|
     | F1 / Precision / Recall | **0.9091** / 0.9524 / 0.8696 |
-    | Overall accuracy (Wilson 95% CI) | **0.8667** `[0.7944, 0.9162]` |
-    | Faithfulness (n = 92 answerable, 95% CI) | **0.8717** `[0.8092, 0.9304]` |
-    | Retrieval `recall@5` (n = 92 answerable) | **0.9457** (vs 0.9239 baseline) |
+    | Overall accuracy (Wilson 95% CI) | **0.8667** [0.7944, 0.9162] |
+    | Faithfulness (n = 92 answerable, 95% CI) | **0.8717** [0.8092, 0.9304] |
+    | Retrieval recall@5 (n = 92 answerable) | **0.9457** (vs 0.9239 baseline) |
     | Outcomes (correct / empty / budget / unsupported / miss) | **104 / 10 / 4 / 1 / 1** |
     | Answer-path cost / Total with judge | **$0.0084** / **$0.0121** per query |
 
-    **In plain terms:** Verification cut unsupported answers to 1 in 120 under `$0.01` per query; the main remaining risk is over-abstention on 10 answerable questions.
+    **In plain terms:** Checking every claim kept unsupported answers to 1 in 120 at under 1 cent per question; the main trade-off is being overly cautious and skipping 10 answerable questions.
   figures: [final_outcome, failure_taxonomy, verify_funnel]
 - id: conclusions
   text_md: |
@@ -211,6 +212,8 @@ sections:
     Below, `final_outcome` summarizes the 120-question confusion matrix and slice totals beside the full historical appendix; see the [full evaluation report](https://amm-ds.github.io/portfolio/projects/01-rag-agent/) for supporting artifacts.
 
     ## Exact numbers
+
+    Shipped `S3` + verify final pass (`final_v3`, `n = 120`, `reports/final_v3_e2e/`): `F1 0.9091`, precision `0.9524`, recall `0.8696`, accuracy `86.7% [0.7944, 0.9162]`, faithfulness `0.8717 [0.8092, 0.9304]`, `recall@5 0.9457`, answer-path cost `$0.0084/query`, `1/120` unsupported.
 
     Tuning-pass retrieval configurations (65 tuning questions, `reports/metrics.json`):
 
@@ -254,7 +257,7 @@ sections:
     - Judges: rubric taxonomy, RAGAS `0.3.1`, and per-claim verification (`0.6` answer floor, `<= 2` repairs).
     - Cost: public rate card estimates at `$1.00/Mtok` input, `$4.00/Mtok` output, `30%` cached reads (`kimi-k2.8-preview` proxy).
 
-    **In plain terms:** Hybrid S3 search, owner-audited verification, and bounded tool rails lift final F1 to 0.9091 with 1 unsupported answer in 120; cutting unnecessary refusals and running a cross-judge check on a fresh `final_v4` set come next.
+    **In plain terms:** Combining better search, claim checking, and strict safety limits answered or refused 104 of 120 questions cleanly with only 1 unsupported answer; next steps are cutting unnecessary refusals and confirming results with a second AI judge on brand-new questions.
   figures: [final_outcome]
 key_concepts:
   - "**Seeded floors:** Random and word-match rankings anchor every headline, so a score cannot merely restate how easy the task is."
