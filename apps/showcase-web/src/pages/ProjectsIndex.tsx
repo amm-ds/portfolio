@@ -58,7 +58,7 @@ export const TOPIC_ROWS: { name: string; description: string; topics: string[] }
   },
   {
     name: "Optimization",
-    description: "Routing and scheduling under real operational constraints.",
+    description: "Routing, pricing, and sequential decisions under real operational constraints.",
     topics: ["Optimization"],
   },
   {

@@ -291,7 +291,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
       "pre-registered single sealed evaluation"
     ],
     "title": "Dynamic Pricing with RL",
-    "topic": "Decision Science"
+    "topic": "Optimization"
   }
 ];
 

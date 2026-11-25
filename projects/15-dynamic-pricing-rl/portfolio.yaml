@@ -1,7 +1,7 @@
 id: 15-dynamic-pricing-rl
 title: Dynamic Pricing with RL
 domain: Reinforcement learning & pricing simulation
-topic: Decision Science
+topic: Optimization
 techniques:
 - constrained Gymnasium environment
 - masked PPO with convolutional history encoder
