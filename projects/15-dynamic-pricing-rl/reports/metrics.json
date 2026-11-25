@@ -1,0 +1,440 @@
+{
+  "_meta": {
+    "created_at": null,
+    "data_contract_sha256": null,
+    "git_sha": "b9d37131b07fa1dbc1eb20f3cab441d0e65ebab4",
+    "params_sha256": "52cf069d1034626b639c05d03407bd545eda9fa0cd2147d4b48893711e852b07",
+    "schema_version": 1,
+    "seed": 42,
+    "uv_lock_sha256": "cfaed5eee2d80ad00be3ed47a3c1380280704fa96e3062541a1b2926765f750a"
+  },
+  "bound_share_method": "ratio of mean normalised profits within each rho group",
+  "constraint_gate": {
+    "action_masks_required": true,
+    "hypothesis": "P2",
+    "passes": true,
+    "violations_by_policy": {
+      "B0": 0,
+      "B1": 0,
+      "B2": 0,
+      "B3": 0,
+      "RL": 0
+    },
+    "violations_exactly": 0
+  },
+  "preregistration_sha256": "c94f0f97c37afd2788760356b31d89de8fb3d1790b9fc0685bdbcc15bd9cf627",
+  "price_trace_indices": [
+    89,
+    654,
+    773
+  ],
+  "primary": {
+    "comparator": "B1",
+    "comparison": "RL minus B1",
+    "hypothesis": "P1",
+    "paired_difference": {
+      "confidence": 0.95,
+      "hi": -0.007997938457781678,
+      "lo": -0.01143722548094719,
+      "n_resamples": 2000,
+      "point": -0.009695552117954365,
+      "seed": 42,
+      "unit": "episode"
+    },
+    "passes": false,
+    "relative_lift": -0.018584600072990766,
+    "relative_lift_min": 0.01,
+    "relative_lift_pct": -1.8584600072990767
+  },
+  "protocol_version": 1,
+  "selected_model_path": "reports/models/ppo_seed_1.zip",
+  "selected_seed": 1,
+  "stress": {
+    "stress_mean_m1_5": {
+      "n_episodes": 500,
+      "policies": {
+        "B0": {
+          "constraint_policy": true,
+          "fluid_bound_share": 0.7148394117357555,
+          "fluid_bound_share_by_rho": {
+            "0.7": 0.7751176641276093,
+            "1.0": 0.7124826917846299,
+            "1.3": 0.6323707081972438
+          },
+          "fluid_bound_share_pct": 71.48394117357554,
+          "mean_by_rho": {
+            "0.7": 0.529574183533594,
+            "1.0": 0.3957145252567639,
+            "1.3": 0.30759796468378103
+          },
+          "mean_normalised_profit": 0.4111689530109949,
+          "mean_raw_gross_profit": 673.40428,
+          "n_episodes": 500,
+          "violations": 0
+        },
+        "B1": {
+          "constraint_policy": true,
+          "fluid_bound_share": 0.9820769097713825,
+          "fluid_bound_share_by_rho": {
+            "0.7": 0.9872189421492107,
+            "1.0": 0.9808997685164242,
+            "1.3": 0.9761631642246813
+          },
+          "fluid_bound_share_pct": 98.20769097713826,
+          "mean_by_rho": {
+            "0.7": 0.6744855516174845,
+            "1.0": 0.5447939868555836,
+            "1.3": 0.47482560248684863
+          },
+          "mean_normalised_profit": 0.5648814658756385,
+          "mean_raw_gross_profit": 821.4828020000001,
+          "n_episodes": 500,
+          "violations": 0
+        },
+        "B2": {
+          "constraint_policy": true,
+          "fluid_bound_share": 0.6970905851215035,
+          "fluid_bound_share_by_rho": {
+            "0.7": 0.5166754389930859,
+            "1.0": 0.7603295034410995,
+            "1.3": 0.8793830521041279
+          },
+          "fluid_bound_share_pct": 69.70905851215035,
+          "mean_by_rho": {
+            "0.7": 0.3530018556145024,
+            "1.0": 0.42228875446683006,
+            "1.3": 0.42774978900551813
+          },
+          "mean_normalised_profit": 0.40095999371699703,
+          "mean_raw_gross_profit": 722.4874240000001,
+          "n_episodes": 500,
+          "violations": 0
+        },
+        "B3": {
+          "constraint_policy": true,
+          "fluid_bound_share": 0.9312011227690541,
+          "fluid_bound_share_by_rho": {
+            "0.7": 0.95864625488833,
+            "1.0": 0.9458222908170084,
+            "1.3": 0.8756246818565998
+          },
+          "fluid_bound_share_pct": 93.12011227690542,
+          "mean_by_rho": {
+            "0.7": 0.6549641831494185,
+            "1.0": 0.5253118750862987,
+            "1.3": 0.4259216413325125
+          },
+          "mean_normalised_profit": 0.5356181883731238,
+          "mean_raw_gross_profit": 806.0640920000001,
+          "n_episodes": 500,
+          "violations": 0
+        },
+        "RL": {
+          "constraint_policy": true,
+          "fluid_bound_share": 0.9474734508131374,
+          "fluid_bound_share_by_rho": {
+            "0.7": 0.9612318787052829,
+            "1.0": 0.9414003507822465,
+            "1.3": 0.9350083132555731
+          },
+          "fluid_bound_share_pct": 94.74734508131375,
+          "mean_by_rho": {
+            "0.7": 0.6567307273596179,
+            "1.0": 0.5228559194234507,
+            "1.3": 0.45480704654985626
+          },
+          "mean_normalised_profit": 0.5449778794800971,
+          "mean_raw_gross_profit": 819.544416,
+          "n_episodes": 500,
+          "violations": 0
+        },
+        "UB": {
+          "constraint_policy": false,
+          "fluid_bound_share": 1.0,
+          "fluid_bound_share_by_rho": {
+            "0.7": 1.0,
+            "1.0": 1.0,
+            "1.3": 1.0
+          },
+          "fluid_bound_share_pct": 100.0,
+          "mean_by_rho": {
+            "0.7": 0.6832177978160604,
+            "1.0": 0.5554022993394778,
+            "1.3": 0.4864203238645861
+          },
+          "mean_normalised_profit": 0.5751906599729925,
+          "mean_raw_gross_profit": 833.4140941391394,
+          "n_episodes": 500,
+          "violations": null
+        }
+      }
+    },
+    "stress_mean_m3_5": {
+      "n_episodes": 500,
+      "policies": {
+        "B0": {
+          "constraint_policy": true,
+          "fluid_bound_share": 0.840819804827511,
+          "fluid_bound_share_by_rho": {
+            "0.7": 0.8877974715061321,
+            "1.0": 0.8479000988145117,
+            "1.3": 0.7627632142096358
+          },
+          "fluid_bound_share_pct": 84.08198048275109,
+          "mean_by_rho": {
+            "0.7": 0.5289368155082207,
+            "1.0": 0.3954819384314275,
+            "1.3": 0.3076157078922032
+          },
+          "mean_normalised_profit": 0.4108842788360539,
+          "mean_raw_gross_profit": 653.313472,
+          "n_episodes": 500,
+          "violations": 0
+        },
+        "B1": {
+          "constraint_policy": true,
+          "fluid_bound_share": 0.9897614740024333,
+          "fluid_bound_share_by_rho": {
+            "0.7": 0.9901625738267249,
+            "1.0": 0.9846864115500722,
+            "1.3": 0.9950702621608765
+          },
+          "fluid_bound_share_pct": 98.97614740024333,
+          "mean_by_rho": {
+            "0.7": 0.5899244539938001,
+            "1.0": 0.45928251610228965,
+            "1.3": 0.4013031008768217
+          },
+          "mean_normalised_profit": 0.4836677575031988,
+          "mean_raw_gross_profit": 528.5762820000001,
+          "n_episodes": 500,
+          "violations": 0
+        },
+        "B2": {
+          "constraint_policy": true,
+          "fluid_bound_share": 0.8167980841888286,
+          "fluid_bound_share_by_rho": {
+            "0.7": 0.7263770883427998,
+            "1.0": 0.8545297331742061,
+            "1.3": 0.9072811657733034
+          },
+          "fluid_bound_share_pct": 81.67980841888286,
+          "mean_by_rho": {
+            "0.7": 0.4327648999882517,
+            "1.0": 0.3985741666919612,
+            "1.3": 0.3658985290157329
+          },
+          "mean_normalised_profit": 0.39914555990441436,
+          "mean_raw_gross_profit": 667.9177040000002,
+          "n_episodes": 500,
+          "violations": 0
+        },
+        "B3": {
+          "constraint_policy": true,
+          "fluid_bound_share": 0.9726725723793633,
+          "fluid_bound_share_by_rho": {
+            "0.7": 0.9782609276701669,
+            "1.0": 0.9828121084680238,
+            "1.3": 0.9525696243305805
+          },
+          "fluid_bound_share_pct": 97.26725723793633,
+          "mean_by_rho": {
+            "0.7": 0.5828336263902075,
+            "1.0": 0.4584082939891741,
+            "1.3": 0.38416296675855066
+          },
+          "mean_normalised_profit": 0.47531690637055235,
+          "mean_raw_gross_profit": 591.7025940000001,
+          "n_episodes": 500,
+          "violations": 0
+        },
+        "RL": {
+          "constraint_policy": true,
+          "fluid_bound_share": 0.9857534417461375,
+          "fluid_bound_share_by_rho": {
+            "0.7": 0.9886630133574054,
+            "1.0": 0.9829571356752348,
+            "1.3": 0.9846827550469011
+          },
+          "fluid_bound_share_pct": 98.57534417461376,
+          "mean_by_rho": {
+            "0.7": 0.5890310376857335,
+            "1.0": 0.4584759383273612,
+            "1.3": 0.3971139104510461
+          },
+          "mean_normalised_profit": 0.48170914825812094,
+          "mean_raw_gross_profit": 566.3733500000001,
+          "n_episodes": 500,
+          "violations": 0
+        },
+        "UB": {
+          "constraint_policy": false,
+          "fluid_bound_share": 1.0,
+          "fluid_bound_share_by_rho": {
+            "0.7": 1.0,
+            "1.0": 1.0,
+            "1.3": 1.0
+          },
+          "fluid_bound_share_pct": 100.0,
+          "mean_by_rho": {
+            "0.7": 0.5957854493670601,
+            "1.0": 0.4664251590303729,
+            "1.3": 0.4032912208685236
+          },
+          "mean_normalised_profit": 0.4886710285330925,
+          "mean_raw_gross_profit": 553.1132714235428,
+          "n_episodes": 500,
+          "violations": null
+        }
+      }
+    }
+  },
+  "test": {
+    "n_episodes": 1000,
+    "policies": {
+      "B0": {
+        "constraint_policy": true,
+        "fluid_bound_share": 0.7758634985847225,
+        "fluid_bound_share_by_rho": {
+          "0.7": 0.8284158271024822,
+          "1.0": 0.774706676330191,
+          "1.3": 0.7006306734930297
+        },
+        "fluid_bound_share_pct": 77.58634985847225,
+        "mean_by_rho": {
+          "0.7": 0.5282842019677475,
+          "1.0": 0.3954069322457931,
+          "1.3": 0.3075380245511785
+        },
+        "mean_normalised_profit": 0.41052759407061923,
+        "mean_normalised_profit_ci95": [
+          0.4051643791725188,
+          0.4159915541573197
+        ],
+        "mean_raw_gross_profit": 646.376256,
+        "n_episodes": 1000,
+        "violations": 0
+      },
+      "B1": {
+        "constraint_policy": true,
+        "fluid_bound_share": 0.9859668009816626,
+        "fluid_bound_share_by_rho": {
+          "0.7": 0.9864122296276644,
+          "1.0": 0.9900060479822864,
+          "1.3": 0.9806209804072534
+        },
+        "fluid_bound_share_pct": 98.59668009816625,
+        "mean_by_rho": {
+          "0.7": 0.629039161845482,
+          "1.0": 0.5052947990480638,
+          "1.3": 0.43043824736412567
+        },
+        "mean_normalised_profit": 0.5216981845116502,
+        "mean_normalised_profit_ci95": [
+          0.516016044622689,
+          0.5276627235670005
+        ],
+        "mean_raw_gross_profit": 648.0750770000001,
+        "n_episodes": 1000,
+        "violations": 0
+      },
+      "B2": {
+        "constraint_policy": true,
+        "fluid_bound_share": 0.7518945022339053,
+        "fluid_bound_share_by_rho": {
+          "0.7": 0.6201155816412162,
+          "1.0": 0.7983873783293599,
+          "1.3": 0.889858532180811
+        },
+        "fluid_bound_share_pct": 75.18945022339052,
+        "mean_by_rho": {
+          "0.7": 0.3954502732292304,
+          "1.0": 0.407493459982037,
+          "1.3": 0.3905985642228959
+        },
+        "mean_normalised_profit": 0.39784503531880555,
+        "mean_normalised_profit_ci95": [
+          0.3932762733202203,
+          0.40217472781403507
+        ],
+        "mean_raw_gross_profit": 665.2781530000002,
+        "n_episodes": 1000,
+        "violations": 0
+      },
+      "B3": {
+        "constraint_policy": true,
+        "fluid_bound_share": 0.9503233450306584,
+        "fluid_bound_share_by_rho": {
+          "0.7": 0.9623826802121613,
+          "1.0": 0.9540161040632896,
+          "1.3": 0.9284569159800509
+        },
+        "fluid_bound_share_pct": 95.03233450306584,
+        "mean_by_rho": {
+          "0.7": 0.6137154187187791,
+          "1.0": 0.4869256875488319,
+          "1.3": 0.407541114918408
+        },
+        "mean_normalised_profit": 0.5028383950736631,
+        "mean_normalised_profit_ci95": [
+          0.49696487980403325,
+          0.5089785163848967
+        ],
+        "mean_raw_gross_profit": 671.5727600000001,
+        "n_episodes": 1000,
+        "violations": 0
+      },
+      "RL": {
+        "constraint_policy": true,
+        "fluid_bound_share": 0.9676430023001723,
+        "fluid_bound_share_by_rho": {
+          "0.7": 0.9736228217534959,
+          "1.0": 0.9689514067277235,
+          "1.3": 0.9574079715672462
+        },
+        "fluid_bound_share_pct": 96.76430023001724,
+        "mean_by_rho": {
+          "0.7": 0.6208833035055021,
+          "1.0": 0.4945486013420638,
+          "1.3": 0.42024902335120373
+        },
+        "mean_normalised_profit": 0.5120026323936958,
+        "mean_normalised_profit_ci95": [
+          0.5064805403756054,
+          0.5176742708837452
+        ],
+        "mean_raw_gross_profit": 660.563584,
+        "n_episodes": 1000,
+        "violations": 0
+      },
+      "UB": {
+        "constraint_policy": false,
+        "fluid_bound_share": 1.0,
+        "fluid_bound_share_by_rho": {
+          "0.7": 1.0,
+          "1.0": 1.0,
+          "1.3": 1.0
+        },
+        "fluid_bound_share_pct": 100.0,
+        "mean_by_rho": {
+          "0.7": 0.6377041392551692,
+          "1.0": 0.5103956688728277,
+          "1.3": 0.43894456264372805
+        },
+        "mean_normalised_profit": 0.5291234796062397,
+        "mean_normalised_profit_ci95": [
+          0.523691459919189,
+          0.5347582839778213
+        ],
+        "mean_raw_gross_profit": 653.3969197915122,
+        "n_episodes": 1000,
+        "violations": null
+      }
+    }
+  },
+  "verdicts": {
+    "P1": "fail",
+    "P2": "pass",
+    "P3": "context_only"
+  }
+}

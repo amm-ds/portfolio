@@ -1,469 +1,464 @@
 project_id: 12-tabular-ml-lifecycle
-headline: "The served tabular MLP (PyTorch) — validation-tied with LightGBM — cuts hourly rental forecasting error to 25.4 MAE from 83.2 for the seasonal-naive floor on the frozen 8-week test window (hourly 95% bootstrap CI 52.5-63.1; week-block sensitivity 38.8-73.4, both excluding zero)."
-data_note: "Real UCI Bike Sharing hour.csv (17,379 hourly rows, Capital Bikeshare 2011-2012, sha256-pinned) plus a seeded synthetic CI twin; time-based split."
-limits: "Validation made every modeling choice; ablation test scores are post-freeze diagnostics. Hourly errors are serially dependent; lags are positional around ~1% missing hours; one city over two years/four seasons."
+headline: The served tabular MLP (PyTorch) — validation-tied with LightGBM — cuts hourly rental forecasting error to 25.4
+  MAE from 83.2 for the seasonal-naive floor on the frozen 8-week test window (hourly 95% bootstrap CI 52.5-63.1; week-block
+  sensitivity 38.8-73.4, both excluding zero).
+data_note: Real UCI Bike Sharing hour.csv (17,379 hourly rows, Capital Bikeshare 2011-2012, sha256-pinned) plus a seeded synthetic
+  CI twin; time-based split.
+limits: Validation made every modeling choice; ablation test scores are post-freeze diagnostics. Hourly errors are serially
+  dependent; lags are positional around ~1% missing hours; one city over two years/four seasons.
 short_version: |
   Real UCI Capital Bikeshare hourly demand (17,379 rows): the validation-selected
   PyTorch MLP reaches 25.4 test MAE vs 83.2 for the seasonal-naive floor. The
   57.8/hour gain has hourly 95% CI 52.5-63.1 and week-block sensitivity 38.8-73.4.
 sections:
-  - id: background
-    text_md: |
-      **How many bikes will be rented in the next hour?** A fleet team places
-      bikes by that number; the deliverable is one forecast per hour. The
-      study follows one table from source checks to a final forecast, pinning
-      the data, splitting records by time, using only past information, and
-      comparing models of increasing complexity.
+- id: background
+  text_md: |
+    **Can a learned model beat last week's bike rentals on a protected `8`-week test window?**
+    We compare linear, tree, and neural models (`Ridge`, `RandomForest`, `LightGBM`, `MLP`) on real hourly `Capital Bikeshare` data against a `seasonal_naive` floor (`83.2` `MAE`).
 
-      The starting point is a seasonal-naive forecast: last week's count at
-      the same hour. The final challenger is a multi-layer perceptron (MLP), a neural
-      network for tables trained in PyTorch.
+    ```diagram 12-lifecycle-pipeline
+    ```
 
-      Follow `12-lifecycle-pipeline` from input to test: quality checks and
-      validation choices protect the final 8-week test window, which gives one
-      score per candidate plus post-freeze ablation diagnostics.
+    Follow the lifecycle in three steps:
 
-      ```diagram 12-lifecycle-pipeline
-      ```
+    - **Clean split:** Strip answer-derived columns and lock the final `8`-week window out of training and tuning.
+    - **Compare fairly:** Tune each model family on past validation data and pick the winner before touching test.
+    - **Outcome:** The served tabular `MLP` cuts test error from `83.2` to `25.4` rentals/hour (`−57.8` `MAE`), confirmed by block intervals.
 
-      The pipeline diagram sets the route; next, the three checks
-      ([Objectives →](#sec-objectives)).
+    Next, the three checks behind the verdict ([Objectives →](#sec-objectives)).
 
-      **In plain terms:** On real Capital Bikeshare hourly data, the measured
-      challenger must beat the seasonal-naive floor on that window, with
-      uncertainty attached to the gain.
-    figures: []
-  - id: objectives
-    text_md: |
-      **Three checks decide whether the forecast is useful.** Read
-      `auto-12-tabular-ml-lifecycle-1` as a sequence: establish the floor,
-      compare candidates fairly, then inspect the remaining errors.
+    **In plain terms:** On real hourly bike-share data, a neural network cuts prediction error from 83 to 25 bikes per hour compared with repeating last week's numbers, even on a protected 8-week test window.
+  figures: []
+- id: objectives
+  text_md: |
+    **Three checks decide whether the forecast is useful.** Read
+    `auto-12-tabular-ml-lifecycle-1` as a sequence: establish the floor,
+    compare candidates fairly, then inspect the remaining errors.
 
-      - **Beat the floor.** A candidate must improve on "same hour last week".
-        The estimated gain needs an interval that excludes zero, not just a
-        promising average.
-      - **Compare model families fairly.** A linear model fits straight-line
-        relationships. Boosted trees combine many small decision trees that
-        correct earlier errors. The MLP learns more flexible patterns from the
-        same tabular features.
-      - **Locate the errors.** A residual is the actual count minus the
-        forecast. Residual maps show whether misses cluster by hour, season,
-        or weather.
+    - **Beat the floor.** A candidate must improve on "same hour last week".
+      The estimated gain needs an interval that excludes zero, not just a
+      promising average.
+    - **Compare model families fairly.** A linear model fits straight-line
+      relationships. Boosted trees combine many small decision trees that
+      correct earlier errors. The `MLP` learns more flexible patterns from the
+      same tabular features.
+    - **Locate the errors.** A residual is the actual count minus the
+      forecast. Residual maps show whether misses cluster by hour, season,
+      or weather.
 
-      The diagram also ties these checks to four safeguards on one fixed split:
+    The diagram also ties these checks to four safeguards on one fixed split:
 
-      - The final 8 weeks form the test set, with one score per candidate;
-        ablation test scores are post-freeze diagnostics, not selectors.
-      - Every candidate uses a fixed random seed, so its run can be repeated.
-      - Loss curves track error during training. Learning curves show how scores
-        change with more rows. Controlled on/off comparisons test
-        regularization, methods that discourage overfitting. Overfitting means
-        learning training noise in a way that hurts predictions on new data.
-      - Paired bootstrap confidence intervals (CIs) estimate a plausible range
-        for the gain by resampling the same hours or intact day/week blocks for
-        both models.
+    - The final 8 weeks form the test set, with one score per candidate;
+      ablation test scores are post-freeze diagnostics, not selectors.
+    - Every candidate uses a fixed random seed, so its run can be repeated.
+    - Loss curves track error during training. Learning curves show how scores
+      change with more rows. Controlled on/off comparisons test
+      regularization, methods that discourage overfitting. Overfitting means
+      learning training noise in a way that hurts predictions on new data.
+    - Paired bootstrap confidence intervals (CIs) estimate a plausible range
+      for the gain by resampling the same hours or intact day/week blocks for
+      both models.
 
-      ```diagram auto-12-tabular-ml-lifecycle-1
-      ```
+    ```diagram auto-12-tabular-ml-lifecycle-1
+    ```
 
-      The checks need one protected series; next, the real input, the
-      twin, and the time split ([Data →](#sec-data)).
+    The checks need one protected series; next, the real input, the
+    twin, and the time split ([Data →](#sec-data)).
 
-      **In plain terms:** Success means a reproducible margin over the
-      seasonal-naive floor on the frozen 8-week window, a fair model
-      comparison, and residual maps that locate the remaining error.
-    figures: []
-  - id: data
-    text_md: |
-      **One real series and one synthetic twin feed the same time-based pipeline.**
-      Follow `auto-12-tabular-ml-lifecycle-2` from each input to the shared
-      checks and split. The real input is the University of California, Irvine
-      (UCI) Bike Sharing series: 17,379 hourly rows for Capital Bikeshare in
-      Washington D.C. during 2011-2012. A pinned SHA-256 checksum, a fixed
-      fingerprint for the downloaded file, verifies the source. The
-      [dataset contract](https://amm-ds.github.io/portfolio/data-registry/bike-sharing/)
-      records those details. The seeded synthetic twin recreates the same
-      columns offline for continuous integration (CI), meaning automated tests
-      that run without network access.
+    **In plain terms:** Beat the simple 'same hour last week' baseline by a clear, reproducible margin on a frozen 8-week test window and map where remaining errors happen.
+  figures: []
+- id: data
+  text_md: |
+    **One real series and one synthetic twin feed the same time-based pipeline.**
+    Follow `auto-12-tabular-ml-lifecycle-2` from each input to the shared
+    checks and split. The real input is the University of California, Irvine
+    (UCI) Bike Sharing series: `17,379` hourly rows for `Capital Bikeshare` in
+    Washington D.C. during 2011-2012. A pinned `SHA-256` checksum, a fixed
+    fingerprint for the downloaded file, verifies the source. The
+    [dataset contract](https://amm-ds.github.io/portfolio/data-registry/bike-sharing/)
+    records those details. The seeded synthetic twin recreates the same
+    columns offline for continuous integration (`CI`), meaning automated tests
+    that run without network access.
 
-      ```diagram auto-12-tabular-ml-lifecycle-2
-      ```
+    ```diagram auto-12-tabular-ml-lifecycle-2
+    ```
 
-      Two facts visible in this data path shape the features. First, `casual`
-      and `registered` sum to the target, so both are dropped at load. Using
-      them would cause target leakage: giving the model answer-derived fields
-      that would not be available for a real forecast. Second, 165 hours are
-      missing in the January 2011 outage pattern, about 1% of rows. Lag
-      features, which carry counts from earlier observations, therefore shift
-      positions in the observed sequence rather than assume a perfect hourly
-      grid. The data-quality gate allows at most 2% missing rows.
+    Two facts visible in this data path shape the features. First, `casual`
+    and `registered` sum to the target, so both are dropped at load. Using
+    them would cause target leakage: giving the model answer-derived fields
+    that would not be available for a real forecast. Second, 165 hours are
+    missing in the January 2011 outage pattern, about `1%` of rows. Lag
+    features, which carry counts from earlier observations, therefore shift
+    positions in the observed sequence rather than assume a perfect hourly
+    grid. The data-quality gate allows at most `2%` missing rows.
 
-      The diagram ends with three time-ordered partitions. Training uses the
-      earliest 14,523 rows after the lag warm-up. Validation uses the next 8
-      weeks to choose models and settings. The final 8 weeks, or 1,344 rows,
-      remain the frozen test window.
+    The diagram ends with three time-ordered partitions. Training uses the
+    earliest `14,523` rows after the lag warm-up. Validation uses the next 8
+    weeks to choose models and settings. The final 8 weeks, or `1,344` rows,
+    remain the frozen test window.
 
-      The split protects the window; next, the three EDA figures and the
-      judging rules ([EDA →](#sec-eda)).
+    The split protects the window; next, the three EDA figures and the
+    judging rules ([EDA →](#sec-eda)).
 
-      **In plain terms:** A verified real series and an offline test twin
-      support the same pipeline. Answer-derived columns never become features,
-      and the time split protects the final test window.
-    figures: []
-  - id: eda
-    text_md: |
-      **The figures show a commuter pattern whose size changes by season.** In
-      `rentals_by_hour_season`, compare the four panels. Each has a morning
-      peak at 08h and an evening peak at 17-18h. Winter is flatter and lower,
-      so both hour and season matter.
+    **In plain terms:** A verified bike-share dataset and an offline test twin share one pipeline; leakage columns are stripped out and the final 8 weeks stay untouched until final scoring.
+  figures: []
+- id: eda
+  text_md: |
+    **The figures show a commuter pattern whose size changes by season.** In
+    `rentals_by_hour_season`, compare the four panels. Each has a morning
+    peak at `08h` and an evening peak at 17-18h. Winter is flatter and lower,
+    so both hour and season matter.
 
-      In `temp_vs_rentals`, compare points at the same temperature but with
-      different season colors. Rentals generally rise with temperature within
-      a season, yet equal temperatures can have different demand across
-      seasons. Temperature alone cannot stand in for the calendar.
+    In `temp_vs_rentals`, compare points at the same temperature but with
+    different season colors. Rentals generally rise with temperature within
+    a season, yet equal temperatures can have different demand across
+    seasons. Temperature alone cannot stand in for the calendar.
 
-      In `correlation_heatmap`, look for the strongest color contrasts. The
-      correlation coefficient `r` measures how closely two numeric fields move
-      together. Here `temp` and `atemp`, meaning feels-like temperature, reach
-      r = 0.99. They are near-duplicates, so the later feature rule must remove
-      one.
+    In `correlation_heatmap`, look for the strongest color contrasts. The
+    correlation coefficient `r` measures how closely two numeric fields move
+    together. Here `temp` and `atemp`, meaning feels-like temperature, reach
+    r = 0.99. They are near-duplicates, so the later feature rule must remove
+    one.
 
-      These patterns set four judging rules:
+    These patterns set four judging rules:
 
-      - Mean absolute error (MAE) comes first. It is the average absolute miss
-        in rentals per hour, matching the business unit.
-      - Root mean squared error (RMSE) is secondary. It penalizes large misses
-        more heavily than small ones.
-      - Mean absolute percentage error (MAPE) uses a denominator floored at 1
-        rental. Without that floor, near-zero hours would dominate the score.
-      - Every candidate must beat the seasonal-naive floor.
+    - Mean absolute error (`MAE`) comes first. It is the average absolute miss
+      in rentals per hour, matching the business unit.
+    - Root mean squared error (`RMSE`) is secondary. It penalizes large misses
+      more heavily than small ones.
+    - Mean absolute percentage error (`MAPE`) uses a denominator floored at 1
+      rental. Without that floor, near-zero hours would dominate the score.
+    - Every candidate must beat the seasonal-naive floor.
 
-      The judging rules are set; next, the feature selection and the model
-      ladder ([Training →](#sec-training)).
+    The judging rules are set; next, the feature selection and the model
+    ladder ([Training →](#sec-training)).
 
-      **In plain terms:** The figures reveal persistent commute peaks,
-      seasonal changes in scale, and duplicate temperature fields. MAE remains
-      the primary measure, with a floored MAPE and a seasonal-naive comparator.
-    figures: [rentals_by_hour_season, temp_vs_rentals, correlation_heatmap]
-  - id: training
-    text_md: |
-      **All 26 data-quality (DQ) checks pass before fitting a model.** The
-      `mi_lollipop` figure then shows feature selection on the training window.
-      Mutual information (MI) measures how much a feature reveals about the
-      target, in units called nats. The three past-count lags rank first at
-      MI 0.89 / 0.76 / 0.71 nats, followed by the cyclical hour pair, two fields
-      that represent the repeating hour as a circle. Longer stems indicate
-      higher MI. Grey stems mark fields pruned as the lower-MI member of a
-      correlated pair.
+    **In plain terms:** Clear weekday rush-hour peaks, seasonal swings, and duplicate temperature columns stand out immediately, so average hourly error against last week's demand is the main yardstick.
+  figures: [rentals_by_hour_season, temp_vs_rentals, correlation_heatmap]
+- id: training
+  text_md: |
+    **All 26 data-quality (DQ) checks pass before fitting a model.** The
+    `mi_lollipop` figure then shows feature selection on the training window.
+    Mutual information (MI) measures how much a feature reveals about the
+    target, in units called nats. The three past-count lags rank first at
+    MI `0.89` / `0.76` / `0.71` nats, followed by the cyclical hour pair, two fields
+    that represent the repeating hour as a circle. Longer stems indicate
+    higher MI. Grey stems mark fields pruned as the lower-MI member of a
+    correlated pair.
 
-      A second check, permutation importance, measures the validation MAE
-      increase after shuffling one feature. The probe is ridge, a linear model
-      that penalizes large coefficients. It agrees with the MI ranking. The
-      correlated-pair rule resolves the heatmap's near-duplicate at
-      |r| = 0.987: `atemp` drops and `temp` stays. Fifteen of 16 candidate
-      features enter the model ladder.
+    A second check, permutation importance, measures the validation `MAE`
+    increase after shuffling one feature. The probe is ridge, a linear model
+    that penalizes large coefficients. It agrees with the MI ranking. The
+    correlated-pair rule resolves the heatmap's near-duplicate at
+    |r| = 0.987: `atemp` drops and `temp` stays. Fifteen of 16 candidate
+    features enter the model ladder.
 
-      Every run uses a fixed seed. LightGBM uses deterministic settings, meaning
-      identical inputs produce identical outputs, and one processing thread.
-      The forest uses one job, and the MLP uses one thread with seeded
-      shuffling. These controls make the training diagnostics repeatable.
+    Every run uses a fixed seed. `LightGBM` uses deterministic settings, meaning
+    identical inputs produce identical outputs, and one processing thread.
+    The forest uses one job, and the `MLP` uses one thread with seeded
+    shuffling. These controls make the training diagnostics repeatable.
 
-      - **Seasonal-naive floor:** validation MAE is 88.7 rentals.
-      - **Ridge:** validation MAE reaches 68.9. A random forest, which averages
-        many decision trees, reaches 39.5. Their scores show substantial
-        learnable signal around the lags.
-      - **LightGBM:** this boosted-tree library is tuned with Optuna, a
-        hyperparameter search tool. Hyperparameters are settings chosen before
-        training. The seeded study finishes 50/50 trials within 240 s, using
-        validation MAE and median pruning to stop weak trials. It selects
-        LightGBM at 34.4.
-      - **Hand-written MLP:** an 8-dimensional embedding turns the raw hour
-        into eight learned numeric values beside standardized features, which
-        are rescaled to comparable ranges. AdamW adjusts the network weights.
-        Dropout 0.2 randomly hides units during training, and weight decay
-        1e-4 penalizes large weights. Huber loss reduces the influence of very
-        large errors in standardized-target space. Early stopping halts after
-        validation stops improving and keeps the best checkpoint among 47
-        epochs, complete passes through the training data. It reaches 34.2.
+    - **Seasonal-naive floor:** validation `MAE` is 88.7 rentals.
+    - **Ridge:** validation `MAE` reaches 68.9. A random forest, which averages
+      many decision trees, reaches 39.5. Their scores show substantial
+      learnable signal around the lags.
+    - **`LightGBM`:** this boosted-tree library is tuned with `Optuna`, a
+      hyperparameter search tool. Hyperparameters are settings chosen before
+      training. The seeded study finishes `50/50` trials within `240 s`, using
+      validation `MAE` and median pruning to stop weak trials. It selects
+      `LightGBM` at 34.4.
+    - **Hand-written `MLP`:** an 8-dimensional embedding turns the raw hour
+      into eight learned numeric values beside standardized features, which
+      are rescaled to comparable ranges. AdamW adjusts the network weights.
+      Dropout 0.2 randomly hides units during training, and weight decay
+      1e-4 penalizes large weights. Huber loss reduces the influence of very
+      large errors in standardized-target space. Early stopping halts after
+      validation stops improving and keeps the best checkpoint among 47
+      epochs, complete passes through the training data. It reaches 34.2.
 
-      Read `mlp_loss_curves` at the marked best epoch. Training loss keeps
-      falling while validation stalls, showing why the controls are needed.
-      In `learning_curves`, compare the tuned tree and MLP as the training
-      fraction grows. Both flatten near the full set, so adding rows alone is
-      unlikely to remove the remaining error.
+    Read `mlp_loss_curves` at the marked best epoch. Training loss keeps
+    falling while validation stalls, showing why the controls are needed.
+    In `learning_curves`, compare the tuned tree and `MLP` as the training
+    fraction grows. Both flatten near the full set, so adding rows alone is
+    unlikely to remove the remaining error.
 
-      The regularization ablation, a controlled comparison with settings turned
-      on or off, supports early stopping: every early-stopping-off row worsens
-      validation MAE. Dropout and weight decay sit within noise on this window.
-      The results section's dot plot shows that comparison.
+    The regularization ablation, a controlled comparison with settings turned
+    on or off, supports early stopping: every early-stopping-off row worsens
+    validation MAE. Dropout and weight decay sit within noise on this window.
+    The results section's dot plot shows that comparison.
 
-      **Checkpoint on validation and restore the best state.** Patience stops
-      the loop after no improvement; it does not choose the final weights.
+    **Checkpoint on validation and restore the best state.** Patience stops
+    the loop after no improvement; it does not choose the final weights.
 
-      ```python
-      if val_mae < best_val:
-          best_val = val_mae
-          self.history.best_epoch = epoch + 1
-          best_state = {
-              k: v.clone() for k, v in self.model.state_dict().items()
-          }
-          patience_left = mlp.patience
-      elif early_stopping:
-          patience_left -= 1
-          if patience_left <= 0:
-              break
+    ```python
+    if val_mae < best_val:
+        best_val = val_mae
+        self.history.best_epoch = epoch + 1
+        best_state = {
+            k: v.clone() for k, v in self.model.state_dict().items()
+        }
+        patience_left = mlp.patience
+    elif early_stopping:
+        patience_left -= 1
+        if patience_left <= 0:
+            break
 
-      if best_state is not None and early_stopping:
-          self.model.load_state_dict(best_state)
-      ```
+    if best_state is not None and early_stopping:
+        self.model.load_state_dict(best_state)
+    ```
 
-      The excerpt from [mlp.py](https://github.com/amm-ds/portfolio/blob/main/projects/12-tabular-ml-lifecycle/src/tabular_ml_lifecycle/mlp.py)
-      shows the checkpoint rule behind the loss-curve interpretation.
+    The excerpt from [mlp.py](https://github.com/amm-ds/portfolio/blob/main/projects/12-tabular-ml-lifecycle/src/tabular_ml_lifecycle/mlp.py)
+    shows the checkpoint rule behind the loss-curve interpretation.
 
-      The ladder picks the champion; next, the fixed measurement chain
-      behind the test scores ([Evaluation →](#sec-evaluation)).
+    The ladder picks the champion; next, the fixed measurement chain
+    behind the test scores ([Evaluation →](#sec-evaluation)).
 
-      **In plain terms:** Validation selects the tabular MLP at 34.2 MAE
-      against the floor's 88.7. The training figures expose overfitting and
-      diminishing returns from more rows, while the ablation supports early
-      stopping.
-    figures: [mi_lollipop, mlp_loss_curves, learning_curves]
-    metrics_keys: [seasonal_naive, ridge, random_forest, lightgbm_hpo, mlp]
-  - id: evaluation
-    text_md: |
-      **The measurement chain is fixed before the test scores appear.** Follow
-      `auto-12-tabular-ml-lifecycle-3` from validation selection to one test
-      score per candidate. No test number feeds a modeling choice. The diagram
-      pairs the served-model row — the one candidate validation selected to
-      serve — with the same floor row for 2,000 bootstrap resamples. Hourly
-      resampling gives the primary interval; intact 24-hour
-      and 168-hour blocks test sensitivity to serial dependence. All three use
-      the same test window and none measures model-selection uncertainty.
+    **In plain terms:** Validation picks the neural network at 34.2 bikes/hour error versus 88.7 for repeating last week; learning curves show diminishing returns from more rows and confirm early stopping helps.
+  figures: [mi_lollipop, mlp_loss_curves, learning_curves]
+  metrics_keys: [seasonal_naive, ridge, random_forest, lightgbm_hpo, mlp]
+- id: evaluation
+  text_md: |
+    **The measurement chain is fixed before the test scores appear.** Follow
+    `auto-12-tabular-ml-lifecycle-3` from validation selection to one test
+    score per candidate. No test number feeds a modeling choice. The diagram
+    pairs the served-model row — the one candidate validation selected to
+    serve — with the same floor row for `2,000` bootstrap resamples. Hourly
+    resampling gives the primary interval; intact 24-hour
+    and 168-hour blocks test sensitivity to serial dependence. All three use
+    the same test window and none measures model-selection uncertainty.
 
-      ```diagram auto-12-tabular-ml-lifecycle-3
-      ```
+    ```diagram auto-12-tabular-ml-lifecycle-3
+    ```
 
-      In `model_comparison`, compare each MAE point with the dashed
-      seasonal-naive reference. The floor scores 83.2 and the served MLP 25.4.
-      The average gain is 57.8 rentals/hour. The hourly 95% CI is [52.5, 63.1];
-      day-block and week-block sensitivity intervals are [44.2, 71.8] and
-      [38.8, 73.4]. All exclude zero. MAPE stays high for every candidate because
-      hourly counts approach zero at 4h. The denominator floor of 1 rental limits
-      that effect, but MAE remains the primary measure.
+    In `model_comparison`, compare each `MAE` point with the dashed
+    seasonal-naive reference. The floor scores 83.2 and the served `MLP` 25.4.
+    The average gain is 57.8 rentals/hour. The hourly `95%` `CI` is [52.5, 63.1];
+    day-block and week-block sensitivity intervals are [44.2, 71.8] and
+    [38.8, 73.4]. All exclude zero. `MAPE` stays high for every candidate because
+    hourly counts approach zero at 4h. The denominator floor of 1 rental limits
+    that effect, but `MAE` remains the primary measure.
 
-      In `residual_heatmap`, read the hour-by-season panel beside the
-      hour-by-weather panel. Spring rush hours (7-8h, 17h) are over-forecast by
-      up to 59 rentals. Winter morning peaks are under-forecast by up to 51.
-      Clear-weather mornings (w1-w2 at 8h) need roughly 40 more bikes than the
-      model predicts. These clusters locate error that a single average hides.
+    In `residual_heatmap`, read the hour-by-season panel beside the
+    hour-by-weather panel. Spring rush hours (7-8h, `17h`) are over-forecast by
+    up to 59 rentals. Winter morning peaks are under-forecast by up to 51.
+    Clear-weather mornings (w1-w2 at `8h`) need roughly 40 more bikes than the
+    model predicts. These clusters locate error that a single average hides.
 
-      In `residual_vs_fitted`, compare vertical spread across the predicted
-      demand level. The spread widens as fitted values rise, so high-demand
-      hours have larger absolute misses. The points remain centered on zero,
-      so the figure shows no global bias to correct.
+    In `residual_vs_fitted`, compare vertical spread across the predicted
+    demand level. The spread widens as fitted values rise, so high-demand
+    hours have larger absolute misses. The points remain centered on zero,
+    so the figure shows no global bias to correct.
 
-      This protocol prevents test-driven selection. One test window confirms
-      the validation choice, with wider block intervals showing why hourly
-      resampling alone understates serial-dependence uncertainty. Neither
-      guarantees deployment performance.
+    This protocol prevents test-driven selection. One test window confirms
+    the validation choice, with wider block intervals showing why hourly
+    resampling alone understates serial-dependence uncertainty. Neither
+    guarantees deployment performance.
 
-      The chain is fixed; next, the ledger table and the ablation evidence
-      ([Results →](#sec-results)).
+    The chain is fixed; next, the ledger table and the ablation evidence
+    ([Results →](#sec-results)).
 
-      **In plain terms:** The tabular MLP beats the floor by 57.8
-      rentals/hour on the frozen test window. The hourly, day-block and
-      week-block intervals all exclude zero; the widest is 38.8-73.4. The
-      residual figures locate the remaining error by rush hour, season, and weather.
-    figures: [model_comparison, residual_heatmap, residual_vs_fitted]
-  - id: results
-    text_md: |
-      **The candidate ledger carries the margin; the ablation carries the
-      control evidence.** Use the exact table for model scores and
-      `ablation_dotplot` for validation
-      effects of switching MLP controls on or off. The ablation figure does not
-      establish the served-model-versus-floor margin.
+    **In plain terms:** On the protected 8-week test window, the neural network cuts error by 57.8 bikes per hour (with uncertainty ranges clearly above zero), and error maps pinpoint rush-hour and weather gaps.
+  figures: [model_comparison, residual_heatmap, residual_vs_fitted]
+- id: results
+  text_md: |
+    **The candidate ledger carries the margin; the ablation carries the
+    control evidence.** Use the exact table for model scores and
+    `ablation_dotplot` for validation
+    effects of switching `MLP` controls on or off. The ablation figure does not
+    establish the served-model-versus-floor margin.
 
-      - The table records the decision-relevant margin: **83.2 → 25.4 test MAE,
-        or 57.8 rentals/hour** against the seasonal-naive floor. Validation chose
-        the served model before test confirmation. The hourly 95% CI is [52.5, 63.1];
-        day/week block sensitivity intervals are [44.2, 71.8] and [38.8, 73.4].
-      - In `ablation_dotplot`, look for the lowest validation point and compare
-        it with the teal shipped configuration. A dropout-off row reaches 32.1,
-        about 2 rentals better. The pre-registered configuration, meaning the one
-        fixed before final scoring, therefore stands. All four early-stopping-off
-        rows worsen validation MAE. Variant test scores are recorded separately
-        as post-freeze diagnostics and never select a variant.
-      - The table also shows a statistical dead heat between MLP and LightGBM.
-        Validation selects the MLP at 34.2 versus 34.4. On the test pass,
-        LightGBM's MAE is 0.06 rentals lower, while the MLP has better RMSE at
-        39.3 versus 40.2. The MLP remains the deliverable because its training
-        loop and controls are visible and measured.
-      - Neither the table nor the ablation figure measures transfer. The study
-        covers one city over two years and four seasons, with holidays reduced
-        to binary flags, meaning simple yes/no indicators. Use on another fleet
-        or regime is plausible but unproven.
+    - The table records the decision-relevant margin: **83.2 → 25.4 test `MAE`,
+      or 57.8 rentals/hour** against the seasonal-naive floor. Validation chose
+      the served model before test confirmation. The hourly `95%` `CI` is [52.5, 63.1];
+      day/week block sensitivity intervals are [44.2, 71.8] and [38.8, 73.4].
+    - In `ablation_dotplot`, look for the lowest validation point and compare
+      it with the teal shipped configuration. A dropout-off row reaches 32.1,
+      about 2 rentals better. The pre-registered configuration, meaning the one
+      fixed before final scoring, therefore stands. All four early-stopping-off
+      rows worsen validation MAE. Variant test scores are recorded separately
+      as post-freeze diagnostics and never select a variant.
+    - The table also shows a statistical dead heat between `MLP` and LightGBM.
+      Validation selects the `MLP` at 34.2 versus 34.4. On the test pass,
+      `LightGBM`'s `MAE` is `0.06` rentals lower, while the `MLP` has better `RMSE` at
+      39.3 versus 40.2. The `MLP` remains the deliverable because its training
+      loop and controls are visible and measured.
+    - Neither the table nor the ablation figure measures transfer. The study
+      covers one city over two years and four seasons, with holidays reduced
+      to binary flags, meaning simple yes/no indicators. Use on another fleet
+      or regime is plausible but unproven.
 
-      Exact numbers (run ids in `reports/metrics.json`):
+    Exact numbers (run ids in `reports/metrics.json`):
 
-      | candidate | val MAE | test MAE | test RMSE | test MAPE % |
-      |---|---|---|---|---|
-      | seasonal naive (floor) | 88.7 | 83.2 | 134.0 | 153.2 |
-      | ridge | 68.9 | 51.1 | 77.8 | 86.4 |
-      | random forest | 39.5 | 26.3 | 45.7 | 25.7 |
-      | LightGBM (Optuna HPO) | 34.4 | 25.4 | 40.2 | 27.4 |
-      | tabular MLP (PyTorch) | 34.2 | 25.4 | 39.3 | 33.7 |
+    | candidate | val MAE | test MAE | test RMSE | test MAPE % |
+    |---|---|---|---|---|
+    | seasonal naive (floor) | 88.7 | 83.2 | 134.0 | 153.2 |
+    | ridge | 68.9 | 51.1 | 77.8 | 86.4 |
+    | random forest | 39.5 | 26.3 | 45.7 | 25.7 |
+    | LightGBM (Optuna HPO) | 34.4 | 25.4 | 40.2 | 27.4 |
+    | tabular MLP (PyTorch) | 34.2 | 25.4 | 39.3 | 33.7 |
 
-      Served model vs floor: +57.8 rentals/hour point estimate, 2,000 paired
-      resamples per method; hourly 95% CI [52.5, 63.1], day-block [44.2, 71.8],
-      week-block [38.8, 73.4], all significant_95 = true.
+    Served model vs floor: +57.8 rentals/hour point estimate, `2,000` paired
+    resamples per method; hourly `95%` `CI` [52.5, 63.1], day-block [44.2, 71.8],
+    week-block [38.8, 73.4], all significant_95 = true.
 
-      The evidence is recorded; next, the exact tables and protocol
-      ([Conclusions →](#sec-conclusions)).
+    The evidence is recorded; next, the exact tables and protocol
+    ([Conclusions →](#sec-conclusions)).
 
-      **In plain terms:** The served tabular MLP reaches 25.4 test MAE
-      against the 83.2 floor, with support under hourly and block resampling.
-      The ablation figure supports early stopping on validation, and the
-      remaining structured error leaves room to improve rush-hour forecasts.
-    figures: [ablation_dotplot]
-  - id: conclusions
-    text_md: |
-      ## Results summary
+    **In plain terms:** The served neural network achieves 25.4 bikes/hour test error versus 83.2 for repeating last week, with rush-hour peaks leaving the clearest room for future improvement.
+  figures: [ablation_dotplot]
+- id: conclusions
+  text_md: |
+    ## Results summary
 
-      In `bootstrap_ci`, compare the hourly, day-block and week-block histograms
-      and interval bounds. The tabular MLP records 25.4 test MAE against 83.2
-      for the seasonal-naive floor. The gain is 57.8 rentals/hour with an hourly
-      95% CI of [52.5, 63.1], day-block [44.2, 71.8], and week-block [38.8, 73.4]
-      over the frozen 8-week window. All exclude zero. Validation MAE chose the
-      served MLP at 34.2 before its test score. The block panels quantify sensitivity
-      to serial dependence on the same window; they do not measure selection
-      variance, provide new confirmation data, or establish deployment transfer.
-      [Full evaluation report](https://amm-ds.github.io/portfolio/projects/12-tabular-ml-lifecycle/).
+    In `bootstrap_ci`, compare the hourly, day-block and week-block histograms
+    and interval bounds. The tabular `MLP` records 25.4 test `MAE` against 83.2
+    for the seasonal-naive floor. The gain is 57.8 rentals/hour with an hourly
+    `95%` `CI` of [52.5, 63.1], day-block [44.2, 71.8], and week-block [38.8, 73.4]
+    over the frozen 8-week window. All exclude zero. Validation `MAE` chose the
+    served `MLP` at 34.2 before its test score. The block panels quantify sensitivity
+    to serial dependence on the same window; they do not measure selection
+    variance, provide new confirmation data, or establish deployment transfer.
+    [Full evaluation report](https://amm-ds.github.io/portfolio/projects/12-tabular-ml-lifecycle/).
 
-      ## What the experiment taught
+    ## What the experiment taught
 
-      - The floor is the first model to build. The `bootstrap_ci` intervals on
-        the gain, not the point estimate alone, are the ship/no-ship evidence.
-      - Feature selection agreed across three lenses. Mutual information ranked
-        past-count lags first, validation permutation importance agreed, and
-        correlated-pair pruning resolved the r = 0.987 temp/atemp duplicate by
-        rule.
-      - On these tabular features, the tuned boosted tree and hand-written MLP
-        are effectively tied. The MLP remains the deliverable because its loop,
-        controls, and per-epoch evidence are explicit.
-      - The validation ablation separates the load-bearing control, early
-        stopping, from smaller dropout and weight-decay differences. Its test
-        scores are post-freeze diagnostics, not choices.
-      - Positional lags around 1% missing hours are a stated convention. The
-        data contract records it, and the gate bounds the missing fraction.
+    - The floor is the first model to build. The `bootstrap_ci` intervals on
+      the gain, not the point estimate alone, are the ship/no-ship evidence.
+    - Feature selection agreed across three lenses. Mutual information ranked
+      past-count lags first, validation permutation importance agreed, and
+      correlated-pair pruning resolved the r = `0.987` temp/atemp duplicate by
+      rule.
+    - On these tabular features, the tuned boosted tree and hand-written `MLP`
+      are effectively tied. The `MLP` remains the deliverable because its loop,
+      controls, and per-epoch evidence are explicit.
+    - The validation ablation separates the load-bearing control, early
+      stopping, from smaller dropout and weight-decay differences. Its test
+      scores are post-freeze diagnostics, not choices.
+    - Positional lags around `1%` missing hours are a stated convention. The
+      data contract records it, and the gate bounds the missing fraction.
 
-      ## Exact numbers
+    ## Exact numbers
 
-      Test window: the final 8 weeks of the 2011-2012 hourly series (1,344 rows),
-      one score per candidate. MAE/RMSE in rentals/hour.
+    Test window: the final 8 weeks of the 2011-2012 hourly series (`1,344` rows),
+    one score per candidate. MAE/RMSE in rentals/hour.
 
-      | candidate | val MAE | test MAE | test RMSE | test MAPE |
-      |---|---|---|---|---|
-      | seasonal-naive floor | 88.65 | 83.20 | 134.02 | 153.2% |
-      | ridge | 68.87 | 51.09 | 77.78 | 86.4% |
-      | random forest | 39.50 | 26.32 | 45.67 | 25.7% |
-      | lightgbm_hpo | 34.40 | 25.37 | 40.21 | 27.4% |
-      | mlp (served; validation tie with lightgbm_hpo) | 34.22 | 25.43 | 39.32 | 33.7% |
+    | candidate | val MAE | test MAE | test RMSE | test MAPE |
+    |---|---|---|---|---|
+    | seasonal-naive floor | 88.65 | 83.20 | 134.02 | 153.2% |
+    | ridge | 68.87 | 51.09 | 77.78 | 86.4% |
+    | random forest | 39.50 | 26.32 | 45.67 | 25.7% |
+    | lightgbm_hpo | 34.40 | 25.37 | 40.21 | 27.4% |
+    | mlp (served; validation tie with lightgbm_hpo) | 34.22 | 25.43 | 39.32 | 33.7% |
 
-      The MLP-LightGBM validation difference is a tie: paired bootstrap on
-      validation MAE (MLP − LightGBM) gives −0.18 with 95% CI [−1.71, +1.21]
-      (2,000 seeded resamples, `metrics.json:validation_tie_interval`) — the
-      interval spans zero, so the MLP stays the served artifact without a
-      champion label.
+    The MLP-LightGBM validation difference is a tie: paired bootstrap on
+    validation `MAE` (`MLP` − `LightGBM`) gives `−0.18` with `95%` `CI` [`−1.71`, `+1.21`]
+    (`2,000` seeded resamples, `metrics.json:validation_tie_interval`) — the
+    interval spans zero, so the `MLP` stays the served artifact without a
+    champion label.
 
-      Served-model-vs-floor MAE gap: 57.77 rentals/hour over 2,000 paired resamples
-      per method. Hourly 95% CI [52.49, 63.07]; 24-hour block [44.21, 71.83];
-      168-hour block [38.82, 73.41]. Every interval excludes zero. LightGBM HPO
-      completed 50/50 Optuna trials inside the 240 s budget, with best validation
-      MAE 34.397. For the MLP ablation, every early-stopping-off row runs to the
-      150-epoch cap and worsens validation MAE. The best validation row is
-      dropout-off + early-stopping-on (32.13 validation, 24.96 post-freeze test
-      diagnostic), about 2 validation rentals below the shipped configuration;
-      no test diagnostic selects a variant.
+    Served-model-vs-floor `MAE` gap: `57.77` rentals/hour over `2,000` paired resamples
+    per method. Hourly `95%` `CI` [`52.49`, `63.07`]; 24-hour block [`44.21`, `71.83`];
+    168-hour block [`38.82`, `73.41`]. Every interval excludes zero. `LightGBM` HPO
+    completed `50/50` `Optuna` trials inside the `240 s` budget, with best validation
+    `MAE` 34.397. For the `MLP` ablation, every early-stopping-off row runs to the
+    150-epoch cap and worsens validation MAE. The best validation row is
+    dropout-off + early-stopping-on (`32.13` validation, `24.96` post-freeze test
+    diagnostic), about 2 validation rentals below the shipped configuration;
+    no test diagnostic selects a variant.
 
-      ## Protocol
+    ## Protocol
 
-      - **Split:** the final 8 weeks (1,344 rows) receive one score per candidate.
-        The previous 8 weeks are validation for HPO, early stopping, model
-        selection, and the shipped ablation configuration. Training uses everything
-        earlier, 14,523 rows after the 168-row lag warm-up, and never reads test.
-        Post-freeze evaluation refits deterministic ablation variants to record
-        test diagnostics. Lag features read only the past. The UCI zip is
-        SHA-256-gated, the 165 real missing hours are bounded by a 2% DQ gate,
-        and lags are positional.
-      - **Judging:** MAE in rentals/hour is primary, RMSE secondary, and MAPE
-        is floored at 1 rental. The seasonal-naive floor is the comparator.
-      - **Uncertainty:** 2,000 paired hourly resamples produce the primary CI;
-        paired non-overlapping 24-hour and 168-hour block resamples provide
-        serial-dependence sensitivity in `bootstrap_ci`. All use the same test
-        window and do not measure selection variance.
-      - **Synthetic twin:** the same-schema, seeded generator supports CI
-        evidence only and never substitutes for real-data results.
-      - **Compute:** seed 42 throughout; train stage 44.3 s plus evaluate 14.7 s
-        on a 16-core arm64 laptop, with torch pinned to one thread. Evaluation
-        includes the eight deterministic post-freeze ablation refits.
+    - **Split:** the final 8 weeks (`1,344` rows) receive one score per candidate.
+      The previous 8 weeks are validation for HPO, early stopping, model
+      selection, and the shipped ablation configuration. Training uses everything
+      earlier, `14,523` rows after the 168-row lag warm-up, and never reads test.
+      Post-freeze evaluation refits deterministic ablation variants to record
+      test diagnostics. Lag features read only the past. The UCI zip is
+      SHA-256-gated, the 165 real missing hours are bounded by a `2%` DQ gate,
+      and lags are positional.
+    - **Judging:** `MAE` in rentals/hour is primary, `RMSE` secondary, and `MAPE`
+      is floored at 1 rental. The seasonal-naive floor is the comparator.
+    - **Uncertainty:** `2,000` paired hourly resamples produce the primary `CI`;
+      paired non-overlapping 24-hour and 168-hour block resamples provide
+      serial-dependence sensitivity in `bootstrap_ci`. All use the same test
+      window and do not measure selection variance.
+    - **Synthetic twin:** the same-schema, seeded generator supports `CI`
+      evidence only and never substitutes for real-data results.
+    - **Compute:** seed 42 throughout; train stage `44.3 s` plus evaluate `14.7 s`
+      on a 16-core arm64 laptop, with torch pinned to one thread. Evaluation
+      includes the eight deterministic post-freeze ablation refits.
 
-      ## Limits
+    ## Limits
 
-      - Model selection, early stopping, and the shipped ablation configuration
-        used validation only. Ablation test scores are post-freeze diagnostics,
-        not selection evidence. The margin is still a single-window confirmation,
-        not a deployment guarantee.
-      - Hourly errors are serially dependent. Day/week block intervals are wider
-        than the hourly interval; they are sensitivity analyses, not independent
-        confirmations.
-      - Lags are positional. Around the 165 missing hours, "same hour last
-        week" drifts by an hour of wall-clock time.
-      - MAPE denominators are floored at 1 rental. Near-zero hours keep MAPE
-        high for every candidate, so read MAE first.
-      - One city over two years/four seasons, and holiday effects as binary flags,
-        limit the evidence. Transfer is plausible, not measured.
-      - The MLP vs LightGBM test-MAE gap (25.43 vs 25.37) is negligible.
-        The served-model label comes from validation, not a neural-network victory.
+    - Model selection, early stopping, and the shipped ablation configuration
+      used validation only. Ablation test scores are post-freeze diagnostics,
+      not selection evidence. The margin is still a single-window confirmation,
+      not a deployment guarantee.
+    - Hourly errors are serially dependent. Day/week block intervals are wider
+      than the hourly interval; they are sensitivity analyses, not independent
+      confirmations.
+    - Lags are positional. Around the 165 missing hours, "same hour last
+      week" drifts by an hour of wall-clock time.
+    - `MAPE` denominators are floored at 1 rental. Near-zero hours keep `MAPE`
+      high for every candidate, so read `MAE` first.
+    - One city over two years/four seasons, and holiday effects as binary flags,
+      limit the evidence. Transfer is plausible, not measured.
+    - The `MLP` vs `LightGBM` test-MAE gap (`25.43` vs `25.37`) is negligible.
+      The served-model label comes from validation, not a neural-network victory.
 
-      **In plain terms:** The MLP's measured gain over the seasonal-naive
-      floor has hourly and block-bootstrap support on one protected test window.
-      The result is useful evidence for this dataset, with explicit limits on
-      serial dependence, missing hours, and transfer. Keep the served MLP while
-      the interval on the gain excludes zero, and put any challenger through
-      the same frozen-window protocol before it replaces the current comparison.
-    figures: [bootstrap_ci]
+    **In plain terms:** Keep the neural network—it beats repeating last week by 57.8 bikes per hour on the protected 8-week test window, and any future challenger must beat it under the exact same time-split rules.
+  figures: [bootstrap_ci]
 roadmap:
 - status: shipped
-  title: "Build the leakage-safe training pipeline"
-  detail: "Frozen test window; 26 DQ gates; sha256-pinned source; CI twin."
+  title: Build the leakage-safe training pipeline
+  detail: Frozen test window; 26 DQ gates; sha256-pinned source; CI twin.
 - status: shipped
-  title: "Serve the validation-tied MLP champion"
-  detail: "Served MLP cuts test MAE to a fraction of the floor's 83.2."
+  title: Serve the validation-tied MLP champion
+  detail: Served MLP cuts test MAE to a fraction of the floor's 83.2.
 - status: shipped
-  title: "Hold the floor gap under resampling"
-  detail: "Every 95% CI excludes zero (hourly and week-block)."
+  title: Hold the floor gap under resampling
+  detail: Every 95% CI excludes zero (hourly and week-block).
 - status: shipped
-  title: "Label ablation scores as post-freeze diagnostics"
-  detail: "Variant test scores never select a variant; diagnostics only."
+  title: Label ablation scores as post-freeze diagnostics
+  detail: Variant test scores never select a variant; diagnostics only.
 - status: next
-  title: "Test challengers under the frozen-window protocol"
-  detail: "A challenger must clear the same interval-on-gain gate first."
+  title: Test challengers under the frozen-window protocol
+  detail: A challenger must clear the same interval-on-gain gate first.
 key_concepts:
-  - "**Seasonal-naive floor:** predict the count at the same hour last week. Every candidate must beat this simple baseline, with an interval on the gain."
-  - "**Frozen test window:** each candidate receives one final-window score. Every modeling choice uses validation; ablation test scores are post-freeze diagnostics."
-  - "**Positional lags:** past-only shifts over the observed sequence. They make the treatment of missing hours explicit in the feature contract."
-  - "**Three-lens feature selection:** mutual information, validation permutation importance, and correlated-pair pruning must agree before a feature enters the model."
-  - "**Hand-written training loop:** the PyTorch MLP exposes seeded initialization, Huber loss, early stopping, and per-epoch evidence of overfitting."
-  - "**Paired block bootstrap:** resample the same intact day/week blocks for both models to test sensitivity to hourly serial dependence."
+- '**Seasonal-naive floor:** predict the count at the same hour last week. Every candidate must beat this simple baseline,
+  with an interval on the gain.'
+- '**Frozen test window:** each candidate receives one final-window score. Every modeling choice uses validation; ablation
+  test scores are post-freeze diagnostics.'
+- '**Positional lags:** past-only shifts over the observed sequence. They make the treatment of missing hours explicit in
+  the feature contract.'
+- '**Three-lens feature selection:** mutual information, validation permutation importance, and correlated-pair pruning must
+  agree before a feature enters the model.'
+- '**Hand-written training loop:** the PyTorch MLP exposes seeded initialization, Huber loss, early stopping, and per-epoch
+  evidence of overfitting.'
+- '**Paired block bootstrap:** resample the same intact day/week blocks for both models to test sensitivity to hourly serial
+  dependence.'
 figure_captions:
-  rentals_by_hour_season: Mean rentals by hour, with one panel per season. Compare peak timing and height. The commuter double peak persists while winter peaks are lower, so season and hour both belong in the model.
-  temp_vs_rentals: Rentals versus temperature, colored by season. Compare equal temperatures across colors. Ridership rises within a season's band, but the same temperature can map to different demand by season.
-  correlation_heatmap: Correlation heatmap for numeric features and rentals. Stronger colors indicate closer movement together. temp and atemp are near-duplicates (r = 0.99), so pruning drops atemp and keeps temp.
-  mi_lollipop: Mutual-information ranking of 16 candidate features on the training window. Longer stems mean more information. Grey stems mark the lower-MI member of a pruned correlated pair, and the three past-count lags dominate.
-  mlp_loss_curves: Per-epoch train and validation MAE for the PyTorch MLP, with the best epoch marked. Training keeps improving while validation stalls, exposing the overfitting gap that regularization controls address.
-  learning_curves: "Validation MAE versus training-set fraction for tuned LightGBM and the MLP. Both curves flatten toward the full set, indicating that feature information, not row count, is the immediate ceiling."
-  model_comparison: "One frozen test MAE per candidate, with the seasonal-naive floor as the dashed grey reference. Compare points with that reference. The served model is the validation leader, never the lowest test-score selector."
-  residual_heatmap: Served-model mean residuals (actual minus forecast, in rentals) by hour x season and hour x weather situation on the frozen test window, on one shared diverging scale centered at zero. Red means over-forecast and blue means under-forecast; compare colors across both panels to locate structured misses.
-  residual_vs_fitted: Residual versus fitted value on the test window. Read vertical spread from left to right. Spread widens with predicted demand while remaining centered on zero, indicating larger high-demand misses without global bias.
-  ablation_dotplot: "MLP regularization ablation (2x2x2) on validation MAE, with teal marking the shipped configuration. Compare the lowest validation point with teal. Early stopping matters; variant test scores appear separately as post-freeze diagnostics."
-  bootstrap_ci: "Three histograms of 2,000 paired resamples each — hourly rows, 24-hour blocks, and 168-hour blocks — for the served-model vs floor MAE gain on the frozen test window. The 95% CIs are [52.5, 63.1], [44.2, 71.8], and [38.8, 73.4]. Wider block intervals show serial-dependence sensitivity, not model-selection variance."
+  rentals_by_hour_season: Mean rentals by hour, with one panel per season. Compare peak timing and height. The commuter double
+    peak persists while winter peaks are lower, so season and hour both belong in the model.
+  temp_vs_rentals: Rentals versus temperature, colored by season. Compare equal temperatures across colors. Ridership rises
+    within a season's band, but the same temperature can map to different demand by season.
+  correlation_heatmap: Correlation heatmap for numeric features and rentals. Stronger colors indicate closer movement together.
+    temp and atemp are near-duplicates (r = 0.99), so pruning drops atemp and keeps temp.
+  mi_lollipop: Mutual-information ranking of 16 candidate features on the training window. Longer stems mean more information.
+    Grey stems mark the lower-MI member of a pruned correlated pair, and the three past-count lags dominate.
+  mlp_loss_curves: Per-epoch train and validation MAE for the PyTorch MLP, with the best epoch marked. Training keeps improving
+    while validation stalls, exposing the overfitting gap that regularization controls address.
+  learning_curves: Validation MAE versus training-set fraction for tuned LightGBM and the MLP. Both curves flatten toward
+    the full set, indicating that feature information, not row count, is the immediate ceiling.
+  model_comparison: One frozen test MAE per candidate, with the seasonal-naive floor as the dashed grey reference. Compare
+    points with that reference. The served model is the validation leader, never the lowest test-score selector.
+  residual_heatmap: Served-model mean residuals (actual minus forecast, in rentals) by hour x season and hour x weather situation
+    on the frozen test window, on one shared diverging scale centered at zero. Red means over-forecast and blue means under-forecast;
+    compare colors across both panels to locate structured misses.
+  residual_vs_fitted: Residual versus fitted value on the test window. Read vertical spread from left to right. Spread widens
+    with predicted demand while remaining centered on zero, indicating larger high-demand misses without global bias.
+  ablation_dotplot: MLP regularization ablation (2x2x2) on validation MAE, with teal marking the shipped configuration. Compare
+    the lowest validation point with teal. Early stopping matters; variant test scores appear separately as post-freeze diagnostics.
+  bootstrap_ci: Three histograms of 2,000 paired resamples each — hourly rows, 24-hour blocks, and 168-hour blocks — for the
+    served-model vs floor MAE gain on the frozen test window. The 95% CIs are [52.5, 63.1], [44.2, 71.8], and [38.8, 73.4].
+    Wider block intervals show serial-dependence sensitivity, not model-selection variance.

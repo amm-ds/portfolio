@@ -1,4 +1,4 @@
-"""E2-6 frozen protocol and clean-stop integrity gates."""
+"""E2-6 frozen protocol and ledger-order integrity gates."""
 
 import json
 from pathlib import Path
@@ -54,8 +54,12 @@ def test_preregistration_hash_and_spec_hashes_match_ledger() -> None:
     assert row["request_hosts"] == []
 
 
-def test_clean_stop_has_no_training_or_sealed_read_artifacts() -> None:
-    assert not (PROJECT_ROOT / "reports" / "models").exists()
-    assert not (PROJECT_ROOT / "reports" / "metrics.json").exists()
-    assert not (PROJECT_ROOT / "reports" / "test_episodes.json").exists()
-    assert not (PROJECT_ROOT / "reports" / "sealed_access.json").exists()
+def test_preregistration_ledger_precedes_training_and_evaluation() -> None:
+    ledger = json.loads((PROJECT_ROOT / "reports" / "experiment_log.json").read_text())
+    preregistration_index = next(index for index, row in enumerate(ledger) if row["step"] == "E2-6")
+    later_indices = [
+        index for index, row in enumerate(ledger) if row["step"].startswith(("E2-7", "E2-8"))
+    ]
+    assert later_indices
+    assert all(preregistration_index < index for index in later_indices)
+    assert all(ledger[index]["request_hosts"] == [] for index in later_indices)

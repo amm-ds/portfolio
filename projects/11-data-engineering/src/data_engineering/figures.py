@@ -191,8 +191,8 @@ def scalability_lines(metrics: dict[str, Any]) -> go.Figure:
         rows=1,
         cols=2,
         subplot_titles=("growth exponent by task", f"{detail_task} detail"),
-        horizontal_spacing=0.16,
-        column_widths=[0.46, 0.54],
+        horizontal_spacing=0.11,
+        column_widths=[0.45, 0.55],
     )
     for engine in ENGINE_ORDER:
         slope_x: list[float] = []
@@ -231,11 +231,18 @@ def scalability_lines(metrics: dict[str, Any]) -> go.Figure:
     apply_theme(fig, height=540)
     fig.update_layout(
         title="Scalability — growth slopes and representative group-by detail",
-        margin={"l": 110, "r": 140, "t": 110, "b": 70},
+        margin={"l": 100, "r": 120, "t": 105, "b": 70},
     )
-    fig.update_xaxes(title_text="log-log slope (1 = linear)", row=1, col=1)
+    fig.update_xaxes(title_text="log-log slope (1 = linear)", range=[0.0, 1.25], row=1, col=1)
     fig.update_yaxes(title_text="task", autorange="reversed", row=1, col=1)
-    fig.update_xaxes(type="log", title_text="rows", row=1, col=2)
+    fig.update_xaxes(
+        type="log",
+        title_text="rows",
+        tickvals=sizes,
+        ticktext=[f"{n // 1_000_000}M" if n >= 1_000_000 else str(n) for n in sizes],
+        row=1,
+        col=2,
+    )
     fig.update_yaxes(type="log", title_text="median wall time (s)", row=1, col=2)
     slopes = scale["tasks"][detail_task]["engines"]
     note = "; ".join(
@@ -245,8 +252,7 @@ def scalability_lines(metrics: dict[str, Any]) -> go.Figure:
     )
     add_takeaway(
         fig,
-        f"left: committed growth exponents for all five tasks; right: {detail_task} — {note}; "
-        "median of 2 warm repeats per cell",
+        f"left: growth slopes across 5 tasks; right: {detail_task} ({note})",
     )
     return fig
 
@@ -339,8 +345,14 @@ def normalized_heatmap(metrics: dict[str, Any]) -> go.Figure:
             y=tasks,
             text=text,
             texttemplate="%{text}",
-            colorscale="Viridis",
-            zmid=0,
+            colorscale=[
+                [0.0, "#132238"],
+                [0.25, "#155e75"],
+                [0.5, "#0d9488"],
+                [0.75, "#2dd4bf"],
+                [1.0, "#a7f3d0"],
+            ],
+            zmin=0,
             colorbar={"title": "log10(x slower than task best)"},
         )
     )

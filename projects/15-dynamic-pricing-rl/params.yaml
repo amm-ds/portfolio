@@ -41,6 +41,11 @@ calibration:
       path: projects/02-demand-forecasting/data_m5/subset_S.parquet
       sha256: 01a1593870f1f89531738cecce793e4b7d6804abdaa25a134e624b7a0884cf25
 comparator: B1
+training:
+  total_timesteps_per_seed: 3000000
+  n_envs: 8
+  wrapper: SubprocVecEnv
+  seeds: [0, 1, 2]
 preregistration:
   protocol_version: 1
   seed: 42

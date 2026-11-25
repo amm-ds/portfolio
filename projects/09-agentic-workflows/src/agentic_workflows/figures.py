@@ -191,7 +191,13 @@ def _fig_tool_usage_matrix(cases: list[Any]) -> go.Figure:
                 text=text,
                 texttemplate="%{text}",
                 showscale=False,
-                colorscale=[[0, "#16213a"], [1, "#2dd4bf"]],
+                colorscale=[
+                    [0.0, "#132238"],
+                    [0.25, "#155e75"],
+                    [0.5, "#0d9488"],
+                    [0.75, "#2dd4bf"],
+                    [1.0, "#a7f3d0"],
+                ],
                 zmin=0,
                 hovertemplate="%{y} on %{x}: %{z} call(s)<extra></extra>",
             )

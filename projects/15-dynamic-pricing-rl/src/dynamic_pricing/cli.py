@@ -7,7 +7,10 @@ import typer
 
 from dynamic_pricing.benchmark import run_benchmark
 from dynamic_pricing.calibrate import run_calibration
+from dynamic_pricing.evaluate import run_sealed_evaluation
+from dynamic_pricing.figures import run_figures
 from dynamic_pricing.preregister import run_preregistration
+from dynamic_pricing.train import run_smoke, run_training
 from dynamic_pricing.tune import run_tuning
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -51,6 +54,34 @@ def tune_baselines(config: str = "params.yaml") -> None:
 def preregister(config: str = "params.yaml") -> None:
     """Generate sealed specs and log the frozen protocol without evaluating them."""
     summary = run_preregistration(PROJECT_ROOT, REPO_ROOT, _params_path(config))
+    typer.echo(json.dumps(summary, indent=2, sort_keys=True))
+
+
+@app.command("train-smoke")
+def train_smoke(config: str = "params.yaml") -> None:
+    """Measure PPO throughput before choosing the full training budget."""
+    summary = run_smoke(PROJECT_ROOT, REPO_ROOT, _params_path(config))
+    typer.echo(json.dumps(summary, indent=2, sort_keys=True))
+
+
+@app.command()
+def train(config: str = "params.yaml", steps: int = 3_000_000) -> None:
+    """Train seeds 0-2 and retain only the best validation checkpoint."""
+    summary = run_training(PROJECT_ROOT, REPO_ROOT, _params_path(config), steps=steps)
+    typer.echo(json.dumps(summary, indent=2, sort_keys=True))
+
+
+@app.command("seal-read")
+def seal_read(config: str = "params.yaml") -> None:
+    """Consume the test and stress sets exactly once under the frozen protocol."""
+    summary = run_sealed_evaluation(PROJECT_ROOT, REPO_ROOT, _params_path(config))
+    typer.echo(json.dumps(summary, indent=2, sort_keys=True))
+
+
+@app.command()
+def figures(config: str = "params.yaml") -> None:
+    """Rebuild figures and HTML without evaluating any policy."""
+    summary = run_figures(PROJECT_ROOT, REPO_ROOT, _params_path(config))
     typer.echo(json.dumps(summary, indent=2, sort_keys=True))
 
 

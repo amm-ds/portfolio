@@ -223,6 +223,46 @@ function colorFromScale(scale: unknown[], t: number): string | undefined {
   return typeof first[1] === "string" ? first[1] : undefined;
 }
 
+function parseRgb(color: string): [number, number, number] | null {
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim());
+  if (hex) {
+    const h = hex[1];
+    if (h.length === 3) {
+      return [
+        parseInt(h[0] + h[0], 16),
+        parseInt(h[1] + h[1], 16),
+        parseInt(h[2] + h[2], 16),
+      ];
+    }
+    return [
+      parseInt(h.slice(0, 2), 16),
+      parseInt(h.slice(2, 4), 16),
+      parseInt(h.slice(4, 6), 16),
+    ];
+  }
+  const rgb = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i.exec(color.trim());
+  if (rgb) return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+  return null;
+}
+
+/** Pick dark or light cell label color based on interpolated background luminance. */
+function contrastLabelColor(colors: string[], t: number, fallback: string): string {
+  if (colors.length === 0) return fallback;
+  const clamped = Math.min(1, Math.max(0, t));
+  const scaled = clamped * (colors.length - 1);
+  const lo = Math.floor(scaled);
+  const hi = Math.min(colors.length - 1, lo + 1);
+  const frac = scaled - lo;
+  const c0 = parseRgb(colors[lo]);
+  const c1 = parseRgb(colors[hi]);
+  if (!c0 || !c1) return fallback;
+  const r = (c0[0] + (c1[0] - c0[0]) * frac) / 255;
+  const g = (c0[1] + (c1[1] - c0[1]) * frac) / 255;
+  const b = (c0[2] + (c1[2] - c0[2]) * frac) / 255;
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return lum > 0.58 ? "#0f172a" : "#f8fafc";
+}
+
 // ---------------------------------------------------------------------------
 // Axis / grid bookkeeping
 // ---------------------------------------------------------------------------
@@ -238,6 +278,8 @@ interface AxisInfo {
   gridIndex: number;
   type: "value" | "category" | "log" | "time";
   categories: string[];
+  /** Explicit integer-indexed labels for numeric axes with fractional dodged coords. */
+  tickLabels?: string[];
   built: Record<string, unknown> | null;
 }
 
@@ -829,6 +871,7 @@ export function plotlyToECharts(
         }
       }
       const xInfo = axisAt(true, xIdx);
+      const yInfo = axisAt(false, yIdx);
       const points: unknown[] = [];
       for (let k = 0; k < n; k++) {
         const xv = xs.length > 0 ? xs[Math.min(k, xs.length - 1)] : k;
@@ -856,10 +899,18 @@ export function plotlyToECharts(
           xOut = xv;
           xAdd(xIdx, xv);
         }
-        const yn = typeof yv === "string" ? fail("scatter.y holds categories") : yv;
-        yAdd(yIdx, yn);
+        let yOut: number | string | null = null;
+        if (typeof yv === "string") {
+          const yLabel = yv.replace(BR_RE, "\n");
+          yInfo.type = "category";
+          registerCategory(yInfo, yLabel);
+          yOut = yLabel;
+        } else {
+          yAdd(yIdx, yv);
+          yOut = Number.isFinite(yv) ? yv : null;
+        }
         const item: Record<string, unknown> = {
-          value: [xOut, Number.isFinite(yn) ? yn : null],
+          value: [xOut, yOut],
         };
         if (numericMc) {
           const mv = (mcArr as unknown[])[Math.min(k, (mcArr as unknown[]).length - 1)];
@@ -945,16 +996,36 @@ export function plotlyToECharts(
           err.arrayminus !== undefined
             ? toNumberArray(err.arrayminus, `${key}.arrayminus`)
             : [...hi];
+        const isHoriz = key === "error_x";
+        const centers = (isHoriz ? xs : ys) as number[];
+        const cats = (isHoriz ? ys : xs) as (number | string)[];
+        const errColor =
+          typeof err.color === "string" ? remapColor(err.color, theme) : markerColor;
+        const valAxisRaw = axisAt(isHoriz, isHoriz ? xIdx : yIdx).raw;
+        const isLogVal = valAxisRaw.type === "log";
+        for (let k = 0; k < centers.length; k++) {
+          const c = centers[k];
+          if (typeof c !== "number" || !Number.isFinite(c)) continue;
+          const loVal = c - (lo[Math.min(k, lo.length - 1)] ?? 0);
+          const hiVal = c + (hi[Math.min(k, hi.length - 1)] ?? 0);
+          if (isHoriz) {
+            if (!isLogVal || loVal > 0) xAdd(xIdx, loVal);
+            if (!isLogVal || hiVal > 0) xAdd(xIdx, hiVal);
+          } else {
+            if (!isLogVal || loVal > 0) yAdd(yIdx, loVal);
+            if (!isLogVal || hiVal > 0) yAdd(yIdx, hiVal);
+          }
+        }
         errorBars.push({
           gridIndex,
           xIdx,
           yIdx,
-          horizontal: key === "error_x",
-          category: xs as (number | string)[],
-          center: ys as number[],
+          horizontal: isHoriz,
+          category: cats,
+          center: centers,
           errLo: lo,
           errHi: hi,
-          color: markerColor,
+          color: errColor,
         });
       }
     } else if (type === "bar") {
@@ -1196,7 +1267,7 @@ export function plotlyToECharts(
               label: {
                 show: true,
                 fontSize: 10,
-                color: palette.textColor,
+                textBorderWidth: 0,
                 formatter: (p: { value?: unknown[]; data?: { authoredText?: string } }) =>
                   p.data?.authoredText ??
                   (Array.isArray(p.value) && typeof p.value[2] === "number"
@@ -1240,6 +1311,18 @@ export function plotlyToECharts(
       }
       if (!Number.isFinite(visualMin) || !Number.isFinite(visualMax) || !(visualMax > visualMin)) {
         fail("heatmap has an invalid color domain");
+      }
+      // Per-cell luminance-aware label color so text stays readable on both
+      // dark and bright cells in both dark and light UI themes.
+      if (xsRaw.length * ysRaw.length <= 144) {
+        const span = visualMax - visualMin;
+        for (const item of items as Array<{ value: unknown[]; label?: { color: string } }>) {
+          const zv = item.value[2];
+          if (typeof zv === "number" && Number.isFinite(zv)) {
+            const frac = (zv - visualMin) / span;
+            item.label = { color: contrastLabelColor(colors, frac, palette.textColor) };
+          }
+        }
       }
       heatmapVisuals.push({
         min: visualMin,
@@ -1675,7 +1758,10 @@ export function plotlyToECharts(
     info.arrayIndex = i;
   });
   // explicit ticktext/tickvals define the category labels (lollipop ranks):
-  // integer positions 0..n-1 index into the label list
+  // integer positions 0..n-1 index into the label list. When traces use
+  // fractional dodged positions (e.g. task_times_dotplot offsets around
+  // 0..n-1), keep the axis numeric ("value") with integer-mapped tick labels
+  // so ECharts never collapses fractional coordinates onto category indices.
   for (const info of [...xInfos, ...yInfos]) {
     const tickText = info.raw.ticktext;
     const tickVals = info.raw.tickvals;
@@ -1687,8 +1773,34 @@ export function plotlyToECharts(
       tickVals.length === tickText.length &&
       tickVals.every((v, i) => num(v) === i);
     if (indexed) {
-      info.type = "category";
-      info.categories = tickText.map((v) => String(v).replace(BR_RE, "\n"));
+      const labels = tickText.map((v) => String(v).replace(BR_RE, "\n"));
+      let hasFractional = false;
+      for (const draft of series) {
+        const axisMatches = info.isX ? draft.xIdx === info.index : draft.yIdx === info.index;
+        if (!axisMatches || !Array.isArray(draft.data)) continue;
+        const coordIdx = info.isX ? 0 : 1;
+        for (const pt of draft.data as unknown[]) {
+          const v = Array.isArray(pt)
+            ? pt[coordIdx]
+            : typeof pt === "object" && pt !== null && Array.isArray((pt as { value?: unknown[] }).value)
+              ? (pt as { value: unknown[] }).value[coordIdx]
+              : undefined;
+          if (typeof v === "number" && Number.isFinite(v)) {
+            if (Math.abs(v - Math.round(v)) > 1e-6 || v < 0 || v >= labels.length) {
+              hasFractional = true;
+              break;
+            }
+          }
+        }
+        if (hasFractional) break;
+      }
+      if (hasFractional) {
+        info.type = "value";
+        info.tickLabels = labels;
+      } else {
+        info.type = "category";
+        info.categories = labels;
+      }
     }
   }
   // heatmap cells need category axes in echarts: register every distinct
@@ -1818,9 +1930,12 @@ export function plotlyToECharts(
   const mainTitleBlock = hasMainTitle
     ? titleParts.size + (titleParts.subtext ? (titleParts.subLines * (titleParts.subSize + 3)) : 0) + 8
     : 0;
-  const anyCategoryY = yInfos.some((i) => i.type === "category");
+  const anyCategoryY = yInfos.some((i) => i.type === "category" || (i.tickLabels?.length ?? 0) > 0);
   const longestYCat = yInfos.reduce(
-    (m, i) => (i.type === "category" ? i.categories.reduce((a, c) => Math.max(a, c.length), m) : m),
+    (m, i) => {
+      const list = i.type === "category" ? i.categories : (i.tickLabels ?? []);
+      return list.reduce((a, c) => Math.max(a, c.length), m);
+    },
     0,
   );
   const anyYName = yInfos.some((i) => axisTitleText(i) !== null);
@@ -1969,20 +2084,33 @@ export function plotlyToECharts(
     };
     if (info.raw.autorange === "reversed") opt.inverse = true;
     if (info.type === "value") {
-      // trim raw-float ticks (authored ranges and extents can land on
-      // 0.9560236…; integers still get thousands separators); an authored
-      // tickformat (see above) wins over the default trimming
-      axisLabel.formatter = tickFormatter ?? ((v: number) => formatTick(v));
+      if (info.tickLabels && info.tickLabels.length > 0) {
+        const labels = info.tickLabels;
+        axisLabel.fontSize = 10;
+        axisLabel.formatter = (v: number) => {
+          const idx = Math.round(v);
+          return Math.abs(v - idx) < 1e-6 && idx >= 0 && idx < labels.length ? labels[idx] : "";
+        };
+        opt.interval = 1;
+      } else {
+        // trim raw-float ticks (authored ranges and extents can land on
+        // 0.9560236…; integers still get thousands separators); an authored
+        // tickformat (see above) wins over the default trimming
+        axisLabel.formatter = tickFormatter ?? ((v: number) => formatTick(v));
+      }
     }
-    // range precedence: an authored layout.*axis.range wins verbatim; then the
-    // bar-family zero baseline (positive-only extents); otherwise the window
-    // is the axis' own data extent ± 5% padding, materialized explicitly —
-    // echarts v6 no longer honors `scale: true` for zero-exclusion, and an
-    // explicit window is the only way to keep epoch 0 / a pinned zero out.
+    // range precedence: an authored layout.*axis.range wins verbatim; then
+    // explicit dodged tickLabels window [-0.6, n - 0.4]; then the bar-family
+    // zero baseline; otherwise the window is the axis' own data extent ± 5%
     const authored = authoredAxisRange(info, ext);
     if (authored) {
       opt.min = authored[0];
       opt.max = authored[1];
+    } else if (info.tickLabels && info.tickLabels.length > 0) {
+      // Integer endpoints [-1, n] ensure interval=1 lands on exact 0..n-1
+      // ticks so every task label renders cleanly while giving breathing room.
+      opt.min = -1;
+      opt.max = info.tickLabels.length;
     } else if (
       info.type === "value" &&
       info.raw.type !== "log" &&
@@ -2007,12 +2135,14 @@ export function plotlyToECharts(
     } else if (info.type !== "category") {
       if (ext) {
         if (info.raw.type === "log") {
-          // plotly's log autorange fits the data extent exactly; echarts'
-          // own autoscale snaps to powers of ten and strands the curve in
-          // part of the canvas. Materialize the exact positive extent: a
-          // pad would only dirty the boundary tick (0.00430458… vs 0.005).
-          opt.min = ext.min;
-          opt.max = ext.max;
+          // plotly's log autorange fits the data extent closely; when error
+          // whiskers ride this log axis, snap outward to clean 10^k bounds so
+          // caps never clip and boundary ticks stay readable.
+          const hasErr = errorBars.some((eb) =>
+            info.isX ? eb.horizontal && eb.xIdx === info.index : !eb.horizontal && eb.yIdx === info.index,
+          );
+          opt.min = hasErr ? Math.pow(10, Math.floor(Math.log10(ext.min))) : ext.min;
+          opt.max = hasErr ? Math.pow(10, Math.ceil(Math.log10(ext.max))) : ext.max;
         } else {
           const span = ext.max - ext.min;
           const pad = span > 0 ? span * 0.05 : Math.max(1, Math.abs(ext.max) * 0.05);

@@ -56,6 +56,12 @@ DOCS_FIGURES: dict[str, tuple[str, ...]] = {
     "10-uplift-experimentation": ("qini_curves", "profit_frontier", "cost_sensitivity"),
     "12-tabular-ml-lifecycle": ("model_comparison", "bootstrap_ci"),
     "13-model-serving": ("latency_concurrency_lines", "footprint_cost_bars"),
+    "15-dynamic-pricing-rl": (
+        "profit_vs_baselines",
+        "price_traces",
+        "bound_share_by_rho",
+        "calibration_overview",
+    ),
 }
 
 WIDTH = 1200

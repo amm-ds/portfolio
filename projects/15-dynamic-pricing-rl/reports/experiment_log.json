@@ -212,5 +212,155 @@
     "step": "E2-6",
     "ts": "2026-11-25T00:57:39.289772+00:00",
     "wall_clock_s": 0.02328008301265072
+  },
+  {
+    "change": "Measured MaskablePPO throughput before full training",
+    "config_sha256": "5a14677a0d3318fb9877c96bfc0351e5c54ce8cde9a10715e14614ba4f1417ae",
+    "decision": "use recommended steps per seed before full training",
+    "headline": {
+      "projected_hours_for_3_by_3m": 3.2900040499872496,
+      "recommended_steps_per_seed": 3000000,
+      "seed": 0,
+      "steps": 16384,
+      "wall_clock_s": 21.56137054199644,
+      "within_24h": true
+    },
+    "n": 16384,
+    "report_path": "projects/15-dynamic-pricing-rl/reports/training_smoke.json",
+    "request_hosts": [],
+    "set_sha256": "8d2c7bd9608b1f1d4a0e9f1c421044c37307af1b58f1982f1d4b22fc06eec886",
+    "split": "train",
+    "step": "E2-7-smoke",
+    "ts": "2026-11-25T11:26:30.133510+00:00",
+    "wall_clock_s": 21.56137054199644
+  },
+  {
+    "change": "Trained MaskablePPO for 3000000 steps and evaluated 300 val episodes",
+    "config_sha256": "5a14677a0d3318fb9877c96bfc0351e5c54ce8cde9a10715e14614ba4f1417ae",
+    "decision": "validation recorded; no sealed evaluation",
+    "headline": {
+      "mean_by_rho": {
+        "0.7": 0.6273394580767699,
+        "1.0": 0.48547238563100903,
+        "1.3": 0.42479699032210133
+      },
+      "mean_normalised_profit": 0.5125362780099602,
+      "mean_raw_gross_profit": 644.6636066666667,
+      "model_path": "reports/models/ppo_seed_0.zip",
+      "total_timesteps": 3000000,
+      "violations": 0,
+      "wall_clock_s": 3705.1143317079986
+    },
+    "n": 3000000,
+    "report_path": "projects/15-dynamic-pricing-rl/reports/ppo_val.json",
+    "request_hosts": [],
+    "set_sha256": "8d2c7bd9608b1f1d4a0e9f1c421044c37307af1b58f1982f1d4b22fc06eec886",
+    "split": "train then val",
+    "step": "E2-7-seed-0",
+    "ts": "2026-11-25T12:30:53.383929+00:00",
+    "wall_clock_s": 3705.1143317079986
+  },
+  {
+    "change": "Trained MaskablePPO for 3000000 steps and evaluated 300 val episodes",
+    "config_sha256": "5a14677a0d3318fb9877c96bfc0351e5c54ce8cde9a10715e14614ba4f1417ae",
+    "decision": "validation recorded; no sealed evaluation",
+    "headline": {
+      "mean_by_rho": {
+        "0.7": 0.6332925647365178,
+        "1.0": 0.48539112178084204,
+        "1.3": 0.4244249778571298
+      },
+      "mean_normalised_profit": 0.5143695547914966,
+      "mean_raw_gross_profit": 646.3528733333334,
+      "model_path": "reports/models/ppo_seed_1.zip",
+      "total_timesteps": 3000000,
+      "violations": 0,
+      "wall_clock_s": 3773.0557649580005
+    },
+    "n": 3000000,
+    "report_path": "projects/15-dynamic-pricing-rl/reports/ppo_val.json",
+    "request_hosts": [],
+    "set_sha256": "8d2c7bd9608b1f1d4a0e9f1c421044c37307af1b58f1982f1d4b22fc06eec886",
+    "split": "train then val",
+    "step": "E2-7-seed-1",
+    "ts": "2026-11-25T13:34:01.563430+00:00",
+    "wall_clock_s": 3773.0557649580005
+  },
+  {
+    "change": "Trained MaskablePPO for 3000000 steps and evaluated 300 val episodes",
+    "config_sha256": "5a14677a0d3318fb9877c96bfc0351e5c54ce8cde9a10715e14614ba4f1417ae",
+    "decision": "validation recorded; no sealed evaluation",
+    "headline": {
+      "mean_by_rho": {
+        "0.7": 0.6317241102747144,
+        "1.0": 0.4863019696426074,
+        "1.3": 0.42483829555793656
+      },
+      "mean_normalised_profit": 0.5142881251584195,
+      "mean_raw_gross_profit": 648.6002833333334,
+      "model_path": "reports/models/ppo_seed_2.zip",
+      "total_timesteps": 3000000,
+      "violations": 0,
+      "wall_clock_s": 3695.921756583004
+    },
+    "n": 3000000,
+    "report_path": "projects/15-dynamic-pricing-rl/reports/ppo_val.json",
+    "request_hosts": [],
+    "set_sha256": "8d2c7bd9608b1f1d4a0e9f1c421044c37307af1b58f1982f1d4b22fc06eec886",
+    "split": "train then val",
+    "step": "E2-7-seed-2",
+    "ts": "2026-11-25T14:35:52.004378+00:00",
+    "wall_clock_s": 3695.921756583004
+  },
+  {
+    "change": "Consumed test and both stress sets once with B0-B3, selected masked PPO, and fluid UB",
+    "config_sha256": "5a14677a0d3318fb9877c96bfc0351e5c54ce8cde9a10715e14614ba4f1417ae",
+    "decision": "sealed sets consumed; no policy or threshold changes permitted",
+    "headline": {
+      "constraint_gate": {
+        "action_masks_required": true,
+        "hypothesis": "P2",
+        "passes": true,
+        "violations_by_policy": {
+          "B0": 0,
+          "B1": 0,
+          "B2": 0,
+          "B3": 0,
+          "RL": 0
+        },
+        "violations_exactly": 0
+      },
+      "primary": {
+        "comparator": "B1",
+        "comparison": "RL minus B1",
+        "hypothesis": "P1",
+        "paired_difference": {
+          "confidence": 0.95,
+          "hi": -0.007997938457781678,
+          "lo": -0.01143722548094719,
+          "n_resamples": 2000,
+          "point": -0.009695552117954365,
+          "seed": 42,
+          "unit": "episode"
+        },
+        "passes": false,
+        "relative_lift": -0.018584600072990766,
+        "relative_lift_min": 0.01,
+        "relative_lift_pct": -1.8584600072990767
+      },
+      "verdicts": {
+        "P1": "fail",
+        "P2": "pass",
+        "P3": "context_only"
+      }
+    },
+    "n": 2000,
+    "report_path": "projects/15-dynamic-pricing-rl/reports/metrics.json",
+    "request_hosts": [],
+    "set_sha256": "8d2c7bd9608b1f1d4a0e9f1c421044c37307af1b58f1982f1d4b22fc06eec886",
+    "split": "test then stress_mean_m1_5 then stress_mean_m3_5",
+    "step": "E2-8",
+    "ts": "2026-11-25T19:05:32.114838+00:00",
+    "wall_clock_s": 302.2509182920039
   }
 ]

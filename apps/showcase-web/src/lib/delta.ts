@@ -29,12 +29,27 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** First numeric metric of a run; null when the value is not a run record
- *  (top-level lists/strings such as 02's `candidates` never headline). */
+const PREFERRED_METRICS = [
+  "profit_at_budget",
+  "qini_coefficient",
+  "f1",
+  "pr_auc",
+  "roc_auc",
+  "mae",
+  "wrmsse",
+];
+
+/** Headline numeric metric of a run; prefers decision metrics over constant
+ *  full-population totals when present, and returns null for non-run records. */
 function headline(value: unknown): { metric: string; value: number } | null {
   if (!isRecord(value)) return null;
   const entries = numericEntries(value);
-  return entries.length > 0 ? { metric: entries[0][0], value: entries[0][1] } : null;
+  if (entries.length === 0) return null;
+  for (const key of PREFERRED_METRICS) {
+    const match = entries.find(([k]) => k === key);
+    if (match) return { metric: match[0], value: match[1] };
+  }
+  return { metric: entries[0][0], value: entries[0][1] };
 }
 
 export function isBaselineRun(run: string): boolean {

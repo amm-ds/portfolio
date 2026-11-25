@@ -274,6 +274,24 @@ export const STATIC_PROJECTS: StaticProject[] = [
     ],
     "title": "Model API Serving & Docker Deployment",
     "topic": "Inference & Serving"
+  },
+  {
+    "data": "600 M5 store-item series; calibrated demand and prices with assumed elasticity",
+    "domain": "Reinforcement learning & pricing simulation",
+    "has_report": true,
+    "id": "15-dynamic-pricing-rl",
+    "order": 15,
+    "status": "working",
+    "techniques": [
+      "constrained Gymnasium environment",
+      "masked PPO with convolutional history encoder",
+      "fluid linear-programming upper bound",
+      "tuned static, markdown, and Thompson baselines",
+      "common random numbers and paired bootstrap",
+      "pre-registered single sealed evaluation"
+    ],
+    "title": "Dynamic Pricing with RL",
+    "topic": "Decision Science"
   }
 ];
 
@@ -514,9 +532,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "tool_usage_matrix"
     ],
     "has_roadmap": true,
-    "metrics_keys": [
-      "agentic_suite"
-    ],
+    "metrics_keys": [],
     "project_id": "09-agentic-workflows",
     "section_ids": [
       "background",
@@ -542,13 +558,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "uplift_by_decile"
     ],
     "has_roadmap": true,
-    "metrics_keys": [
-      "random",
-      "response",
-      "t_learner",
-      "treat-everyone",
-      "x_learner"
-    ],
+    "metrics_keys": [],
     "project_id": "10-uplift-experimentation",
     "section_ids": [
       "background",
@@ -570,11 +580,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "task_times_dotplot"
     ],
     "has_roadmap": true,
-    "metrics_keys": [
-      "groupby",
-      "read_csv",
-      "window"
-    ],
+    "metrics_keys": [],
     "project_id": "11-data-engineering",
     "section_ids": [
       "background",
@@ -631,6 +637,27 @@ export const STATIC_STORIES: StaticStorySummary[] = [
     "has_roadmap": true,
     "metrics_keys": [],
     "project_id": "13-model-serving",
+    "section_ids": [
+      "background",
+      "objectives",
+      "data",
+      "eda",
+      "training",
+      "evaluation",
+      "results",
+      "conclusions"
+    ]
+  },
+  {
+    "figure_names": [
+      "bound_share_by_rho",
+      "calibration_overview",
+      "price_traces",
+      "profit_vs_baselines"
+    ],
+    "has_roadmap": true,
+    "metrics_keys": [],
+    "project_id": "15-dynamic-pricing-rl",
     "section_ids": [
       "background",
       "objectives",

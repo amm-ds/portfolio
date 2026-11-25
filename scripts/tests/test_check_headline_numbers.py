@@ -91,3 +91,15 @@ def test_m01_claim_verifies_against_real_repo() -> None:
     claim = next(c for c in headline.CLAIMS if c["project"] == "01-rag-agent")
     assert claim["label"] == "final_v3 F1 + promoted S3 recall@5"
     assert headline.check_claim(claim) == []
+
+
+def test_m15_derives_negative_primary_result_from_sealed_metrics() -> None:
+    """The pricing card must retain the measured loss against B1."""
+    assert headline._m15() == ["0.5120", "-1.86"]
+
+
+def test_m15_claim_verifies_against_real_repo() -> None:
+    """README and article both preserve the sealed RL result and P1 lift."""
+    claim = next(c for c in headline.CLAIMS if c["project"] == "15-dynamic-pricing-rl")
+    assert claim["label"] == "sealed RL mean + relative lift versus B1"
+    assert headline.check_claim(claim) == []

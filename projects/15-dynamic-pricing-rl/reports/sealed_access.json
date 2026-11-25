@@ -1,0 +1,26 @@
+[
+  {
+    "path": "projects/15-dynamic-pricing-rl/data/splits.json",
+    "purpose": "seal_read",
+    "sha256": "fb69ba9b96b0224b1d35273d3894f7eaa0351d6c0de4be392ab54f2ff5fb4746",
+    "split": "test",
+    "step": "E2-8",
+    "ts": "2026-11-25T19:00:30.642430+00:00"
+  },
+  {
+    "path": "projects/15-dynamic-pricing-rl/data/splits.json",
+    "purpose": "seal_read",
+    "sha256": "cec1622e42ade7081b9b5ec6b8723669805b573814874ef89581ccc3216efb58",
+    "split": "stress_mean_m1_5",
+    "step": "E2-8",
+    "ts": "2026-11-25T19:03:01.974288+00:00"
+  },
+  {
+    "path": "projects/15-dynamic-pricing-rl/data/splits.json",
+    "purpose": "seal_read",
+    "sha256": "128bab06ae88f4c28a790102b8c593dde99b479544f3c595d8956932f60a6731",
+    "split": "stress_mean_m3_5",
+    "step": "E2-8",
+    "ts": "2026-11-25T19:04:16.865007+00:00"
+  }
+]

@@ -37,7 +37,7 @@ Real artifacts from the pipelines (interactive versions in each [case study](htt
 
 ## Projects
 
-Thirteen projects, all working showcases on the same platform.
+Fourteen projects, all working showcases on the same platform.
 
 | # | Project | Domain | Data | Highlights |
 |---|---|---|---|---|
@@ -54,6 +54,7 @@ Thirteen projects, all working showcases on the same platform.
 | 11 | [DataFrame Engines Benchmark](projects/11-data-engineering/) | Data engineering | NYC TLC yellow 2024-01 (real, sha-pinned) + seeded synthetic CI/scalability tracks | Ten data tasks over 2.96M NYC taxi trips, parity-checked on pandas, Polars, DuckDB and stdlib sqlite: Polars 19x, DuckDB 15x pandas; sqlite answers every SQL task but file conversion leaves it ~29x slower; 1M-10M tracks show the fast two scaling sub-linearly. NYC TLC 2024-01.<br>Stack: 10-task contract on pandas / Polars / DuckDB / sqlite, parity gate, median-of-5 untraced timing + traced allocation pass + fresh-process RSS probes |
 | 12 | [Tabular ML & Deep Learning Lifecycle](projects/12-tabular-ml-lifecycle/) | Classical ML + deep learning | UCI Bike Sharing, Capital Bikeshare hourly (real, sha256-pinned) + seeded synthetic CI twin | Real UCI Capital Bikeshare hourly demand (17,379 rows): the validation-selected PyTorch MLP reaches 25.4 test MAE vs 83.2 for the seasonal-naive floor. The 57.8/hour gain has hourly 95% CI 52.5-63.1 and week-block sensitivity 38.8-73.4.<br>Stack: sklearn Pipelines ladder, seeded Optuna HPO (50 trials, 240 s budget), hand-written PyTorch MLP (hour embedding, Huber, early stopping), three-lens feature selection, paired bootstrap CIs |
 | 13 | [Model API Serving & Docker Deployment](projects/13-model-serving/) | Model serving & deployment | Champion MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly) | Experiment 12's champion MLP (25.4316 test MAE) is re-derived, exported to ONNX behind a hard parity gate (7.2e-07 max-abs), and served two ways from one FastAPI schema. Seeded paired tests: 1.6 ms p50, ~950 req/s knee, ~56k rows/s batched; image 6.5 GB, mostly unused CUDA.<br>Stack: FastAPI contract schema (422 on malformed), ONNX export behind a 1e-4 parity gate, seeded paired httpx load harness (concurrency + batch curves), fresh-process RSS probes, multi-stage Docker build |
+| 15 | [Dynamic Pricing with RL](projects/15-dynamic-pricing-rl/) | Reinforcement learning & pricing simulation | 600 M5 store-item series (real calibration, simulated response) | Masked PPO for constrained pricing on 600 M5-calibrated series reaches 0.5120 sealed mean profit, but trails tuned static B1 by -1.86% (paired 95% CI [-0.0114, -0.0080]); zero violations across all executable policies.<br>Stack: masked PPO with history encoder, action masks, common random numbers, fluid LP ceiling, four tuned baselines, single sealed evaluation |
 
 Flagships (01, 07) are complete end-to-end; the rest are working showcases
 built on the same platform, designed for deepening.

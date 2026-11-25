@@ -33,15 +33,6 @@ stages:
       - reports/models
       - reports/train_curves.json:
           cache: false
-  evaluate_val:
-    cmd: uv run python -m dynamic_pricing.cli evaluate-val
-    deps:
-      - src/dynamic_pricing
-      - params.yaml
-      - data/calibration.json
-      - data/splits.json
-      - reports/models
-    outs:
       - reports/ppo_val.json:
           cache: false
   seal_read:
@@ -66,6 +57,7 @@ stages:
       - params.yaml
       - reports/metrics.json
       - reports/test_episodes.json
+      - data/calibration.json
     outs:
       - reports/figures:
           cache: false

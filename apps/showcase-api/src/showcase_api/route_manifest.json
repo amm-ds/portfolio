@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-24T23:20:01+00:00",
+  "generated_at": "2026-11-25T19:28:09+00:00",
   "sources": [
     "apps/showcase-web/src/App.tsx",
     "projects/*/portfolio.yaml",
@@ -33,6 +33,7 @@
     "/projects/11-data-engineering",
     "/projects/12-tabular-ml-lifecycle",
     "/projects/13-model-serving",
+    "/projects/15-dynamic-pricing-rl",
     "/services"
   ]
 }
