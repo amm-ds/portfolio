@@ -8,7 +8,10 @@
 [Dataset card](https://amm-ds.github.io/portfolio/data-registry/bike-sharing/)
 
 > Project 12's v2 LightGBM (23.7636 test MAE) is rebuilt and exported to ONNX
-> behind a 2.6e-4-rental parity gate. One FastAPI schema serves both backends.
+> behind a parity gate of 1e-4 rentals plus a float32 term of 1e-5 times the
+> largest prediction (limit 6.8e-3). The measured max-abs is 2.6e-4, above the
+> bare 1e-4, and would fail without the term. One FastAPI schema serves both
+> backends.
 > Paired tests: 2.0 ms p50 native, ~1,012 req/s knee, 28k-41k rows/s batched;
 > image 1,060 MB, or 292 MB ONNX-only.
 
@@ -37,7 +40,8 @@ The v2 MLP (27.16) is the cited validation runner-up, not the served model.
 The ONNX export (opset 15, dynamic batch) then faces a hard parity gate:
 512 seeded probe rows across the legal feature envelope, native vs ONNX
 Runtime within 1e-4 max-abs plus a float32 relative term on the raw
-prediction — measured at 2.65e-4 rentals, about 26× inside the limit.
+prediction — measured at 2.65e-4 rentals, about 26× inside the limit but
+above the bare 1e-4, which it would fail without the relative term.
 
 One small FastAPI service serves either backend behind a `--backend
 native|onnx` flag — a pydantic request schema mirroring the feature

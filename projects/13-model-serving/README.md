@@ -81,7 +81,8 @@ and records its readiness/prediction smoke in `reports/docker_slim.json`.
 Author run, one laptop (no GPU, one uvicorn worker): the reproduction gate is
 exact (**23.7636 vs 23.7636**, experiment 12's committed v2 LightGBM MAE) and
 the ONNX parity max-abs is **2.65e-4 rentals** on 512 seeded probe rows
-(tolerance 1e-4 plus a float32 relative term, limit 6.8e-3). Single-request
+(tolerance 1e-4 plus a float32 relative term, limit 6.8e-3; the measured gap
+is above the bare 1e-4 and would fail without the term). Single-request
 **p50 2.0 ms native** (ONNX 2.4 ms; native p95 **2.9 ms**; n = **300** requests
 per cell, nearest-rank) with a **~1,012 req/s** native knee near concurrency 4
 and zero errors in every measured cell; the explicit batch endpoint reaches

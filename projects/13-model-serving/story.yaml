@@ -100,7 +100,8 @@ sections:
     implemented gate is `limit = 1e-4 + 1e-5 × max(1, max|native|)` — an absolute
     term plus a float32 relative term, because the exported tree ensemble
     accumulates leaf values in float32 and kernel-order noise scales with
-    output magnitude. The measured gap sits about `26×` inside the limit.
+    output magnitude. The measured gap sits about `26×` inside the limit,
+    though above the bare `1e-4`, which it would fail without the term.
 
     ```diagram auto-13-model-serving-3
     ```
