@@ -10,10 +10,10 @@ limits: 'Single laptop, no GPU, one uvicorn worker, one model: absolute numbers,
   are host-specific observations, not demonstrated transfer; localhost latency has no network term; the wattage behind the
   cost line is a declared assumption, not a measurement.'
 short_version: |
-  Project 12's v2 LightGBM (23.7636 test MAE) is rebuilt and exported to ONNX
-  behind a 2.6e-4-rental parity gate. One FastAPI schema serves both backends.
-  Paired tests: 2.0 ms p50 native, ~1,012 req/s knee, 28k-41k rows/s batched;
-  image 1,060 MB, or 292 MB ONNX-only.
+  Project 12's v2 LightGBM (23.7636 test MAE) serves via one FastAPI schema,
+  native or ONNX, behind a 1e-4-plus-float32-term parity gate (measured 2.6e-4
+  fails the bare 1e-4 alone). 2.0 ms p50 native, ~1,012 req/s knee, 28k-41k
+  rows/s batched; image 1,060 MB, 292 MB ONNX-only.
 sections:
 - id: background
   text_md: |

@@ -7,13 +7,14 @@
 [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/13-model-serving/DESIGN.md) ·
 [Dataset card](https://amm-ds.github.io/portfolio/data-registry/bike-sharing/)
 
-> Project 12's v2 LightGBM (23.7636 test MAE) is rebuilt and exported to ONNX
-> behind a parity gate of 1e-4 rentals plus a float32 term of 1e-5 times the
-> largest prediction (limit 6.8e-3). The measured max-abs is 2.6e-4, above the
-> bare 1e-4, and would fail without the term. One FastAPI schema serves both
-> backends.
-> Paired tests: 2.0 ms p50 native, ~1,012 req/s knee, 28k-41k rows/s batched;
-> image 1,060 MB, or 292 MB ONNX-only.
+> Project 12's v2 LightGBM (23.7636 test MAE) serves via one FastAPI schema,
+> native or ONNX, behind a 1e-4-plus-float32-term parity gate (measured 2.6e-4
+> fails the bare 1e-4 alone). 2.0 ms p50 native, ~1,012 req/s knee, 28k-41k
+> rows/s batched; image 1,060 MB, 292 MB ONNX-only.
+>
+> The gate as it is: 1e-4 rentals plus a float32 term of 1e-5 times the
+> largest prediction, limit 6.8e-3. The measured max-abs is 2.6e-4, above the
+> bare 1e-4, and would fail without the term.
 
 **TL;DR:** teams asking what serving a selected tabular model actually
 looks like — latency percentiles, a throughput knee, batch curves, memory,
