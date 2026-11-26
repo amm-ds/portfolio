@@ -1,0 +1,58 @@
+{
+  "artifact": "remeasure_gate",
+  "schema_version": 2,
+  "model": "qwen3.6:35b-a3b-q4_K_M",
+  "concurrency": 1,
+  "committed": {
+    "agg_tok_per_s": 67.72989695048369,
+    "ollama_version": "0.40.4",
+    "source": "reports/metrics.json (committed 2026-11-16 run, quiet machine)"
+  },
+  "tolerance_pct": 10.0,
+  "runs": [
+    {
+      "run": 1,
+      "measured_agg_tok_per_s": 81.64,
+      "p95_latency_s": 0.68,
+      "schema_valid_rate": 1.0,
+      "drift_pct": 20.5,
+      "passed": false,
+      "note": "values as printed by the gate CLI; full cell record was overwritten by run 2 (single-run artifact schema)"
+    },
+    {
+      "run": 2,
+      "measured_agg_tok_per_s": 71.80154074068427,
+      "drift_pct": 6.011590115333115,
+      "passed": true,
+      "cell": {
+        "model": "qwen3.6:35b-a3b-q4_K_M",
+        "engine": "llamacpp",
+        "concurrency": 1,
+        "n_requests": 40,
+        "n_failures": 0,
+        "p50_latency_s": 0.6098252499941736,
+        "p95_latency_s": 0.836855707981158,
+        "p99_latency_s": 0.9541882920020726,
+        "mean_ttft_s": 0.03879333642398706,
+        "agg_tok_per_s": 71.80154074068427,
+        "mean_req_tok_per_s": 72.57465166731832,
+        "schema_valid_rate": 1.0,
+        "quality_rate": 1.0,
+        "wall_time_s": 25.20837270800257,
+        "total_output_tokens": 1810
+      }
+    }
+  ],
+  "verdict": "STOP",
+  "verdict_reason": "Run 1 drifted +20.5% from the committed cell, beyond the ±10% gate tolerance. Run 2 passed at +6.0%, but the two runs disagree with each other by 12.7%, so the host cannot currently reproduce the committed cell within tolerance reliably. Host state differs from the committed run: Ollama 0.40.4 -> 0.40.17, all committed models had been deleted from the host (gate model re-downloaded), and the machine carries sustained co-tenant load (the committed grid ran on a quiet machine). Per the E10 spec: drift > 10% => STOP and do not run the rest.",
+  "host_state": {
+    "ollama_version_committed": "0.40.4",
+    "ollama_version_measured": "0.40.17",
+    "platform": "macOS-26.5-arm64-i386-64bit",
+    "load_average_1m_5m_15m": [17.07, 13.85, 13.34],
+    "co_tenant_load": "sustained ~100% CPU python process (elapsed 2d20h) + ~100% CPU Virtualization VM + desktop apps; total ~1150% CPU during the gate runs",
+    "committed_models_installed_at_gate_time": false,
+    "gate_model_redownloaded": "qwen3.6:35b-a3b-q4_K_M (23 GB, ollama id 07d35212591f; manifest config sha256:5d1c86a949f7f3b5e75370e129765af7526f0cc1812a9de21a541da042596faa, file_type Q4_K_M)"
+  },
+  "git_sha": "94345c4ee342a2dcd45f1abf3e5c2fe654f01d6b"
+}
