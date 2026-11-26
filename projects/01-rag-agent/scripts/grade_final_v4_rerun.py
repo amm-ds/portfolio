@@ -328,7 +328,7 @@ def write_cross_family(rows: list[dict[str, Any]]) -> dict[str, Any]:
             }
         )
 
-    result = {
+    cross_family: dict[str, Any] = {
         "generated_at": datetime.now(UTC).isoformat(),
         "status": "scored",
         "judge": {
@@ -353,9 +353,9 @@ def write_cross_family(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "per_question": per_question,
     }
     (REPORTS_DIR / "judge_cross_family.json").write_text(
-        json.dumps(result, indent=2, ensure_ascii=False) + "\n", "utf-8"
+        json.dumps(cross_family, indent=2, ensure_ascii=False) + "\n", "utf-8"
     )
-    return result
+    return cross_family
 
 
 def write_agreement(
