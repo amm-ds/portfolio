@@ -93,9 +93,10 @@ other 4; the vehicle-first convention is reported below) at a mean distance gap
 of **4.23 %** to the published best-known solutions, 95 % bootstrap CI over the
 56 instances **[3.22 %, 5.28 %]** (2,000 seeded resamples, `metrics.json:intervals`).
 **Two gaps are reported**: distance gap % and vehicle-count delta (veh Δ) vs
-the published best-known solutions. Solomon's benchmark convention ranks
-**vehicles first, distance second**, the references optimize that
-hierarchical objective, so both numbers matter.
+the published best-known solutions. Solomon's references optimize **vehicles
+first**; the main ALNS arm minimizes distance. Switching ALNS to the
+vehicles-first `alns_fleet` objective trims the delta only from **+3.73** to
+**+3.66**, so most of the fleet gap is a search limit, not a convention.
 
 | solver | mean distance gap | mean distance | mean vehicles | mean veh Δ | mean runtime |
 |---|---|---|---|---|---|
@@ -152,7 +153,7 @@ The ladder's top run is cross-checked against Google's CP-SAT solver
 (`ortools_solver.py`): a classic VRPTW model, one circuit per vehicle over
 time-window-filtered travel arcs, time and capacity propagated along arcs, the
 ALNS plan injected as the solution hint, run single-worker with a fixed seed
-for a **10 s wall-time budget per instance** (vs ALNS's ~0.8 s).
+for a **10 s wall-time budget per instance** (vs ALNS's measured ~1.1 s).
 
 What this arm is and is not: it is an **incumbent-improvement probe and
 small-scale verifier**, not an independent baseline. Because the ALNS plan is
@@ -201,7 +202,8 @@ Key findings:
   destroy size 10 under-diversifies there), C103 11.67 % / C203 19.48 % (tight
   chains that resist q-customer destroy/repair).
 - **Negative gaps are real and reported**: ALNS lands *below* the published
-  reference on 8 instances (best RC202 −3.85 %, RC105 −2.78 %). The SINTEF
+  reference on 5 instances, or 6 including `alns_fleet` (RC202: ALNS −3.85 %,
+  fleet variant −5.79 %; RC105 −2.78 %). The SINTEF
   table mixes conventions (hierarchical vehicle-first objective, double
   precision, some values flagged as rounding artifacts), our plain-distance,
   full-precision solutions legitimately undercut a few references.

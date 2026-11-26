@@ -165,9 +165,9 @@ flowchart LR
   `data/operating_policy.json`; evaluation, sensitivity, and serving consume
   the frozen policy. The exact calibrated policy is bootstrapped against fixed
   contact-everyone and logistic-at-0.5. Regenerated telco results: logistic
-  0.450/655, raw XGBoost 0.225/644, calibrated XGBoost 0.175/601; deltas are
-  −434 [−508, −353] versus contact-everyone and −90 [−159, −26] versus
-  logistic-at-0.5. The unchanged 601 outcome is an observed regeneration, not
+  0.450/655, raw XGBoost 0.225/644, calibrated XGBoost 0.175/601; the persisted
+  delta is −434 [−508, −353] versus contact-everyone. No numeric logistic
+  interval is retained in the JSON reports. The unchanged 601 outcome is an observed regeneration, not
   a target. The redundant cost-surface figure was removed.
 
 ## Experiment versioning

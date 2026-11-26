@@ -7,7 +7,9 @@
 [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization/DESIGN.md) ·
 [Dataset card](https://amm-ds.github.io/portfolio/data-registry/cvrplib-solomon/)
 
-> Routing planner for the 56 standard Solomon 100-customer problems with time windows. A hand-written search returns feasible plans within 4.2% of best-known routes in ~1 second each, using 3.7 more vehicles than best-known on average; an exact solver certifies small cases only.
+> Routing planner for 56 Solomon 100-customer problems with time windows. Hand-written search returns
+> feasible plans within 4.2% of best-known distance in ~1 second each, using about 3.7 more vehicles
+> on average; an exact solver certifies small cases only.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization)
 

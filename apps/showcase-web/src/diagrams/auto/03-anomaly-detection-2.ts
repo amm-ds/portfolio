@@ -28,7 +28,7 @@ export const AUTO_03_ANOMALY_DETECTION_2_SPEC = {
     },
     {
       id: "n4",
-      label: "Excluded, not misses",
+      label: "Count as zero in recall",
       kind: "task",
       facts: [],
     },
@@ -54,7 +54,7 @@ export const AUTO_03_ANOMALY_DETECTION_2_SPEC = {
   edges: [
     { id: "n1-n2", source: "n1", target: "n2", kind: "task" },
     { id: "n2-n3", source: "n2", target: "n3", kind: "task", label: "9 evaluable" },
-    { id: "n2-n4", source: "n2", target: "n4", kind: "task", label: "3 all-train" },
+    { id: "n2-n4", source: "n2", target: "n4", kind: "task", label: "3 train-only" },
     { id: "n3-h", source: "n3", target: "h", kind: "task" },
     { id: "h-s1", source: "h", target: "s1", kind: "task" },
     { id: "s1-k1", source: "s1", target: "k1", kind: "task" },

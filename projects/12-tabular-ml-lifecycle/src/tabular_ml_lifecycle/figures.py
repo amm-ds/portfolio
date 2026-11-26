@@ -67,8 +67,8 @@ def rentals_by_hour_season_figure(df: pd.DataFrame) -> go.Figure:
     fig.update_layout(title="Rentals by hour, one panel per season (2011-2012)")
     add_takeaway(
         fig,
-        "The commuter double peak (08h and 17-18h) dominates spring-fall; winter is "
-        "flatter and lower - season belongs in any rental model.",
+        "The commuter double peak (08h and 17-18h) persists; spring is lowest and "
+        "winter peaks near summer, reflecting the UCI season-label quirks.",
     )
     return fig
 
@@ -149,8 +149,8 @@ def mlp_loss_curves_figure(
     )
     add_takeaway(
         fig,
-        "Train keeps improving while validation stalls — that gap is why dropout, "
-        "weight decay and early stopping are first-class artifacts here, not defaults.",
+        "Training MAE falls early then plateaus near 20-21 while validation stalls; "
+        "the run executes 57 epochs and restores the best checkpoint at epoch 47.",
     )
     return fig
 
@@ -177,8 +177,8 @@ def learning_curves_figure(curves: dict[str, dict[float, float]]) -> go.Figure:
     )
     add_takeaway(
         fig,
-        "Both curves flatten toward the right edge: more history helps little at this "
-        "size — the ceiling is feature information, not rows.",
+        "LightGBM still descends at the full fraction and the MLP is non-monotone; "
+        "these curves establish neither a row-count ceiling nor early-stopping benefit.",
     )
     return fig
 
@@ -322,8 +322,8 @@ def residual_heatmap_figure(test_df: pd.DataFrame, residuals: np.ndarray) -> go.
     fig.update_layout(title="Residuals sliced by hour x season and hour x weather")
     add_takeaway(
         fig,
-        "Red = the model under-forecasts there. Structure left in a slice is the "
-        "next feature's address — here it marks rush-hour overshoot and bad-weather bias.",
+        "Red = over-forecast and blue = under-forecast (actual - fitted). Residual "
+        "structure marks slices for later feature tests; colors do not establish causes.",
     )
     return fig
 
@@ -348,8 +348,8 @@ def residual_vs_fitted_figure(y_true: np.ndarray, y_pred: np.ndarray) -> go.Figu
     )
     add_takeaway(
         fig,
-        "Spread widens with the fitted level (high-demand hours are harder in "
-        "absolute rentals) while staying centered on zero — no global bias.",
+        "Spread widens with the fitted level. Mean residual is +9.2 overall and "
+        "+28.6 for fitted 300-600 (actual - fitted), indicating under-forecast bias.",
     )
     return fig
 

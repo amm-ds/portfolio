@@ -14,7 +14,7 @@ Time-based split: the final 8 weeks of the 2011-2012 hourly series are the test 
 | LightGBM (Optuna HPO) | 25.4 | 40.2 | 27.4 |
 | tabular MLP (PyTorch) | 25.4 | 39.3 | 33.7 |
 
-Champion: **mlp** — MAE improvement vs floor +57.8, hourly 95% CI [52.5, 63.1], significant_95=True. Serial-dependence sensitivity (95% CI): hourly: [52.5, 63.1]; day: [44.2, 71.8]; week: [38.8, 73.4].
+Validation-selected model: **mlp** — MAE improvement vs floor +57.8, hourly 95% CI [52.5, 63.1], significant_95=True. Serial-dependence sensitivity (95% CI): hourly: [52.5, 63.1]; day: [44.2, 71.8]; week: [38.8, 73.4].
 
 ## Post-freeze MLP regularization diagnostics (2x2x2)
 

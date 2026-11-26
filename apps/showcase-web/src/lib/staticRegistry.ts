@@ -675,11 +675,11 @@ export const STATIC_DEMO_REGISTRY: StaticDemoRegistryEntry[] = [
   {
     "group": "plan operations",
     "hero": {
-      "ci": "−31.0% on the competition window (m5_full_v1, horizon 28)",
-      "label": "official WRMSSE",
+      "ci": "−31.0% (0.60/0.10/0.30); current champion 0.6211 (−30.4%)",
+      "label": "earlier blend · official WRMSSE",
       "value": "0.6161 vs 0.8929"
     },
-    "hook": "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the screened ensemble on the scored-once competition window — curves, model spread and per-series WAPE respond.",
+    "hook": "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the earlier screened blend on the headline competition window — curves, model spread and per-series WAPE respond.",
     "href": "/demos/forecast-workbench",
     "id": "forecast-workbench",
     "project": "02-demand-forecasting",

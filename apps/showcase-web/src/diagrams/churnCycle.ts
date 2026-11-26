@@ -30,7 +30,7 @@ export const CHURN_CYCLE_SPEC = {
       label: "Churn probability · isotonic XGBoost",
       kind: "model",
       facts: [
-        "Cost-aware Optuna HPO (25 trials × 4 arms) selected XGBoost on the real track.",
+        "Persisted XGBoost settings; no valid trial count or search score is recorded.",
         "Served model: ROC-AUC 0.8317, ECE 0.016 after isotonic calibration.",
       ],
     },
@@ -66,8 +66,8 @@ export const CHURN_CYCLE_SPEC = {
       label: "Priced outcome",
       kind: "output",
       facts: [
-        "601 cost units vs 1,035 for contacting everyone: −41.9%.",
-        "Paired bootstrap 95% CI −485 to −343 over 2,000 resamples.",
+        "$601 vs $1,035 for contacting everyone: −41.9%.",
+        "Paired bootstrap 95% CI −$508 to −$353 over 2,000 resamples.",
       ],
     },
   ],

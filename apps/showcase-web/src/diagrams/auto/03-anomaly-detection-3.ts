@@ -52,13 +52,13 @@ export const AUTO_03_ANOMALY_DETECTION_3_SPEC = {
     },
     {
       id: "f",
-      label: "Tune operating point · train-only, clear +0.05",
+      label: "Tune on train-only · adopt if gain ≥ +0.05",
       kind: "model",
       facts: [],
     },
     {
       id: "g",
-      label: "Budgeted page stream · deployed artifact",
+      label: "Keep ensemble default · +0.010 below margin",
       kind: "task",
       facts: [],
     },

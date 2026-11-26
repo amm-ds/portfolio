@@ -16,7 +16,7 @@ export const AUTO_02_DEMAND_FORECASTING_3_SPEC = {
     },
     {
       id: "q",
-      label: "per-origin WRMSSE · 2 selection origins",
+      label: "per-origin WRMSSE · 9 selection origins",
       kind: "task",
       facts: [],
     },
@@ -40,7 +40,7 @@ export const AUTO_02_DEMAND_FORECASTING_3_SPEC = {
     },
     {
       id: "e",
-      label: "convex_ensemble · weights 0.60/0.10/0.30",
+      label: "convex_ensemble · weights 0.95/0.00/0.05",
       kind: "task",
       facts: [],
     },

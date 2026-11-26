@@ -459,7 +459,7 @@ def hpo_importance_figure(config: AnomalyConfig, family: str) -> go.Figure | Non
     add_takeaway(
         fig,
         f"{importances[top]:.0%} of importance on {top} — {payload['n_trials']} seeded TPE "
-        f"trials; best val PR-AUC {payload['best_value']:.3f}",
+        f"trials; best HPO objective (validation PR-AUC) {payload['best_value']:.3f}",
     )
     return apply_theme(fig)
 

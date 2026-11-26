@@ -584,7 +584,7 @@ def nab_figures(
     fig.update_yaxes(tickfont_size=13)
     fig.update_xaxes(tickfont_size=13)
     fig.update_layout(
-        title="NAB test windows vs champion alerts",
+        title="NAB test windows vs IsolationForest alerts",
     )
     add_takeaway(
         fig,
@@ -629,7 +629,7 @@ def nab_figures(
     budget_fig.update_layout(title="Range-F1 vs alert budget")
     add_takeaway(
         budget_fig,
-        "one curve per detector family — budget = flagged fraction of the window (log x)",
+        "IsolationForest only: one curve per NAB group — budget = flagged fraction (log x)",
     )
     return {
         "nab_timelines": timelines,

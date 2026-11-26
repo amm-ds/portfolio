@@ -32,7 +32,7 @@ export const ROUTING_SPEC = {
       kind: "gate",
       facts: [
         "Raw TF-IDF maximum class probability drives the routing decision.",
-        "At τ=0.50, 24.6% of items escalate; the routed system scores 0.9020 fresh macro-F1.",
+        "At τ=0.50, 24.6% of items escalate; the routed system scores 0.9061 fresh macro-F1.",
       ],
     },
     {
@@ -50,7 +50,7 @@ export const ROUTING_SPEC = {
       label: "Sorted item",
       kind: "output",
       facts: [
-        "Confidence routing reaches 0.9020 fresh macro-F1 while 75.4% of items use keyword economics.",
+        "Confidence routing reaches 0.9061 fresh macro-F1 while 75.4% of items use keyword economics.",
         "High-value traffic can use the full-data model at 0.9529 fresh macro-F1.",
       ],
     },

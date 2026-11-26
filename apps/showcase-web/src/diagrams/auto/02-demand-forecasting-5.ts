@@ -22,7 +22,7 @@ export const AUTO_02_DEMAND_FORECASTING_5_SPEC = {
     },
     {
       id: "x",
-      label: "Weekly reforecast · floors + scored-once windows",
+      label: "Frozen champion · quiet-day + test-reread limits",
       kind: "model",
       facts: [],
     },

@@ -47,8 +47,8 @@ Summary:
   selection origins; simplex-grid weights (step 0.05) minimising the same
   screen; computed exactly from the forecast-level blend re-aggregated through
   the hierarchy. Selection never reads the test origin.
-- **Validation** (`m5_full.py`): 3 weekly rolling origins (2 selection +
-  the last scored once as test), 28-day horizon, ≥ 1,096 training days; the
+- **Validation** (`m5_full.py`): 10 weekly rolling origins (9 selection +
+  the last used for the champion's test headline), 28-day horizon, ≥ 1,096 training days; the
   official hierarchical WRMSSE (per-node RMSSE vs the node's train volatility,
   revenue weights with equal total per level, zero-scale nodes excluded and
   counted) plus bottom WAPE, bias, stability, per-level WRMSSE, and zero-day
@@ -105,35 +105,32 @@ origins):
 evaluation on the final 28 days, so the ensemble–floor gap carries no
 uncertainty bound.
 
+The demo and sample curves come from an earlier 0.6161 blend with weights 0.60/0.10/0.30, not the current 0.6211 champion.
+
 - **The committed comparison is the seasonal-naive floor**: the convex
   ensemble lands at **0.6211**, a **−30.4%** cut over the floor's 0.8929,
   scored once on the final 28 days under the official revenue-weighted scheme
   across all 42,840 nodes. This is not a leaderboard or competition-winner
   comparison: no equivalent external run is evaluated by this project. Protocol
   reference: [Makridakis et al., IJF 2022](https://doi.org/10.1016/j.ijforecast.2021.11.013).
-- **Pooled beats global at full scale, the key lesson.** All three pooled
-  arms (0.6219 / 0.6225 / 0.6459) land ahead of the single global model
-  (0.6601): with 30,490 series, one fit per store, cell, or department shares
-  strength where it exists and keeps fits local where it does not. This is the
-  inverse of the subset-era finding (600 series, top-volume items), where
-  pooling starved each fit: the subset was too small and too dense to see
-  the pooling win.
+- **Pooled direct fits beat the recursive global fit at full scale.** All three
+  pooled arms (0.6219 / 0.6225 / 0.6459) land ahead of the global model
+  (0.6601), but this comparison changes both grouping and forecasting strategy;
+  it does not isolate pooling as the cause. This reverses the subset-era finding
+  (600 dense, top-volume series), where pooling starved each fit.
+- **The ensemble's edge over the best single is marginal.** The blend scores
+  0.6211 against 0.6219, while the single fit has slightly better bottom WAPE
+  (0.7617 vs 0.7623) and bias (+0.0177 vs +0.0222). The blend's zero weight on
+  `lgbm_pool_store` leaves a 95/5 mix of two active fits.
 - **The Tweedie arm and AutoETS, stated as measured.** The Tweedie-loss twin
   posts 0.6473, ahead of the global model, behind the pooled arms. AutoETS
-  clears the floor comfortably (0.7093 vs 0.8929) but trails every boosting
-  arm; on zero-actual days it stays right 60.9% of the time against the
-  ensemble's 57.2%, and the floor itself leads there at 66.6%.
-- **Where the win is made.** The per-level breakdown (story conclusions) shows
-  the blend's edge broadest at the aggregate levels the competition weights
-  most, total 0.3143 vs the floor's 0.5600, while at item level the learned
-  candidates cluster between 1.04 and 1.15 and the floor sits at 1.38–1.39:
-  series-level noise dominates there, and full-scale accuracy is decided by
-  the hierarchy, not by any single series.
+  clears the floor comfortably (0.7093 vs 0.8929) but trails every boosting arm.
+- **Relative and absolute gains differ by level.** Total falls from 0.5600 to
+  0.3143 (43.9%), the largest relative cut; item-store has the largest absolute
+  gap at about 0.341.
 - **Intermittency is priced in, not solved.** 91% of series are intermittent
   and 59.5% of panel days are zero. On zero-actual days the ensemble is right
-  57.2% of the time (intermittent class 58.8%) against the floor's 66.6%
-  (67.8%), the quiet days still belong to the floor; the ensemble wins by
-  getting the aggregate levels right.
+  57.2% of the time against the floor's 66.6%.
 
 The ensemble composition: **lgbm_pool_storecat × 0.95 + lgbm_pool_store ×
 0.00 + lgbm_pool_dept × 0.05**, the best three of the six-candidate pool by
@@ -143,8 +140,8 @@ screen, computed exactly from the forecast-level blend re-aggregated through
 the hierarchy.
 
 Stated limits: the selection screen is thin (9 selection origins, a protocol
-limit, not a tight selection bound); the full track commits point estimates
-only, no bootstrap CIs; the demo band is the per-day min/max envelope of the
+limit, not a tight selection bound); the headline gap has no bootstrap CI,
+although the separate spike-capture regression does; the demo band is the per-day min/max envelope of the
 blend members, not a calibrated prediction interval; neural global models
 (N-HiTS, TFT, Chronos-class) are not benchmarked; stockouts, promotions, and
 returns are unmodeled, so no savings or safety-stock claim follows.
@@ -205,7 +202,7 @@ the demo, not to generalize beyond the committed window.
 
 ```bash
 # from the repo root, inside the workspace venv
-uv run python -m demand_forecasting.cli evaluate-m5-full        # the full-panel headline (~12.9 h, offline, checksum-pinned)
+uv run python -m demand_forecasting.cli evaluate-m5-full        # the full-panel headline (extended, offline, checksum-pinned)
 uv run python -m demand_forecasting.cli build-report-m5-full    # rebuild reports_m5_full/report.html from committed artifacts
 uv run python -m demand_forecasting.cli build-figures-m5-full   # rebuild reports_m5_full/figures/ from committed artifacts
 uv run python -m demand_forecasting.cli demo-payload-m5-full    # the forecast-workbench payload (reports_m5_full/demo_payload.json)
@@ -223,14 +220,14 @@ uv run pytest projects/02-demand-forecasting -q
 
 | symptom | cause | fix |
 |---|---|---|
-| `evaluate-m5-full` runs for hours | the full-panel headline is a **~12.9 h** overnight run by design | scope a re-run with `--series-cap 2000` (~90 min catalog pass), or use the offline pytest suite above for a smoke check |
+| `evaluate-m5-full` runs for hours | the full-panel headline is a **extended** overnight run by design | scope a re-run with `--series-cap 2000` (~90 min catalog pass), or use the offline pytest suite above for a smoke check |
 
 ## What this demonstrates for a client
 
 - **Leakage discipline as a first-class concern**: features shifted, not
-  centered; embargoed rolling origins instead of a random split; the final
-  28 days scored exactly once, the number a planner quotes is a measurement,
-  not a hope.
+  centered; dated rolling origins instead of a random split; the champion's
+  final 28-day headline is separate from selection, with the later challenger
+  gate's second test read explicitly disclosed.
 - **Full-scale honesty**: the evaluation runs on all 30,490 series, 91% of
   them intermittent, under the competition's own 42,840-node metric, no
   top-volume subset silently flattering the models.

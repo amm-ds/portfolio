@@ -457,13 +457,12 @@ describe("ProjectsIndex", () => {
       expect(card.querySelector(".study-result-chip")!.textContent).toContain(metrics[i]);
       expect(card.querySelector(".study-metric")!.textContent).toBe(metrics[i]);
     });
-    // the chip LABEL is short — the source registry label reads "official WRMSSE"
-    // (the previous long sentence was shortened at the source; the metric value
-    // stays intact)
+    // the chip label identifies the historical blend while staying compact;
+    // the metric value stays intact
     const forecastChip = demoCards[1].querySelector(".study-result-chip")!;
     const labelText = forecastChip.childNodes[0].textContent!.replace(/:\s*$/, "");
     expect(labelText.split(/\s+/).filter(Boolean).length).toBeLessThanOrEqual(6);
-    expect(labelText).toBe("official WRMSSE");
+    expect(labelText).toBe("earlier blend · official WRMSSE");
     expect(forecastChip.textContent).toContain("0.6161 vs 0.8929");
   });
 

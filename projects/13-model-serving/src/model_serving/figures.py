@@ -79,8 +79,10 @@ def latency_concurrency_lines(metrics: dict[str, Any]) -> go.Figure:
     )
     add_takeaway(
         fig,
-        f"Single uvicorn worker on one laptop: latency degrades gently to c=16, then queues. "
-        f"Fastest single-request backend: {BACKEND_LABELS[best]}. Warm-up excluded; "
+        f"Single uvicorn worker on one laptop: latency degrades gently to c=16, "
+        f"then rises sharply; shared-CPU contention is a hypothesis. "
+        f"Fastest single-request backend: "
+        f"{BACKEND_LABELS[best]}. Warm-up excluded; "
         f"median of {metrics['serving']['native']['concurrency']['c1']['repeats']} repeats; "
         f"n = {metrics['serving']['native']['concurrency']['c1']['n_requests']} requests per cell.",
     )
@@ -135,8 +137,9 @@ def batch_throughput_curve(metrics: dict[str, Any]) -> go.Figure:
     add_takeaway(
         fig,
         f"Batch cells run saturated (all {metrics['bench_protocol']['batch_requests_per_size']} "
-        f"requests in flight), so per-request latency is queue-dominated and stays flat while "
-        f"throughput scales ~linearly with batch size: {onnx_t:.0f} rows/s (onnx) vs "
+        f"requests in flight); per-request latency stays comparatively flat, with queueing and "
+        f"computation not separated. Throughput scales ~linearly with batch size: "
+        f"{onnx_t:.0f} rows/s (onnx) vs "
         f"{native_t:.0f} (native) at size {sizes[-1]}.",
     )
     return fig
@@ -232,8 +235,9 @@ def footprint_cost_bars(metrics: dict[str, Any]) -> go.Figure:
     if docker.get("measured"):
         add_takeaway(
             fig,
-            f"Image total {docker['total_mb']:.0f} MB — torch dominates the venv. Cost uses "
-            f"measured throughput at concurrency 16; the wattage is a declared assumption "
+            f"Image total {docker['total_mb']:.0f} MB — the slim-build delta supports framework "
+            f"weight; no per-package split was measured. Cost uses measured throughput at "
+            f"concurrency 16; the wattage is a declared assumption "
             f"(no wall meter), the same framing as experiment 08.",
         )
     else:

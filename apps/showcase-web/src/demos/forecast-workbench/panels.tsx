@@ -459,8 +459,8 @@ export function VerdictPanel({
         <div className="fwb-verdict-foot">
           {committedChip !== null && (
             <p className="fwb-verdict-committed">
-              pooled official WRMSSE {committedChip > 0 ? "+" : "−"}
-              {Math.abs(committedChip).toFixed(4)} committed
+              earlier-run pooled official WRMSSE {committedChip > 0 ? "+" : "−"}
+              {Math.abs(committedChip).toFixed(4)}
             </p>
           )}
           <p

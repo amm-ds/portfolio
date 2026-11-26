@@ -7,10 +7,9 @@
 [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/11-data-engineering/DESIGN.md) ·
 [Dataset card](https://amm-ds.github.io/portfolio/data-registry/nyc-tlc/)
 
-> Ten data tasks over 2.96M NYC taxi trips, parity-checked on pandas,
-> Polars, DuckDB and stdlib sqlite: Polars 19x, DuckDB 15x pandas; sqlite
-> answers every SQL task but file conversion leaves it ~29x slower; 1M-10M
-> tracks show the fast two scaling sub-linearly. NYC TLC 2024-01.
+> Ten data tasks over 2.96M NYC taxi trips, parity-checked on pandas, Polars, DuckDB and stdlib
+> sqlite: Polars 19x, DuckDB 15x pandas; sqlite's from-files workflow is ~29x slower, with loading not
+> timed separately; parity catches 1,658 dropped trips. NYC TLC 2024-01.
 
 **TL;DR:** data teams choosing between pandas, Polars and DuckDB — now with
 stdlib sqlite as the honest classical baseline — where the answer depends on

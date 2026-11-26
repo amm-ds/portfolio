@@ -4,27 +4,27 @@ short_version: |
 sections:
 - id: background
   text_md: |
-    **Sort news into four topics at `0.954` fresh `macro-F1`, reviewing only `22` of `1,000` items.**
-    `AG News` holds `127,600` items (`120k` train). A `TF-IDF` keyword model scores `0.8785` fresh at `~40×` speed and zero token cost, while the full-data transformer hits `0.9529` before any `LLM` review.
+    **A full-data transformer sorts fresh news at `0.9529` `macro-F1`; reviewing `22` uncertain items adds only `+0.001`.**
+    `AG News` holds `127,600` items (`120k` train). A `TF-IDF` keyword model scores `0.8785` fresh at `~40×` speed and zero token cost, while the full-data transformer reaches `0.9529` before any `LLM` review.
 
-    ```diagram 04-routing
+    ```diagram auto-04-nlp-classification-3
     ```
 
     Follow the routing flow in three steps:
 
-    - **Fast pass:** Score every item locally with the full-data transformer (or `TF-IDF` baseline at `75.4%` auto-routed).
-    - **Confidence gate (`τ = 0.6`):** Send only the uncertain `2.2%` (`22` per `1,000`) to an `LLM` reviewer.
-    - **Outcome:** Fresh `macro-F1` reaches `0.954` without paying to review `98%` of traffic.
+    - **Fast pass:** Score every item locally with the full-data transformer.
+    - **Confidence gate (`τ = 0.6`):** Send only the uncertain `2.2%` (`22` per `1,000`) to the `kimi-for-coding` reviewer.
+    - **Outcome:** Fresh `macro-F1` reaches `0.9539`; without per-row decisions, that small gain has no paired interval.
 
-    Next, the rungs each candidate must climb ([Objectives →](#sec-objectives)).
+    We next define the rungs each candidate must climb ([Objectives →](#sec-objectives)).
 
-    **In plain terms:** Keep the fast keyword model when cost matters most; for top accuracy (95.4%), let a local neural model sort 98% of articles and send only the uncertain 22 per 1,000 to a large AI model.
+    **In plain terms:** The local neural model gets 95.3% of fresh articles right; a large AI model double-checks 22 uncertain cases per 1,000, but the tiny improvement is not proven to be real.
   figures: []
 - id: objectives
   text_md: |
-    **The goal is to find the cheapest model step that earns its cost under
-    a fixed compute budget.** The ladder diagram shows five rungs, from two
-    simple floors to a transformer trained on all 120k rows. A floor is a
+    **The goal is to find the cheapest model step that earns its measured
+    gain.** The ladder diagram shows five rungs, from two simple floors to a
+    transformer fitted on 108k training rows with 12k held out for validation. A floor is a
     trivial reference policy. The first always predicts the majority topic.
     The second makes seeded random guesses. A seed fixes a random starting
     point so another run can repeat it.
@@ -56,13 +56,13 @@ sections:
     ```
 
     The final node in the diagram records the main caveat. Validation selects
-    the HPO candidate, but its paired interval crosses zero, so the tuning
+    the hyperparameter-optimization (`HPO`) candidate, but its paired interval crosses zero, so the tuning
     result is inconclusive. Test labels are excluded from that decision.
     Starting with the largest model would spend the budget before establishing
     a cheaper comparison.
 
-    Five rungs and one judge need fixed views; next, the four data views
-    that keep the ladder fair ([Data →](#sec-data)).
+    We next fix the four data views that keep these five rungs and one judge
+    fair ([Data →](#sec-data)).
 
     **In plain terms:** Every text classifier must beat simple guessing on both overall accuracy and topic balance, with the final choice locked on validation data rather than test-set luck.
   figures: []
@@ -84,11 +84,11 @@ sections:
     - **Full split:** the full 120k portion supplies 108k training rows and
       12k validation rows, with the same test set. This tests whether the
       recipe scales beyond the laptop-friendly sample.
-    - **Fresh holdout:** `1,000` articles come from the sample's unused 6,600.
+    - **Fresh holdout:** `1,000` articles come from the test partition's other `6,600` rows.
       A holdout is data kept out of training and selection. This one is
       disjoint by construction, so no article overlaps the bounded test set.
-    - **Scale ladder:** the same seeded protocol runs at 3.6k, 10.8k, and
-      36k rows. Only data size changes.
+    - **Scale ladder:** the same seeded protocol runs at 3.6k, 10.8k, 36k, and
+      108k training rows. Only data size changes.
 
     ```diagram auto-04-nlp-classification-2
     ```
@@ -99,8 +99,8 @@ sections:
     in the shared test set prevent class priors, or topic frequencies, from
     explaining a score gap.
 
-    The four views hold selection and diagnostics apart; next, the balance
-    figure that makes the bounded test readable ([EDA →](#sec-eda)).
+    We next inspect the balance figure that makes the bounded test readable
+    while selection and diagnostics stay apart ([EDA →](#sec-eda)).
 
     **In plain terms:** Four clean data views keep testing honest: a small sample for quick tuning, the full 120,000-article dataset, a brand-new holdout set, and a size-scaling check.
   figures: []
@@ -128,8 +128,7 @@ sections:
     with `95%` `CI` [`−0.0048`, `+0.0204`], so the choice is inconclusive. The bounded
     test and fixed fresh holdout never enter that selection.
 
-    Balance and short texts clear the readability bar; next, how the
-    transformer trained and where tuning stopped ([Training →](#sec-training)).
+    We next examine how the transformer trained and where tuning stopped ([Training →](#sec-training)).
 
     **In plain terms:** All four news topics are evenly balanced and articles are short, so simple baselines set a clear floor before neural models run.
   figures: [eda_class_balance]
@@ -145,25 +144,26 @@ sections:
     - **More data moved the score.** The `scale_ladder` figure in Results gives
       the direct view. At identical settings, each tripling adds +1.5, +1.6,
       and +1.3 `macro-F1` points on test. Fresh gains are +1.5, +2.1, and +1.0.
-      A same-rows twin on another device lands within `0.011` fresh macro-F1.
-      Device choice does not explain the gain.
+      Same-rows device twins differ by `0.0002` on test and `0.0105` on fresh
+      `macro-F1`. The fresh gap is comparable to the final `+0.010` fresh scale
+      gain, so fresh results alone cannot rule out a device effect. The
+      fixed-device rungs isolate the scale effect.
     - **Tuning changed little.** In `hpo_history`, follow the running best
       across all twelve trials. Seeded search lifts validation `macro-F1` from
       `0.8880` to 0.8953. Validation selects HPO, but the paired `+0.0073` delta
-      has `95%` `CI` [`−0.0048`, `+0.0204`]: inconclusive. Three seeds average `0.8910`
-      ± `0.0042`, within seed noise, the normal variation between random runs.
-    - **Calibration was nearly free.** Calibration makes confidence match
-      observed accuracy. ECE means expected calibration error, which measures
-      that mismatch. A temperature is one number that rescales confidence.
-      Fitting it on validation cuts the selected model's test calibration
-      error without changing a prediction; the before/after pair is recorded
-      in `DESIGN.md`. Read this beside
+      has `95%` `CI` [`−0.0048`, `+0.0204`]: inconclusive. That margin is about
+      `1.7` times the `0.0042` standard deviation across three seed reruns
+      (mean `0.8910`), and the paired interval still crosses zero.
+    - **Temperature scaling improved confidence without changing predictions.**
+      This calibration method fits one temperature on validation data. Expected
+      calibration error (`ECE`) measures the gap between confidence and observed
+      accuracy. For the bounded selected model, it falls from `0.0360` to `0.0227` on test. Read this beside
       `training_curve`: its `macro-F1` line tracks predictions, while calibration
       changes only confidence.
     - **Errors concentrate where topics blur.** The confusion matrix in
       Results shows Business predicted as Sci/Tech for 25 of 250 bounded test
-      items. The original default-artifact scaling curve falls from 24 of 250
-      to 15 at 20k rows and 14 at full data. Hybrid headlines remain unsolved.
+      items. Hybrid headlines remain unsolved; the exact pre-ladder diagnostic is
+      separated from the controlled scale ladder in Conclusions.
 
     **Calibration fits one temperature on validation NLL.** NLL, or negative
     log-likelihood, penalizes confident wrong predictions. Logits are the
@@ -184,7 +184,10 @@ sections:
         return loss
 
     optimizer.step(closure)
-    return float(temperature.clamp(min=1e-2).item())
+    fitted = float(temperature.clamp(min=1e-2).item())
+    nll = float(nn.functional.cross_entropy(logits / fitted, labels).item())
+    logger.info("temperature scaling: T=%.4f (val NLL=%.4f)", fitted, nll)
+    return fitted
     ```
 
     Excerpt from [calibration.py](https://github.com/amm-ds/portfolio/blob/main/projects/04-nlp-classification/src/nlp_classification/calibration.py).
@@ -197,8 +200,7 @@ sections:
     epochs overfit, meaning they learn training detail that does not generalize.
     The probe confirms the default instead of replacing it.
 
-    The evidence favors data over tuning; next, the diagram that turns the
-    measurements into an operating policy ([Evaluation →](#sec-evaluation)).
+    We next turn these measurements into an operating policy ([Evaluation →](#sec-evaluation)).
 
     **In plain terms:** More training data beats fancy tuning: each tripling of data adds roughly 1.5 percentage points of accuracy, reaching 95.3% on fresh articles, while a simple calibration step fixes confidence scores for free.
   figures: [training_curve, hpo_history]
@@ -207,27 +209,30 @@ sections:
 - id: evaluation
   text_md: |
     The evaluation diagram turns the measurements into an operating policy.
-    Follow an item from the full-data transformer to the confidence gate.
-    Confident predictions stay unchanged. Only rows below τ=0.6 go to `LLM`
-    review in batches of eight. A cascade is a sequence of models with later
-    stages handling selected cases. This cascade reviews selectively. It does
-    not classify every item with an LLM.
+    Follow an item from the full-data transformer to the confidence gate. The
+    gate uses the full-data model's raw softmax maximum probability. Temperature
+    `T=0.927` belongs to the bounded selected model and is not applied to this
+    gate. Confident predictions stay unchanged. Only rows below τ=0.6
+    go to `kimi-for-coding` in batches of eight. A cascade is a sequence of
+    models with later stages handling selected cases. This cascade reviews
+    selectively. It does not classify every item with an LLM.
 
     ```diagram auto-04-nlp-classification-3
     ```
 
     The comparison figure supplies the measured outcome for each diagram
-    branch. Validation alone selects τ=0.6. Test and fresh are then each
-    scored once. Macro-F1 moves `0.9601531` → `0.9602051` on validation with 6
-    reviews, `0.9460236` → `0.9490153` on bounded test with 16, and `0.9529432` →
-    `0.9539265` on the disjoint fresh `1,000` with 22. Accuracy stays `0.960` on
+    branch. Validation alone selects τ=0.6: its `+0.00005` `macro-F1` gain
+    with 6 reviews wins a tie-break toward fewer reviews. Test and fresh are
+    then each scored once. Macro-F1 moves `0.9602` → `0.9602` on validation with
+    6 reviews, `0.9460` → `0.9490` on bounded test with 16, and `0.9529` →
+    `0.9539` on the disjoint fresh `1,000` with 22. Accuracy stays `0.960` on
     validation and moves `0.946` → `0.949` on test and `0.953` → `0.954` on fresh.
     Fresh items have zero overlap with bounded test. Neither test nor fresh
     labels or examples tune the router.
 
     Across validation, test, and fresh, the figure reflects **44 total
-    reviews** and `macro-F1` point deltas of at most `+0.001` — no measurable
-    change. Measured review latency,
+    reviews**, with respective `macro-F1` deltas of `+0.0001`, `+0.0030`, and
+    `+0.001`. Measured review latency,
     the time spent waiting for those reviews, is **`96.933` s** in total. The
     **`$0.023671` cloud-equivalent** cost is an estimate from a rate card, not
     an observed cloud bill. No paired cascade interval can be computed from
@@ -236,16 +241,15 @@ sections:
 
     The figure also keeps the cheaper baseline in view. Keyword-first routing
     reaches `0.9061` fresh `macro-F1` while `75.4%` of items run at keyword speed.
-    The full-data transformer reaches `0.9529432` fresh. The selected cascade
+    The full-data transformer reaches `0.9529` fresh. The selected cascade
     adds only 22 fresh reviews to that stronger baseline. Separate one-machine
     probes measure ~`4,478` items/s on the keyword path and ~111 items/s on the
     transformer. The comparison figure does not show those speeds, and the
     probes do not price the hosted review pass.
 
-    The policy's measured trade-off sets up the diagnostic figures; next,
-    what the three test figures explain and bound ([Results →](#sec-results)).
+    We next use three test figures to explain and bound this measured trade-off ([Results →](#sec-results)).
 
-    **In plain terms:** Only the low-confidence 2.2% of articles (22 per 1,000) need a large AI model to double-check them, lifting accuracy slightly without paying AI fees on the other 98%.
+    **In plain terms:** Only 22 uncertain articles per 1,000 get a second opinion from a large AI model; the resulting one-point-per-thousand gain is too small to count as proven.
   figures: [llm_cascade_comparison]
 - id: results
   text_md: |
@@ -261,14 +265,15 @@ sections:
       measures each topic separately. The same Business and Sci/Tech blur
       accounts for the residual gap.
     - In `scale_ladder`, follow the rising scores as training rows increase.
-      Same-rows CPU and MPS twins sit `0.0002` `macro-F1` apart. CPU is the
+      Same-rows CPU and MPS twins sit `0.0002` test `macro-F1` apart. CPU is the
       computer's main processor. MPS is Apple's framework for GPU computing.
-      A GPU is a processor built for parallel numerical work. Device choice
-      does not explain the data-scale gain.
+      A GPU is a processor built for parallel numerical work. Their fresh gap is
+      `0.0105`, comparable to the last fresh scale gain; the fixed-device ladder,
+      not the fresh twin alone, isolates the data-scale effect.
 
     These figures diagnose the bounded models and scale ladder. They do not
-    depict the final cascade. Its measured `macro-F1` is `0.9490153` on bounded
-    test and `0.9539265` on fresh data. The fixed fresh data is diagnostic and
+    depict the final cascade. Its measured `macro-F1` is `0.9490` on bounded
+    test and `0.9539` on fresh data. The fixed fresh data is diagnostic and
     does not reselect any candidate.
 
     The figures also bound what can be claimed:
@@ -276,22 +281,17 @@ sections:
     - **Production breadth:** they cover English-only items with four clean
       topics. Overlapping or multi-label topics, where one item can have
       several labels, need a different contract.
-    - **Measurement limits:** the cascade delta (`+0.001` `macro-F1`) covers 44
-      reviews on
-      fixed splits and has no persisted paired interval. Quantization stores
-      model numbers at lower precision to reduce cost. Quantized quality uses
-      a training sample, not test data. Transformer speeds use one machine at
-      batch size 1.
-    - **Tuning headroom:** transformer tuning ties the default within noise.
-      A larger budget might separate candidates, but that is unproven.
+    - **Measurement limits:** the cascade requests 44 reviews across three
+      fixed splits, with different deltas on each. Transformer speeds use one
+      machine at batch size 1.
+    - **Tuning headroom:** HPO's `+0.0073` margin is about `1.7` seed standard
+      deviations and its paired interval crosses zero. A larger budget might
+      separate candidates, but that is unproven.
 
-    The exact tables and run identities in Conclusions preserve the full
-    evidence behind these visual summaries.
+    We next preserve the exact tables, run identities, and protocol behind
+    these visual summaries ([Conclusions →](#sec-conclusions)).
 
-    The figures bound the claim; next, the exact tables and protocol that
-    preserve the evidence ([Conclusions →](#sec-conclusions)).
-
-    **In plain terms:** The full-data local model reaches 95.3% accuracy on fresh news articles, and reviewing just 22 uncertain items per 1,000 nudges it to 95.4% while keeping cost minimal.
+    **In plain terms:** The local model gets 95.3% of fresh articles right; checking 22 uncertain items per 1,000 changes that to 95.4%, but the evidence cannot show whether this tiny gain is real.
   figures: [confusion_matrix_selected, per_class_f1_comparison, scale_ladder]
 - id: conclusions
   text_md: |
@@ -300,15 +300,13 @@ sections:
     The final diagram shows the selected path: full-data transformer,
     confidence gate, and selective `LLM` review. Read it with the exact tables
     below. On the fresh 1,000-article holdout, this path moves `macro-F1` from
-    **`0.9529432` to `0.9539265`** (`+0.001` — no measurable change) and accuracy
-    from **`0.953` to `0.954`**. It reviews
-    22 rows below τ=0.6. Bounded test improves from `0.9460236` to `0.9490153`
+    **`0.9529` to `0.9539`** (`+0.001`) and accuracy from **`0.953` to `0.954`**.
+    It reviews 22 rows below τ=0.6. Bounded test moves from `0.9460` to `0.9490`
     `macro-F1` and `0.946` to `0.949` accuracy with 16 reviews. All 44 reviews across
     validation, test, and fresh take `96.933` s. Their `$0.023671`
     cloud-equivalent cost is estimated. `TF-IDF` + logistic regression remains
     the 0.8785-fresh-macro-F1 baseline. The keyword-first router reaches
-    `0.9061` with `75.4%` of items at keyword speed. The cascade point deltas have
-    no persisted paired interval and do not establish superiority.
+    `0.9061` with `75.4%` of items at keyword speed.
     [Full evaluation report](https://amm-ds.github.io/portfolio/projects/04-nlp-classification/).
 
     ## What the experiment taught
@@ -317,28 +315,25 @@ sections:
     scale, tuning, calibration, or error analysis. The exact tables and the
     earlier figures carry that evidence.
 
-    - More data, not device or tuning, moved the transformer score. Each
-      tripling bought about +1.5 macro-F1. The same-rows device twin sat
-      `0.0002` away.
+    - More data moved the transformer score at fixed device. Each tripling
+      bought about +1.5 macro-F1. Same-rows device twins differed by `0.0002`
+      on test; their `0.0105` fresh gap does not independently rule out a fresh
+      device effect.
     - Tuning was inconclusive. Validation selected HPO by `+0.0073` `macro-F1`,
-      but its paired `95%` `CI` [`−0.0048`, `+0.0204`] crosses zero. Three seeds
-      averaged `0.8910` ± `0.0042`, inside noise.
-    - Selective `LLM` review moved `macro-F1` by at most `+0.001` over the
-      full-data transformer without sending every item to the LLM. No paired
-      cascade interval can be computed from committed artifacts — the
-      per-row review decisions are not persisted — so superiority is unproven.
+      but its paired `95%` `CI` [`−0.0048`, `+0.0204`] crosses zero. The margin is about `1.7`
+      times the `0.0042` standard deviation across three seeds (mean `0.8910`).
+    - Selective `LLM` review changed `macro-F1` by `+0.0001`, `+0.0030`,
+      and `+0.001` on validation, bounded test, and fresh respectively.
     - Data leakage means evaluation information influencing model choices.
       Validation-only model and threshold fitting keep test/fresh labels out
       of those choices; fresh candidate scores are diagnostics only.
-    - Calibration was nearly free. One temperature cut calibration error
-      without changing a single prediction.
+    - Temperature scaling cut test `ECE` from `0.0360` to `0.0227` without
+      changing a single prediction.
 
     ## Exact numbers
 
-    `DistilBERT` and `RoBERTa` are transformer model designs. Hyperparameters are
-    settings chosen before training. HPO means hyperparameter optimization, a
-    search over those settings. The run ids below identify each measured
-    configuration. The bounded ladder uses the shared 1,000-row test set and
+    `DistilBERT` and `RoBERTa` are transformer model designs. The run ids below
+    identify each measured configuration. The bounded ladder uses the shared 1,000-row test set and
     records its run ids in `reports/metrics.json`:
 
     | # | run | accuracy | f1_macro |
@@ -371,9 +366,9 @@ sections:
 
     | split | transformer → cascade macro-F1 | transformer → cascade accuracy | reviews |
     |---|---:|---:|---:|
-    | validation | 0.9601531 → 0.9602051 | 0.960 → 0.960 | 6 |
-    | bounded test | 0.9460236 → 0.9490153 | 0.946 → 0.949 | 16 |
-    | fresh holdout | 0.9529432 → 0.9539265 | 0.953 → 0.954 | 22 |
+    | validation | 0.9602 → 0.9602 | 0.960 → 0.960 | 6 |
+    | bounded test | 0.9460 → 0.9490 | 0.946 → 0.949 | 16 |
+    | fresh holdout | 0.9529 → 0.9539 | 0.953 → 0.954 | 22 |
 
     Total: 44 reviews, `96.933` s measured review latency, and `$0.023671`
     estimated cloud-equivalent cost. The threshold is fitted on validation only.
@@ -385,10 +380,11 @@ sections:
     and +1.3 `macro-F1` points on test. Scores rise at every step, while the
     gains slow. Fresh
     gains are +1.5 / +2.1 / +1.0 points. Same-rows device twins differ by
-    `0.0002` test `macro-F1`, so device is not a confound, or hidden alternative
-    explanation. The dominant Business → Sci/Tech confusion falls `24/250` →
-    `15/250` → `14/250` across the original default 3.6k / 20k / full runs
-    (DESIGN.md).
+    `0.0002` test and `0.0105` fresh `macro-F1`; the latter is comparable to the
+    final fresh scale gain. A separate pre-ladder diagnostic, not a controlled
+    rung, tracks Business → Sci/Tech confusion at `24/250` → `15/250` → `14/250`
+    across the original default 3.6k / 20k-subset (18k train / 2k validation) /
+    full runs (`DESIGN.md`).
 
     Serving means using a trained model to make predictions. This
     confidence-routed table uses the fresh holdout. The `TF-IDF` max-probability
@@ -396,7 +392,10 @@ sections:
 
     | τ | escalated | macro-F1 |
     |---|---|---|
-    | 0.50 | 24.6% | **0.9061** |
+    | 0.50 | 24.6% | 0.9061 |
+    | 0.60 | 40.4% | **0.9082** |
+    | 0.70 | 59.8% | 0.9051 |
+    | 0.80 | 77.5% | 0.9041 |
     | 0.90 | 94.8% | 0.9041 |
 
     Serving economics come from an Apple M4 Max probe with CPU batch=1 and
@@ -432,11 +431,13 @@ sections:
       numbers. Warmup ratio 0.1 gradually increases the learning rate. Batch 32
       means 32 items per update. Early-stop patience 1 allows one non-improving
       check.
-    - Metrics: accuracy and macro-F1. Calibration uses ECE with one
-      temperature, T=`0.927`, fitted on validation. Seeded `Optuna` TPE, or
+    - Metrics: accuracy and macro-F1. Temperature scaling fits one `T` on
+      validation; ECE measures the result. For the bounded selected model,
+      `T=0.927`. Seeded `Optuna` TPE, or
       Tree-structured Parzen Estimator, uses past trials to choose new ones.
-      Median pruning stops unpromising trials. The 12 trials produce seed bests
-      `0.8953` / `0.8852` / `0.8926` (mean `0.8910` ± `0.0042`).
+      Median pruning stops unpromising trials. A separate 12-trial study peaks
+      at `0.8953`; three 6-trial seed reruns give `0.8953` / `0.8852` / `0.8926`
+      (mean `0.8910` ± `0.0042`).
     - Serving probe: Apple M4 Max, CPU batch=1, n=200; rate card `$1` per 1M
       input + `$4` per 1M output tokens. The router uses raw, uncalibrated `TF-IDF`
       maximum class probability and escalates below τ. Uncalibrated means the
@@ -455,20 +456,18 @@ sections:
       The fresh candidate comparison is also inconclusive and never reselects.
     - The reading is per-item, English-only, on four clean topics. Multi-label
       Business/Sci-Tech routing needs a different label and metric contract.
-    - The cascade deltas (at most `+0.001` `macro-F1`) lack paired intervals and
-      are bounded to
-      these fixed splits. They do not justify sending every item to an `LLM` or
+    - The cascade deltas (`+0.0001` validation, `+0.0030` bounded test,
+      `+0.001` fresh) lack paired intervals and are bounded to these fixed splits. They do not justify sending every item to an `LLM` or
       establish production breadth or superiority.
-    - Quantized-model quality is measured on a training sample, not test data.
-      All serving speeds come from one machine at batch size 1.
-    - Tuning ties the default within seed noise at this scale. A larger budget
-      might separate them. This project neither proves nor disproves that
+    - All serving speeds come from one machine at batch size 1.
+    - HPO's paired interval crosses zero at this scale. A larger budget might
+      separate candidates, but this project neither proves nor disproves that
       possibility.
 
     ```diagram auto-04-nlp-classification-4
     ```
 
-    **In plain terms:** Use the fast keyword model if speed and zero cost are top priorities; for best accuracy (95.4%), run the local neural model on everything and send only the uncertain 2% to a large AI model.
+    **In plain terms:** Use the keyword model for speed and zero token cost; use the local neural model for its 95.3% fresh score, knowing that reviewing 22 uncertain cases adds no proven advantage.
   figures: []
   metrics_keys: []
 roadmap:
@@ -476,22 +475,22 @@ roadmap:
   title: Measure the data-scale response
   detail: Each tripling of rows buys about +1.5 macro-F1 points.
 - status: shipped
-  title: Keep the default under inconclusive tuning
-  detail: The paired confidence interval crosses zero; the default stays.
+  title: Ship full-data training at default settings
+  detail: HPO's bounded edge has a CI crossing zero; scale, not tuning, set the model.
 - status: shipped
   title: Beat every rung with full data
-  detail: The full-data rung tops the shared-test ladder.
+  detail: The 108k-row fit reaches 0.9460 test macro-F1, above every cheaper rung.
 - status: shipped
-  title: Ship the cascade with calibrated confidence
-  detail: One temperature rescales confidence; the uncertain quarter routes to review.
+  title: Ship the selective LLM cascade
+  detail: 'Rows below τ=0.6 get review: 22 of 1,000 fresh, +0.001 macro-F1.'
 - status: next
   title: Persist per-row review decisions
-  detail: Unlocks the paired cascade interval once rows are persisted.
+  detail: 'Gate: save all 1,000 fresh rows, then compute a paired cascade CI.'
 key_concepts:
 - '**Macro-F1**: the unweighted mean of per-topic F1, so a rare topic counts as much as a common one.'
 - '**Model ladder**: cheapest-first rungs judged by one metric pair. A rung must beat the rung below it to justify its extra
   cost.'
-- '**Scale ladder**: the identical seeded protocol repeated at 3.6k / 10.8k / 36k rows, leaving data size as the only varying
+- '**Scale ladder**: the identical seeded protocol repeated at 3.6k / 10.8k / 36k / 108k training rows, leaving data size as the only varying
   factor.'
 - '**Fresh holdout**: 1,000 disjoint articles used for fixed diagnostics, never for model selection.'
 - '**Keyword-first router**: the cheaper baseline scores every item with keywords and escalates the uncertain quarter to the
@@ -507,15 +506,15 @@ figure_captions:
     dotted lines are the four-epoch probe, whose learning-rate schedule is not a continuation of the headline run. The star
     marks the headline's final validation macro-F1 (0.9464) beside, not within, the probe history. The probe peaks at 0.9477
     in epoch 3, then declines while validation loss rises.
-  hpo_history: Seeded 12-trial Optuna validation macro-F1 and running best. The paired HPO/default validation CI crosses zero
-    and sits inside seed noise.
+  hpo_history: Seeded 12-trial Optuna validation macro-F1 and running best. The paired HPO/default validation CI crosses zero;
+    the +0.0073 margin is about 1.7 seed standard deviations.
   llm_cascade_comparison: Full-data transformer versus the selected τ=0.6 selective LLM cascade on validation, bounded test,
-    and disjoint fresh holdout. Fresh macro-F1 moves from 0.9529432 to 0.9539265 (+0.001, no measurable change) with 22 reviews;
-    no paired cascade interval is persisted.
+    and disjoint fresh holdout. Fresh macro-F1 moves from 0.9529 to 0.9539 (+0.001) with 22 reviews;
+    no paired cascade interval is persisted, so the small point gain does not establish superiority.
   confusion_matrix_selected: Actual versus predicted topics for the validation-selected bounded model on the 1,000-row test
     sample. Business → Sci/Tech remains the dominant off-diagonal pair.
   per_class_f1_comparison: Topic-level F1 for the validation-selected bounded model and TF-IDF baseline. The residual gap
     concentrates in Business/Sci-Tech.
   scale_ladder: Controlled data-scale ladder on the bounded 1,000-row test split. The MPS rungs (3.6k/10.8k/36k/108k train
     rows, identical hyperparameters) rise by +1.3–1.6 points per 3× step. The lone CPU marker is the bounded model, whose
-    same-rows MPS twin sits 0.0002 F1 away. Device is not the confound.
+    same-rows MPS twin sits 0.0002 test F1 away; their fresh gap is 0.0105, so the fixed-device rungs carry the scale claim.

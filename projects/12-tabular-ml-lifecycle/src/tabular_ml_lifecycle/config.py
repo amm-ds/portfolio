@@ -73,7 +73,10 @@ class LifecycleConfig(PortfolioBaseModel):
 
     # Feature selection
     corr_threshold: float = Field(
-        default=0.9, gt=0.0, lt=1.0, description="|r| above which the lower-MI member is pruned."
+        default=0.9,
+        gt=0.0,
+        lt=1.0,
+        description="|r| threshold for correlated-pair pruning; see committed selection record.",
     )
 
     # Models

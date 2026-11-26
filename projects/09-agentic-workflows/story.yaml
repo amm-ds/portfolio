@@ -1,14 +1,14 @@
 project_id: 09-agentic-workflows
-short_version: 'Auditable plan-act-review workflow with typed outcomes and hard deadlines. Legacy single runs: 15/15 fixed,
-  13/13 unseen answers, 5/6 refusals; ~$0.13/tuning suite. Live held-out (2026-11-19): 13/13 answers, 6/6 live-grader refusals
-  (h19: calculator-guard error), 19/19 budgets.'
+short_version: 'Auditable plan-act-review workflow with typed outcomes and deadlines. Legacy: 15/15 fixed tasks,
+  13/13 unseen answers, 5/6 refusals. All-hosted live held-out: 13/13 answers, 6/6 live-grader refusals, 19/19 budgets;
+  h19 refused after the calculator guard tripped.'
 figure_captions:
   suite_summary: 'Each row is one automated check. Each bar shows passes out of the tasks in one split: 15 tuning tasks, 13
     held-out answer tasks, or 6 should-fail probes. Compare bars within each row. A shorter bar marks a failed check; here,
     the held-out refusal bar stops at 5/6.'
   node_waterfall: Each horizontal stack is one task. Segments show time spent in each workflow node; the record run needed
     no retries, so no retry segments render. Compare total length with the 60 s budget. Median latency on the 15-task tuning
-    suite is 18.2 s. The p95 latency, meaning 95% of tasks finished within this time, is 31.1 s.
+    suite is 18.2 s. Rounded-index p95 latency is 31.1 s over 15 tasks; the slowest task, t05, takes 31.6 s.
   tool_usage_matrix: Rows are tools, columns are tasks, and cells count captured calls. Look for calls outside each task's
     planned tool set. The final tuning run has 30 planned calls, 100% call precision and tool recall, and zero unplanned calls.
   cost_latency_bars: For each task, bars show input and output tokens, estimated cloud-equivalent cost, and latency against
@@ -18,20 +18,20 @@ sections:
 - id: background
   text_md: |
     **Legacy tuning passed `15/15` fixed tasks; held-out did not pass every check.**
-    This workflow fits supervised pilots, not unattended runs. It plans steps, calls approved tools, and logs each move in `StepTrace`. Held-out legacy runs hit `13/13` answers, `5/6` refusals, `18/19` step caps, and `12/19` time caps at `~$0.13` of the `$2.00` cap (`2026-11-19` live check: `6/6` refusals, `19/19` budgets).
+    This supervised workflow plans steps, calls approved tools, and logs state changes in `StepTrace`; it is not for unattended runs. Legacy tuning passed `15/15` at `~$0.13` of the `$2.00` cap. Held-out legacy runs hit `13/13` answers, `5/6` refusals, `18/19` step caps, and `12/19` time caps. An all-hosted live check on `2026-11-19` passed `6/6` refusals and `19/19` budgets.
 
     ```diagram 09-agent-loop
     ```
 
-    Follow the loop in four steps:
+    Follow the loop in three steps:
 
-    - **Plan:** Write explicit steps and the allowed tool set over the `12`-document handbook and `3,589` Wikipedia passages (`CC BY-SA`).
-    - **Checkpoint & Execute:** Pause consequential runs for human approval, then run locked-down tools under a `60 s` deadline.
-    - **Critique & Trace:** Audit tool use against the plan, revise via `Execute` if needed, and log every state change in `StepTrace`.
+    - **Plan:** Write steps and allowed tools for the `12`-document handbook and `3,589` Wikipedia passages (`CC BY-SA`).
+    - **Checkpoint & Execute:** Pause consequential runs for approval, then run approved tools under a `60 s` deadline.
+    - **Critique & Trace:** Audit tool use, return one draft to `Execute` for revision if needed, and log each state change in `StepTrace`.
 
     Next, the loop's testable targets ([Objectives →](#sec-objectives)).
 
-    **In plain terms:** The workflow passed all 15 practice tasks and all 13 unseen answer tasks, refused 5 of 6 impossible requests, and cost about 13 cents for the whole test suite.
+    **In plain terms:** The workflow passed all 15 practice tasks and all 13 unseen answer tasks, refused 5 of 6 impossible requests, and cost about 13 cents for the 15-task practice suite.
   figures: []
   metrics_keys: []
 - id: objectives
@@ -63,8 +63,8 @@ sections:
     tasks to grades: tuning and held-out tasks face the same checks, and
     results land in `metrics.json`.
 
-    The targets need fixed corpora; next, the handbook, the Wikipedia
-    index, and the task files ([Data →](#sec-data)).
+    The targets need fixed corpora. The handbook, the Wikipedia
+    index, and the task files supply them ([Data →](#sec-data)).
 
     **In plain terms:** The system must plan, act, and check its work within strict step, time (60 seconds), and cost (25 cents per task) limits, pausing for a human whenever a step matters.
   figures: []
@@ -94,8 +94,8 @@ sections:
 
     The tools under Details are deliberately restricted: a locked-down `calculator`, fixed `unit_convert` tables, `search_handbook`, `search_documents` (`3,589` Wikipedia chunks), and a per-run `note_store`.
 
-    Fixed corpora make exact answers possible; next, the grading design
-    and the tool-usage matrix ([EDA →](#sec-eda)).
+    Fixed corpora make exact answers possible. The grading design
+    and the tool-usage matrix are shown next ([EDA →](#sec-eda)).
 
     **In plain terms:** All tests run on a fixed 12-page handbook and 3,589 Wikipedia passages across 15 practice tasks and 19 unseen test tasks, so every answer has an exact ground truth.
   figures: []
@@ -130,8 +130,8 @@ sections:
 
     Answer scores cannot reveal extra tool calls, so use `tool_usage_matrix` as a second check. Each row is a tool, each column a task, and each cell a call count. Look for calls outside a task's planned set: there are none. The record run has `30` planned calls against `30` expected, with `100%` call precision and `100%` tool recall.
 
-    The grading design sets the audit rules; next, the executable graph
-    behind the runs ([Training →](#sec-training)).
+    The grading design sets the audit rules. The executable graph
+    behind the runs is described next ([Training →](#sec-training)).
 
     **In plain terms:** Automated code checks every answer, tool call, step count, and timer—and impossible tasks only pass if the workflow clearly says "no" instead of guessing.
   figures: [tool_usage_matrix]
@@ -194,19 +194,19 @@ sections:
     requested. Per-call traces capture name, arguments, latency, result
     size, and success.
 
-    The measurements below apply to the graph path above; the diagram
-    identifies the measured work, the numbers come from recorded runs. Each has a
-    limit:
+    The measurements below apply to the graph path above. The diagram
+    identifies the measured work, and the numbers come from recorded runs. Each has
+    a limit:
 
     - All `15` tuning tasks passed all four checks: answers, exact tool set, step budget, and latency budget. *Limit:* one suite, one hosted endpoint.
     - All `30` captured calls were planned: `100%` call precision and tool recall, with zero unplanned calls.
     - Median latency was `18.2 s` and `p95` was `31.1 s` against the `60 s` budget. Usage was `~85k` input and `~12k` output tokens (`~$0.13` of the `$2.00` cap, `~$0.0088` per task).
     - Held out (legacy recorded run): `13/13` answers with exact tool sets, `22` planned calls, zero unplanned calls, and `5/6` refusals (`h19` hit a calculator-guard error without fabricating a number). A `2026-11-19` live run confirms `13/13` answers, `6/6` refusals under the live grader, and `19/19` budgets — see the [live confirmation](https://github.com/amm-ds/portfolio/blob/main/collaboration/reviews/20261118-live-confirmation/comparison.md).
     - Latency depends on the provider: hosted held-out tasks ran `9.0–40.9 s`, while `7/9` local-model tasks exceeded `60 s` (`12/19` overall).
-    - A recorded run demonstrates pause, reject-with-feedback, and re-plan; nothing here demonstrates unattended operation.
+    - Scripted `tests/test_hitl.py` checks pause, reject-with-feedback, and re-plan; no live checkpoint run is recorded, and nothing here demonstrates unattended operation.
 
-    The graph is fixed; next, the capture-and-grade audit path
-    ([Evaluation →](#sec-evaluation)).
+    The graph is fixed. The capture-and-grade audit path
+    is traced next ([Evaluation →](#sec-evaluation)).
 
     **In plain terms:** On practice tasks, the workflow got 15 out of 15 right with zero wasted tool calls in about 18 seconds and 13 cents; on unseen tasks it got all 13 answers right and later passed all 6 refusal checks in a live rerun.
   figures: []
@@ -239,25 +239,23 @@ sections:
     means adapting to known test shapes instead of new tasks. Records mix a
     hosted endpoint for 10 tasks with a local open-weights model for 9.
     Open weights are publicly available model parameters that can run on
-    local hardware. Local runs meter at `$0.00.` This is cross-model evidence,
+    local hardware. Local runs meter at `$0.00`. This is cross-model evidence,
     but local latency is not budget-comparable because the 60-second cap
     was tuned on the hosted provider. The local model still had to produce
     the same plans, calls, and refusals.
 
-    Use the cost-and-latency chart to compare the same record run with its
-    budgets. For each task, inspect input and output token bars,
-    cloud-equivalent cost, and latency against the 60-second line. No hosted
-    latency point crosses that line. The misses come from slow local
-    generation, not wrong answers. Cost stays at `$0.13` of the `$2.00` suite
-    cap, about `$0.0088` per task at the labelled rate card. This is an
-    estimate, not a bill.
+    Use the cost-and-latency chart for the 15 tuning tasks only; it contains
+    no held-out points. The records in `data/heldout_records.json` show that every hosted task
+    meets the `60 s` line, while slow local generation causes the misses, not wrong
+    answers. Tuning cost stays at `$0.13` of the `$2.00` suite cap, about `$0.0088`
+    per task at the labelled rate card. This is an estimate, not a bill.
 
     Together, the audit path and budget evidence support a supervised pilot
     with a reviewer watching. They do not establish open-ended or new-domain
     performance.
 
-    The audit path sets the verdict rules; next, the suite summary and
-    node waterfall ([Results →](#sec-results)).
+    The audit path sets the verdict rules. The suite summary and
+    node waterfall appear next ([Results →](#sec-results)).
 
     **In plain terms:** Each run is saved once and re-checked offline for free. On 19 unseen tasks, it got all 13 answers right and refused 5 of 6 impossible requests, though slow local hardware missed the 60-second timer on 7 tasks.
   figures: [cost_latency_bars]
@@ -267,21 +265,21 @@ sections:
     **The legacy graders recorded refusal, step, and latency failures.** Start
     with the suite-summary chart. Its visible short bar is held-out refusal
     at `5/6`; tuning and held-out answer/tool bars are full. The chart does not
-    plot held-out step or latency results, which passed `18/19` and 12/19.
+    plot held-out step or latency results, which passed `18/19` and `12/19`.
 
     Read across the answer and tool rows for the split-level results. The
     hosted tuning suite has `15/15` answers, `15/15` exact tool sets, all step
-    and latency budgets met, and zero unplanned calls. Across 19 held-out
-    tasks, it has `13/13` answers with exact tool sets, 22 planned calls, and
+    and latency budgets met, and zero unplanned calls. The legacy held-out run
+    has `13/13` answers with exact tool sets, 22 planned calls, and
     zero unplanned calls. Latency misses occur on local-model tasks because
     of slow generation, not answer quality.
 
     The short refusal bar corresponds to one specific legacy failure. The
-    task used both bounded retries on an out-of-bounds calculator call, then
+    task used two Execute attempts (one retry) on an out-of-bounds calculator call, then
     exited with a failure message lacking a refusal marker. No number was
     made up. The replacement typed-refusal behavior is covered offline and
     confirmed by the 2026-11-19 live run: `6/6` under the live grader, with
-    h19 a calculator-guard error.
+    h19 correctly refused after the calculator guard tripped.
 
     Next, use the node-waterfall chart to inspect time within the tasks that
     passed the suite-summary latency check:
@@ -291,7 +289,7 @@ sections:
       Execute, and Critique visits. Segment width shows elapsed time. Look
       for one segment ballooning, which would identify a slow node. The
       record run needed no retries, so only planned node visits render.
-      Even the `p95` task, t15, finishes at 31.1 s.
+      The rounded-index `p95` is t15 at `31.1 s`; t05 is slowest at `31.6 s`.
     - **Cost:** For the same passing tasks, cost is `~$0.13` of the `$2.00`
       suite cap, about `$0.0088` per task at the labelled cloud rate card.
       The suite chart records passes rather than dollar amounts; this is a
@@ -306,9 +304,13 @@ sections:
     |---|---:|---:|---:|---:|
     | Tuning (hosted, n = 15) | **15 / 15** | **15 / 15** | — | **15 / 15** & **15 / 15** |
     | Held-out legacy (n = 19) | **13 / 13** | **13 / 13** | 5 / 6 | 18 / 19 & 12 / 19 |
-    | Held-out live rerun (2026-11-19) | **13 / 13** | **13 / 13** | **6 / 6** | **19 / 19** & **19 / 19** |
+    | Held-out live rerun, all hosted (2026-11-19) | **13 / 13** | **13 / 13** | **6 / 6** | **19 / 19** & **19 / 19** |
 
-    **In plain terms:** The workflow got every practice and unseen answer right without calling a single extra tool, finishing typical tasks in 18 seconds; a live rerun later closed the one remaining refusal miss.
+    The live rerun used the hosted endpoint for all `19` tasks, unlike the legacy
+    mix of `10` hosted and `9` local tasks. Its `19/19` latency result therefore
+    confirms the hosted contract, not a like-for-like fix for local generation.
+
+    **In plain terms:** The workflow got every practice and unseen answer right with no unplanned tool calls on answer tasks, finishing typical tasks in 18 seconds; an all-hosted rerun passed the remaining refusal check.
   figures: [suite_summary, node_waterfall]
   metrics_keys: []
 - id: conclusions
@@ -318,8 +320,8 @@ sections:
     The legacy record run passed `15/15` fixed tasks with exact tool sets and
     step budgets. With tuning frozen, held-out results were `13/13` answers
     with exact tool sets, `5/6` should-fail probes refused, `18/19` step budgets,
-    and `12/19` latency budgets. Across all 52 captured calls, none was
-    unplanned. Median tuning latency was `18.2 s` against the `60 s` budget.
+    and `12/19` latency budgets. All `52` answer-task calls (`30` tuning, `22` held-out) were planned.
+    Six probes made `20` further calls, graded on refusal rather than planned tool sets. Median tuning latency was `18.2 s` against the `60 s` budget.
     Estimated cost was about `$0.13` of the `$2.00` suite cap. The setup uses a
     typed plan-act-critique graph, deterministic graders, an 8-step budget,
     an enforced `60 s` task deadline, and a `$0.25` per-task spending cap. See the [full
@@ -332,7 +334,8 @@ sections:
       run: `30/30` planned calls, `100%` call precision, and `100%` tool recall.
     - Should-fail probes exposed one legacy refusal miss after a terminal
       calculator failure, not confabulation. Typed refusal, no-evidence, and
-      deadline exits now have offline regressions; live efficacy is unmeasured.
+      deadline exits have offline regressions and one live confirmation; repeated
+      live efficacy remains unmeasured.
     - Budgets depend on the provider. The local model exceeded the hosted
       `60 s` cap on `7/9` tasks. Local runs cost `$0` but are not
       budget-comparable.
@@ -367,7 +370,7 @@ sections:
     concrete: two `search_documents` lookups, then
     `calculator(expr='2022 - 1903')`, producing answer 119 with zero retries
     in 31.1 s. The same trace used `7,709` input and 862 output tokens.
-    `data/checkpoint.json` shows pause, reject-with-feedback, and re-plan.
+    Scripted `tests/test_hitl.py` covers pause, reject-with-feedback, and re-plan; no live checkpoint run is recorded.
 
     **Cost basis:** Cloud-equivalent estimates use the public reference card
     at $1.00/Mtok input and $4.00/Mtok output. Mtok means one million tokens.
@@ -391,18 +394,18 @@ sections:
     - Follow the grading step: answer tasks use four graders and probes use
       refusal, step, and latency graders. `AnswerSuccess` requires an ok
       status and all expected keywords. `ToolSelection` requires exact
-      tool-set equality. `StepBudget` allows 8 steps. The runner enforces
+      tool-set equality. `StepBudget` counts `steps_taken` entries and allows 8. The runner enforces
       the `60 s` task deadline and `LatencyBudget` grades recorded duration.
       `RefusalSuccess` requires a refused status (ok for legacy records)
       plus a refusal marker. A fabricated number, failure, deadline, or crash fails.
     - Spending caps are `$0.25` per task and `$2.00` per suite at the
-      cloud-equivalent card. Local runs meter at `$0.00.`
+      cloud-equivalent card. Local runs meter at `$0.00`.
 
     ## Limits
 
     - The terminal-outcome and deadline changes have deterministic offline
       tests and one live confirmation (2026-11-19): `6/6` refusals under the
-      live grader, with h19 a calculator-guard error. Both runs are single
+      live grader, with h19 refused after its calculator guard tripped. Both runs are single
       runs of 19 tasks, so all published rates remain single-run records.
     - The held-out sample has 19 tasks. It checks overfitting and
       confabulation, but does not guarantee generalization.
@@ -410,15 +413,16 @@ sections:
       Retrieval fuzziness, new domains, and broader refusal coverage are
       untested.
     - The `60 s` budget is hosted-tuned. The local model exceeded it on `7/9`
-      tasks, up to 1,`430.9 s`, and produced the only step-budget miss: h17
-      took 10 steps against the limit of 8. Local runs cost `$0` but are not
+      tasks, up to `1,430.9 s`, and produced the only step-budget miss: h17's
+      revision added a second Execute pass and reached 10 `steps_taken` entries
+      against the limit of 8. Local runs cost `$0` but are not
       comparable on wall time, meaning elapsed real time.
     - Hosted repeats varied in latency and step count, with one step-budget
       miss each. Cross-provider repeatability is not established.
     - A supervised pilot needs an external review team and production tasks.
       Open-ended autonomy stays out of scope.
 
-    **In plain terms:** The workflow passed all 15 practice tasks and all 13 unseen answer tasks with zero extra tool calls at about 13 cents per run—strong enough for a supervised pilot with human review, not unattended autonomy.
+    **In plain terms:** The workflow passed all 15 practice tasks and all 13 unseen answer tasks with no unplanned answer-task tool calls, at about 13 cents for the 15 practice tasks—strong enough for a supervised pilot with human review, not unattended autonomy.
   figures: []
   metrics_keys: []
 key_concepts:
@@ -436,16 +440,16 @@ key_concepts:
 roadmap:
 - status: shipped
   title: Pin typed outcomes and hard deadlines
-  detail: Offline regressions pass; the live run answers 13 of 13.
+  detail: 'Offline deadline tests pass; one hosted live run: 6/6 refusals, 19/19 budgets.'
 - status: shipped
-  title: Bound retries behind a human checkpoint
-  detail: Consequential runs pause for approval, rejection, or later review.
+  title: Gate consequential runs behind human approval
+  detail: Execute retries cap at one; approvals persist as checkpoints.
 - status: shipped
   title: Replace AI judges with deterministic graders
   detail: Four code checks per answer task; probes demand an honest no.
 - status: shipped
   title: Audit captured calls against the plan
-  detail: All 52 captured calls matched planned tool sets in both suites.
+  detail: 52 answer-task calls match plans; 20 probe calls are refusal-graded.
 - status: next
-  title: Run the multi-trial reliability study
-  detail: Needs an owner-approved cap; published results are single runs.
+  title: Run a provider-aware reliability study
+  detail: 'Gate: approve trial count, provider matrix, and latency caps first.'

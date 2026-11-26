@@ -6,83 +6,57 @@ sections:
 - id: background
   text_md: |
     **How far can a learned forecaster beat last week's sales on Walmart's full `M5` panel?**
-    The `M5` panel tracks `30,490` daily item-store series over `1,969` days, scored across `42,840` hierarchy nodes by `WRMSSE` (revenue-weighted error).
+    The panel tracks `30,490` daily item-store series over `1,969` days, scored across `42,840` hierarchy nodes by `WRMSSE` (revenue-weighted error).
 
     ```diagram 02-m5-pipeline
     ```
 
     Follow the pipeline in three steps:
 
-    - **Pool & fit:** Train eight `LightGBM` candidates on past origins and blend the top three pooled fits.
-    - **Score once:** Evaluate the last `28` days once on the official `M5` hierarchy.
-    - **Outcome:** The blend reaches `0.6211` `WRMSSE` vs `0.8929` for `seasonal_naive` (`−30.4%` error).
+    - **Pool & fit:** Compare eight candidates, including five `LightGBM` fits, on nine past origins.
+    - **Blend & hold out:** Select three pooled members, although the winning weights leave only two active; reserve the final `28` days for the headline.
+    - **Outcome:** The blend reaches `0.6211` `WRMSSE` versus `0.8929` for `seasonal_naive` (`−30.4%`).
 
-    Next, the contract behind the score ([Objectives →](#sec-objectives)).
+    Next, we set the contract behind that score ([Objectives →](#sec-objectives)).
 
-    **In plain terms:** Across 30,490 Walmart product series, blending three tree models cuts forecast error by 30.4% compared with simply repeating last week's sales.
+    **In plain terms:** Across 30,490 Walmart product series, a 95/5 blend of two pooled models cuts forecast error by 30.4% compared with repeating last week's sales.
   figures: []
 - id: objectives
   text_md: |
-    **The goal is a forecast that a replenishment planner can defend.** A
-    replenishment planner decides how much stock to reorder. The test is not
-    whether a complex model can win once. It is whether that model beats the
-    simple seasonal rule across the full panel under a fair, repeatable test.
+    **A replenishment planner must be able to defend the forecast.** The model must beat a simple seasonal rule across the full panel. The test must be repeatable. One lucky split is not enough.
 
     ```diagram auto-02-demand-forecasting-1
     ```
 
-    Read the diagram from left to right. Every candidate follows the same
-    route. A stability screen prefers candidates with low, consistent error at
-    two earlier cutoff dates. The final window cannot influence that choice.
-    The last block pairs the headline score with checks for over-forecasting,
-    under-forecasting, hierarchy level, and quiet days.
+    Nine earlier cutoffs select members and weights. Their rule combines mean error and variation. The final window does not affect that choice. A later challenger gate did reread the test window. We disclose that exception and its negative result.
 
-    Success means:
+    | target | committed result |
+    |---|---|
+    | Beat the seasonal-naive floor | `0.6211` versus `0.8929` `WRMSSE` |
+    | Use only information available before each forecast | Lags, rolling features, and dated origins |
+    | Separate selection from the headline | `9` selection origins plus `1` test origin |
+    | Report where the floor still wins | Zero-day accuracy: `66.6%` floor, `57.2%` blend |
 
-    - Beat the seasonal-naive floor at full scale where past data supports it.
-    - Build every model input from information available before the forecast date.
-    - Choose on the past and score the final window once.
-    - Report where the simple rule still wins.
+    Next, we pin the panel and its time splits so every candidate faces the same input ([Data →](#sec-data)).
 
-    One test for every candidate needs a fixed input; next, the pinned
-    panel and its time splits ([Data →](#sec-data)).
-
-    **In plain terms:** Every forecasting method faces the same test: pick the best model on past dates, score it once on the final 28 days, and check both busy items and quiet zero-sale days.
+    **In plain terms:** Nine past dates choose the model and one final 28-day window supplies the headline. The checks cover both revenue-weighted error and quiet zero-sale days.
   figures: []
 - id: data
   text_md: |
-    **The complete panel, with a fixed time split.** Before the evaluation
-    contract shown below, the input is the full Walmart `M5` accuracy panel:
+    **The complete panel has a fixed time split.** The input is the full Walmart `M5` accuracy panel:
 
-    - `30,490` daily store-item series across 10 stores, 3 categories, and 7
-      departments. The dates run from 2011-01-29 to 2016-06-19, with
-      `47,649,940` rows and `59.5%` zero-demand days.
-    - The source is the Nixtla `datasetsforecast` mirror of the competition
-      archive. A pinned `SHA-256` checksum, a digital fingerprint of the files,
-      keeps the source fixed. See [Makridakis et al., IJF
-      2022](https://doi.org/10.1016/j.ijforecast.2021.11.013) and the
-      [dataset card](https://amm-ds.github.io/portfolio/data-registry/m5-nixtla-mirror/).
-    - The hierarchy adds the bottom series up through 12 levels, producing
-      `42,840` nodes. Evaluation gives each level equal total weight and uses
-      revenue weights within it.
+    - `30,490` daily store-item series across `10` stores, `3` categories, and `7` departments. Dates run from 2011-01-29 to 2016-06-19, with `47,649,940` rows and `59.5%` zero-demand days.
+    - The source is the Nixtla `datasetsforecast` mirror of the competition archive. A pinned `SHA-256` checksum keeps the source fixed. See [Makridakis et al., IJF 2022](https://doi.org/10.1016/j.ijforecast.2021.11.013) and the [dataset card](https://amm-ds.github.io/portfolio/data-registry/m5-nixtla-mirror/).
+    - The hierarchy aggregates the bottom series through `12` levels, producing `42,840` nodes. Each level receives equal total weight, with revenue weights within it.
 
     ```diagram auto-02-demand-forecasting-2
     ```
 
-    Apply the diagram's three stops to every series in that panel. An origin
-    is a cutoff date that separates training history from the days being
-    forecast. The origins on 2016-05-08 and 2016-05-15 select ensemble members
-    and weights. The origin on 2016-05-22 starts the final 28-day competition
-    window, which scores every candidate exactly once.
+    An origin is a cutoff between training history and the next `28` forecast days. Nine weekly origins from 2016-03-20 through 2016-05-15 select ensemble members and weights. The origin on 2016-05-22 starts the final competition window used for the champion's headline score. This dated separation prevents random splits from mixing future information into training.
 
-    This separation blocks random splits, which could mix future information
-    into training and make the reported gap unverifiable.
+    Next, we audit intermittent demand and the sample series that make the quiet-day risk concrete ([EDA →](#sec-eda)).
 
-    That fixed panel sets up the demand-pattern audit; next, the
-    classification counts and the sample series behind them
-    ([EDA →](#sec-eda)).
-
-    **In plain terms:** All 30,490 Walmart product series follow one strict timeline: two past test dates pick the model, and one final 28-day window measures the headline result.
+    **In plain terms:** All 30,490 Walmart product series follow one timeline: nine past cutoffs choose the blend, and the final 28 days measure its headline result.
   figures: []
 - id: eda
   text_md: |
@@ -102,49 +76,33 @@ sections:
 
     - The top-units series has a strong weekly shape that a model can learn.
     - The hardest intermittent series stays at zero for weeks.
-    - The mid-volume series fluctuates around quiet days.
+    - The mid-volume series is smooth and has no zero days.
 
     Those visible quiet stretches explain why zero-day accuracy needs a separate
     check. On days with zero actual sales, zero-day accuracy is `66.6%` for the
     floor against `57.2%` for the ensemble. That caveat is not visible in the
     three ensemble forecast curves, so it must sit beside the headline result.
 
-    The quiet-stretch caveat frames the candidate design; next, the eight
-    candidates and the stability screen ([Training →](#sec-training)).
+    The quiet-stretch caveat frames the candidate design. The eight
+    candidates and the stability screen come next ([Training →](#sec-training)).
 
     **In plain terms:** 91% of products sell only sporadically and nearly 60% of all days have zero sales—making quiet days hard to beat with complex models.
   figures: [m5_full_sample_series]
 - id: training
   text_md: |
-    **Eight candidates, one selection rule, one blend.** The candidates are:
+    **Eight candidates share one selection rule.** They do not share one forecasting strategy. Five candidates use `LightGBM`. The others are the seasonal floor, `AutoETS`, and the convex ensemble.
 
-    - The seasonal-naive floor.
-    - One global `LightGBM` fit across all `30,490` series. Recursive forecasting
-      extends the forecast day by day using earlier predictions. The `mlforecast`
-      inputs are lags, meaning past sales values; 7/14/21/28-day rolling means;
-      calendar, price, and event inputs; and SNAP, an indicator for days when
-      food-assistance purchases are allowed. The tuned settings use seed 42,
-      which fixes random choices.
-    - A `Tweedie` twin. Tweedie loss is a training objective suited to sparse
-      counts with many zeros.
-    - Three pooled fits, which share training data across related series. There
-      is one per store (10 groups), one per store×category cell (30), and one
-      per department (7). Each grouping pools related series at a different level.
-    - Per-series `AutoETS`, an automated exponential-smoothing method that
-      weights older and recent observations differently. The eighth candidate
-      is the convex ensemble, a blend whose non-negative weights sum to one.
+    - The global `LightGBM` fit spans all `30,490` series and forecasts recursively, feeding earlier predictions into later days. Its inputs include lags `1/7/14/21/28`. Rolling means use windows `7/28/56/84`. Rolling standard deviations use `7/28` at lag `1` and `7` at lag `7`. Other inputs are an expanding mean, calendar fields, price, events, and food assistance. The tuned settings use seed `42`.
+    - A `Tweedie` twin uses an objective suited to sparse counts with many zeros.
+    - Three pooled fits share rows within each store (`10` groups), store×category cell (`30`), or department (`7`). Each pooled arm fits one model per forecast horizon. The global arm instead feeds its predictions back recursively. Their score gap therefore mixes grouping with strategy. It does not isolate pooling.
+    - Per-series `AutoETS` supplies a statistical challenger. The eighth candidate is the convex ensemble, whose non-negative weights sum to one.
 
     ```diagram auto-02-demand-forecasting-3
     ```
 
-    Follow the selection diagram from left to right. Six eligible candidates
-    receive `WRMSSE` scores at two selection origins. They are ranked by mean
-    score plus 1.0 times the standard deviation, which measures variation
-    between origins. The best three enter a `0.05` weight grid and become the
-    0.95/0.00/0.05 ensemble. Neither selection step reads the test origin.
+    Six eligible candidates receive `WRMSSE` scores at nine selection origins. The rank is mean score plus `1.0` times the score spread. The best three enter a `0.05` weight grid. This produces the `0.95/0.00/0.05` ensemble. Selection never reads the test origin.
 
-    The code shows the key order: combine bottom-level forecasts first, then
-    score that blend across the hierarchy. Member scores are never averaged.
+    The code combines bottom-level forecasts before scoring that blend across the hierarchy; it never averages member scores.
 
     ```python
     def _screen(vals: np.ndarray) -> float:
@@ -165,244 +123,122 @@ sections:
         return out
     ```
 
-    This [selection code](https://github.com/amm-ds/portfolio/blob/main/projects/02-demand-forecasting/src/demand_forecasting/m5_full.py)
-    uses fixed seeds or direct statistical solutions and a fixed group order,
-    so a re-run produces the same bytes.
+    This [selection code](https://github.com/amm-ds/portfolio/blob/main/projects/02-demand-forecasting/src/demand_forecasting/m5_full.py) uses fixed seeds and a fixed group order. Its statistical solutions are direct. A rerun therefore produces the same bytes.
 
-    In `m5_full_pooling_panel`, compare signed bias and zero-day accuracy across
-    all eight candidates on the scored-once full panel. Positive bias means
-    over-forecasting; a zero-day forecast below 0.5 counts as correct. The floor
-    leads quiet-day accuracy at `66.6%`, versus `57.2%` for the blend, so the pooling
-    win in official `WRMSSE` does not mean every operational check improves. The
-    complete diagrammed run takes about 12.9 hours on one machine.
+    In `m5_full_pooling_panel`, positive bias means over-forecasting and a zero-day forecast below `0.5` counts as correct. The floor leads quiet-day accuracy at `66.6%`, versus `57.2%` for the blend. The committed metadata records `1,348,530.6` seconds of summed runtime. It does not support a single-machine wall-clock estimate.
 
-    The screen sets the blend; next, the single official score and the
-    checks that locate its gain ([Evaluation →](#sec-evaluation)).
+    Next, we use the official score and supporting checks to locate the gain ([Evaluation →](#sec-evaluation)).
 
-    **In plain terms:** We pick the top three tree models from eight candidates using past dates alone, favoring steady performance without ever peeking at the final 28 days.
+    **In plain terms:** Nine past dates select three pooled candidates, but one receives zero weight. The shipped forecast is therefore a 95/5 blend of two models, chosen without reading the final 28 days.
   figures: [m5_full_pooling_panel]
 - id: evaluation
   text_md: |
-    **One official score, with checks for different decisions.** `WRMSSE` scales each node's error by its past spread. Higher-sales nodes weigh more, and all `12` levels carry equal weight across `42,840` nodes. Lower is better.
+    **One official score needs several supporting checks.** `WRMSSE` scales each node's error by its past spread. Higher-sales nodes weigh more. All `12` levels carry equal weight across `42,840` nodes. Lower is better.
 
-    Supporting checks show what the headline hides:
-
-    - Bottom `WAPE` divides total error by total actual sales across store-item series.
-    - Bias is mean signed error, showing if forecasts run high or low.
-    - Origin spread tracks stability across selection dates.
-    - Per-level scores show where the gain lands.
-    - Zero-day accuracy checks days with no sales.
+    Bottom `WAPE` divides total error by total actual sales. Bias shows whether forecasts run high or low. Origin spread tracks selection stability. Per-level scores locate gains. Zero-day accuracy checks days with no sales.
 
     ```diagram auto-02-demand-forecasting-4
     ```
 
-    Follow the diagram from the `30,490` bottom forecasts through all 12 levels.
-    At each node, RMSSE, or root mean squared scaled error, compares forecast
-    error with training-history variation. Revenue weights then produce the
-    single `WRMSSE` score on one final pass.
+    The `30,490` bottom forecasts aggregate through all `12` levels. At each node, root mean squared scaled error compares error with past variation. Revenue weights then produce one `WRMSSE` score. Every candidate uses the same metric, hierarchy, and final window. We claim no external leaderboard equivalence.
 
-    The supported comparison is internal: every candidate uses this same metric,
-    hierarchy, and scored-once window. No competition-winner or leaderboard
-    equivalence is claimed because this project does not evaluate an external run.
+    `m5_full_per_level_wrmsse` separates relative and absolute gains. At total level, the blend scores `0.314` against the floor's `0.560`. That is a `43.9%` relative cut and an absolute gap of `0.246`. The item-store level has the largest absolute gap, about `0.341`. At the three item-grain levels, learned candidates score between `1.04` and `1.15`. The floor sits at `1.38`–`1.39`.
 
-    In the per-level figure, compare the blend and floor bars at each level.
-    The blend's margin is broadest at aggregate levels: total-sales `WRMSSE` is
-    `0.314` for the blend against the floor's 0.560. At item level, learned
-    candidates cluster between `1.04` and `1.15` while the floor sits at `1.38`–`1.39`
-    because series-level noise dominates. The widening bars toward the top show
-    where the win comes from.
+    Neither the diagram nor the figure measures savings. Stockouts, promotions, and returns sit outside the model. No safety-stock or cost claim follows.
 
-    Neither the diagram nor the figure measures savings. Stockouts, promotions,
-    and returns sit outside the model, so no safety-stock or cost claim follows.
+    Next, we compare the final ranking with the two measured challengers and their rejection gates ([Results →](#sec-results)).
 
-    The checks narrow the question to the final ranking; next, the
-    scored-once result and its measured challengers
-    ([Results →](#sec-results)).
-
-    **In plain terms:** Every model gets one final score on the full hierarchy. Extra checks track accuracy, bias, stability, and quiet days.
+    **In plain terms:** The blend beats last week's sales overall, but not at every level or on every check. The largest proportional gain is at company total; the largest absolute gain is at item-store level.
   figures: [m5_full_per_level_wrmsse]
 - id: results
   text_md: |
-    **The ranked-bars figure gives the final official-WRMSSE result: convex
-    ensemble `0.6211`, best single `0.6219`, floor `0.8929`** on the scored-once
-    competition window.
-    Compare the bars directly:
+    **The blend leads the best single fit by under `0.001` `WRMSSE`.** On the competition window, `m5_full_candidate_ranking` gives convex ensemble `0.6211`, best single `0.6219`, and floor `0.8929` official `WRMSSE`.
 
-    - The three pooled arms score `0.6219` / `0.6225` / 0.6459. All beat the global
-      model's `0.6601`, so one fit per store, cell, or department works better
-      than a single global fit across `30,490` series.
-    - The Tweedie arm scores `0.6473` and AutoETS scores 0.7093.
-    - The blend combines `0.95` store×category + `0.00` store + `0.05` department.
-      Its `0.6211` score is a `30.4%` reduction against the floor.
+    - The three pooled arms score `0.6219` / `0.6225` / `0.6459`, ahead of the global model's `0.6601`. Because the pooled arms are direct and the global arm recursive, this comparison does not isolate pooling as the cause.
+    - The Tweedie arm scores `0.6473` and `AutoETS` scores `0.7093`.
+    - The blend combines `0.95` store×category + `0.00` store + `0.05` department. Its edge over the best single is about `1.3` times the routed arm's `0.000644` noise band. The single fit also has slightly better bottom `WAPE` (`0.7617` versus `0.7623`) and bias (`+0.0177` versus `+0.0222`).
 
-    The overall bars do not show the remaining quiet-day weakness. On
-    zero-actual days, zero-day accuracy stays with the floor: `66.6%` against
-    the ensemble's 57.2%. Full scale prices those days into the hierarchy but
-    does not fix them.
+    Spike capture was a separate experiment for dense series with severe swings. On a capped development run, its erratic win-rate leg passed, but the adoption gate was already rejected: routed `WRMSSE` regressed by `+0.0204`, about twice the noise band. On the full test window, the routed arm scored `0.6235` against the champion's `0.6211`, a `+0.0025` setback about `3.9` times the paired bootstrap noise band. Its erratic-class win rate also slipped from `0.8260` to `0.8247`. The gate rejected both checks. This adoption gate was a second use of the test window; the champion was unchanged.
 
-    A separate measured experiment tested spike capture for the erratic quadrant,
-    meaning dense series with severe swings. The pooled fit gave each series'
-    best sales days more influence during training and could replace the usual
-    fit where past windows preferred it. On a capped development window, meaning
-    a smaller past-only evaluation, the swap won its erratic quadrant against
-    the floor.
+    A later `Huber` variant never reached the test window. Screening stopped it after the first of nine selection origins, at `0.8683` against `0.7409` for the champion. Neither challenger appears in the main candidate ranking; only spike capture has a full test result, while the `Huber` claim is limited to that one origin.
 
-    The wider result did not hold up: on the full scored-once test window the
-    routed arm scored `0.6235` against the champion's `0.6211`, a `+0.0025` setback
-    about 3.9 times the paired bootstrap noise band. Its erratic-class win
-    rate against the floor also slipped, `0.8247` against 0.8260. An adoption
-    gate, a rule that rejects a candidate when the wider result worsens,
-    rejected it on both checks. One disclosure: that gate is a second use of
-    the scored-once test window, so the window is no longer strictly
-    single-use; the champion is unchanged, so the headline stands. An earlier
-    Huber variant never reached the test window: the screening pass stopped
-    it after origin 1, `0.8683` against `0.7409` for the champion. This arm is
-    absent from the ranking figure; its full-panel performance is measured
-    and it loses. The final ensemble stays 0.6211.
+    Next, we consolidate the exact values, protocol exceptions, and limits behind the recommendation ([Conclusions →](#sec-conclusions)).
 
-    The ranking stands with its caveats; next, the exact tables, protocol,
-    and limits behind the recommendation
-    ([Conclusions →](#sec-conclusions)).
-
-    **In plain terms:** Blending three pooled tree models cuts forecast error by 30.4% compared with repeating last week's sales, with the biggest gains at store and category totals.
+    **In plain terms:** A 95/5 blend of two pooled models cuts overall error by 30.4% against last week's sales, but its edge over the best single model is tiny. Two attempts to improve erratic products were rejected.
   figures: [m5_full_candidate_ranking]
 - id: conclusions
   text_md: |
     ## Results summary
 
-    The closing diagram summarizes the practical choice: for full-panel,
-    hierarchical `M5` demand, use a convex ensemble of pooled fits and weekly
-    reforecasting with the same floor and scored-once windows. The exact evidence
-    and limits below define what that choice supports.
-
-    Across `30,490` series and a 42,840-node hierarchy, the ensemble's official
-    `WRMSSE` is `0.6211` against the seasonal-naive floor's `0.8929` on the scored-once
-    competition window. That is a `30.4%` reduction on the competition's scheme.
-    This is an internal baseline comparison, not evidence of leaderboard rank or
-    equivalence to the competition winner. See the
-    [full evaluation report](https://amm-ds.github.io/portfolio/projects/02-demand-forecasting/)
-    or [try the live demo](https://amm-ds.github.io/portfolio/demos/forecast-workbench/).
+    **Use the screened pooled blend for this internal full-panel baseline, with its quiet-day and selection limits attached.** Across `30,490` series and `42,840` hierarchy nodes, official `WRMSSE` is `0.6211` against the seasonal-naive floor's `0.8929` on the competition window. This is not evidence of external leaderboard rank. See the [full evaluation report](https://amm-ds.github.io/portfolio/projects/02-demand-forecasting/) or [try the live demo](https://amm-ds.github.io/portfolio/demos/forecast-workbench/). The demo and sample curves come from an earlier `0.6161` blend with weights `0.60/0.10/0.30`, not the current `0.6211` champion.
 
     ## What the experiment taught
 
-    - The diagram's pooled ensemble is supported at full scale: fits per store,
-      store-by-category cell, or department beat one global fit.
-    - Its stability screen selected a three-member blend by mean + 1.0×std over
-      two selection origins, rather than rewarding one lucky origin.
-    - Its scored-once windows keep the headline believable: choose on nine
-      origins and grade on the competition window; the erratic arm's adoption
-      gate read that window a second time, and the champion still won it.
-    - The full-panel choice still loses on quiet days. On zero-actual days,
-      zero-day accuracy stays with the floor: `66.6%` against the ensemble's 57.2%.
-    - Spike capture remains a measured negative result. It won the erratic
-      quadrant on a capped window but scored `0.6235` on the full scored-once
-      test window against the champion's `0.6211`, a `+0.0025` setback about 3.9
-      times the paired bootstrap noise band. The adoption gate rejected it on
-      a second use of the test window, so no full-panel improvement is claimed.
-    - The `30.4%` reduction has bounded support. The screen uses only nine origins,
-      no bootstrap confidence intervals exist, and stockouts are unmodeled.
+    - Three direct pooled fits beat the recursive global fit, but that comparison changes grouping and forecasting strategy together.
+    - The nine-origin stability screen selected three members; zero weight on one makes the result an effectively two-model `95/5` blend.
+    - The blend's edge of under `0.001` over the best single is marginal, and the single fit has slightly better bottom `WAPE` and bias.
+    - The floor remains better on zero-actual days. Full-scale `WRMSSE` does not remove that operational trade-off.
+    - Spike capture was rejected on the test window, whose second use is explicitly disclosed. The later `Huber` arm failed on its first selection origin and never reached test.
 
     ## Exact numbers
 
-    Headline candidates on the scored-once test origin. Official hierarchical
-    `WRMSSE` is defined above; vs floor is the relative reduction; stability is the
-    population standard deviation over the 2 selection origins; `lgbm` is the
-    global single-fit model.
+    Headline candidates on the test origin. Vs floor is the relative reduction; stability is population standard deviation over nine selection origins; `lgbm` is the recursive global fit.
 
     | candidate | official WRMSSE | vs floor | bottom WAPE | bias | stability |
     |---|---|---|---|---|---|
     | **convex_ensemble (champion)** | **0.6211** | **−30.4%** | **0.7623** | **+0.0222** | **0.0538** |
-    | lgbm_pool_store (best single) | 0.6219 | −30.3% | 0.7617 | +0.0177 | **0.0549** |
+    | lgbm_pool_store (best single) | 0.6219 | −30.3% | 0.7617 | +0.0177 | 0.0549 |
     | lgbm | 0.6601 | −26.1% | 0.7626 | +0.0041 | 0.0347 |
     | auto_ets | 0.7093 | −20.6% | 0.7710 | −0.0063 | 0.0525 |
     | seasonal_naive (floor) | 0.8929 | — | 0.9159 | −0.0120 | 0.0577 |
 
-    The diagram's ensemble composition is lgbm_pool_storecat × `0.95` +
-    lgbm_pool_store × `0.00` + lgbm_pool_dept × 0.05. These are the best three of
-    the six-candidate pool by the stability screen: mean + `1.0 ×` population std
-    of per-origin official `WRMSSE` over the 2 selection origins. Weights on a `0.05`
-    simplex grid, meaning non-negative weights summing to one in steps of `0.05`,
-    minimize the same screen.
+    The ensemble is `lgbm_pool_storecat × 0.95 + lgbm_pool_store × 0.00 + lgbm_pool_dept × 0.05`. These are the best three of six eligible candidates by mean + `1.0 ×` population standard deviation over nine origins. A `0.05` simplex grid minimizes the same screen.
 
     ## Protocol
 
-    - Full `M5` panel (protocol `m5_full_v1`): `30,490` bottom series × `1,969` days;
-      hierarchy of 12 levels, `42,840` revenue-weighted nodes.
-    - Origins: 3 weekly cutoffs with 7-day spacing. The 2016-05-08 and 2016-05-15
-      origins select; 2016-05-22 starts the competition window and scores once.
-      The horizon is 28 days, with at least `1,096` training days.
-    - Candidates: 8. Seasonal_naive floor; global `LightGBM` (mlforecast recursive,
-      tuned settings, seed 42); Tweedie-loss twin; pooled fits per store
-      (10 groups), per store×category (30), per department (7); per-series
-      AutoETS; stability-screened convex ensemble.
-    - Classes and metrics: Syntetos-Boylan ADI/CV² (`1.32` / `0.49`), with `2,754` dense
-      and `27,736` intermittent series; official hierarchical `WRMSSE`, bottom `WAPE`,
-      bias, stability, per-level `WRMSSE`, and zero-day accuracy. Runtime is `46,509`
-      seconds, about 12.9 hours on one machine. A re-run reproduces the output.
+    - Full `M5` panel: `30,490` bottom series × `1,969` days; `12` hierarchy levels and `42,840` revenue-weighted nodes.
+    - Origins: `10` weekly cutoffs with `7`-day spacing. Nine origins from 2016-03-20 through 2016-05-15 select; 2016-05-22 starts the `28`-day test window. Minimum training history is `1,096` days.
+    - Candidates: eight total, with five `LightGBM` fits. The global arm is recursive; pooled arms are direct. `AutoETS`, `seasonal_naive`, and the convex ensemble complete the set.
+    - Metrics: official hierarchical `WRMSSE`, bottom `WAPE`, bias, stability, per-level `WRMSSE`, and zero-day accuracy. Syntetos-Boylan thresholds `1.32` / `0.49` identify `2,754` dense and `27,736` intermittent series.
+    - Runtime metadata records `1,348,530.6` seconds of summed compute. No supported single-machine wall-clock duration is committed; a rerun reproduces the output.
 
     ## Limits
 
-    - The selection screen is thin. Members and weights use only 2 selection
-      origins. No bootstrap CIs, meaning resampling-based confidence intervals,
-      exist, so the `30.4%` reduction has no interval bound.
-    - On zero-actual days the floor still wins, `66.6%` versus `57.2%` accuracy.
-      Full scale prices intermittency into the hierarchy but does not remove it.
-    - The demo band is the per-day minimum/maximum envelope of the blend members.
-      It shows their spread, not a calibrated prediction interval with measured
-      coverage.
-    - N-HiTS and TFT are neural-network forecasting architectures. Chronos-class
-      foundation models are large pretrained forecasting models. None is
-      benchmarked, so their results remain unproven.
-    - Stockouts, promotions, and returns are unmodeled. The diagram's weekly
-      reforecasting choice therefore supports no savings or safety-stock claim.
+    - Members and weights use nine selection origins. The headline `30.4%` reduction has no bootstrap interval; the separate spike-capture challenger does have a paired interval of `[0.00178, 0.00307]` for its regression.
+    - On zero-actual days the floor still wins, `66.6%` versus `57.2%` accuracy. Scaling the hierarchy does not solve intermittent demand.
+    - The demo band is the per-day minimum/maximum envelope of blend members, not a calibrated prediction interval with measured coverage.
+    - `N-HiTS`, `TFT`, and Chronos-class foundation models are not benchmarked. Stockouts, promotions, and returns are unmodeled, so no savings or safety-stock claim follows.
 
     ```diagram auto-02-demand-forecasting-5
     ```
 
-    **In plain terms:** Blending three tree models cuts overall Walmart forecast error by 30.4% for weekly planning; revisit the choice if predicting quiet zero-sale days matters more than total revenue accuracy.
+    **In plain terms:** A 95/5 blend of two pooled models cuts overall Walmart forecast error by 30.4%. The gain over one good model is tiny, and last week's sales still handle quiet days better.
   figures: []
 key_concepts:
-- '**Official hierarchical WRMSSE**: The competition metric scales each node''s error by train-window volatility, applies
-  revenue weights, and averages with equal total weight per level across all 42,840 nodes.'
-- '**Multi-level pooling**: One LightGBM fit per store, store×category cell, or department shares information across similar
-  series. At full scale, these fits beat one global fit.'
-- '**Tweedie loss**: A training objective based on a compound-Poisson-style likelihood for intermittent counts, used as a
-  diverse candidate in the internal model comparison.'
-- '**Stability-screened selection**: Members are chosen by mean + 1.0×std of per-origin scores across the selection origins,
-  favoring a stable blend over a lucky one.'
-- '**Intermittent demand**: Sales occur only occasionally. This describes 91% of the panel''s series, while 59.5% of days
-  are zero. Quiet days strongly affect accuracy, and the floor still wins them.'
-- '**Scored-once evaluation**: Candidates are chosen on past origins and graded exactly once on the competition window. Random
-  splits could leak future information into training.'
+- '**Official hierarchical WRMSSE**: The competition metric scales each node''s error by train-window volatility, applies revenue weights, and averages with equal total weight per level across all 42,840 nodes.'
+- '**Multi-level pooling**: Direct LightGBM fits per store, store×category cell, or department beat the recursive global fit; the comparison does not isolate pooling from forecasting strategy.'
+- '**Tweedie loss**: A training objective based on a compound-Poisson-style likelihood for intermittent counts, used as a diverse candidate in the internal model comparison.'
+- '**Stability-screened selection**: Members are chosen by mean + 1.0×std of per-origin scores across nine selection origins, favoring a stable blend over a lucky one.'
+- '**Intermittent demand**: Sales occur only occasionally. This describes 91% of the panel''s series, while 59.5% of days are zero. Quiet days strongly affect accuracy, and the floor still wins them.'
+- '**Test-window disclosure**: The champion is selected on nine past origins and scored on the final window. A later challenger gate reread that window and is reported separately.'
 roadmap:
 - status: shipped
   title: Pin the full M5 panel
-  detail: 30,490 series checksum-pinned; origins split selection from scoring.
+  detail: 30,490 series checksum-pinned; 9 selection origins plus 1 test origin.
 - status: shipped
   title: Screen one compact convex blend
-  detail: Best three of six arms by the stability screen on selection origins.
+  detail: Best three of six arms; 0.95/0.00/0.05 leaves two active fits.
 - status: shipped
-  title: Score the blend once on test
-  detail: Official test WRMSSE 0.6211, scored once on the held-out origin.
+  title: Score the champion on test
+  detail: Official test WRMSSE 0.6211; later challenger gate disclosed.
 - status: shipped
   title: Publish the spike-capture negative result
   detail: Erratic routing rejected by the adoption gate; the champion stands.
 - status: next
-  title: Find erratic gains beyond routing
-  detail: Huber challenger lost its only selection origin and never reached test.
+  title: Gate a new erratic challenger
+  detail: 'Gate: beat 0.7409 on origin 1 with no zero-day accuracy loss.'
 figure_captions:
-  m5_full_sample_series: 'Three catalog series at the scored-once test origin on 2016-05-22: top-units, hardest-intermittent,
-    and mid-volume. Each panel shows 56 days of history, 28 days of actual sales, and the ensemble curve with its member envelope.
-    The envelope is the members'' spread, not a calibrated interval. Look for the weekly shape, weeks-long zero runs, and
-    quiet days.'
-  m5_full_candidate_ranking: All 8 candidates ranked by official hierarchical WRMSSE on the scored-once competition window
-    across 42,840 revenue-weighted nodes. Lower bars are better. The stability-screened convex ensemble leads at 0.6211, the
-    best single pooled fit scores 0.6219, and the seasonal-naive floor scores 0.8929.
-  m5_full_per_level_wrmsse: 'Official WRMSSE by hierarchy level on the test window for the convex ensemble, seasonal-naive
-    floor, and best single fit (lgbm_pool_store). Each level receives equal total weight. Compare the paired bars: the blend''s
-    edge is broadest at aggregate levels. At item level, learned candidates cluster near 1.04–1.15 while the floor sits near
-    1.39.'
-  m5_full_pooling_panel: 'All eight candidates on the scored-once full M5 panel. Left: signed bias as a percentage of mean
-    actual sales; positive means over-forecasting. Right: accuracy on zero-actual days, overall and for intermittent series,
-    where a forecast below 0.5 is correct. The seasonal-naive floor leads overall quiet-day accuracy at 66.6% versus 57.2%
-    for the blend, so pooled WRMSSE gains do not erase the quiet-day trade-off.'
+  m5_full_sample_series: 'Three catalog series at the test origin on 2016-05-22: top-units, hardest-intermittent, and mid-volume. Each panel shows 56 days of history, 28 days of actual sales, and the earlier 0.6161 blend (weights 0.60/0.10/0.30) with its member envelope, not the current 0.6211 champion. The envelope is member spread, not a calibrated interval.'
+  m5_full_candidate_ranking: All 8 candidates ranked by official hierarchical WRMSSE on the competition window across 42,840 revenue-weighted nodes. Lower bars are better. The convex ensemble leads at 0.6211, the best single pooled fit scores 0.6219, and the seasonal-naive floor scores 0.8929.
+  m5_full_per_level_wrmsse: 'Official WRMSSE by hierarchy level for the convex ensemble, seasonal-naive floor, and best single fit. Each level receives equal total weight. Total has the largest relative cut against the floor (43.9%); item-store has the largest absolute gap (about 0.341).'
+  m5_full_pooling_panel: 'All eight candidates on the full M5 test panel. Left: signed bias as a percentage of mean actual sales; positive means over-forecasting. Right: accuracy on zero-actual days, where a forecast below 0.5 is correct. The floor leads at 66.6% versus 57.2% for the blend.'

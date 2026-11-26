@@ -4,10 +4,9 @@
 handbook + project 01's Wikipedia FAISS index (read-only) · **Status:**
 working showcase on the standard platform
 
-> Auditable plan-act-review workflow with typed outcomes and hard deadlines.
-> Legacy single runs: 15/15 fixed, 13/13 unseen answers, 5/6 refusals;
-> ~$0.13/tuning suite. Live held-out (2026-11-19): 13/13 answers, 6/6
-> live-grader refusals (h19: calculator-guard error), 19/19 budgets.
+> Auditable plan-act-review workflow with typed outcomes and deadlines. Legacy: 15/15 fixed tasks,
+> 13/13 unseen answers, 5/6 refusals. All-hosted live held-out: 13/13 answers, 6/6 live-grader
+> refusals, 19/19 budgets; h19 refused after the calculator guard tripped.
 >
 > A client deciding where LLM agents may run unsupervised needs graded
 > evidence, not a demo.

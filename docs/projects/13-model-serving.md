@@ -7,10 +7,9 @@
 [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/13-model-serving/DESIGN.md) ·
 [Dataset card](https://amm-ds.github.io/portfolio/data-registry/bike-sharing/)
 
-> Experiment 12's champion MLP (25.4316 test MAE) is re-derived, exported to
-> ONNX behind a hard parity gate (7.2e-07 max-abs), and served two ways from
-> one FastAPI schema. Seeded paired tests: 1.6 ms p50, ~950 req/s knee, ~56k
-> rows/s batched; image 6.5 GB, mostly unused CUDA.
+> Project 12's MLP (25.4316 test MAE) is rebuilt and exported to ONNX behind a 7.2e-07 parity gate. One
+> FastAPI schema serves both backends. Paired tests: 1.6 ms p50, ~950 req/s knee, ~56k rows/s batched; image
+> 6.5 GB, or 291 MB ONNX-only.
 
 **TL;DR:** teams asking what serving a champion tabular model actually
 looks like — latency percentiles, a throughput knee, batch curves, memory,

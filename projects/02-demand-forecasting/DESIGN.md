@@ -770,12 +770,12 @@ pipeline build). The queue commands above are the exact ones to re-run once
   pooled accuracy, the same trade the multistep newsvendor layer measured).
   The planned q0.9 pinball amplitude member is skipped as overkill — the
   blocker is a pooled OVER-forecast, and a higher-quantile member attacks
-  the wrong side of it. The committed champion (0.6161) stands; the
-  full-panel re-run of the refinement block is deferred to a scheduled
-  overnight slot (expected ~14.5 h: the two peak variants add ~2x the
-  storecat arm's ~1,000 s/origin). The catalog/demo path runs
-  `refinement=False` and stays byte-identical; headline artifacts,
-  README table, report, figures, and demo payload untouched. Tests +5
+  the wrong side of it. The catalog/demo retains its earlier 0.6161 blend;
+  the current committed champion is 0.6211. Correction (Wave 8): the
+  committed full-panel run's champion is convex_ensemble 0.62105 (−30.4% vs
+  the floor); the earlier 0.6161 blend remains in the demo payload, labelled
+  as the earlier blend; the full-window routed result is 0.6235 (rejected,
+  story.yaml:161-163); the catalog refit was not run. Tests +5
   (weight-rule hand case + multistep parity, gate branches, paired-bootstrap
   determinism, refinement structure + run-twice byte identity, and the
   selection-reads-no-test-actuals property). Capped-run runtime 2,956 s.

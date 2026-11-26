@@ -16,19 +16,19 @@ export const AUTO_11_DATA_ENGINEERING_3_SPEC = {
     },
     {
       id: "shape",
-      label: "quiet 4am · two evening peaks",
+      label: "35 pickup dates · 31 January + 4 out-of-month",
       kind: "task",
       facts: [],
     },
     {
       id: "fare",
-      label: "fares skewed: · typical near $16",
+      label: "filter: fare > $50 · distance > 10 miles",
       kind: "task",
       facts: [],
     },
     {
       id: "tail",
-      label: "long tail past $200 · feeds filtered scan",
+      label: "168,468 matching trips · feeds filtered scan",
       kind: "task",
       facts: [],
     },

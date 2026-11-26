@@ -44,7 +44,7 @@ before the final 30% is scored with a fixed alert threshold.
 
 The NAB track uses checksum-pinned series from `realAWSCloudwatch`,
 `realKnownCause`, and `realTraffic`. Three series have no labelled window in
-the test split and are excluded from aggregates. The remaining nine series use
+the test split and count as zero in twelve-series range recall. The remaining nine series use
 the same 70/30 time split and a train-anchored 2% alert budget.
 
 Alert streams have three forms: raw pages for every flagged minute, one page

@@ -1,6 +1,6 @@
 project_id: 05-ml-pipeline-churn
 short_version: |
-  On 7,043 IBM telco customers, a calibrated churn policy frozen at 0.175 from training OOF predictions costs 601 versus 1,035 for contact-everyone (95% paired bootstrap CI -508 to -353). Re-select the cutoff when missed-churner cost changes.
+  On 7,043 IBM telco customers, a calibrated churn policy frozen at 0.175 from training OOF predictions costs $601 versus $1,035 for contact-everyone (95% paired bootstrap cost-delta CI -$508 to -$353). Re-select the cutoff when missed-churner cost changes.
 sections:
 - id: background
   text_md: |
@@ -12,9 +12,9 @@ sections:
 
     Follow the cycle in three steps:
 
-    - **Predict & calibrate:** Train boosted trees on `7,043` pinned customers and calibrate churn probabilities.
+    - **Predict & calibrate:** Train boosted trees on `5,634` training rows and calibrate churn probabilities.
     - **Set cutoff on cost:** Freeze the decision cutoff at `0.175` from training costs, never from test labels.
-    - **Outcome:** Holdout cost drops from `1,035` (contact all) to `601` (`−41.9%`, bootstrap saving `−508` to `−353`).
+    - **Outcome:** Holdout cost drops from `$1,035` (contact all) to `$601` (`−41.9%`, bootstrap cost delta `−$508` to `−$353`).
 
     Next, the cost-model diagram that sets the gates ([Objectives →](#sec-objectives)).
 
@@ -23,28 +23,28 @@ sections:
 - id: objectives
   text_md: |
     **The goal is the cheapest contact list, not the highest accuracy.**
-    In the cost-model diagram, the contact-nobody policy is `73.5%` accurate
-    but saves nothing. That contrast shows why accuracy is the wrong target.
+    The contact-nobody policy is `73.5%` accurate but still costs `1,870`
+    by missing every churner. That contrast shows why accuracy is the wrong target.
 
     The diagram also sets three tests for success:
 
     - Compare every candidate under one cost model and on one holdout. A
       holdout is customer data reserved for final testing.
     - Choose a threshold and estimate a range for its saving.
-    - Re-run the choice when a missed churner costs between 3 and 8.
+    - Re-run the choice at missed-churner prices of `3`, `5`, and `8`.
 
     ```diagram auto-05-ml-pipeline-churn-1
     ```
 
-    Follow the diagram from costs to candidates. A false alarm costs 1
-    voucher and a missed churner costs 5. A grid, or list, of 41 thresholds
+    Follow the diagram from costs to candidates. A false alarm costs `$1`
+    and a missed churner costs `$5`. A grid, or list, of 41 thresholds
     is priced on training-side out-of-fold predictions. The lowest-cost
     cutoff is frozen before the candidate is tested on the same 1,409-row
     holdout. The final branches report the exact policy's saving interval
     and re-freeze a cutoff under each alternative missed-churner price.
 
-    Three tests for success need one real panel and one twin; next, the
-    lineage diagram and its gates ([Data →](#sec-data)).
+    We next trace the real panel and synthetic twin through the lineage diagram
+    and its gates ([Data →](#sec-data)).
 
     **In plain terms:** The goal is the lowest total retention bill when a lost customer costs 5× a retention offer, with uncertainty ranges proving the savings are real.
   figures: []
@@ -78,8 +78,7 @@ sections:
     software checks, when the network is unavailable. It never replaces the
     real-data results.
 
-    The gates and split fix the evidence base; next, the churn-profile
-    figure that sets the judging rules ([EDA →](#sec-eda)).
+    We next use the churn-profile figure to set the judging rules ([EDA →](#sec-eda)).
 
     **In plain terms:** 7,043 real telecom customers are split into training, calibration, and a single final test group, backed by a synthetic copy for automated software checks.
   figures: []
@@ -87,12 +86,12 @@ sections:
   text_md: |
     **The churn-profile figure shows the highest churn where commitment is
     low.** Compare the contract bars: month-to-month customers churn at
-    `42.7%`, versus `2.8%` for two-year contracts. The other panels show `41.7%`
-    churn for senior citizens and `41.9%` for fiber-optic users. Churners pay
-    more, about `$74` versus `$61` a month, and leave sooner, about 18 versus
-    38 months of tenure. Tenure is how long a customer has stayed.
+    `42.7%`, versus `2.8%` for two-year contracts. Its other panels contain only
+    charges and tenure distributions: churners pay more, about `$74` versus `$61`
+    a month, and leave sooner, about 18 versus 38 months of tenure. Tenure is
+    how long a customer has stayed.
 
-    Use all three figures under the same judging rules:
+    Use both figures under the same judging rules:
 
     - Compare candidates on one shared holdout under one cost model.
     - `ROC-AUC`, or area under the receiver-operating-characteristic curve,
@@ -108,53 +107,47 @@ sections:
     base-rate floor. The base rate is the overall churn share. A curve near
     that floor adds little ranking skill.
 
-    The profile and curve frame the candidates; next, the three training
-    figures behind one preparation pipeline ([Training →](#sec-training)).
+    We next examine three training figures behind one preparation pipeline ([Training →](#sec-training)).
 
-    **In plain terms:** Month-to-month, senior, and fiber customers leave most often, and departing customers tend to pay more and stay shorter; ranking risk alone does not tell you who to contact.
+    **In plain terms:** Month-to-month customers leave most often, and departing customers tend to pay more and stay for less time; risk ranking alone does not tell you who to contact.
   figures: [eda_churn_profile, precision_recall_curve]
 - id: training
   text_md: |
     **One preparation pipeline sits behind all three training figures.**
     The data-quality gates pass first: null rates are `0.000` for tenure and
     charges, values stay within allowed ranges, and churn is binary. The
-    pipeline caps extreme values, flags and fills missing values, scales
-    numbers, and turns categories into indicator columns of zeros and ones.
-    Serving means using the fitted model on new rows. Training and serving
-    use this same
-    pipeline, so each figure reflects the same preparation.
+    pipeline caps extreme values. It flags and fills missing values. It scales
+    numbers and turns categories into columns of zeros and ones. Training and
+    serving use this same pipeline. Each figure reflects the same preparation.
 
     - **Start with the flat line in the business-cost figure.** Contacting
-      everyone costs 1,035. Contacting nobody instead misses 374 churners
-      and costs `1,870` under the 1-versus-5 price model.
+      everyone costs `$1,035`. Contacting nobody misses `374` churners. That
+      policy costs `$1,870` under the 1-versus-5 price model.
     - **Compare the logistic policies.** A logistic model is a simple linear
-      model that predicts probabilities. Its default threshold costs 691.
-      The `0.450` cutoff, frozen from training-side out-of-fold predictions,
-      costs 655. An F1-first search chose a different model family. The
-      figure's cost-based winner therefore depends on the objective, not
-      accuracy alone.
-    - **Use the calibration and cost figures together.** A seeded `Optuna`
-      search, an automated way to test model settings, ran 25 trials.
-      Median pruning stopped weak trials early. It chose a gradient-boosted
-      model, which combines many small decision trees, using out-of-fold
-      business cost. Out-of-fold means each training row is scored by a
-      model that did not fit that row. Isotonic calibration is a flexible
-      adjustment learned only on training-side data. On the calibration
-      figure, the reliability curve compares predicted and observed rates.
-      The isotonic curve sits closer to the ideal line. ECE, or
-      expected calibration error, measures the average gap between
-      predicted probabilities and observed rates. ECE improves `0.028` →
-      0.016. The stars on the cost figure mark frozen policies, not holdout
-      optima: raw cost is 644 at `0.225` and calibrated cost is 601 at 0.175.
+      model that predicts probabilities. Its default threshold costs `$691`.
+      The `0.450` cutoff costs `$655`. Training-side out-of-fold predictions froze
+      that cutoff. The winner depends on the priced mistakes, not accuracy alone.
+    - **Use the calibration and cost figures together.** The persisted model
+      is a gradient-boosted `XGBoost` classifier, which combines many small
+      decision trees. The selection artifact records its settings. Out-of-fold means
+      each training row is scored by a model that did not fit that row. Isotonic calibration learns a flexible adjustment from training-side data. The selected raw base
+      learner is fitted on `80%` of training rows. The separate `20%` split fits
+      only the calibrator. On the calibration figure, the reliability curve
+      compares predicted and observed rates. The isotonic curve sits closer to
+      the ideal line. Expected calibration error (`ECE`) uses `10` bins. It measures the average
+      gap between predicted probabilities and observed rates. ECE improves
+      `0.028` → `0.016`. The stars on the cost figure mark frozen policies, not holdout
+      optima: raw cost is `$644` at `0.225` and calibrated cost is `$601` at `0.175`.
     - **Re-freeze the cutoff when price changes.** Training-side sensitivity
       selection moves the served threshold to `0.250` at missed-churner price
-      3, `0.175` at 5, and `0.150` at 8. Holdout costs are 514, 601, and 718.
+      `3`, `0.175` at `5`, and `0.150` at `8`. Holdout costs are `$514`, `$601`, and `$718`.
       Every contact-everyone interval excludes zero. Calibration helps at
-      five, 644 → 601, and at eight, 725 → 718.
+      all three tested prices: `$518` → `$514` at three, `$644` → `$601` at five, and
+      `$725` → `$718` at eight.
     - **Read permutation importance from top to bottom.** Permutation
-      importance measures the F1 drop after shuffling one column. Contract,
-      tenure, and charges rank highest, so they carry the strongest signals
-      in this figure.
+      importance measures the F1 drop after shuffling one column. Tenure and
+      contract dominate at `0.213` and `0.174`; internet service is third at
+      `0.088`, while monthly charges add `0.033`.
 
     **Decision core: the threshold minimizes a priced training-side OOF
     confusion matrix.** A confusion matrix counts correct and mistaken
@@ -181,10 +174,9 @@ sections:
 
     Excerpt from [evaluate.py](https://github.com/amm-ds/portfolio/blob/main/projects/05-ml-pipeline-churn/src/churn_pipeline/evaluate.py).
 
-    Cost picks the cutoff; next, the evaluation chain that prices and
-    freezes it ([Evaluation →](#sec-evaluation)).
+    We next follow the evaluation chain that prices and freezes the cutoff ([Evaluation →](#sec-evaluation)).
 
-    **In plain terms:** Using real mistake costs on training data picks the exact contact cutoff, lowering total retention cost from 1,035 to 601 units; update the cutoff whenever offer or churn costs change.
+    **In plain terms:** Real mistake costs pick the contact cutoff from training data. The retention bill falls from $1,035 to $601. Change the cutoff when offer or churn costs change.
   figures: [calibration_curve, business_cost_curve, permutation_importance]
   metrics_keys: [naive_majority, logreg_threshold_0.450, selected_model, selected_model_calibrated]
 - id: evaluation
@@ -195,9 +187,8 @@ sections:
     same `0.175` cutoff saved during training.
 
     Follow the measurement chain from left to right. Three-fold OOF predictions
-    price a 41-point cutoff grid under the 1-versus-5 cost model. OOF means
-    each training row is scored by a model that did not fit that row. The
-    lowest-cost cutoff is saved in `operating_policy.json` before holdout
+    price a `41`-point cutoff grid spaced by `0.025` under the 1-versus-5 cost
+    model. The lowest-cost cutoff is saved in `operating_policy.json` before holdout
     scoring. Evaluation then scores that policy once. Two paired bootstraps,
     with `2,000` resamples each, compare it with contact-everyone and
     logistic-at-0.5.
@@ -215,43 +206,30 @@ sections:
     Fairness means checking results across customer groups. Fresh data must
     test the served calibrated policy before rollout.
 
-    The frozen policy is measured once; next, the fairness figure that
-    sets the rollout gates ([Results →](#sec-results)).
+    We next inspect the fairness figure that sets the rollout gates ([Results →](#sec-results)).
 
-    **In plain terms:** The packaged model scores raw customer rows after automatic quality checks and cuts retention cost by 42% at a 5-to-1 cost ratio; testing on newer months and checking group fairness come before launch.
+    **In plain terms:** The packaged model fills gaps and caps extreme values in raw customer rows, cutting retention cost by 42% at a 5-to-1 cost ratio; newer-month and group-fairness checks still come before launch.
   figures: []
 - id: results
   text_md: |
-    **Read the fairness-slices figure one customer group at a time.** Each
-    bar shows recall for the raw, uncalibrated model at its OOF-frozen `0.225`
-    threshold. In the contract panel, recall is `0.918` for month-to-month
+    **The fairness-slices figure exposes a contract-shaped blind spot in the
+    raw model.** The recall bars show results at its OOF-frozen `0.225` threshold. In the contract panel, recall is `0.918` for month-to-month
     customers, `0.250` for one-year customers, and `0.000` for two-year
     customers. The gender bars are nearly level. This figure therefore
     exposes a contract-shaped blind spot, not a gender gap.
 
-    The figure also sets clear limits on the results:
+    These are raw-model slices, not the served calibrated policy. The raw model
+    misses `27` of `36` one-year churners and all `9` two-year churners; those
+    counts must not be attributed to serving. The cost panel likewise reports
+    raw-policy costs, not the calibrated policy's `$601` total. Cost and slices
+    use the same `1,409`-row holdout, but recall alone cannot verify a budget result.
 
-    - It plots recall, not cost. It cannot verify the separate headline of
-      **601 versus `1,035` (`−41.9%`) at threshold `0.175`, with interval
-      [−508, −353]**. That number is a measured budget line, not a score
-      or a promise.
-    - Cost and slices use the same 1,409-row holdout, but thresholds were
-      frozen from training-side OOF predictions first. The bootstrap
-      estimates row-sampling variation only, not selection instability.
-    - The figure describes a snapshot with no time axis. It supports no
-      claim about drift, meaning change over time, seasonality, meaning
-      repeating time patterns, or causation, meaning that the policy caused
-      an outcome.
-    - It shows the raw model, not the served calibrated policy. The raw
-      model misses 27 of 36 one-year churners and all 9 two-year churners.
-      Those counts must not be attributed to serving.
-    - It covers one operator and 21 columns. Transfer to other customer
-      bases is plausible, but unmeasured.
+    The source has `21` columns, while the fitted pipeline uses `4` model
+    features. Transfer to other customer bases remains unmeasured.
 
-    The slices bound the claim; next, the exact tables and protocol
-    behind the measured record ([Conclusions →](#sec-conclusions)).
+    We next give the exact tables and protocol behind the measured record ([Conclusions →](#sec-conclusions)).
 
-    **In plain terms:** The 601-unit bill comes from one historical customer snapshot, and fairness checks show you should verify accuracy across contract lengths on fresh data before rolling it out.
+    **In plain terms:** The $601 bill comes from one historical customer snapshot, and fairness checks show you should verify accuracy across contract lengths on fresh data before rolling it out.
   figures: [fairness_slices]
 - id: conclusions
   text_md: |
@@ -259,18 +237,20 @@ sections:
 
     In the bootstrap figure, look at the cost-delta distribution and its
     interval. Cost delta means the served cost minus the contact-everyone
-    cost. The measured saving is 601 versus `1,035` on the frozen 1,409-row
-    holdout, a `41.9%` cut. The bootstrap point is −434. Its `95%` `CI`, or
-    confidence interval, is [−508, −353]. This interval estimates a range
+    cost. The measured cost is `$601` versus `$1,035` on the frozen 1,409-row
+    holdout, a `41.9%` cut. The observed cost delta is `−$434`. Its `95%` confidence interval
+    (`CI`) is [−$508, −$353]. This interval estimates a range
     for the saving from repeated customer resamples.
 
-    The pipeline diagram separates the raw and isotonic model paths. That
-    comparison gives the ECE improvement of `0.028` → `0.016` and the frozen
-    policy cost improvement of 644 → 601 on the holdout. A seeded 25-trial
-    search selected `XGBoost`; a separate three-fold OOF cost search froze the
-    served threshold of `0.175` under the 1-versus-5 cost model. The bootstrap
+    The pipeline diagram shows numeric and categorical preprocessing branches
+    joining at a `ColumnTransformer` before the classifier. Raw and isotonic
+    scoring share those prepared features. Their comparison gives the ECE
+    improvement of `0.028` → `0.016` and the frozen policy cost improvement of
+    `$644` → `$601` on the holdout. A separate three-fold OOF cost search froze
+    the served threshold of `0.175` under the 1-versus-5 cost model. The bootstrap
     holds thresholds fixed, so its interval does not measure selection
     uncertainty.
+
     [full evaluation report](https://amm-ds.github.io/portfolio/projects/05-ml-pipeline-churn/) · [try the live demo](https://amm-ds.github.io/portfolio/demos/churn-sandbox/)
 
     ## Exact numbers
@@ -280,8 +260,8 @@ sections:
 
     | cost parameter | value | meaning |
     |---|---|---|
-    | FP cost | 1 | one retention voucher / false alarm |
-    | FN cost | 5 | one lost customer |
+    | FP cost | $1 | one retention offer / false alarm |
+    | FN cost | $5 | one lost customer |
     | holdout churn rate | 26.5% | 374 of 1,409 customers |
     | threshold grid | 41 points (0.00–1.00) | training-side OOF cost search |
 
@@ -289,7 +269,7 @@ sections:
     in `reports/metrics.json`. XGB is `XGBoost`, the selected model that
     combines gradient-boosted trees:
 
-    | run | threshold | ROC-AUC | F1 (macro) | ECE | business cost |
+    | run | threshold | ROC-AUC | F1 (macro) | ECE | business cost ($) |
     |---|---|---|---|---|---|
     | contact everyone (fixed) | 0.000 | 0.5000 | 0.2098 | – | 1,035 |
     | logistic, default | 0.500 | 0.8292 | 0.7022 | – | 691 |
@@ -297,11 +277,15 @@ sections:
     | selected raw XGB | 0.225 | 0.8387 | 0.6981 | 0.028 | 644 |
     | selected + isotonic ← served | 0.175 | 0.8317 | 0.6745 | **0.016** | **601** |
 
-    Compare the last row with the bootstrap figure: cost falls `1,035` → 601
-    (`−41.9%`) versus contacting everyone. The bootstrap point is −434, with
-    `95%` `CI` [−508, −353] over `2,000` paired resamples at fixed thresholds.
-    Against logistic-at-0.5, the exact served policy's point is −90 with
-    `95%` `CI` [−159, −26].
+    Isotonic calibration ties many scores, which reduces ranking resolution;
+    this explains the small `ROC-AUC` decrease from `0.8387` to `0.8317` while
+    calibration error and frozen-policy cost improve.
+
+    Compare the last row with the bootstrap figure: cost falls `$1,035` → `$601`
+    (`−41.9%`) versus contacting everyone. The observed cost delta is `−$434`, with
+    `95%` `CI` [−$508, −$353] over `2,000` paired resamples at fixed thresholds.
+    The committed reports do not retain a numeric interval against
+    logistic-at-0.5, so this article does not quote one.
 
     Cost-model sensitivity, re-scored via `cli sensitivity` into
     `reports/sensitivity.json`, re-freezes each cutoff from the same persisted
@@ -320,29 +304,31 @@ sections:
 
     | record | detail |
     |---|---|
-    | model search | seeded Optuna (25 trials, median pruning) on out-of-fold business cost at each trial's own threshold; XGBoost wins telco (n_estimators 211, learning_rate 0.0309, max_depth 3, subsample 0.5187; CV cost 2,416); logistic wins the synthetic track; the isotonic twin uses only the train-side calibration split |
-    | operating policy | stratified three-fold OOF predictions on all 5,634 training rows; calibrated OOF training cost 2,425; threshold 0.175 frozen before holdout scoring and loaded unchanged by evaluation and serving |
+    | selected model | XGBoost with n_estimators 211, learning_rate 0.0309, max_depth 3, subsample 0.5187; the selection artifact has no valid trial count or search score; the isotonic twin uses only the train-side calibration split |
+    | operating policy | stratified three-fold OOF predictions on all 5,634 training rows; raw OOF cost $2,440 versus calibrated $2,425, a small training-side advantage; threshold 0.175 frozen before holdout scoring and loaded unchanged by evaluation and serving |
     | fairness slices | raw model at t=0.225, from `reports/figures/fairness_slices.json`, not the served policy: gender recall 0.834 female / 0.829 male; senior recall 0.898 versus 0.808 non-senior; contract recall 0.918 month-to-month, 0.250 one-year, 0.000 two-year; the raw policy misses 27 of 36 one-year churners and all 9 two-year churners; the served artifact is isotonic-calibrated at t=0.175, so these counts must not be attributed to serving |
 
     **Pipeline:** one fitted scikit-learn Pipeline applies every preparation
-    step in a fixed order. Follow the raw and calibrated branches to keep
-    the search, synthetic, and fairness records attached to the right path.
+    step in a fixed order. Numeric and categorical branches, including
+    `internet_service`, join at a `ColumnTransformer` before classification.
 
-          ```diagram auto-05-ml-pipeline-churn-4
-          ```
+    ```diagram auto-05-ml-pipeline-churn-4
+    ```
 
     ## Protocol
 
     The pipeline diagram and bootstrap figure use this protocol:
 
     - **Split:** stratified `80/20` at seed 42 → `5,634` training rows and the
-      1,409-row holdout, scored once. `20%` of training is reserved for
-      isotonic calibration.
+      `1,409`-row holdout, scored once. The raw selected base learner fits on
+      `80%` of training rows; the separate `20%` fits isotonic calibration.
     - **Threshold selection:** stratified three-fold OOF predictions price
-      the 41-point grid. Thresholds and OOF costs persist in
+      `41` grid points spaced by `0.025`. Raw OOF cost is `$2,440` versus `$2,425`
+      calibrated, so the training-side calibrated advantage is small. Thresholds
+      and OOF costs persist in
       `data/operating_policy.json` before evaluation or serving.
     - **Judging:** one cost model and one holdout; `ROC-AUC`, macro F1,
-      business cost at each frozen policy, and ECE; fairness slices on
+      business cost at each frozen policy, and `10`-bin ECE; fairness slices on
       contract, gender, and senior status.
     - **Uncertainty:** `2,000` paired bootstrap resamples at fixed thresholds
       compare the exact calibrated policy with contact-everyone and with
@@ -358,30 +344,30 @@ sections:
     - Neither visual has a time axis. They support no drift, seasonality,
       or causal claim. Temporal validation waits for a time-stamped feed
       from the data owner.
-    - The pipeline diagram keeps raw and calibrated serving separate.
-      Fairness numbers describe the raw model at its OOF-frozen threshold,
-      not the served calibrated policy.
-    - The pipeline covers one operator and 21 columns. Transfer to other
-      customer bases is plausible, not measured.
+    - The pipeline diagram shows shared preprocessing before raw or calibrated
+      scoring. Fairness numbers describe the raw model at its OOF-frozen
+      threshold, not the served calibrated policy.
+    - The source covers one operator and 21 columns; the pipeline uses 4
+      model features. Transfer to other customer bases is plausible, not measured.
 
-    **In plain terms:** Targeting high-risk customers cuts retention cost from 1,035 to 601 units (42% savings) on this snapshot, though fresh-month testing and fairness checks are required before live rollout.
+    **In plain terms:** Targeting high-risk customers cuts retention cost from $1,035 to $601 (42% savings) on this snapshot, though fresh-month testing and fairness checks are required before live rollout.
   figures: [bootstrap_ci]
 roadmap:
 - status: shipped
   title: Pin one reproducible panel and twin
-  detail: Real 7,043-row panel and the synthetic CI twin pass the same DQ gates.
+  detail: Use 5,634 training and 1,409 holdout rows; keep the synthetic twin separate.
 - status: shipped
   title: Choose the cutoff from OOF cost
-  detail: Seeded 25-trial search; isotonic calibration on a train-side split.
+  detail: Freeze 0.175 from three-fold training predictions; holdout cost is $601.
 - status: shipped
-  title: Price the served policy by bootstraps
-  detail: Paired bootstrap resamples at the frozen cutoff; the interval excludes zero.
+  title: Bound savings with bootstraps
+  detail: Use 2,000 paired resamples; the 95% cost-delta CI is −$508 to −$353.
 - status: shipped
   title: Re-freeze the cutoff as prices move
-  detail: The cutoff tracks the missed-churner price across the sensitivity grid.
-- status: blocked
+  detail: Cutoffs are 0.250, 0.175, 0.150 at missed-churner prices 3, 5, 8.
+- status: next
   title: Gate rollout on owner data
-  detail: Time-stamped feed; fresh-data fairness for the served policy.
+  detail: 'Gate: on a later time-stamped cohort, re-check cost and contract-group recall.'
 key_concepts:
 - '**Decision cost**: Price false alarms and missed churners separately, then tune the model on the bill rather than accuracy.'
 - '**Cost-ratio sensitivity**: The served threshold moves when a missed churner''s price moves. The cutoff is a policy choice,
@@ -402,7 +388,7 @@ figure_captions:
   business_cost_curve: Holdout cost across thresholds for each candidate. Stars mark training-side OOF-frozen policies, not
     holdout optima. The served isotonic policy costs 601 versus 1,035 for fixed contact-everyone.
   permutation_importance: Holdout decrease in F1, the combined precision-recall measure, after shuffling one column. Five
-    repeats include error bars. Contract, tenure, and monthly charges carry the main signal.
+    repeats include error bars. Tenure (0.213), contract (0.174), internet service (0.088), and monthly charges (0.033) rank in that order.
   fairness_slices: Raw XGBoost slices at OOF-frozen threshold t=0.225, not the served isotonic policy. The raw model misses
     27 of 36 one-year and all 9 two-year churners. Gender recall is nearly uniform.
   bootstrap_ci: Two thousand paired holdout resamples of the exact calibrated policy minus fixed contact-everyone. The cost-delta

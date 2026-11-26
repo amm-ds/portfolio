@@ -50,7 +50,7 @@ semantics as `portfolio_core.io.fetch` (which cannot set headers).
 | Full benchmark | 10-instance subset; all 56 | **all 56 + per-family reporting** | Per-family gaps (C1…RC2) expose where each solver actually stands; subset hid C2's wide-horizon difficulty. Best-known references for the 42 instances missing from the registry CSV ship as a clearly-sourced project-local supplement (`best_known_supplement.csv`, SINTEF TOP values; registry wins conflicts). |
 | Fleet cap (`max_vehicles`) | hard fail; soft (warn + report) | **soft** | The instance fleet (25) is an upper bound, not the optimum; a baseline heuristic exceeding it (CW needs 31 on R101) is a finding, reported with the vehicle count — never hidden. |
 | Distance | rounded vs full-precision Euclidean | **full precision, Euclidean** | Matches the double-precision convention the best-known table is published under. |
-| External reference | none; OR-Tools CP-SAT yardstick | **CP-SAT, hinted + time-bounded (`ortools_cp`)** | ALNS-hinted; not independent of ALNS — the ALNS plan is injected as the solution hint and returned unchanged on timeout. Per-vehicle circuits over time-window-filtered arcs (necessary condition `ready_i + service_i + dist_ij <= due_j`), fleet capped at hinted fleet + slack, depot return on a separate timestamp (a shared departure/arrival variable makes every route a `t >= t` cycle). Single worker + fixed seed = deterministic within the limit; UNKNOWN status falls back to the hint, so the arm never degrades an incumbent. Measured verdict: ties ALNS on all 56 instances within a 10 s budget at ~5x the runtime — a consistency check, not independent confirmation; the unhinted arm at the same budget finds no feasible plan on any instance. Certifies <=25-customer subproblems to optimality in seconds. |
+| External reference | none; OR-Tools CP-SAT yardstick | **CP-SAT, hinted + time-bounded (`ortools_cp`)** | ALNS-hinted; not independent of ALNS — the ALNS plan is injected as the solution hint and returned unchanged on timeout. Per-vehicle circuits over time-window-filtered arcs (necessary condition `ready_i + service_i + dist_ij <= due_j`), fleet capped at hinted fleet + slack, depot return on a separate timestamp (a shared departure/arrival variable makes every route a `t >= t` cycle). Single worker + fixed seed = deterministic within the limit; UNKNOWN status falls back to the hint, so the arm never degrades an incumbent. Measured verdict: ties ALNS on all 56 instances within a 10 s budget at ~10× the runtime — a consistency check, not independent confirmation; the unhinted arm at the same budget finds no feasible plan on any instance. Certifies <=25-customer subproblems to optimality in seconds. |
 
 ## Flow
 
@@ -151,7 +151,7 @@ flowchart LR
   Fixed model: filtered arcs, separate return timestamp, depot-usage guard,
   coverage-checked extraction with hint fallback. Result: on all 56
   instances CP-SAT ended at UNKNOWN within budget and the arm returned the
-  ALNS incumbent unchanged (ties 56/56 at ~5x runtime; 25-customer prefix of
+  ALNS incumbent unchanged (ties 56/56 at ~10× runtime; 25-customer prefix of
   C101 certified optimal at 191.8 in 2.9 s vs the 286.3 2-opt hint). New
   figures: `pareto_gap_runtime` (all seven solvers), `alns_convergence_C101`
   / `_RC105` (two-panel ALNS traces); ALNS `trace`/`stats` captured on the

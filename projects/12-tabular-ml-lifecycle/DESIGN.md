@@ -24,11 +24,11 @@
 
 | Decision | Options | Chosen | Why |
 |---|---|---|---|
-| Lag semantics | wall-clock reindex + interpolate; positional shifts over the observed sequence | positional shifts | the series has 165 missing hours (January 2011 outages, ~1%); interpolating the target would fabricate readings, and positional lags keep a single, testable convention — stated in the feature contract |
+| Lag semantics | wall-clock reindex + interpolate; positional shifts over the observed sequence | positional shifts | the series has 165 missing hours, mostly early 2011 plus a 36-hour gap on 2012-10-29/30 inside validation; interpolating the target would fabricate readings. Positional lags can drift up to 36 hours for about a week after that gap, affecting validation lags and the floor — stated in the feature contract |
 | Grid DQ gate | demand zero missing steps; bound the missing fraction | bound (2% budget) | a perfect-grid gate fails on the real snapshot; the budget catches real outages while accepting the known ~1% |
 | Standardization | whole-frame transform before split; fitted step inside `Pipeline` | fitted step inside `Pipeline` | whole-frame transform leaks train statistics into validation/test; the fitted step is also the deployment contract |
-| Feature selection | top-k by MI; MI + permutation + correlation pruning | MI (train) + permutation (ridge on validation) + correlated-pair pruning (|r| > 0.9 keeps the higher-MI member) | a single ranking ignores redundancy (temp/atemp are near-duplicates); the three lenses agree on what matters and the pruning rule is parameter-free |
-| Champion selection | best on test; best on validation | best on validation | each candidate receives one test score; test never selects the champion |
+| Feature selection | top-k by MI; MI + permutation + correlation pruning | MI (train) + permutation (ridge on validation) + correlated-pair pruning (current run drops atemp despite its higher MI; correction needs a rerun) | a single ranking ignores redundancy (temp/atemp are near-duplicates); the three lenses agree on what matters and the pruning rule is parameter-free |
+| Model selection | best on test; best on validation | best on validation | each candidate receives one test score; test never selects the served model |
 | MLP loss | pure MAE (L1); Huber | Huber (delta=1, standardized-y space) | L1's constant gradient trains noisily; Huber is the standard smooth MAE surrogate; the reported metric stays MAE |
 | Early stopping without ES | stop at fixed epoch; best-state restore | best-state restore | "train full length" measures the damage (ablation), the shipped model keeps the best validation epoch |
 | Ablation protocol | test during training; validation-only training + post-freeze test diagnostics | validation-only training + post-freeze test diagnostics | training never reads test; evaluation refits deterministic variants after freezing and labels their test scores as diagnostics, never selectors |
@@ -44,7 +44,7 @@ flowchart LR
     C --> D[features:<br/>cyclical hour/weekday/month,<br/>calendar binaries, lags 1/24/168]
     D --> E[selection: MI + permutation<br/>+ correlated-pair pruning]
     E --> F[ladder, all seeded:<br/>naive | ridge | RF<br/>LightGBM+Optuna | PyTorch MLP]
-    F -->|validation picks the champion| G[frozen test window:<br/>MAE/RMSE/MAPE + paired bootstrap]
+    F -->|validation picks the served model| G[frozen test window:<br/>MAE/RMSE/MAPE + paired bootstrap]
     G --> H[report:<br/>metrics.json, figures, html+md]
 ```
 
@@ -55,17 +55,17 @@ flowchart LR
   stopping, shipped ablation configuration); everything earlier = training
   (first 168 rows sacrificed to NaN lags). Training never reads test.
 - **Post-freeze diagnostics:** evaluation deterministically refits all eight MLP
-  ablation variants after the champion/configuration freeze and records test MAE
+  ablation variants after the model/configuration freeze and records test MAE
   as diagnostics only. These scores never select a variant.
 - **Judging:** MAE primary (rentals per hour), RMSE secondary, MAPE with the
   denominator floored at 1 rental; the seasonal-naive floor (same hour last
   week) is the comparator every candidate must beat.
 - **Uncertainty:** 2,000 paired hourly bootstrap resamples of the MAE delta
-  (floor − champion), plus paired non-overlapping 24-hour and 168-hour block
+  (floor − selected model), plus paired non-overlapping 24-hour and 168-hour block
   sensitivity on the same ordered test window. The measured hourly/day/week
   95% CIs are [52.49, 63.07], [44.21, 71.83], and [38.82, 73.41].
 - **Residuals:** sliced by hour × season and hour × weather situation, plus
-  residual-vs-fitted for the champion.
+  residual-vs-fitted for the selected model.
 
 ## Platform notes
 
@@ -87,7 +87,7 @@ flowchart LR
 
 - 2026-11-16 · Removed all test access from training. Evaluation now labels
   ablation test scores as post-freeze diagnostics and adds paired 24-hour and
-  168-hour block-bootstrap sensitivity. Champion, candidate metrics, and the
+  168-hour block-bootstrap sensitivity. Selected model, candidate metrics, and the
   hourly interval are unchanged; day/week 95% CIs are [44.21, 71.83] and
   [38.82, 73.41].
 - 2026-11-04 · Initial implementation: prepare (sha256-pinned UCI zip +

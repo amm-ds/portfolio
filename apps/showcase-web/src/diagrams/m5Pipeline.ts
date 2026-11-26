@@ -36,11 +36,11 @@ export const M5_PIPELINE_SPEC = {
     },
     {
       id: "screen",
-      label: "Stability screen · 2 selection origins",
+      label: "Stability screen · 9 selection origins",
       kind: "gate",
       facts: [
         "Best three of the six-candidate pool by mean + 1.0×population std of per-origin WRMSSE.",
-        "Selection reads the 2 selection origins only — never the test origin.",
+        "Selection reads the 9 selection origins only — never the test origin.",
       ],
     },
     {
@@ -48,16 +48,16 @@ export const M5_PIPELINE_SPEC = {
       label: "Convex ensemble",
       kind: "model",
       facts: [
-        "Weights 0.60 store×category / 0.10 store / 0.30 department on a 0.05 simplex grid.",
-        "Champion official WRMSSE 0.6161 — a −31.0% cut vs the 0.8929 seasonal-naive floor.",
+        "Weights 0.95 store×category / 0.00 store / 0.05 department on a 0.05 simplex grid.",
+        "Champion official WRMSSE 0.6211 — a −30.4% cut vs the 0.8929 seasonal-naive floor.",
       ],
     },
     {
       id: "test",
-      label: "Final 28 days · scored once",
+      label: "Final 28 days · headline + disclosed reread",
       kind: "gate",
       facts: [
-        "The competition window from 2016-05-22, scored exactly once.",
+        "The competition window from 2016-05-22 supplies the champion headline; a later rejected challenger reread it.",
         "Official hierarchical WRMSSE across all 42,840 revenue-weighted nodes.",
       ],
     },
@@ -67,6 +67,6 @@ export const M5_PIPELINE_SPEC = {
     { id: "features-candidates", source: "features", target: "candidates", kind: "task", label: "fit 8 arms" },
     { id: "candidates-screen", source: "candidates", target: "screen", kind: "result", label: "per-origin WRMSSE" },
     { id: "screen-ensemble", source: "screen", target: "ensemble", kind: "task", label: "best three" },
-    { id: "ensemble-test", source: "ensemble", target: "test", kind: "result", label: "blend scored once" },
+    { id: "ensemble-test", source: "ensemble", target: "test", kind: "result", label: "champion headline" },
   ],
 } as const satisfies DiagramSpec;

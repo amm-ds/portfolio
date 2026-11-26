@@ -30,7 +30,7 @@ raw zip ──▶ sha256 gate ──▶ hour.csv ──▶ DQ gates (26 checks)
       ──▶ features: cyclical hour/weekday/month, calendar binaries,
           lags 1h/24h/168h (past-only, positional)
       ──▶ selection: MI (train) + permutation (ridge on validation)
-          + correlated-pair pruning (|r| > 0.9 keeps higher-MI member)
+          + correlated-pair pruning (committed run drops atemp and keeps temp, despite atemp's higher MI)
       ──▶ ladder, every run seeded:
           seasonal naive | ridge | random forest | LightGBM + Optuna HPO
           | tabular MLP (PyTorch, hand-written loop)
@@ -43,11 +43,12 @@ raw zip ──▶ sha256 gate ──▶ hour.csv ──▶ DQ gates (26 checks)
   fitted step inside the sklearn Pipeline (train statistics only); the first
   168 training rows lose their NaN lag rows. `casual`/`registered` are
   dropped — they sum to the target.
-- **Positional lags, stated:** the UCI series has 165 missing hours (the
-  January 2011 outage pattern, ~1% of rows). Lags are positional shifts over
-  the observed sequence, so "lag 168" is same-hour-last-week give or take the
-  outage gaps — the DQ gate bounds the missing fraction at 2% instead of
-  demanding a perfect grid, and this convention is written into the contract.
+- **Positional lags, stated:** the UCI series has 165 missing hours, mostly
+  early 2011 plus a 36-hour gap on 2012-10-29/30 inside validation. Lags are
+  positional shifts over the observed sequence, so lag 168 and the seasonal floor
+  can drift up to 36 hours for about a week after that gap; lag 24 is shifted for
+  about a day and a half. The DQ gate bounds the missing fraction at 2% instead
+  of demanding a perfect grid.
 - **The MLP is a first-class citizen, not a victory lap:** cyclical-hour
   `nn.Embedding` + numeric trunk, AdamW, dropout, weight decay, Huber loss
   (smooth MAE surrogate in standardized-y space), early stopping on the
@@ -66,7 +67,7 @@ Full rationale and rejected alternatives: [DESIGN.md](DESIGN.md).
 | seasonal naive (floor) | 88.7 | 83.2 | 134.0 | 153.2 |
 | ridge | 68.9 | 51.1 | 77.8 | 86.4 |
 | random forest | 39.5 | 26.3 | 45.7 | 25.7 |
-| LightGBM (Optuna HPO, 50 trials) | 34.4 | 25.4 | 40.2 | 27.4 |
+| LightGBM (Optuna HPO) | 34.4 | 25.4 | 40.2 | 27.4 |
 | tabular MLP (PyTorch) ← validation pick, tied | 34.2 | 25.4 | 39.3 | 33.7 |
 
 Key findings:
@@ -81,12 +82,13 @@ Key findings:
   [38.8, 73.4], respectively (2,000 resamples each). All exclude zero.
 - **Feature selection agreed with the EDA:** mutual information ranks the
   three lags first (MI 0.89 / 0.76 / 0.71 nats), then the cyclical hour pair;
-  the correlated-pair pruning dropped `atemp` (r = 0.987 with `temp`) — the
-  heatmap's near-duplicate pair, resolved by rule rather than by hand.
+  the committed correlated-pair record dropped `atemp` (r = 0.987 with `temp`)
+  despite `atemp`'s slightly higher MI; correcting that mismatch needs a fresh run.
 - **Read the ablation at face value:** the 2x2x2 grid is on `ablation_dotplot`.
   Early stopping is the load-bearing control (every off-row is worse on
   validation); the validation argmin is a dropout-off row about 2 rentals below
-  the shipped configuration. The pre-registered configuration stands. Variant
+  the shipped configuration. The configuration fixed in `params.yaml` before
+  the ablation stands. Variant
   test scores are post-freeze diagnostics, never selectors.
 - **The MLP-trees race is a tie, not a champion:** validation MAE 34.2 (MLP)
   vs 34.4 (LightGBM); the paired bootstrap on the validation difference
@@ -96,9 +98,9 @@ Key findings:
   stays the served artifact without a champion label. On the single test pass
   LightGBM's MAE is 0.06 rentals lower while
   the MLP holds the better RMSE (39.3 vs 40.2). Both crush the floor's 83.2.
-- **The residual slices name the next feature:** `residual_heatmap` and
-  `residual_vs_fitted` for the served model show where the model still
-  under-forecasts (rush-hour peaks and bad weather).
+- **The residual slices name the next feature:** high-demand hours
+  under-forecast by +28.6 rentals on average, while late-December holiday hours
+  and several bad-weather cells over-forecast; calendar-event features are next.
 - **Limits, labeled:** validation made every choice; ablation test scores are
   post-freeze diagnostics. Day/week intervals expose serial-dependence
   sensitivity. MAPE denominators are floored at 1 rental; one city over two
@@ -151,7 +153,7 @@ uv run pytest projects/12-tabular-ml-lifecycle -q
 - **Deep learning without a framework hiding the loop:** the PyTorch MLP
   carries a hand-written training loop with the overfitting controls measured,
   not assumed (loss curves, learning curves, 2x2x2 ablation).
-- **Honest uncertainty:** the champion-floor gap carries paired hourly,
+- **Honest uncertainty:** the served-model-versus-floor gap carries paired hourly,
   day-block, and week-block intervals; residual slices say where the model is
   still wrong. Variant test scores are labeled post-freeze diagnostics.
 
@@ -164,7 +166,7 @@ uv run pytest projects/12-tabular-ml-lifecycle -q
 - **Delivered:** overfitting-control artifacts (per-epoch loss curves,
   learning curves, 2x2x2 ablation) as committed figures.
 - **Deferred:** calendar-event features (holidays are binary flags only) and
-  probabilistic forecasts; refitting the champion on train+validation before
+  probabilistic forecasts; refitting the selected model on train+validation before
   serving; transfer checks on another city's system.
 
 ## Figures

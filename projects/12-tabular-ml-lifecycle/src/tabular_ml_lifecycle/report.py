@@ -69,8 +69,8 @@ def build_report(reports_dir: Path, project_dir: Path) -> Path:
         "Frozen test window — one score per candidate", _results_table(metrics)
     )
     report.add_html(
-        "Champion vs floor",
-        "<p>Champion: <b>{}</b> (selected by lowest validation MAE). MAE improvement over the "
+        "Validation-selected model vs floor",
+        "<p>Validation-selected model: <b>{}</b> (no champion label). MAE improvement over the "
         "seasonal-naive floor: point +{:.1f} rentals, hourly 95% paired-bootstrap CI "
         "[{:.1f}, {:.1f}] over {:,} resamples — significant_95={}. Serial-dependence "
         "sensitivity (95% CI): {}.</p>".format(
@@ -104,7 +104,7 @@ def build_report(reports_dir: Path, project_dir: Path) -> Path:
         f"# {REPORT_TITLE}\n\n"
         f"## Protocol\n\n{metadata['protocol']}\n\n"
         f"## Frozen test window\n\n{_results_table(metrics)}\n\n"
-        f"Champion: **{meta.get('champion')}** — MAE improvement vs floor "
+        f"Validation-selected model: **{meta.get('champion')}** — MAE improvement vs floor "
         f"+{ci.get('point', float('nan')):.1f}, hourly 95% CI "
         f"[{ci.get('lo', float('nan')):.1f}, {ci.get('hi', float('nan')):.1f}], "
         f"significant_95={ci.get('significant_95')}. Serial-dependence sensitivity "

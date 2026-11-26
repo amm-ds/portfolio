@@ -12,9 +12,9 @@ import { usePageMeta } from "../../seo";
 const HORIZONS = [7, 14, 21, 28];
 const NAIVE = "seasonal_naive";
 
-/** Default overlay: the seasonal-naive floor against the champion screened
- *  ensemble — the two curves that carry the story. Every other candidate
- *  stays one chip away. */
+/** Default overlay: the seasonal-naive floor against the payload's convex
+ *  entry, which is the earlier 0.60/0.10/0.30 blend (not the current
+ *  champion). Every other candidate stays one chip away. */
 const DEFAULT_MODELS = "seasonal_naive,convex_ensemble";
 
 /** Minimal manifest so the workbench renders before/if the manifest fetch fails.
@@ -23,15 +23,15 @@ const DEFAULT_MODELS = "seasonal_naive,convex_ensemble";
 const FALLBACK_MANIFEST: DemoManifest = {
   id: "forecast-workbench",
   title: "Demand Forecast Workbench",
-  hook: "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the screened ensemble on the scored-once competition window — curves, model spread and per-series WAPE respond.",
+  hook: "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the earlier screened blend on the headline competition window — curves, model spread and per-series WAPE respond.",
   project: "02-demand-forecasting",
   group: "plan operations",
   skills: ["time series forecasting", "prediction intervals", "demand classification"],
   modes: ["browser"],
   hero: {
-    label: "official WRMSSE",
+    label: "earlier blend · official WRMSSE",
     value: "0.6161 vs 0.8929",
-    ci: "−31.0% on the competition window (m5_full_v1, horizon 28)",
+    ci: "−31.0% (0.60/0.10/0.30); current champion 0.6211 (−30.4%)",
   },
   scenarios: [
     { name: "base", controls: { models: "seasonal_naive,lgbm", horizon: 28 } },
@@ -102,7 +102,7 @@ export default function ForecastWorkbench() {
   usePageMeta({
     title: "Demand forecast workbench",
     description:
-      "Interactive full-panel M5 demand-forecasting demo: compare the seasonal naive, AutoETS, global and pooled LightGBM arms and the screened ensemble on the scored-once competition window.",
+      "Interactive full-panel M5 demand-forecasting demo: compare the seasonal naive, AutoETS, global and pooled LightGBM arms and the earlier screened blend on the headline competition window.",
   });
 
   const [manifest, setManifest] = useState<DemoManifest | null>(null);
@@ -299,21 +299,21 @@ function Workbench({
             value={`${(modelWape * 100).toFixed(1)}%`}
             sub={`${best ? MODEL_LABELS[best] : "—"} vs naive ${(naiveWape * 100).toFixed(1)}%${
               committedGap !== null
-                ? ` · pooled WRMSSE ${committedGap > 0 ? "+" : "−"}${Math.abs(committedGap).toFixed(4)} committed`
+                ? ` · earlier-run pooled WRMSSE ${committedGap > 0 ? "+" : "−"}${Math.abs(committedGap).toFixed(4)}`
                 : ""
             }`}
             tone={modelWape < naiveWape ? "good" : modelWape > naiveWape ? "bad" : "neutral"}
           />
           <KpiTile
-            label="official WRMSSE"
+            label="earlier blend · official WRMSSE"
             value={`${ensemblePooled.wrmsse.toFixed(4)}`}
-            sub={`champion ensemble vs floor ${naivePooled.wrmsse.toFixed(4)} (${(relGap * 100).toFixed(1)}%) · 42,840 nodes, scored once`}
+            sub={`0.60/0.10/0.30 vs floor ${naivePooled.wrmsse.toFixed(4)} (${(relGap * 100).toFixed(1)}%) · current champion 0.6211`}
             tone="good"
           />
           <KpiTile
-            label="zero-day accuracy"
+            label="earlier blend · zero-day accuracy"
             value={`${(ensemblePooled.zero_day_accuracy * 100).toFixed(1)}%`}
-            sub={`ensemble vs floor ${(naivePooled.zero_day_accuracy * 100).toFixed(1)}% · committed, all 30,490 series`}
+            sub={`earlier blend vs floor ${(naivePooled.zero_day_accuracy * 100).toFixed(1)}% · current champion 57.2%`}
             tone={ensemblePooled.zero_day_accuracy < naivePooled.zero_day_accuracy ? "bad" : "good"}
           />
         </>
@@ -351,14 +351,14 @@ function Workbench({
           <div className="wb-result-block">
             <h4 className="wb-evidence-tag">what this shows</h4>
             <p className="wb-evidence-line">
-              Per-series forecast curves from the committed full-panel M5 track
-              (protocol <code className="wb-tag">{payload.protocol}</code>) for
-              a deterministic {payload.catalog.length}-series catalog, all
-              scored once on the competition window ({originBlock.origin} →{" "}
-              {originBlock.forecast_dates[originBlock.forecast_dates.length - 1]}). The headline is
-              the pooled official WRMSSE: ensemble {ensemblePooled.wrmsse.toFixed(4)} vs the
-              seasonal-naive floor {naivePooled.wrmsse.toFixed(4)} (gap{" "}
-              {signed(relGap * 100)}%).
+              Per-series curves from the committed full-panel M5 catalog
+              (protocol <code className="wb-tag">{payload.protocol}</code>) cover
+              a deterministic {payload.catalog.length}-series sample on the headline window
+              ({originBlock.origin} →{" "}
+              {originBlock.forecast_dates[originBlock.forecast_dates.length - 1]}). These curves use
+              the earlier 0.60/0.10/0.30 blend: official WRMSSE {ensemblePooled.wrmsse.toFixed(4)} vs
+              the seasonal-naive floor {naivePooled.wrmsse.toFixed(4)} (gap {signed(relGap * 100)}%).
+              The current 0.95/0.00/0.05 champion scores 0.6211 (−30.4%) in the project report.
             </p>
             {entry.class === "intermittent" ? (
               <p className="wb-evidence-line" data-testid="honest-gap">
@@ -391,7 +391,8 @@ function Workbench({
                 catalog win rate {(winRate.pooled * 100).toFixed(1)}%
               </span>
               <span className="wb-tag">
-                bottom WAPE {ensemblePooled.wape.toFixed(3)} vs {naivePooled.wape.toFixed(3)}
+                earlier blend bottom WAPE {ensemblePooled.wape.toFixed(3)} vs{" "}
+                {naivePooled.wape.toFixed(3)} · current champion 0.762
               </span>
               <span className="wb-tag">
                 envelope {band.mean_width.toFixed(1)}u mean width (catalog)
@@ -408,8 +409,8 @@ function Workbench({
           <div className="wb-result-block">
             <h4 className="wb-evidence-tag">what this shows</h4>
             <p className="wb-evidence-line">
-              The demo isolates one store-product series at the single
-              scored-once origin: the 56-day history tail, the 28-day actuals,
+              The demo isolates one store-product series at the headline
+              test origin: the 56-day history tail, the 28-day actuals,
               and each candidate's curve. The <strong>horizon</strong> toggle
               shortens the scored window client-side; the <strong>models</strong>{" "}
               chips overlay the 8 committed candidates; the ensemble adds its
@@ -420,11 +421,13 @@ function Workbench({
           <div className="wb-result-block">
             <h4 className="wb-evidence-tag">the experiment</h4>
             <p className="wb-evidence-line">
-              Walmart M5 accuracy competition, full panel (30,490 series), 3
-              weekly rolling origins — the last scored once. Nothing read the
-              test origin at fit time; the ensemble members and weights were
-              chosen on the 2 selection origins only. Curves are copied from
-              the committed catalog run — no re-fitting in the browser.
+              Walmart M5 accuracy competition, full panel (30,490 series). The
+              earlier 0.60/0.10/0.30 blend shown here was selected on 2 origins
+              (2016-05-08, 2016-05-15) and scored once on the 2016-05-22 test
+              window. The current 0.95/0.00/0.05 champion was selected on 9
+              origins and scored on the same single test window. Curves are
+              copied from the committed catalog run — no re-fitting in the
+              browser.
             </p>
           </div>
         </>

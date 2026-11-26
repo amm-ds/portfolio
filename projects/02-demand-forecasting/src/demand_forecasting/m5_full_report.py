@@ -299,8 +299,8 @@ def fig_per_level_bars(metrics: dict[str, Any]) -> go.Figure:
     )
     return add_takeaway(
         apply_theme(fig),
-        "equal total weight per level, revenue-weighted within; the blend's edge is "
-        "broadest at the aggregate levels the competition weights most",
+        "equal total weight per level, revenue-weighted within; total has the "
+        "largest relative cut against the floor, while item-store has the largest absolute gap",
     )
 
 

@@ -300,8 +300,11 @@ def test_multi_arm_read_block_shape_references_and_bounds() -> None:
     figure = qini_per_arm_figure(block["per_arm"])
     assert len(figure.data) == 1
     assert figure.data[0].type == "scatter"
-    assert list(figure.data[0].x) == ["mens", "womens"]
-    assert figure.data[0].error_y.array is not None
+    assert list(figure.data[0].y) == ["mens", "womens"]
+    assert list(figure.data[0].x) == pytest.approx(
+        [block["per_arm"][arm]["qini_coefficient"] for arm in ("mens", "womens")]
+    )
+    assert figure.data[0].error_x.array is not None
 
 
 def test_two_arm_policy_metrics_unchanged_golden() -> None:

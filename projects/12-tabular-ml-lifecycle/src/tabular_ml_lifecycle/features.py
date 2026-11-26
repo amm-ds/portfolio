@@ -57,9 +57,10 @@ LEAKAGE_POLICY = (
     "at prediction time — never the future. The first max(lag_hours) training "
     "rows lose their NaN lag rows. Standardization is fitted on the training "
     "window inside the sklearn Pipeline (train statistics only). Lags are "
-    "positional over the observed sequence: the UCI series has ~1% missing "
-    "hours (January 2011 outages), so a positional 168-step lag is 'same hour "
-    "last week' give or take the outage gaps."
+    "positional over the observed sequence: the UCI series has 165 missing "
+    "hours, mostly early 2011 plus a 36-hour gap on 2012-10-29/30 inside "
+    "validation. A positional 168-step lag and the seasonal floor can drift up "
+    "to 36 hours for about a week after that gap."
 )
 
 
@@ -148,7 +149,8 @@ def select_features(
     cfg: LifecycleConfig, train: pd.DataFrame, val: pd.DataFrame, windows: SplitWindows
 ) -> FeatureSelection:
     """MI ranking (train) + permutation importance (ridge on validation) +
-    correlated-pair pruning (|r| > threshold keeps the higher-MI member)."""
+    correlated-pair pruning. Compatibility note: this committed run drops the
+    higher-MI member, so atemp is dropped; changing it requires new artifacts."""
     X_train, y_train = _xy(train, CANDIDATE_FEATURES)
     X_val, y_val = _xy(val, CANDIDATE_FEATURES)
 
@@ -170,8 +172,8 @@ def select_features(
         for i, a in enumerate(CANDIDATE_FEATURES)
         for b in CANDIDATE_FEATURES[i + 1 :]
     ]
-    # Strongest correlations resolve first; the higher-MI member survives each
-    # pair (a survivor can still lose to a stronger-correlated, higher-MI peer).
+    # FIXME: the current comparison drops the higher-MI member, contrary to the
+    # intended lower-MI policy. Preserve behavior until a rerun refreshes all artifacts.
     pruned_pairs: list[dict[str, Any]] = []
     pruned: set[str] = set()
     for r, a, b in sorted(pairs, key=lambda p: p[0], reverse=True):
@@ -247,8 +249,8 @@ def mi_lollipop_figure(selection: FeatureSelection) -> Any:
     )
     add_takeaway(
         fig,
-        f"Grey stems were pruned as the lower-MI member of a correlated pair "
-        f"(|r| > {selection.corr_threshold}); lags and temperature carry the signal.",
+        f"Grey stems mark pruned fields (|r| > {selection.corr_threshold}). This run "
+        f"drops atemp despite its slightly higher MI; past-count lags dominate.",
     )
     return fig
 

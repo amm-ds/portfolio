@@ -34,7 +34,7 @@ export const AUTO_05_ML_PIPELINE_CHURN_4_SPEC = {
     },
     {
       id: "e",
-      label: "contract",
+      label: "contract + internet_service",
       kind: "task",
       facts: [],
     },

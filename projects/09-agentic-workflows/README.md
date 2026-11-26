@@ -26,8 +26,9 @@
 
 These are **legacy recorded measurements**, regenerated offline without new
 model calls. The new terminal-outcome/no-evidence/deadline contracts have
-deterministic tests, but fresh live confirmation of answer preservation, 6/6
-graceful refusals, and deadline behavior is pending.
+deterministic tests. A 2026-11-19 all-hosted live rerun confirmed 13/13
+answers, 6/6 graceful refusals, and 19/19 step and latency budgets; it remains
+one confirmation run, not repeated efficacy evidence.
 
 All **15 tuning-suite tasks** ran end-to-end on the hosted Kimi coding
 endpoint (`kimi-for-coding`) via plain `run-all` with per-call tool capture
@@ -91,11 +92,11 @@ binomial sampling uncertainty of those single passes
 Measured negatives, kept honest:
 
 - **h19 (2^500), legacy record:** the model kept calling the capped calculator
-  (both bounded-retry Execute visits burned on "exponent too large") and the
+  (two Execute attempts burned on "exponent too large") and the
   graph returned a failure message with no refusal marker, so
   `RefusalSuccess` scores it a miss. No fabricated number left the workflow.
   Terminal tool failures now return typed `refused` results in deterministic
-  tests; no new live h19 result is claimed.
+  tests; the 2026-11-19 live run returned typed `refused` for h19.
 - **Latency budget is provider-sensitive:** the 60 s ceiling was tuned on
   the hosted endpoint (all 10 hosted held-out tasks ran 9.0-40.9 s); 7/9
   local tasks exceeded it (67.1-1,430.9 s on this machine's qwen3.6
@@ -149,9 +150,9 @@ quota.
 Ready for supervised pilots, not unattended use: legacy held-out records pass
 only 5/6 refusals, 18/19 step budgets, and 12/19 latency budgets. The
 hosted-tuned 60 s latency budget is provider-sensitive — 7 of 9 local Ollama
-tasks exceed it. New terminal/deadline behavior is deterministic-tested but
-has no fresh live confirmation. Suite costs are cloud-equivalent estimates,
-not invoices.
+tasks exceed it. Terminal/deadline behavior has deterministic tests and one
+2026-11-19 all-hosted live confirmation; repeated live efficacy is unmeasured.
+Suite costs are cloud-equivalent estimates, not invoices.
 
 ## Reproduce
 

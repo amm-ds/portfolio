@@ -76,7 +76,7 @@ def fig_sample_series(
         ],
         vertical_spacing=0.08,
     )
-    origin = cat_meta["forecast_window"][0]
+    origin = cat_meta["origin"]
     x_hist = [f"d{i - 55}" for i in range(56)]
     x_fcst = [str(d.date()) for d in sorted(catalog["ds"].unique())]
     colors = {"history": "#94a3b8", "actual": "#f472b6", "convex_ensemble": "#fbbf24"}
@@ -124,16 +124,15 @@ def fig_sample_series(
         )
     fig.update_layout(
         title=(
-            f"Three catalog series at the scored-once test origin {origin}: "
-            "history, actuals, ensemble curve"
+            f"Three catalog series at the headline test origin {origin}: "
+            "history, actuals, earlier-blend curve"
         )
     )
     return add_takeaway(
         apply_theme(fig, height=300 * n),
-        "the ensemble tracks the weekly shape on dense volume, stays honest near "
-        "zero on the hardest intermittent series, and the member envelope "
-        "(per-day min/max of the blend members) is an envelope — not a "
-        "calibrated interval",
+        "the earlier 0.6161 blend (weights 0.60/0.10/0.30) tracks the weekly shape "
+        "on dense volume and stays near zero on the hardest intermittent series; "
+        "the member envelope is not a calibrated interval",
     )
 
 
@@ -161,9 +160,9 @@ def fig_candidate_ranking(metrics: dict[str, Any]) -> go.Figure:
     )
     return add_takeaway(
         apply_theme(fig),
-        f"the stability-screened convex ensemble leads at {vals[0]:.4f}; every "
-        f"pooled arm and the Tweedie variant beat the global model — pooling "
-        f"wins at full scale, the inverse of the subset-era finding",
+        f"the stability-screened convex ensemble leads at {vals[0]:.4f}, under "
+        f"0.001 ahead of the best pooled arm; direct pooled and recursive global "
+        f"fits differ in both grouping and forecasting strategy",
     )
 
 
@@ -211,7 +210,7 @@ def fig_pooling_panel(metrics: dict[str, Any]) -> go.Figure:
     fig.update_yaxes(title="mean(forecast - actual) / mean(actual)", row=1, col=1)
     fig.update_yaxes(title="share correct", range=[0, 1], row=1, col=2)
     fig.update_layout(
-        title="Forecast bias and quiet-day accuracy on the scored-once M5 panel",
+        title="Forecast bias and quiet-day accuracy on the headline M5 test panel",
         barmode="group",
     )
     floor = test[NAIVE]["zero_day_accuracy"]

@@ -1,0 +1,231 @@
+# Implementation handoff: Wave 8 round-3 article fixes (projects 02–13)
+
+Date: 2026-11-26
+Designer: Claude Code
+Executor: Kimi Code
+Status: approved (owner approved 2026-11-26; project 08 Step 0.2 stays blocked until the owner answers)
+Source design: collaboration/designs/20261125-wave8-truthfulness-and-facts/
+Evidence: collaboration/reviews/20261124-wave66-articles-and-roadmaps/opus-round3/*.md (12 reviews of the Wave 8 working tree; reviewer findings, not yet independently verified)
+
+## Objective
+
+Clear the remaining factual, figure, diagram and wording defects in the twelve article stories (`projects/02`–`projects/13`) so each article can be published. Every corrected claim must trace to a committed artifact. Every embedded figure, diagram spec and demo payload that shows a changed number must be regenerated from its source, not edited by hand. Output: one evidence-mapped round-3 closeout.
+
+## Starting state (must be preserved)
+
+- Branch `wave8-articles-truthfulness-2026-11-25`, HEAD `c05accd0` (equal to `main`).
+- The Wave 8 edits are **uncommitted in the working tree**. Keep them. Build on them; do not reset, stash, checkout or discard them.
+- Do not run `git commit`, `git push`, `git merge`, `git stash` (bare) or any branch operation. The session owner commits.
+- Projects `01-rag-agent` and `15-dynamic-pricing-rl` are out of scope and must stay untouched.
+
+## Scope
+
+### In scope
+
+- `projects/02-demand-forecasting/` through `projects/13-model-serving/`: `story.yaml`, and where listed, `README.md`, `DESIGN.md`.
+- Diagram specs under `apps/showcase-web/src/diagrams/` (auto and hand-built), and `apps/showcase-web/src/demos/`, `staticRegistry.ts` only where a demo payload shows a changed number.
+- Generated outputs: figures under each project's `reports/figures/`, the static registry, short-copy map, route manifest, and story summaries — rebuilt by their generators.
+- Gate and closeout files for this round.
+
+### Out of scope
+
+- Any re-run of an experiment, training job, benchmark or paid provider call. If a fix would need one, stop and write `OPEN_QUESTIONS.md` beside this handoff.
+- New project scope, new metrics, new roadmap items beyond the wording fixes below.
+- Projects 01 and 15.
+- Committing the gitignored `data/bench_run_repeat.json` (project 08) — that is an owner decision (see Step 0.2).
+
+## Ordered implementation steps
+
+### Step 0 — Verify before editing
+
+0.1 For each item in Steps 1–4, re-read the cited line and the cited evidence file in the working tree. Record `VERIFIED` (the defect is still there) or `ALREADY FIXED` (cite the current line). Do not edit an item you have not verified.
+
+0.2 **Project 08 owner decision (blocking for 08 only).** Write `OPEN_QUESTIONS.md` in this folder asking the owner to choose one of:
+  (a) commit `projects/08-inference-serving/data/bench_run_repeat.json` via a `.gitignore` exception, plus a derived ratio file under `reports/` that the article cites; or
+  (b) remove every dependent claim: "committed" at L242 and L306–307, and the 5–35×, Ollama 0.40.12 and 2026-10-30 specifics (L40–41, L241–243, L303–307, L377–380). Keep one uncommitted-observation sentence in Limits.
+**Owner decision (2026-11-26): option (b).** Remove every dependent claim. Do not commit the repeat file and do not change `.gitignore`. Keep one uncommitted-observation sentence in Limits. Items 18 and 19 apply in addition.
+
+0.3 Confirm the gates in "Commands and gates" run green on the untouched working tree before the first edit. Record the baseline output.
+
+### Step 1 — Blocking figure and diagram work
+
+**Project 02 (demand forecasting)**
+1. Regenerate the four embedded figures from the committed `0.6211` metrics using the figure generator for `reports/figures` (find it from the project README or `scripts/`; do not edit SVG/JSON by hand). Confirm:
+   - the ranking figure shows 0.6211 / 0.6219 / 0.6225 / 0.6459 in order;
+   - the per-level figure's total is 0.314, or drop "Four learned single arms…" from caption L243;
+   - the pooling panel shows 57.2%;
+   - no figure title says "broadest at aggregate levels" or "pooling wins".
+   These back L168, L152, L133 and captions L242–244.
+2. Regenerate the demo catalog and sample-series payload from the current 0.95/0.00/0.05 champion (sample-series figure, L90, caption L241; demo band claim L209; demo link L173).
+   Verified sources (2026-11-26):
+   - Committed champion: `projects/02-demand-forecasting/reports_m5_full/metrics.json`, `convex_ensemble` official WRMSSE 0.62105 (−30.4% vs 0.8929 floor). Matches `cardCopy.ts` L49 and `m5Pipeline.ts` L52.
+   - Stale payload: `reports_m5_full/demo_payload.json` headline `champion_wrmsse` 0.61608 with `rel` −31.0%, from the earlier 0.60/0.10/0.30 blend.
+   - Stale hard-coded copies to update together with the regenerated payload: `projects/02-demand-forecasting/demo.yaml` L12–13; `apps/showcase-web/src/lib/staticRegistry.ts` L678–680 (generated by `scripts/gen_static_registry.py`, so regenerate, do not hand-edit); `apps/showcase-web/src/demos/forecast-workbench/ForecastWorkbench.tsx` L33–34.
+   - `DESIGN.md` L773 cites 0.6161 as the committed champion; correct it to 0.6211 or state the earlier blend.
+   - If the payload cannot be regenerated from committed inputs without new computation, stop and write `OPEN_QUESTIONS.md`; do not hand-edit the payload.
+   If a regeneration cannot run locally without new computation, do not hand-edit the payload. Instead add the disclosure at L173 and L241: "the demo and sample curves come from an earlier 0.6161 blend (0.60/0.10/0.30)" — and record this as an open question.
+3. Correct the selection diagram weights to 0.95/0.00/0.05 (currently 0.60/0.10/0.30) and align its test-reuse disclosure with the text.
+4. Fix L79 (mid-volume series is smooth, no zero days), L155, L159, L179 rounding ("under `0.001`" or "`0.0009`"; "about `1.3` times"), L145 ("at the three item-grain levels"). Drop the weekly-reforecast recommendation.
+
+**Project 04 (NLP classification)**
+5. Background diagram (L10, L13–17): embed the diagram that matches its bullets (`auto-04-nlp-classification-3`, already showing "Full-data transformer → τ=0.6 → Kimi review · 8 rows per call"), or rebuild `04-routing` as the cascade. If the keyword router keeps its diagram: `0.9020` → `0.9061` (`fresh_holdout.json`), and the DistilBERT node → the bounded `distilbert_tuned` (0.9031 fresh, 110.7 pred/s).
+6. Data lineage diagram (`auto-04-nlp-classification-2`, rendered at L93): redraw to match L80–100 — seeded sample → validation → model selection; test partition (7,600) → bounded test (1,000) and 6,600 complement → fresh holdout; add the scale-ladder node. Remove "Shared test set → Model selection · biased by design".
+7. Attribute the temperature correctly: L213 should say the gate uses the full-data model's raw softmax maximum and that T=0.927 belongs to the bounded selected model. Add "for the bounded selected model" at L160. At L433 change "Calibration uses ECE with one temperature" to "Temperature scaling fits one T on validation; ECE measures the result."
+
+**Project 05 (ML pipeline churn)**
+8. Make the pipeline references true (L245–247, L311–312, L346–348): either add raw and isotonic branches to `auto/05-ml-pipeline-churn-4.ts`, or reword to describe one preprocessing DAG with numeric and categorical branches joining at a ColumnTransformer. Add `internet_service` to the categorical branch.
+9. Fix the measurement-chain diagram `auto/05-ml-pipeline-churn-3.ts`: it shows threshold selection after "frozen holdout · score every candidate", which depicts the leak the text denies. Reorder to OOF predictions → 41-point grid → frozen 0.175 → holdout scored once → bootstrap. Align watch items with L200 and L206.
+10. Hero diagram `churnCycle.ts`: remove the 25-trial claim (L33) and from README L47–48; change "601 cost units" (L69) to "$601"; delete the audit sentence at L132–133.
+11. Labels: L241 and L284 "mean bootstrap cost delta" → "observed cost delta" (−434 is the observed point delta). L217 "Each bar shows recall" → "The recall bars show…". L225: acknowledge the cost panel and that its slice costs are raw-policy costs.
+12. Fix the new `7,043`/`5,634` wording wherever it still conflicts with the training-size line.
+
+**Project 07 (open-data mobility)**
+13. Tuned-vs-default sign (L307–308, L355–357): "The tuned GBM is `0.2%` worse on test `MAE` than the default (4.676 vs 4.667); no interval for this pair is committed." Keep it once, in Exact numbers; delete the L307–308 copy.
+14. Airport claim (L11–12): "JFK/EWR" → "JFK and LaGuardia". EWR averages 0.077 pickups/hour in `zone_demand_map.json`. Check L145.
+15. "Hourly weather" (L48, L133) → "daily Central Park weather" or "daily weather broadcast to each hour" (GHCN-Daily, L104–108, DESIGN L49).
+16. Calibrate card (L466–468): re-scope to what shipped ("Measure the upper band's coverage"; raw p90 covers 90.8% city-wide, N/A zones 84.7%) or move to `next` with the gate "fit conformal offsets out of sample before serving them".
+17. 20% target (L65): add it to DESIGN Requirements or reword as "beat the same-hour-yesterday baseline by a clear margin".
+
+**Project 08 (inference serving)** — blocked on Step 0.2 for the repeat-file claims.
+18. Correct "flat-to-declining" (L184–185): "aggregate tok/s is flat or slightly rising for gpt-oss and gemma4 MLX, and falls about 26% for qwen3.6", plus the serialized-decoding interpretation and the docs caveat (does not isolate memory bandwidth, batching or another cause).
+19. Fix the causal and champion overreaches (L219, L330, L352–354): "The grid sets the champion" → a throughput-only claim; "because conversion fails" → "the registry has no MLX tag; an earlier conversion attempt failed on switch-expert weights"; use the same "not recorded" label for qwen3:32b as for gemma4:31b.
+
+### Step 2 — Text-only corrections
+
+**Project 03 (anomaly detection)**
+20. L95: "Minute `PR-AUC` is `0.566–0.577` for the ensemble and `0.515–0.574` for single models, a negligible edge."
+21. Diagrams embedded at L11 and L59: `auto/03-anomaly-detection-2.ts` node n4 → "Count as zero in recall"; `detectionPipeline.ts` nab fact → "3 train-only series count as zero in range recall", scoring fact → "range recall 0.729 (window caught by ≥1 alert)". Mirror in README L46–47.
+22. Diagram/recommendation mismatch (L11–18, L283): add a rank-average node to the hero diagram, or caption it as the IsolationForest headline path. In `auto-…-3`, "deployed artifact" → "recommended page stream".
+23. Delete rebuttal asides and rejoin staccato sentences (L62–64, L74, L98, L125, L139, L141, L143); example at L74 in the reviewer's wording.
+24. Fold "Results summary" (L154–158) into "What the experiment taught". Name `ocsvm_tuned` (17/120) vs tuned IsolationForest (18/120) at L224. L91 "cap" → "threshold"; L232 "Roughly 30" → "30"; L249–250 → "validated on six windows across five series".
+25. Shipped roadmap card L397–399 and the adoption-gate description L415: wording must match the repo (no anomaly demo exists under `apps/showcase-web/src/demos/`).
+
+**Project 06 (routing optimization)** — publish-ready grade, but the owner requires the framing fix.
+26. **L50–52 (required):** replace the sentence with the controlled evidence: "The Solomon references optimize vehicles first; the main ALNS arm minimizes distance. Switching ALNS to a vehicles-first objective (`alns_fleet`) trims the delta only from +3.73 to +3.66, so most of the fleet gap is a search limit, not a convention." Mirror in README L95–98.
+27. L154–156: add "excluding three `−0.00%` rounding ties (C108, C109, C207)" so the count of 5 matches `reports/results.md`.
+28. Optional (suggested, owner to confirm): L363–366 split; Conclusions de-duplication (L292–303, L349); cut repeated "follow / its branch / its path" directions; L21 "about 4" → "about 3.7".
+
+**Project 09 (agentic workflows)**
+29. Line 21 and 34: move "~$0.13" to the tuning clause (legacy tuning passed 15/15 at ~$0.13 of the $2.00 cap; held-out legacy runs hit 13/13 answers, 5/6 refusals, 18/19 step caps, 12/19 time caps).
+30. Lines 206 and 373: `data/checkpoint.json` is gitignored and holds scripted placeholder data. Write "A scripted test (`tests/test_hitl.py`) demonstrates pause, reject-with-feedback and re-plan; no live checkpoint run is recorded."
+31. Lines 11 and 292: fix the p95 label (for example "p95 is 31.1 s (t15, rounded-index method over 15 tasks); the slowest task, t05, took 31.6 s"). Remove "nearest-rank" wherever this round introduced it.
+32. Lines 153–154, 397, 416–417 and 21: add the missing StepBudget mechanics in one clause each.
+
+**Project 10 (uplift experimentation)**
+33. L325: remove the extra 4 spaces so the `T-learner − random` row renders. Confirm the headline CI row [+$718, +$4,767] appears in the rendered table.
+34. Unify the break-even sentence (L46, L221, L299, L432, L445): "The top-25% list beats mail-everyone above ≈$0.30 (analytic break-even). On the grid, the best share first drops below 100% at $0.20 (90%) and falls to 25% at $0.50." Use this one sentence in all five places.
+35. L118–121: "Both emails raised purchases: Mens by `0.68` pp and Womens by `0.31` pp (`66.5` incremental conversions, `[33.1, 104.7]`) over a `0.57%` control. Effects this small need intervals before anyone acts on them."
+36. Remove the T−X CI "[−$323, $4,343]" at L320/L395 unless a committed source is found; otherwise cut it.
+37. Optional: de-duplicate the revenue-minus-send-cost phrase and the two repeated tables; move CUPED (L174–180) to EDA. Confirm the 'net profit' wording stays off revenue-only metrics.
+
+**Project 11 (data engineering)**
+38. Remove the three audit-voice sentences: L106–107, L236–237, L305 (and L102–103 if it is audit voice). Each is a one-clause deletion.
+39. L184–185, L196, L272, L286 and the L424–426 caption: make the sqlite cost attribution consistent. Either hedge once ("the load step, not timed separately, likely dominates"), or cite the indirect evidence: the 10M synthetic filter takes 6.5 s in sqlite against pandas's 0.18 s.
+40. Parity catch in the short_version (L3, L7–21): lead with it in two sentences. Add a one-line mention to Background's "Match check first" step.
+41. Optional: "bigger-than-RAM" card gate alignment with README; L263 "file size" → "row count"; L396 → "39 of 39".
+
+**Project 12 (tabular ML lifecycle)**
+42. Missing-hours facts (L89–90, L382, L405–406): "165 missing hours, mostly early 2011 plus a 36-hour gap on 2012-10-29/30 inside the validation window." Replace "drifts by an hour" with "drifts by up to 36 hours for about a week after the October 2012 gap". Hand the same correction to DESIGN L27, README L47 and `feature_selection.json.leakage_policy` (record as an open question if those files are generated or out of scope).
+43. Review-process hedges (L147, L169–170, L181, L189, L334, L368–369): state the facts positively. L369: "epoch cap 150 (`params.yaml`); per-variant epoch counts are not committed." L280: "pre-registered" → "fixed in `params.yaml` before the ablation"; align L377–378 and L398.
+44. Explain the season-code shift once at L110 (UCI codes run one season early). Make L244–245 precise. Add the residual finding to "What the experiment taught": the model under-forecasts high-demand hours by +28.6 and over-forecasts the holiday week. Tighten the roadmap gate to validation MAE plus the late-December residual.
+45. Remove the claim that the residuals show "no global bias" wherever it survives (mean residual is +9.2 overall).
+46. De-duplicate exact numbers (keep one table in Conclusions; replace the Results table at L296–302 with a pointer). Reorder Conclusions to gold order.
+
+**Project 13 (model serving)**
+47. L189, L213, L285: "at most `3.6%`" → "at most `4%`" (c4 gap is 4.0%).
+48. L395 caption: "0.97–1.04" → "0.96–1.04".
+49. Hedge the CPU-contention claims at L177, L207, L345, L391 to match L211–212 ("likely contend", "likely saturates"). At L392 drop "queue-dominated" or say queueing and compute are not separated.
+50. L207: "`p50` about `63 ms`" → "`p50` `65.4/63.1 ms` native/ONNX". L384: "Measure its venv, torch, and unused CUDA components" → "Measure base, venv and model layers, and infer framework weight from a slim build."
+51. Batch p50 column (L329–332): confirm the header says p50, not mean. Trim the third retelling of image and cost in Conclusions (L309–316 or L349–352).
+
+### Step 3 — Language and structure (all twelve)
+
+52. Remove the reader-facing review-process hedges and audit-voice sentences wherever they remain (see items 38, 43).
+53. Bring any section that still uses "X; next, the …" fragments into full "we" sentences, so the seven transitions vary.
+54. No inline definitions that break a sentence in half; fold glossary sentences into key concepts.
+55. Keep the "In plain terms" cards as one-sentence takeaways, not number lists.
+
+### Step 4 — Regenerate, rebuild, verify
+
+56. Regenerate every affected figure, diagram-derived file, static registry, short-copy map, route manifest and story summary using its generator. Do not hand-edit generated output.
+57. Re-check every changed number against the committed file it cites. Keep a table of changes: file, line, old, new, evidence path.
+
+## Commands and gates
+
+Run the narrowest checks first, then the broad set. Record the output of each.
+
+```bash
+# story, copy and headline gates
+uv run python scripts/lint_story_language.py
+uv run python scripts/check_headline_numbers.py
+uv run python scripts/check_short_copy.py --check
+uv run python scripts/check_docs.py
+uv run python scripts/check_demo_contract.py
+uv run python scripts/check_figure_budget.py
+uv run python scripts/check_figure_axes.py
+
+# generators: plain run, then --check
+uv run python scripts/gen_static_registry.py
+uv run python scripts/gen_static_registry.py --check
+uv run python scripts/gen_story_short.py
+uv run python scripts/gen_story_short.py --check
+uv run python scripts/gen_route_manifest.py
+uv run python scripts/gen_route_manifest.py --check
+
+# python lint, types, docs
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy
+uv run mkdocs build --strict
+
+# web
+cd apps/showcase-web && npm test && npm run lint && npm run build
+cd ../.. && git diff --check
+```
+
+Do not run any experiment, training job, benchmark, or paid or hosted provider call. Figure and demo regeneration must use committed inputs only.
+
+## Generated artifacts
+
+Regenerate through their source scripts. Find the exact figure command for each project from its README or `scripts/`. Known generated surfaces:
+
+- `projects/*/reports/figures/*` (02 ranking, per-level, pooling, sample-series figures; 03 nab JSON; 12 figure subtitles).
+- `apps/showcase-web/src/diagrams/auto/*` and `churnCycle.ts`, `detectionPipeline.ts`, `routing.ts`, `m5Pipeline.ts` — diagram specs are source, edit them directly, but confirm they are not generated from a script first.
+- `apps/showcase-web/src/demos/`, `staticRegistry.ts` (02 demo payload).
+- `apps/showcase-web/src/lib/storyShort.ts`, `apps/showcase-api/src/showcase_api/route_manifest.json`, `docs/projects/*.md`.
+
+## Acceptance criteria
+
+- [ ] Step 0 verification recorded for every item; no item edited without a VERIFIED or ALREADY-FIXED record.
+- [ ] `OPEN_QUESTIONS.md` written for the project 08 repeat-file decision; 08 left blocked until the owner answers.
+- [ ] Project 02: figures and demo payload show 0.6211 (or the disclosure is added and recorded as open); selection diagram weights are 0.95/0.00/0.05.
+- [ ] Project 04: background and lineage diagrams match the text; `0.9020` corrected or the card replaced; T=0.927 attributed to the bounded model.
+- [ ] Project 05: no diagram contradicts the text; "mean bootstrap" labels gone; training-size wording consistent.
+- [ ] Project 07: sign error, airport claim, weather wording, calibrate card and 20% target all corrected or sourced.
+- [ ] Project 06: L50–52 replaced with the controlled evidence and mirrored in README L95–98.
+- [ ] Projects 03, 09, 10, 11, 12, 13: each listed correction applied and verified; no reader-facing audit voice remains.
+- [ ] Every corrected number traces to a committed file; no new untraceable numbers.
+- [ ] All generators pass plain run and `--check`; the full gate set above is green.
+- [ ] `git status` still shows the Wave 8 working tree; no commit, push, merge or stash.
+- [ ] Projects 01 and 15 unchanged.
+
+## Verification evidence required
+
+- Step 0 record: each item marked VERIFIED or ALREADY FIXED, with the evidence path.
+- Gate output for every command above, baseline and final.
+- Change table (file, line, old, new, evidence path).
+- Regenerated artifacts list with the generator command used for each.
+- Browser check of the showcase pages for 02, 04, 05 and 07 (diagrams and demo render, no broken fences or tables).
+- Final `git status` and `git diff --stat` against `c05accd0`.
+
+## Closeout
+
+Write `collaboration/reviews/20261126-wave8-round3-closeout/00-closeout.md` with an evidence-mapped table: each round-3 finding → status → file and line → evidence path → gate that confirms it. List every open question and the project 08 decision.
+
+## Risks and open questions
+
+- Project 02 demo and sample curves may need a re-run of the blend; if it cannot run locally, the disclosure in item 2 is the fallback and needs owner sign-off.
+- Project 08 cannot be closed without the owner's repeat-file decision (Step 0.2).
+- Project 12 figure subtitles must be committed together with the story; the owner commits.
+- Round-3 findings are reviewer claims. Step 0 must re-verify each one before editing; some may already be fixed or wrong.
+- The pre-existing project 12 report assembler limitation (legacy metadata missing from `metrics.json`) is not in scope.

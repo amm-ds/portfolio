@@ -45,7 +45,7 @@ raw frame ──▶ DQ gates ──▶ stratified 80/20 split ──▶ GridSear
   imputation, so "missing" itself can be learned as signal.
 - Model selection (`model.py` + `hpo.py`): `GridSearchCV` over
   C ∈ {0.01, 0.1, 1, 10} keeps the baseline logistic row; **Optuna** (seeded TPE,
-  ~25 trials, median pruning) then chooses among four arms — LogisticRegression
+  median pruning) then chooses among four arms — LogisticRegression
   (C log 1e-3..1e2, l1_ratio 0..1), HistGradientBoostingClassifier, and the
   sklearn-API **XGBClassifier / LGBMClassifier** — on a **cost-aware
   objective**: stratified CV with out-of-fold probabilities, each trial
@@ -74,10 +74,10 @@ Full rationale and rejected alternatives: [DESIGN.md](DESIGN.md).
 ## Results (real run: IBM telco churn, 7,043 rows -> 1,409-row holdout)
 
 Holdout churn rate 26.5% - a different regime from the 8.8% synthetic track.
-Grid search: **C=0.01**. **Cost-aware Optuna selected XGBoost**
-(25 trials x 4 arms: n_estimators 211, learning_rate 0.0309, max_depth 3,
-subsample 0.5187; best CV business cost 2,416). On the synthetic track the
-same search picked a logistic - the winner tracks the data.
+Grid search: **C=0.01**. The persisted selection is **XGBoost**
+(n_estimators 211, learning_rate 0.0309, max_depth 3, subsample 0.5187).
+`data/model_selection.json` retains no valid trial count or search score, so
+neither is claimed here. On the synthetic track the search picked a logistic.
 
 | run | threshold | ROC-AUC | accuracy | P (macro) | R (macro) | F1 (macro) | ECE | business cost |
 |---|---|---|---|---|---|---|---|---|
@@ -92,8 +92,8 @@ Key findings:
 - **The frozen calibrated policy cuts business cost 1,035 -> 601 (-41.9%) at
   t=0.175 versus contact everyone** (cost weights: $5 per missed churner,
   $1 per contact, from `params.yaml`). The paired delta is **-434, 95% CI
-  [-508, -353]**. Against logistic-at-0.5, the exact same policy's delta is
-  **-90, 95% CI [-159, -26]**. Both intervals use 2,000 paired row resamples.
+  [-508, -353]** over 2,000 paired row resamples. The committed reports
+  do not retain a numeric interval against logistic-at-0.5.
 - **The winner changes on real data.** XGBoost beats the logistic family on
   CV business cost (the synthetic track's winner). The served isotonic policy
   costs 601 versus 655 for OOF-tuned logistic and 644 for the raw XGB policy.
@@ -107,17 +107,17 @@ Key findings:
 - **Cost-model sensitivity is in `reports/sensitivity.json`:** at FN=3/5/8,
   OOF-frozen isotonic thresholds are 0.250/0.175/0.150 and holdout costs are
   514/601/718. All three contact-everyone delta intervals exclude zero.
-  Calibration helps at FN=5 (644 -> 601) and FN=8 (725 -> 718).
+  Calibration helps at FN=3 (518 -> 514), FN=5 (644 -> 601), and FN=8 (725 -> 718).
 - **Raw-model fairness slices (not the served policy):** at raw XGB t=0.225,
   recall is 0.834 female / 0.829 male and 0.898 senior / 0.808 non-senior.
   Contract recall is 0.918 month-to-month, 0.250 one-year and 0.000 two-year:
   the raw model misses **27 of 36** one-year churners and **all 9** two-year
   churners. The served model is isotonic-calibrated at t=0.175, so these raw
   counts do not describe its decisions.
-- Permutation importance on the selected model ranks `tenure_months`,
-  `monthly_charges`, and `contract` first - matching the real-telco EDA splits
-  (churners: ~74 vs ~61 mean monthly charges, ~18 vs ~38 months tenure;
-  fiber-optic internet churns at 41.9%, senior citizens at 41.7%). The outlier
+- Permutation importance on the selected model ranks `tenure_months`
+  (0.213), `contract` (0.174), `internet_service` (0.088), and
+  `monthly_charges` (0.033) in that order. The real-telco EDA figure shows
+  contract, charges, and tenure only. The outlier
   and NaN examples elsewhere in the project are synthetic CI fixtures, not
   real-telco EDA findings.
 

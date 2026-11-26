@@ -54,7 +54,7 @@ export const MODELS: {
     width: 2,
     tooltip: "one LightGBM fit per department (7 groups)",
   },
-  { key: "convex_ensemble", label: "ensemble", color: C_AMBER, width: 3 },
+  { key: "convex_ensemble", label: "earlier blend", color: C_AMBER, width: 3 },
 ];
 
 /** Key → label / key → color lookups, shared by every panel that annotates

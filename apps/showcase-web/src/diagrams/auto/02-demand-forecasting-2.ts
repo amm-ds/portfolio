@@ -10,7 +10,7 @@ export const AUTO_02_DEMAND_FORECASTING_2_SPEC = {
   nodes: [
     {
       id: "s",
-      label: "Choose on past: · origins 2016-05-08 + 2016-05-15",
+      label: "Choose on past: · 9 origins, 2016-03-20 through 2016-05-15",
       kind: "task",
       facts: [],
     },

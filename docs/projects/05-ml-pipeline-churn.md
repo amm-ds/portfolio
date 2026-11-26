@@ -3,7 +3,9 @@
 **Domain:** Classical ML · **Data:** IBM telco churn (7,043 rows, 26.5% churn)
 with a seeded synthetic CI path · **Status:** working showcase
 
-> On 7,043 IBM telco customers, a calibrated churn policy frozen at 0.175 from training OOF predictions costs 601 versus 1,035 for contact-everyone (95% paired bootstrap CI -508 to -353). Re-select the cutoff when missed-churner cost changes.
+> On 7,043 IBM telco customers, a calibrated churn policy frozen at 0.175 from training OOF predictions costs
+> $601 versus $1,035 for contact-everyone (95% paired bootstrap cost-delta CI -$508 to -$353). Re-select the
+> cutoff when missed-churner cost changes.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn) ·
 > [Churn sandbox demo source →](https://github.com/amm-ds/portfolio/tree/main/apps/showcase-web/src/demos/churn-sandbox)

@@ -13,7 +13,7 @@ export const DETECTION_PIPELINE_SPEC = {
       kind: "source",
       facts: [
         "12 labelled series — AWS CloudWatch, traffic, known-cause failures.",
-        "9 of 12 series evaluable; 3 all-train series are excluded, not scored as misses.",
+        "9 of 12 series evaluable; 3 train-only series count as zero in range recall.",
       ],
     },
     {
@@ -66,7 +66,7 @@ export const DETECTION_PIPELINE_SPEC = {
       label: "Event-aware scoring",
       kind: "output",
       facts: [
-        "16 of 17 windows touched; overlap-weighted range recall 0.729.",
+        "16 of 17 windows touched; range recall 0.729 (window caught by ≥1 alert).",
         "Range precision 0.107 — the false-positive firehose is the open wall.",
       ],
     },

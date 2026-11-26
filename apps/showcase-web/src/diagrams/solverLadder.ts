@@ -3,7 +3,7 @@ import type { DiagramSpec } from "./types";
 // Facts: projects/06-routing-optimization/{README.md,reports/metrics.json}.
 export const SOLVER_LADDER_SPEC = {
   id: "06-solver-ladder",
-  title: "The eight-rung solver ladder (means over 56 instances)",
+  title: "Eight solvers plus an unhinted probe (means over 56 instances)",
   direction: "LR",
   canvasHeight: 460,
   nodes: [

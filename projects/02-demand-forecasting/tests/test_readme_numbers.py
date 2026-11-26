@@ -228,23 +228,25 @@ def test_zero_day_quotes_match_committed_metrics() -> None:
         "auto_ets": 100.0 * test["auto_ets"]["zero_day_accuracy"],
     }
     assert expected["floor"] == pytest.approx(66.6, abs=0.05)
+    assert expected["floor_intermittent"] == pytest.approx(67.8, abs=0.05)
     assert expected["ensemble"] == pytest.approx(57.2, abs=0.05)
+    assert expected["ensemble_intermittent"] == pytest.approx(58.8, abs=0.05)
     assert expected["auto_ets"] == pytest.approx(60.9, abs=0.05)
     for where, text in (("README", _readme_m5_section()), ("story", " ".join(_story().split()))):
         assert "66.6%" in text and "57.2%" in text, f"{where}: zero-day quote missing"
-    assert "60.9%" in _readme_m5_section()
-    assert "67.8%" in _readme_m5_section() and "58.8%" in _readme_m5_section()
 
 
-def test_pooled_beats_global_claim_is_live() -> None:
-    """The key-lesson claim: all three pooled arms beat the global model on
-    the official WRMSSE (and the item-level cluster claim stays true)."""
+def test_pooled_metrics_and_blend_disclosure_are_live() -> None:
+    """Pooled-arm metrics and the historical-demo disclosure stay aligned."""
     metrics = _metrics()
     test = metrics["test"]
     pooled = ["lgbm_pool_store", "lgbm_pool_storecat", "lgbm_pool_dept"]
     for cand in pooled:
         assert test[cand]["official_wrmsse"] < test["lgbm"]["official_wrmsse"]
-    assert "inverse of the subset-era finding" in " ".join(_readme_m5_section().split())
+    for where, text in (("README", _readme_m5_section()), ("story", _story())):
+        normalized = " ".join(text.split())
+        for token in ("0.6161", "0.60/0.10/0.30", "0.6211"):
+            assert token in normalized, f"{where}: blend disclosure lost {token!r}"
     learned = [c for c in metrics["candidates"] if c != NAIVE]
     bottom = ["item", "state_item", "item_store"]
     for lvl in bottom:

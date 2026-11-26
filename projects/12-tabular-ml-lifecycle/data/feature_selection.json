@@ -1,6 +1,6 @@
 {
   "dataset_contract": "data/dataset_contract.json",
-  "leakage_policy": "Lag features at time t read only rental counts strictly before t (pandas shift); validation and test lags read their own past, which is available at prediction time \u2014 never the future. The first max(lag_hours) training rows lose their NaN lag rows. Standardization is fitted on the training window inside the sklearn Pipeline (train statistics only). Lags are positional over the observed sequence: the UCI series has ~1% missing hours (January 2011 outages), so a positional 168-step lag is 'same hour last week' give or take the outage gaps.",
+  "leakage_policy": "Lag features at time t read only rental counts strictly before t (pandas shift); validation and test lags read their own past, which is available at prediction time \u2014 never the future. The first max(lag_hours) training rows lose their NaN lag rows. Standardization is fitted on the training window inside the sklearn Pipeline (train statistics only). Lags are positional over the observed sequence: the UCI series has 165 missing hours, mostly early 2011 plus a 36-hour gap on 2012-10-29/30 inside validation. A positional 168-step lag and the seasonal-naive floor can drift up to 36 hours for about a week after that gap; a 24-step lag is shifted for about a day and a half.",
   "split": {
     "scheme": "time-based",
     "val_weeks": 8,
