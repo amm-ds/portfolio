@@ -1,0 +1,19 @@
+{
+  "slot": "q090_c1",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Brazil's government has used competitive auctions to drive commercial wind development, with its first wind-only auction in 2009 leading to 2 gigawatts of construction and about $6 billion in investment over the following two years.",
+  "evidence_chunk_ids": "renewable-energy-059#c011+renewable-energy-059#c000+renewable-energy-113#c001+renewable-energy-078#c001+renewable-energy-113#c005",
+  "usage": {
+    "input_tokens": 1376,
+    "output_tokens": 55
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.36,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states that Brazil held its first wind-only energy auction in 2009, leading to 2 gigawatts of wind production and an investment of about $6 billion over the following two years.\"}",
+  "label": "supported",
+  "reason": "The passage states that Brazil held its first wind-only energy auction in 2009, leading to 2 gigawatts of wind production and an investment of about $6 billion over the following two years."
+}

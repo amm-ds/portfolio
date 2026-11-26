@@ -1,0 +1,19 @@
+{
+  "slot": "q077_c1",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The UK Climate Change Act 2008 mandates an 80% cut overall in six greenhouse gases by 2050.",
+  "evidence_chunk_ids": "climate-089#c010+climate-089#c011+climate-031#c000+climate-031#c001+renewable-energy-094#c003",
+  "usage": {
+    "input_tokens": 1412,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.42,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

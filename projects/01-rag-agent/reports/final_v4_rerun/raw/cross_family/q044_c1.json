@@ -1,0 +1,19 @@
+{
+  "slot": "q044_c1",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "It is possible that evolutionary pressure associated with the great oxidation event resulted in the development of the light-dependent system.",
+  "evidence_chunk_ids": "photosynthesis-027#c001+photosynthesis-027#c000+photosynthesis-015#c000+photosynthesis-015#c001+photosynthesis-063#c004",
+  "usage": {
+    "input_tokens": 1900,
+    "output_tokens": 32
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.64,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states that the light-dependent system evolved due to evolutionary pressure associated with the great oxidation event.\"}",
+  "label": "supported",
+  "reason": "The passage states that the light-dependent system evolved due to evolutionary pressure associated with the great oxidation event."
+}

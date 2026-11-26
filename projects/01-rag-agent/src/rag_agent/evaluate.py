@@ -643,6 +643,11 @@ def run_rag_eval(  # noqa: C901 - established per-question state machine;
     to abstention. ``verifier`` overrides the claim judge (tests inject a
     scripted/keyword one); by default the provider model is used with the
     deterministic keyword judge as offline fallback.
+
+    Phase-2b: every answered trace also carries the emitted ``answer`` text
+    and the per-claim verdicts (``claims``) so the run's committed artifacts
+    are re-gradeable by a second judge without re-answering; gate-refused and
+    format-failure rows keep both at None (no answer was emitted).
     """
     selected = judge if judge is not None else build_judge()
     logger.info("RAG judge: %s", getattr(selected, "name", type(selected).__name__))
@@ -782,6 +787,10 @@ def run_rag_eval(  # noqa: C901 - established per-question state machine;
                 evidence_score=gate.evidence_score,
                 n_surviving_claims=vreport.n_surviving if vreport is not None else None,
                 claim_states=_claim_states(vreport),
+                # Phase-2b: persist the emitted answer + per-claim verdicts so
+                # the run can be re-graded by a second judge without re-answering.
+                answer=summary,
+                claims=_claim_dicts(vreport),
             )
         )
         recorder.record(traces[-1])
@@ -2040,6 +2049,31 @@ def _claim_states(report: VerifyReport | None) -> dict[str, int] | None:
     return states
 
 
+def _claim_dicts(report: VerifyReport | None) -> list[dict[str, Any]] | None:
+    """Per-claim verdict dicts for the trace / citation records.
+
+    The single definition of the persisted claim shape (claim / supported /
+    reason / repaired / dropped / terminal_state) — the shape
+    ``citation_records_heldout.json`` already carries — so the trace rows and
+    the citation records can never drift apart. ``None`` when no verify report
+    exists (verification disabled); an empty list when verification ran but
+    nothing was drafted.
+    """
+    if report is None:
+        return None
+    return [
+        {
+            "claim": c.claim,
+            "supported": c.supported,
+            "reason": c.reason,
+            "repaired": c.repaired,
+            "dropped": c.dropped,
+            "terminal_state": c.terminal_state,
+        }
+        for c in report.claims
+    ]
+
+
 def _by_slice(traces: list[QuestionTrace], questions: list[EvalQuestion]) -> dict[str, Any]:
     """Verdict breakdown per ``category/expected_behavior`` slice (R6).
 
@@ -2295,17 +2329,7 @@ def run_citation_eval(
                 "n_repair_calls": report.n_repair_calls,
                 "n_judge_calls": report.n_judge_calls,
                 "latency_s": round(latency, 3),
-                "claims": [
-                    {
-                        "claim": c.claim,
-                        "supported": c.supported,
-                        "reason": c.reason,
-                        "repaired": c.repaired,
-                        "dropped": c.dropped,
-                        "terminal_state": c.terminal_state,
-                    }
-                    for c in report.claims
-                ],
+                "claims": _claim_dicts(report),
                 "citations": report.citations,
             }
         )

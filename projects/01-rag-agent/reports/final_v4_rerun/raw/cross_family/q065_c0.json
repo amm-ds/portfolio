@@ -1,0 +1,19 @@
+{
+  "slot": "q065_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The Army Air Corps (AAC) utilized aircraft during the Second World War alongside the RAF and Fleet Air Arm.",
+  "evidence_chunk_ids": "aviation-078#c000+aviation-003#c007+aviation-000#c013+aviation-009#c001+aviation-091#c000",
+  "usage": {
+    "input_tokens": 1256,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.08,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

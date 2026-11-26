@@ -1,0 +1,19 @@
+{
+  "slot": "q033_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The OpenAIR message protocol was inspired by the Constructionist design methodology (CDM).",
+  "evidence_chunk_ids": "machine-learning-017#c004+machine-learning-017#c005+machine-learning-119#c007+machine-learning-080#c000+machine-learning-116#c004",
+  "usage": {
+    "input_tokens": 1315,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.05,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

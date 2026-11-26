@@ -1,0 +1,19 @@
+{
+  "slot": "q072_c3",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The RV-10 first flew on 29 May 2003, and the first kit parts were delivered to a customer in September 2003.",
+  "evidence_chunk_ids": "aviation-076#c000+aviation-102#c000+aviation-099#c000+aviation-100#c000+aviation-099#c003",
+  "usage": {
+    "input_tokens": 1350,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.35,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

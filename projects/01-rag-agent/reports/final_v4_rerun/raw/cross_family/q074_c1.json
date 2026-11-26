@@ -1,0 +1,19 @@
+{
+  "slot": "q074_c1",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The companies listed in the photovoltaics article focus on solar photovoltaics (PV), including PV capital equipment producers, cell manufacturers, panel manufacturers, and installers.",
+  "evidence_chunk_ids": "renewable-energy-048#c001+renewable-energy-048#c000+renewable-energy-081#c003+renewable-energy-081#c001+renewable-energy-083#c001",
+  "usage": {
+    "input_tokens": 1215,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.42,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

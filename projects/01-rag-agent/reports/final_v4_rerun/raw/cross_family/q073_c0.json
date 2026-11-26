@@ -1,0 +1,19 @@
+{
+  "slot": "q073_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "According to AI ethics discussions, neuromorphic robots could learn and develop knowledge in a uniquely humanlike way.",
+  "evidence_chunk_ids": "machine-learning-032#c005+machine-learning-032#c008+machine-learning-028#c001+machine-learning-028#c006+machine-learning-044#c002",
+  "usage": {
+    "input_tokens": 1136,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.99,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

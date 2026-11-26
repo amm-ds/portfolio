@@ -1,0 +1,19 @@
+{
+  "slot": "q090_c2",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Economic conditions and agricultural capacity have shaped Brazil's renewable commercialization, as the country began focusing on sugarcane ethanol after the 1970s oil shocks, leveraging its large sugarcane farms, and later achieved a 50% market share of the gasoline-powered fleet by February 2008 through flexible-fuel vehicles and the mandatory E25 blend.",
+  "evidence_chunk_ids": "renewable-energy-059#c011+renewable-energy-059#c000+renewable-energy-113#c001+renewable-energy-078#c001+renewable-energy-113#c005",
+  "usage": {
+    "input_tokens": 1406,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.46,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

@@ -1,0 +1,19 @@
+{
+  "slot": "q026_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The Cabinet Secretary for Environment, Climate Change and Land Reform was supported by the Minister for Rural Affairs and the Natural Environment.",
+  "evidence_chunk_ids": "climate-118#c000+climate-118#c002+climate-029#c000+climate-090#c003+climate-040#c000",
+  "usage": {
+    "input_tokens": 1171,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.97,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

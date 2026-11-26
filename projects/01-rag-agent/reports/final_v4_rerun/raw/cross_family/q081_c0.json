@@ -1,0 +1,19 @@
+{
+  "slot": "q081_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The shared historical conflict linking the Japanese aircraft carrier Hiyō and the B-17 bomber Liberty Belle is World War II.",
+  "evidence_chunk_ids": "aviation-022#c011+aviation-023#c013+aviation-054#c001+aviation-022#c000+aviation-023#c014",
+  "usage": {
+    "input_tokens": 1366,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.29,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

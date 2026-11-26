@@ -1,0 +1,19 @@
+{
+  "slot": "q015_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "According to Spain's updated 2023 National Energy and Climate Plan, solar PV capacity is projected to reach 76 GW by 2030.",
+  "evidence_chunk_ids": "renewable-energy-107#c002+renewable-energy-107#c011+renewable-energy-023#c001+renewable-energy-087#c004+renewable-energy-073#c000",
+  "usage": {
+    "input_tokens": 1608,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.25,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

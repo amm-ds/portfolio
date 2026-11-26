@@ -1,0 +1,19 @@
+{
+  "slot": "q021_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Dreyfus's critique of early AI research was based on the insights of modern continental philosophers Merleau-Ponty and Heidegger.",
+  "evidence_chunk_ids": "machine-learning-020#c000+machine-learning-020#c003+machine-learning-010#c003+machine-learning-112#c003+machine-learning-000#c001",
+  "usage": {
+    "input_tokens": 1431,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.15,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

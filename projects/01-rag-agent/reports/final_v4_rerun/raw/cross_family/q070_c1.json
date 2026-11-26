@@ -1,0 +1,19 @@
+{
+  "slot": "q070_c1",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The shareholders of Marquesado Solar SL, the investor consortium which is going to commission and operate Andasol 3, are Stadtwerke München (48.9%), MAN Ferrostaal AG (26%), and Innogy & RheinEnergie AG (25.1%).",
+  "evidence_chunk_ids": "renewable-energy-055#c002+renewable-energy-081#c011+renewable-energy-090#c000+renewable-energy-106#c000+renewable-energy-116#c000",
+  "usage": {
+    "input_tokens": 1407,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.36,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

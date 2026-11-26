@@ -1,0 +1,19 @@
+{
+  "slot": "q046_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The Alta power station is operated by Statkraft, a Norwegian state-owned electric company.",
+  "evidence_chunk_ids": "renewable-energy-085#c000+renewable-energy-085#c003+renewable-energy-012#c005+renewable-energy-006#c000+renewable-energy-021#c000",
+  "usage": {
+    "input_tokens": 1026,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.83,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

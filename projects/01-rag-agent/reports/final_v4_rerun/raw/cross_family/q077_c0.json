@@ -1,0 +1,19 @@
+{
+  "slot": "q077_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Stop Climate Chaos Scotland played a key role in the development of the Climate Change (Scotland) Act 2009 and works to ensure Scotland meets its targets to reduce emissions by 42% by 2020 and 80% by 2050.",
+  "evidence_chunk_ids": "climate-089#c010+climate-089#c011+climate-031#c000+climate-031#c001+renewable-energy-094#c003",
+  "usage": {
+    "input_tokens": 1441,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.18,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

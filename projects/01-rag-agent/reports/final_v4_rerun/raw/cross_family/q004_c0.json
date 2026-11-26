@@ -1,0 +1,19 @@
+{
+  "slot": "q004_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Agaricus inapertus is a look-alike of Chlorophyllum agaricoides that prefers forests and develops a black gleba with age.",
+  "evidence_chunk_ids": "photosynthesis-073#c001+photosynthesis-008#c000+photosynthesis-073#c000+photosynthesis-009#c000+photosynthesis-008#c001",
+  "usage": {
+    "input_tokens": 1461,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.15,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

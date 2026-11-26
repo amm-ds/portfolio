@@ -1,0 +1,19 @@
+{
+  "slot": "q002_c1",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The 3.0 °C estimate implies a climate sensitivity at the low end of the IPCC range.",
+  "evidence_chunk_ids": "climate-014#c002+climate-014#c001+photosynthesis-095#c010+climate-010#c009+climate-003#c007",
+  "usage": {
+    "input_tokens": 1292,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.46,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

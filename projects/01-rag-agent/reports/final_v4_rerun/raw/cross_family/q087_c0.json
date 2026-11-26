@@ -1,0 +1,19 @@
+{
+  "slot": "q087_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "By August 1963, VMF-111 and VMF-112 made the leap into supersonic flight with the F-8A Crusader.",
+  "evidence_chunk_ids": "aviation-072#c003+aviation-072#c007+aviation-105#c002+aviation-073#c003+aviation-040#c002",
+  "usage": {
+    "input_tokens": 1639,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.7,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

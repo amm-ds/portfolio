@@ -1,0 +1,11 @@
+{
+  "file": "golden_final_v4.json",
+  "sha256": "432d6b7057159c93982e62db3d17ea49027ec2f6e0a9cd315a78d99c365acc00",
+  "n_questions": 120,
+  "counts": {
+    "single_hop": 68,
+    "multi_hop": 24,
+    "unanswerable": 28
+  },
+  "note": "Byte-identical copy of golden_final_v3.json (same sha256) for the grade-pass-5 phase-2c final_v4 rerun: a new run namespace (final_v4-432d6b705715) so the committed final_v3 checkpoint and reports stay untouched. No selection: the 120 consumed questions are unchanged. Logged in reports/final_v3_file_access.json."
+}

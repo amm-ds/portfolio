@@ -1,0 +1,19 @@
+{
+  "slot": "q091_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The aircraft is the Boeing B-17 Flying Fortress: Miss Liberty Belle (serial 44-83690), a B-17G, was modified postwar to serve with the United States Air Force as a drone director DB-17P before being retired in 1958.",
+  "evidence_chunk_ids": "aviation-054#c003+aviation-054#c000+aviation-077#c000+aviation-077#c001+aviation-060#c002",
+  "usage": {
+    "input_tokens": 1447,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.6,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

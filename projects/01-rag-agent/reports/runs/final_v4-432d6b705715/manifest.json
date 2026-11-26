@@ -1,0 +1,13 @@
+{
+  "run_id": "final_v4-432d6b705715",
+  "config_hash": "25178f767c052a34",
+  "commit": "c53069eb21b9e5148e188c936fe3172f5f87bbe9",
+  "dirty": true,
+  "split": "final_v4",
+  "set_sha256": "432d6b7057159c93982e62db3d17ea49027ec2f6e0a9cd315a78d99c365acc00",
+  "index_id": "minilm:200+rerank:True",
+  "judge_model": "kimi-for-coding",
+  "judge_prompt_hash": "dba00ba99d6d1561",
+  "created_at": "",
+  "cumulative_spend_usd": 1.19125
+}

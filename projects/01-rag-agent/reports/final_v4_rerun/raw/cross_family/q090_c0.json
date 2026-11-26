@@ -1,0 +1,19 @@
+{
+  "slot": "q090_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "In Brazil, government policies have directly stimulated commercial renewable energy development through targeted fiscal measures, such as tax incentives beginning in the mid-1960s that initiated a reforestation program for industrial wood energy.",
+  "evidence_chunk_ids": "renewable-energy-059#c011+renewable-energy-059#c000+renewable-energy-113#c001+renewable-energy-078#c001+renewable-energy-113#c005",
+  "usage": {
+    "input_tokens": 1372,
+    "output_tokens": 48
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 2.07,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states that Brazil used tax incentives beginning in the mid-1960s to initiate a reforestation program to provide for industrial wood energy and wood product needs.\"}",
+  "label": "supported",
+  "reason": "The passage states that Brazil used tax incentives beginning in the mid-1960s to initiate a reforestation program to provide for industrial wood energy and wood product needs."
+}

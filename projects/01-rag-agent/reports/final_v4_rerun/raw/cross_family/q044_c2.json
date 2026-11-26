@@ -1,0 +1,19 @@
+{
+  "slot": "q044_c2",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Angiosperms have lost the dark-operative form and rely on 3 slightly different copies of light-dependent version, frequently abbreviated as POR A, B, and C.",
+  "evidence_chunk_ids": "photosynthesis-027#c001+photosynthesis-027#c000+photosynthesis-015#c000+photosynthesis-015#c001+photosynthesis-063#c004",
+  "usage": {
+    "input_tokens": 1911,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.35,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

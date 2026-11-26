@@ -1,0 +1,19 @@
+{
+  "slot": "q042_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "During the September 1999 Hurricane Floyd evacuation, all flyable CH-53E Super Stallion aircraft from Marine Aircraft Group 26 were evacuated to Maxwell Air Force Base, Alabama.",
+  "evidence_chunk_ids": "aviation-048#c003+aviation-048#c001+aviation-072#c005+aviation-073#c001+aviation-040#c004",
+  "usage": {
+    "input_tokens": 1497,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.21,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

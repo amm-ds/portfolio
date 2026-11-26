@@ -1,0 +1,1114 @@
+{
+  "generated_at": "2026-11-26T20:54:29.859915+00:00",
+  "judge": {
+    "model": "kimi-for-coding",
+    "family": "Moonshot/Kimi (same family as the committed final_v3 judge)",
+    "path": "in-loop LLMRubricJudge, RUBRIC_SYSTEM_PROMPT, over _judge_context(retrieved top-k union agent-cited chunks) — the exact committed final_v3 judging path; verdicts read from the fresh traces, no new hosted calls",
+    "measures": "regeneration variance ONLY (same family, same prompt); NOT a family-bias measurement"
+  },
+  "f1": {
+    "n_questions": 120,
+    "tp": 80,
+    "fp": 17,
+    "tn": 11,
+    "fn": 12,
+    "precision": 0.8247,
+    "recall": 0.8696,
+    "f1": 0.8466,
+    "overall_accuracy": 0.7583,
+    "errors": {
+      "unsupported_claim": 2,
+      "false_abstention": 2,
+      "wrong_abstention": 0,
+      "budget_terminated": 24,
+      "format_failure": 0,
+      "uncited_relevant": 7
+    },
+    "f1_definition": "scripts/run_e2e_eval.py summarize_rows (committed definition)",
+    "delta_f1_vs_committed_0.9091": -0.0625
+  },
+  "committed_f1": 0.9091,
+  "committed_f1_source": "reports/final_v3_e2e/f1_summary.json",
+  "per_question": [
+    {
+      "question": "Which company acquired LM Wind Power in April 2017 for €1.5 billion?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Why does a single rule fail to function as a complete model on its own?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How would assuming the Pacific reconstruction is in error affect estimates of climate sensitivity?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which French aeronautical pioneer's design served as the basis for the toy helicopter that sparked the brothers' interest in flight?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which mushroom species resembles Chlorophyllum agaricoides but differs by preferring forest habitats and developing a black gleba as it ages?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which country is listed as the location for Aviation Farm Ltd?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which three performance guarantees does the text state are not assured for MLC across a range of operating conditions?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Who proposed creating the Russian Association for Logic Programming that eventually led to the establishment of LPAR?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Approximately how many species of green algae are currently recognized?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How do individual neural units in a TDNN gather input to support contextual modeling at each layer?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which diatom species comprise the majority of the phytoplankton community in Lake Tahoe's epilimnion?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "On which date did the Wright brothers achieve their first controlled, sustained flight of a powered aircraft?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which constitutional provision did Indira Gandhi add in 1977 to mandate the state's effort to protect and improve the environment?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which aircraft manufacturer appears at the beginning of this ICAO-recognized list?",
+      "expected_behavior": "answer",
+      "verdict": "unsupported-claim",
+      "faithfulness": 0.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How do algorithm hyperparameters differ from model hyperparameters regarding their effect on the final model?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "According to Spain's updated 2023 National Energy and Climate Plan, how much solar PV capacity is projected for 2030?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which predators are capable of entering and hunting below the snowpack?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "On which exam did GPT-4 score between the 99th and 100th percentile?",
+      "expected_behavior": "answer",
+      "verdict": "empty-answer",
+      "faithfulness": 0.0,
+      "abstained": true,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which five non-profit organizations established the International Renewable Energy Alliance in June 2004?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Who serves as the senior editor-in-chief for the International Journal of Computer Vision?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How does the electron flux diverted by plastid terminal oxidase compare to the total photosynthetic electron transport when the enzyme is activated?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which two continental philosophers provided the insights that formed the basis of Dreyfus's critique of early AI research?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which 2004 film directed by Roland Emmerich portrays an abrupt shutdown of thermohaline circulation that plunges the Northern Hemisphere into a new ice age?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "In forensic practices, which organisms serve as a diagnostic tool for drowning?",
+      "expected_behavior": "answer",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": false
+    },
+    {
+      "question": "Which federal agency assumed control of numerous SAGE radar stations after the command's surface-to-air missiles were deactivated?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which financial tool is cited as an example of a potential action in climate risk management?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which Scottish Government minister provided support to the Cabinet Secretary for Environment, Climate Change and Land Reform?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which soil type is typically associated with the mesophytic ecosystem?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which organism possesses two copies of the gene for plastid terminal oxidase?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Where does Dreyfus say inessential details are relegated when we process our surroundings?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "In the 1961 film Voyage to the Bottom of the Sea, what event causes the abrupt global warming?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which Texas city became one of the first in America to run completely on renewable energy in 2015 for financial stability reasons?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Since when has all power generated by these facilities been allocated to Victoria's portion of the National Electricity Market?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which message protocol was inspired by the Constructionist design methodology?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which violin dealer was designated to sell the Stradivarius cello following Greenhouse's death?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How many general aviation aircraft operations were recorded at Cessna Aircraft Field during the twelve-month period ending July 19, 2019?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which two squadrons quickly joined Headquarters Squadron 15 at Marine Corps Air Station Ewa in April 1945?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which two consecutive months hold the records for the highest mean temperatures in Oklahoma City?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which research discipline focuses on designing artificially intelligent computers or robots that act as Artificial Moral Agents?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which two types of data are combined via scientific modeling to display potential future risks in a climate appraisal report?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which 2019 film drew its plot inspiration from the controversy surrounding the Alta Hydroelectric Power Station?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Who performed the contralto part alongside Bernard Greenhouse on cello for the 1966 recording of Bach's Cantata No. 79?",
+      "expected_behavior": "answer",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": false
+    },
+    {
+      "question": "During the September 1999 Hurricane Floyd evacuation, which Alabama air base received the flyable CH-53E Super Stallion aircraft from Marine Aircraft Group 26?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "When was Marine Aircraft Group 15 officially commissioned?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Why did plants evolve a light-dependent protochlorophyllide reductase instead of relying solely on the dark-operative version?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "According to a 2019 report from the University of Oxford's Center for the Governance of AI, what percentage of Americans believed robots and artificial intelligence should be carefully managed?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which Norwegian state-owned electric company operates the Alta power station?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which major city receives all of the electricity produced by the Blenheim–Gilboa Pumped Storage Power Station?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How much funding did voters approve during the January 1916 special election for the new hydroelectric plant?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which utility's refusal to purchase firm energy resulted in the indefinite postponement of the Conawapa project in 1992?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "In which programming language were the command-line tools for the Waffles machine learning toolkit implemented?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which organization originally put forward the concept of greenhouse debt to define environmental harm caused by developed nations?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How many neurons are contained within the aggregate that makes up a trion?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which South Atlantic tropical cyclone uniquely achieved hurricane strength and struck Santa Catarina in 2004?",
+      "expected_behavior": "answer",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": false
+    },
+    {
+      "question": "On what date did the Signal Corps Aviation Station at Mineola officially open?",
+      "expected_behavior": "answer",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": false
+    },
+    {
+      "question": "Which letter suffix was used to differentiate Imperial Japanese Navy trainer aircraft from operational models?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "In August 2017, which acquisition propelled DAE into the top tier of global aircraft lessors?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which organization did the Aerospace Operational Support Group become after being disbanded in 2016?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "In which year was this peer-reviewed journal originally established?",
+      "expected_behavior": "answer",
+      "verdict": "retrieval-miss",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "Which private sector company notably partnered with the LCCA on its projects?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How do some games demonstrate the challenges of international cooperation in addressing global warming?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which former lawyer currently chairs the Stop Climate Chaos Scotland coalition?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which two English counties host the primary fire stations where Aircraft Handlers are typically stationed?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which Enzyme Commission number is assigned to 7-Hydroxymethyl chlorophyll a reductase?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "When does the monsoon season typically conclude in Delhi?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which two other British military or civilian groups utilized aircraft during the Second World War alongside the RAF and Fleet Air Arm?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which astronomer correctly inferred the scarcity of Martian air by observing that Mars passing near two faint stars did not dim their brightness?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How does an extension neural network determine its estimated class?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "In what years did the United States see its first merchant wind plant development and the introduction of the BioFuels Security Act, respectively?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How does the robot David's emergence of love, jealousy, and self-protection in A.I. Artificial Intelligence reflect Isaac Asimov's conclusion regarding fixed rules for governing AI?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 0.85,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which country is highlighted for its substantial installed wind capacity in Article A, and which of its energy companies are listed as major shareholders in the Andasol 3 solar project described in Article B?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How many years after the formation of the Civil Aviation Authority of New Zealand was the Boeing F/A-18E/F Super Hornet introduced?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 0.7,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How does the post-World War II boom in United States general aviation relate to the kit-form, homebuilt nature of the Van's Aircraft RV-10?",
+      "expected_behavior": "answer",
+      "verdict": "unsupported-claim",
+      "faithfulness": 0.3,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "What potential human-like traits might neuromorphic robots develop according to AI ethics discussions, and how does this contrast with the emotional fulfillment experienced by the resurrected robot David in A.I. Artificial Intelligence?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "In the United States, what renewable energy technology is utilized by the Bear Swamp facility compared to the primary focus of the companies listed in the photovoltaics article?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which aircraft manufacturer produced both the \"Lady Peace II\" displayed at the Virginia Aviation Museum and the PS-43 transport used by the Red Army Air Forces?",
+      "expected_behavior": "answer",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": false
+    },
+    {
+      "question": "While Germany's photovoltaic sector is driven by domestic manufacturers like Q-Cells and widespread solar installations, which U.S. federal office administers prize competitions like the Wave Energy Prize to advance renewable energy technologies such as solar power?",
+      "expected_behavior": "answer",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": false
+    },
+    {
+      "question": "Both Stop Climate Chaos Scotland's Scottish climate legislation and the UK Climate Change Act influenced by environmental groups share what common carbon reduction target for 2050?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "What is the initial research focus of the Centre for Artificial Intelligence and Robotics, and which open-source machine learning framework listed in the outline replaced DistBelief?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Following World War II, what 1958 international agreement established jurisdiction over aircraft hijacking, and what type of primary armament do modern SPAAGs typically combine with short-range missiles?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which 19th-century pioneer established the foundation for heavier-than-air flight with gliders, and what specific digital tools do modern aircraft spotters use to track and share photos of these planes?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "What shared historical conflict links the Japanese aircraft carrier Hiyō and the B-17 bomber Liberty Belle, and what was the combat record of the Hiyō's air group compared to the current status of the Liberty Belle?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 0.6,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Aircraft hijacking is considered a capital crime in which two states of the United States, and what Sonex Aircraft model featuring a Y-tail was flight tested by Bob Carlton in August 2011?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which has a higher nominal power capacity, Egypt's Benban Solar Park or Himachal Pradesh's Nathpa Jhakri Project, and what is the difference in megawatts?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "What nation is both the home base for the 1st Battalion, 227th Aviation Regiment described in Article A and the headquarters location for aircraft manufacturers like Aircraft Spruce & Specialty Company and American Jet Industries Inc listed in Article B?",
+      "expected_behavior": "answer",
+      "verdict": "empty-answer",
+      "faithfulness": 0.0,
+      "abstained": true,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How do the founding timeline and primary host countries of the AAAI Conference on Artificial Intelligence and the Mexican International Conference on Artificial Intelligence (MICAI) compare?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which U.S. military figure authorized the postwar flight in Article A, and which regulatory agency mentioned in Article B oversees approved aircraft parts?",
+      "expected_behavior": "answer",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": false
+    },
+    {
+      "question": "By August of which respective years did Marine Aircraft Group 41's fighter squadrons transition to supersonic flight and UP Aerospace begin offering low-cost launches to students, and how many years apart are these milestones?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 0.7,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "What specific events involving Marine Aircraft Group 31 and UP Aerospace respectively occurred in November, and on what dates?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How did the operational context and timeframe of the Naval Aircraft Factory TS aircraft differ from those of the Eastern Air Lines Shuttle flight 1320?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 0.6,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "How do economic conditions and government policies respectively influence the commercial development of renewable energy in Brazil compared to Nevada, United States?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 0.9,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "Which WWII aircraft model, whose name connects the Liberty Belle and the Vega Aircraft Corporation, was modified postwar into a DB-17P drone director?",
+      "expected_behavior": "answer",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": false,
+      "retrieved_relevant": true,
+      "cited_relevant": true
+    },
+    {
+      "question": "What is the orbital period of Charon around Pluto, and how does this relate to their mutual tidal locking?",
+      "expected_behavior": "abstain",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": true,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "What is the traditional Japanese fermentation starter culture used to make miso and sake, and which specific fungal species is responsible for it?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "In which German city is TSMC constructing its first major semiconductor fabrication plant in Europe, and what advanced chip process technology will it initially produce?",
+      "expected_behavior": "abstain",
+      "verdict": "correct",
+      "faithfulness": 0.0,
+      "abstained": true,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "What specific structural principle did Antoni Gaudí apply to the column design in the Sagrada Família to mimic natural load distribution?",
+      "expected_behavior": "abstain",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": true,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "What are the four distinct stages of a monarch butterfly's metamorphosis, and how long does each stage typically last?",
+      "expected_behavior": "abstain",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": true,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "When was movable type printing first invented in China, and which Song dynasty artisan is credited with its development?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "What specific mineral-based pigment did Katsushika Hokusai use to achieve the vibrant blue gradient in his 1831 woodblock print 'The Great Wave off Kanagawa'?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "Which quantum computing hardware company recently achieved a milestone in superconducting qubit coherence times, and what was their latest Series B funding amount?",
+      "expected_behavior": "abstain",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": true,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "What was the primary function of the Universal Docking Module developed for the Apollo-Soyuz Test Project?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "What specific FDA guidelines currently restrict the prophylactic use of medically important antibiotics in commercial livestock operations to combat antimicrobial resistance?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "Which two Austrian mountaineers successfully reached the peak of Mount Everest without supplemental oxygen during the 1978 Polish-Austrian expedition?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "How does the routine prophylactic use of critically important antibiotics in commercial swine production contribute to the spread of antibiotic resistance in local ecosystems?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "Which two major tectonic plates are currently colliding to drive the ongoing geological uplift of the Himalayan mountain range?",
+      "expected_behavior": "abstain",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": true,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "Which Berber confederation historically controlled the trans-Saharan caravan routes connecting Timbuktu to Sijilmasa?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "Who authored the Statutes of 1268 governing the Parisian Bakers' Guild?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "What is the time recorded by Eliud Kipchoge for the men's marathon at the Tokyo 2020 Olympics?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "Under the International Whaling Commission's management plan, what is the current annual catch limit for bowhead whales allocated to the Alaska Native subsistence harvest?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "Which Venetian glassmaker is credited with perfecting the avventurina glass technique using gold chloride?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "What specific structural innovation did Antoni Gaudí introduce to support the weight of the Sagrada Família's towers?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "Which Grand Vizier under Sultan Murad IV was primarily responsible for enforcing the strict crackdown on coffeehouses in Constantinople during the 1620s?",
+      "expected_behavior": "abstain",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": true,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "Which variation of the Sicilian Defense is named after Miguel Najdorf and features the move ...a6 on Black's fifth turn?",
+      "expected_behavior": "abstain",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": true,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "Which Icelandic volcano erupted in April 2010 and caused widespread commercial flight cancellations across Europe?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "What is the name of the golden roof structure located on top of the Potala Palace?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "What is the chemical formula of the cathode material typically used in commercial lithium-cobalt-oxide batteries, and how does its layered structure facilitate lithium intercalation during charging?",
+      "expected_behavior": "abstain",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": true,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "Which specific aircraft model, equipped with skis and reinforced landing gear, is used to support the 'Polar Bridge' logistics operation delivering fuel and supplies to the Amundsen-Scott South Pole Station?",
+      "expected_behavior": "abstain",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": true,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "What was the estimated financial loss to the Icelandic agricultural sector caused by ash deposition during the 2010 Eyjafjallajökull eruption?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "What percentage tax did the Sasanian Empire levy on silk imports passing through Ctesiphon?",
+      "expected_behavior": "abstain",
+      "verdict": "budget-terminated",
+      "faithfulness": NaN,
+      "abstained": false,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    },
+    {
+      "question": "How does the Kenya Coffee Directorate calculate the minimum export price for Arabica beans sold through the Nairobi Coffee Exchange auction system?",
+      "expected_behavior": "abstain",
+      "verdict": "correct",
+      "faithfulness": 1.0,
+      "abstained": true,
+      "retrieved_relevant": false,
+      "cited_relevant": false
+    }
+  ]
+}

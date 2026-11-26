@@ -1,0 +1,19 @@
+{
+  "slot": "q030_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "In the 1961 film Voyage to the Bottom of the Sea, a meteor shower ignites the Van Allen radiation belt, causing abrupt global warming that will render Earth uninhabitable within three weeks.",
+  "evidence_chunk_ids": "climate-081#c001+climate-081#c003+climate-084#c002+climate-084#c007+climate-000#c011",
+  "usage": {
+    "input_tokens": 1203,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.91,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

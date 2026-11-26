@@ -1,0 +1,19 @@
+{
+  "slot": "q072_c1",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Manufacturers such as Cessna, Piper, and Beechcraft expanded production to provide light aircraft for the new middle-class market.",
+  "evidence_chunk_ids": "aviation-076#c000+aviation-102#c000+aviation-099#c000+aviation-100#c000+aviation-099#c003",
+  "usage": {
+    "input_tokens": 1340,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.4,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

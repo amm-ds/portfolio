@@ -1,0 +1,19 @@
+{
+  "slot": "q040_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The 2019 film Frozen II drew its plot inspiration from the controversy surrounding the Alta Hydroelectric Power Station.",
+  "evidence_chunk_ids": "renewable-energy-085#c002+renewable-energy-085#c001+renewable-energy-081#c010+renewable-energy-081#c011+renewable-energy-123#c004",
+  "usage": {
+    "input_tokens": 1474,
+    "output_tokens": 39
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.6,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states that the controversy around the Alta Hydroelectric Power Station inspired the plot of the 2019 film Frozen II.\"}",
+  "label": "supported",
+  "reason": "The passage states that the controversy around the Alta Hydroelectric Power Station inspired the plot of the 2019 film Frozen II."
+}

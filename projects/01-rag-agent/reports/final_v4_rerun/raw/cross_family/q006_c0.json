@@ -1,0 +1,19 @@
+{
+  "slot": "q006_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The text states that MLC comes with no guaranteed convergence, optimality or robustness for a range of operating conditions.",
+  "evidence_chunk_ids": "machine-learning-117#c002+machine-learning-117#c001+machine-learning-119#c005+machine-learning-075#c003+machine-learning-121#c008",
+  "usage": {
+    "input_tokens": 1226,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.89,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

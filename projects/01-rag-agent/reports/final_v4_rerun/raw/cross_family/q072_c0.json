@@ -1,0 +1,19 @@
+{
+  "slot": "q072_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "After World War II, especially in North America, there was a boom in general aviation, both private and commercial, as thousands of pilots were released from military service and many inexpensive war-surplus transport and training aircraft became available.",
+  "evidence_chunk_ids": "aviation-076#c000+aviation-102#c000+aviation-099#c000+aviation-100#c000+aviation-099#c003",
+  "usage": {
+    "input_tokens": 1359,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.06,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

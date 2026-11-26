@@ -1,0 +1,19 @@
+{
+  "slot": "q060_c2",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "For example, Climate Challenge is an environmental serious game designed to give players an understanding of the options available to policy makers and the difficulties in their implementation.",
+  "evidence_chunk_ids": "climate-115#c001+climate-115#c000+climate-114#c000+climate-116#c008+climate-114#c001",
+  "usage": {
+    "input_tokens": 1043,
+    "output_tokens": 52
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.99,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states that Climate Challenge is an environmental serious game designed to give players an understanding of the science behind climate change, as well as the options available to policy makers and the difficulties in their implementation.\"}",
+  "label": "supported",
+  "reason": "The passage states that Climate Challenge is an environmental serious game designed to give players an understanding of the science behind climate change, as well as the options available to policy makers and the difficulties in their implementation."
+}

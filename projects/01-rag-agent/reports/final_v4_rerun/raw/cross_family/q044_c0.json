@@ -1,0 +1,19 @@
+{
+  "slot": "q044_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Plants evolved a light-dependent protochlorophyllide reductase because the dark-operative version is highly sensitive to free oxygen and does not work if its concentration exceeds about 3%.",
+  "evidence_chunk_ids": "photosynthesis-027#c001+photosynthesis-027#c000+photosynthesis-015#c000+photosynthesis-015#c001+photosynthesis-063#c004",
+  "usage": {
+    "input_tokens": 1914,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.87,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

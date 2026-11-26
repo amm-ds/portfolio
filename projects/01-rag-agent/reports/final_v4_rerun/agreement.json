@@ -1,0 +1,44 @@
+{
+  "generated_at": "2026-11-26T20:58:12.346365+00:00",
+  "committed_f1": 0.9091,
+  "committed_f1_source": "reports/final_v3_e2e/f1_summary.json",
+  "per_judge": {
+    "replication_kimi_rubric": {
+      "f1": 0.8466,
+      "precision": 0.8247,
+      "recall": 0.8696,
+      "delta_f1_vs_committed": -0.0625,
+      "reads": "regeneration variance (same family, same prompt as committed)"
+    },
+    "cross_family_qwen2.5_3b": {
+      "f1": 0.6626,
+      "precision": 0.7606,
+      "recall": 0.587,
+      "delta_f1_vs_committed": -0.2465,
+      "reads": "weak-evidence cross-family read (local 3B model)"
+    }
+  },
+  "pairwise": {
+    "n_questions": 120,
+    "verdict_agreement": 0.7833,
+    "verdict_agreement_wilson95": [
+      0.701456,
+      0.847633
+    ],
+    "cohens_kappa": 0.5472,
+    "answered_subset": {
+      "n": 82,
+      "verdict_agreement": 0.6829,
+      "cohens_kappa": 0.092
+    }
+  },
+  "outcome_rule": {
+    "rule": "kappa >= 0.6 and F1 within 0.03 of 0.9091 (pass-5 plan, phase 2c)",
+    "kappa": 0.5472,
+    "replication_f1": 0.8466,
+    "replication_delta_vs_committed": -0.0625,
+    "within_0.03": false,
+    "passed": false,
+    "evidence_strength": "the kappa leg is a WEAK-evidence cross-family read (local qwen2.5:3b); the replication leg is same-family and measures regeneration variance only"
+  }
+}

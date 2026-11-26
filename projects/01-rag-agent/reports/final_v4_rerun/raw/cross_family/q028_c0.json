@@ -1,0 +1,19 @@
+{
+  "slot": "q028_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Chlamydomonas possesses two copies of the gene for plastid terminal oxidase.",
+  "evidence_chunk_ids": "photosynthesis-056#c003+photosynthesis-056#c008+photosynthesis-080#c004+photosynthesis-067#c003+photosynthesis-080#c006",
+  "usage": {
+    "input_tokens": 917,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.63,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

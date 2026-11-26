@@ -88,3 +88,6 @@ data/*
 # …and the E8 cross-family second-judge receipts (calibration gate + agreement
 # vs the committed kimi labels; every public agreement number traces to them).
 !/reports/cross_family_judge_2026-11-26/
+# …and the pass-5 final_v4 rerun (answer persistence + dual-judge evidence;
+# every public replication/agreement number traces to it).
+!/reports/final_v4_rerun/

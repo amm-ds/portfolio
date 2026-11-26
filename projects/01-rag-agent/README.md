@@ -253,8 +253,15 @@ upper-bound estimate. Generation, verification, and judging all use
 the 30-claim owner-labelled audit is the current counter, and a cross-judge
 check from another model family (local `qwen2.5:3b`) agrees with 28/30
 hand-labelled claims and 95.9% of 147 committed claim labels (kappa 0.92,
-`reports/cross_family_judge_2026-11-26/`), though the uncommitted final
-answer texts still leave the headline F1 without a second-family re-grade.
+`reports/cross_family_judge_2026-11-26/`). A rerun of the same 120 questions
+with the answer texts persisted (`reports/final_v4_rerun/`) was re-graded
+twice: the same-family replication judge scored F1 0.8466 vs the committed
+0.9091 — a gap dominated by 24 agent runs hitting the 12-request loop rail
+(4 in the committed run), i.e. regeneration variance rather than judge
+disagreement — and the weak local-3B cross-family read scored 0.6626 with
+verdict agreement 78.3% / kappa 0.55 overall (0.09 on answered questions).
+The rerun does not confirm the headline within the pre-set 0.03 tolerance,
+so 0.9091 remains a single-family result.
 Broader corpus quality and
 always-on public chat remain unproven; `RAG_CHAT_ENABLED=1` stays opt-in and
 hosted calls require an explicit budget.

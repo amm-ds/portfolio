@@ -1,0 +1,19 @@
+{
+  "slot": "q072_c4",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The architect of the line of Van's aircraft, Richard VanGrunsven, designed the RV-10 to satisfy a market demand for a four-seat version of the popular RV series aircraft.",
+  "evidence_chunk_ids": "aviation-076#c000+aviation-102#c000+aviation-099#c000+aviation-100#c000+aviation-099#c003",
+  "usage": {
+    "input_tokens": 1353,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.33,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

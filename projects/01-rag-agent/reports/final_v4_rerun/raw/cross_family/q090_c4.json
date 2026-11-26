@@ -1,0 +1,19 @@
+{
+  "slot": "q090_c4",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Nevada's commercial renewable projects have relied on complex financing structures and government incentives to achieve economic viability, as demonstrated by the Nellis Solar Power Plant, where a power purchase agreement at about 2.2 cents/kW·h—compared to the 9 cents Nellis was paying to Nevada Power—combined with multimillion-dollar government incentives enabled the partners to recover costs and produce electricity at a savings.",
+  "evidence_chunk_ids": "renewable-energy-059#c011+renewable-energy-059#c000+renewable-energy-113#c001+renewable-energy-078#c001+renewable-energy-113#c005",
+  "usage": {
+    "input_tokens": 1412,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.47,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

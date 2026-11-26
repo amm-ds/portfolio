@@ -1,0 +1,19 @@
+{
+  "slot": "q038_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Machine ethics (or machine morality) is the field of research concerned with designing Artificial Moral Agents (AMAs), robots or artificially intelligent computers that behave morally or as though moral.",
+  "evidence_chunk_ids": "machine-learning-032#c000+machine-learning-032#c005+machine-learning-066#c000+machine-learning-000#c000+machine-learning-000#c009",
+  "usage": {
+    "input_tokens": 1095,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.8,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

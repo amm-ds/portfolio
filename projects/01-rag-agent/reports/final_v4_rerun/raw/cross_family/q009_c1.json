@@ -1,0 +1,19 @@
+{
+  "slot": "q009_c1",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "For time-varying signals such as speech, each unit has connections to the output from units below but also to the time-delayed (past) outputs from these same units.",
+  "evidence_chunk_ids": "machine-learning-057#c000+machine-learning-057#c002+machine-learning-070#c003+machine-learning-108#c000+machine-learning-084#c001",
+  "usage": {
+    "input_tokens": 1364,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.39,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

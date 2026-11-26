@@ -1,0 +1,19 @@
+{
+  "slot": "q091_c1",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The name connection is that Vega Aircraft Corporation partnered with Boeing and Douglas to produce the Boeing B-17 Flying Fortress.",
+  "evidence_chunk_ids": "aviation-054#c003+aviation-054#c000+aviation-077#c000+aviation-077#c001+aviation-060#c002",
+  "usage": {
+    "input_tokens": 1406,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.5,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

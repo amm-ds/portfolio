@@ -1,0 +1,19 @@
+{
+  "slot": "q059_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The private sector company that notably partnered with the LCCA on its projects was EDF Energy.",
+  "evidence_chunk_ids": "climate-036#c000+climate-036#c001+renewable-energy-051#c008+climate-102#c000+climate-102#c002",
+  "usage": {
+    "input_tokens": 1415,
+    "output_tokens": 30
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.7,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states that EDF Energy was notably partnered with the LCCA on its projects.\"}",
+  "label": "supported",
+  "reason": "The passage states that EDF Energy was notably partnered with the LCCA on its projects."
+}

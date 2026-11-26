@@ -1,0 +1,19 @@
+{
+  "slot": "q067_c2",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Every input data point is used in the extension distance calculation to estimate the class.",
+  "evidence_chunk_ids": "machine-learning-073#c004+machine-learning-073#c002+machine-learning-084#c000+machine-learning-084#c001+machine-learning-070#c005",
+  "usage": {
+    "input_tokens": 1166,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.35,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

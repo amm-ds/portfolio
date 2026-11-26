@@ -1,0 +1,19 @@
+{
+  "slot": "q019_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Jean Ponce serves as the senior editor-in-chief for the International Journal of Computer Vision.",
+  "evidence_chunk_ids": "machine-learning-093#c000+machine-learning-097#c000+machine-learning-052#c000+machine-learning-055#c000+machine-learning-005#c000",
+  "usage": {
+    "input_tokens": 1078,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.74,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

@@ -1,0 +1,19 @@
+{
+  "slot": "q069_c1",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "After Martin returns home, he jealously goads David into cutting off a piece of Monica's hair, and David enters his adoptive parents' room and cuts a lock of hair from Monica's head using a pair of scissors.",
+  "evidence_chunk_ids": "machine-learning-077#c002+machine-learning-077#c003+machine-learning-032#c001+machine-learning-028#c008+machine-learning-028#c004",
+  "usage": {
+    "input_tokens": 1312,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.56,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

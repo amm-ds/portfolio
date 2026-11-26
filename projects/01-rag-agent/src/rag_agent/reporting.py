@@ -81,6 +81,15 @@ class QuestionTrace:
     gate_refused: bool = False  # R6: evidence gate refused before generation
     # R7: per-question claim terminal states {accepted_original: n, ...}
     claim_states: dict[str, int] | None = None
+    # Phase-2b (grade pass 5): the answer text the pipeline emitted and the
+    # per-claim verdicts the verify loop produced, persisted so a second judge
+    # can re-grade a run without re-answering. ``claims`` uses the exact
+    # claim-dict shape of citation_records_heldout.json (claim / supported /
+    # reason / repaired / dropped / terminal_state). Both stay None on rows
+    # with no emitted answer (gate refusal, format failure) and on traces
+    # committed before these fields existed — old artifacts remain valid.
+    answer: str | None = None
+    claims: list[dict[str, Any]] | None = None
 
 
 def is_abstention(summary: str, confidence: float) -> bool:

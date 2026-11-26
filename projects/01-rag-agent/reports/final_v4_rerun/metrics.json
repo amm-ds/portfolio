@@ -1,0 +1,140 @@
+{
+  "detail": {
+    "final_v4": {
+      "n_questions": 120,
+      "composition": {
+        "single_hop/answer": 68,
+        "multi_hop/answer": 24,
+        "unanswerable/abstain": 28
+      },
+      "retrieval": {
+        "recall@5": 0.7583333333333333,
+        "recall@10": 0.7666666666666667,
+        "mrr@5": 0.7375,
+        "n_questions": 120,
+        "random_recall@5": 0.016666666666666666,
+        "random_mrr@5": 0.0125,
+        "delta_mrr@5_vs_random": 0.7250000000000001
+      },
+      "rag": {
+        "n_questions": 92,
+        "faithfulness": 0.9370588235294118,
+        "answer_relevance": null,
+        "context_recall": 1.0
+      },
+      "faithfulness": {
+        "mean": 0.9370588235294118,
+        "ci95": [
+          0.8844,
+          0.9708
+        ]
+      },
+      "taxonomy": {
+        "counts": {
+          "correct": 91,
+          "unsupported-claim": 2,
+          "empty-answer": 2,
+          "budget-terminated": 24,
+          "retrieval-miss": 1
+        },
+        "correct_share": 0.7583333333333333,
+        "correct_share_ci95": [
+          0.675,
+          0.8333
+        ]
+      },
+      "abstention": {
+        "n_unanswerable": 28,
+        "n_answerable": 92,
+        "refusal_accuracy": 0.39285714285714285,
+        "cite_when_expected": 0.9130434782608695,
+        "false_abstention_rate": 0.021739130434782608
+      },
+      "verify": {
+        "enabled": true,
+        "min_support": 0.6,
+        "max_repair_calls": 2,
+        "n_answers_verified": 96,
+        "n_verify_abstentions": 2,
+        "n_verify_skipped": 11,
+        "n_verifier_failures": 0,
+        "total_repair_calls": 15,
+        "mean_support_fraction": 0.9745,
+        "mean_verify_latency_s": 2.715,
+        "verify_latency_share_of_answer": 0.1378,
+        "diagnose_mech": false,
+        "n_drafted": 143,
+        "n_mechanical_fail": 13,
+        "n_judged": 130,
+        "n_judge_supported": 128,
+        "n_surviving": 139,
+        "n_dropped": 4,
+        "n_verification_error": 0,
+        "n_accepted_original": 128,
+        "n_accepted_repaired": 11,
+        "n_dropped_original": 0,
+        "n_dropped_repaired": 4,
+        "claim_retention_rate": 0.972,
+        "claim_repair_rate": 0.1049,
+        "claim_drop_rate": 0.028,
+        "mechanical_false_rejections": 0
+      },
+      "ops": {
+        "backend": "env:kimi-for-coding",
+        "p50_latency_s": 12.259474708000198,
+        "p95_latency_s": 30.948266334016807
+      },
+      "meter": {
+        "active": true,
+        "model": "kimi-for-coding",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
+        "phases": {
+          "agent": {
+            "calls": 96,
+            "input_tokens": 874414,
+            "output_tokens": 62652,
+            "cached_input_tokens": 658176,
+            "spend_usd": 0.664305
+          },
+          "judge": {
+            "calls": 192,
+            "input_tokens": 279661,
+            "output_tokens": 19662,
+            "cached_input_tokens": 512,
+            "spend_usd": 0.357951
+          },
+          "verify": {
+            "calls": 109,
+            "input_tokens": 94486,
+            "output_tokens": 20911,
+            "cached_input_tokens": 13056,
+            "spend_usd": 0.168994
+          },
+          "ragas": {
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.0
+          }
+        },
+        "total": {
+          "calls": 397,
+          "input_tokens": 1248561,
+          "output_tokens": 103225,
+          "cached_input_tokens": 671744,
+          "spend_usd": 1.1912500000000001
+        },
+        "ledger_spend_usd": 1.19125,
+        "budget_usd": 2.0
+      },
+      "traces_path": "reports/final_v4_rerun/question_traces_heldout.json",
+      "checkpoint": {
+        "run_dir": "reports/runs/final_v4-432d6b705715",
+        "resumed_rows": 120
+      },
+      "note": "final_v4 run under --reports-dir; never writes detail.heldout"
+    }
+  },
+  "ragas_version": "0.3.1"
+}

@@ -1,0 +1,19 @@
+{
+  "slot": "q037_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The two consecutive months holding Oklahoma City's highest mean-temperature records are July and August: the hottest month on record was July 2011, followed closely by August 2011.",
+  "evidence_chunk_ids": "climate-041#c003+climate-041#c001+climate-071#c008+climate-007#c003+climate-050#c002",
+  "usage": {
+    "input_tokens": 1259,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.04,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"two short lines\"}",
+  "label": "unsupported",
+  "reason": "two short lines"
+}

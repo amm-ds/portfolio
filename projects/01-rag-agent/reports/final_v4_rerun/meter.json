@@ -1,0 +1,31 @@
+{
+  "generated_at": "2026-11-26T20:58:12.407653+00:00",
+  "hosted_budget_cap_usd": 2.0,
+  "generation": {
+    "spend_usd_metered": 1.19125,
+    "spend_usd_checkpoint_manifest": 1.19125,
+    "host": "api.kimi.com (kimi-for-coding)",
+    "request_hosts": [
+      "api.kimi.com"
+    ]
+  },
+  "judging": {
+    "replication": {
+      "spend_usd": 0.0,
+      "note": "verdicts read from the fresh traces"
+    },
+    "cross_family": {
+      "spend_usd": 0.0,
+      "status": "scored",
+      "qwen_tokens": {
+        "input": 182356,
+        "output": 2432
+      },
+      "request_hosts": [
+        "127.0.0.1"
+      ]
+    }
+  },
+  "total_hosted_spend_usd": 1.19125,
+  "under_cap": true
+}

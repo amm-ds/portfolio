@@ -1,0 +1,19 @@
+{
+  "slot": "q031_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "In 2015, Georgetown, Texas became one of the first American cities to be powered entirely by renewable energy, choosing to do so for financial stability reasons.",
+  "evidence_chunk_ids": "renewable-energy-081#c008+renewable-energy-076#c008+renewable-energy-057#c009+renewable-energy-076#c007+renewable-energy-081#c000",
+  "usage": {
+    "input_tokens": 1599,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.22,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

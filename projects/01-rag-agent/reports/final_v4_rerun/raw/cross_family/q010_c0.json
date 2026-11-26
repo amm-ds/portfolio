@@ -1,0 +1,19 @@
+{
+  "slot": "q010_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "In Lake Tahoe's epilimnion, the majority of the phytoplankton community is made up of small diatoms (cell volume = 30.5μm³), specifically Cyclotella stelligera and Synedra radians.",
+  "evidence_chunk_ids": "photosynthesis-023#c011+photosynthesis-023#c008+photosynthesis-095#c005+photosynthesis-074#c008+photosynthesis-095#c011",
+  "usage": {
+    "input_tokens": 1107,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.74,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

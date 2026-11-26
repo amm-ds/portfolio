@@ -192,9 +192,15 @@ The author hand-labelled 30 judged claims without seeing the judge's labels,
 then accepted seven corrections checked against the cited passages; the judge
 agreed on all 30 (Wilson 95% [0.887, 1.0]). A second judge from another model
 family (local qwen2.5:3b) matched 28 of the 30 hand labels and agreed with
-95.9% of the 147 committed claim labels (kappa 0.92); the final answer texts
-were never committed, so a second-judge F1 on the same answers could not be
-computed. Set C failed because the verifier
+95.9% of the 147 committed claim labels (kappa 0.92). A rerun of the same
+120 questions with the answer texts persisted (`reports/final_v4_rerun/`) was
+re-graded twice: the same-family replication judge scored F1 0.8466 vs the
+committed 0.9091 (a gap dominated by 24 agent runs hitting the 12-request
+loop rail, 4 in the committed run — regeneration variance, not judge
+disagreement), and the weak local-3B cross-family read scored 0.6626 with
+verdict agreement 78.3% / kappa 0.55 overall (0.09 on answered questions).
+The rerun does not confirm the headline within the pre-set 0.03 tolerance,
+so 0.9091 remains a single-family result. Set C failed because the verifier
 crashed, not because of answer quality. The revision history is in
 DESIGN.md.
 

@@ -167,3 +167,51 @@ def test_merged_traces_dedupes_fresh_run_rows(tmp_path: Path) -> None:
     assert len(merged) == 4
     by_q = {r["question"]: r["verdict"] for r in merged}
     assert by_q["q3"] == "empty-answer"  # fresh row wins for q0
+
+
+def test_rerun_never_modifies_existing_final_v3_run_dir(tmp_path: Path) -> None:
+    """Phase-2b guard: the committed final_v3 run dir is untouchable.
+
+    The E2E eval namespaces checkpoints by run id (``reports/runs/<split>-
+    <set_sha12>/``). A phase-2c rerun reuses the same set, so it lands on the
+    same run id — but its manifest identity differs (new commit), and
+    ``Checkpoint.open`` must REFUSE before writing a byte. A genuinely new
+    run id must namespace to a fresh sibling directory and leave the
+    final_v3 fixture byte- and mtime-identical.
+    """
+    runs_root = tmp_path / "reports" / "runs"
+    set_sha = "432d6b705715" + "0" * 52
+    final_v3_dir = runs_root / make_run_id("final_v3", set_sha)
+
+    def _final_v3_manifest() -> RunManifest:
+        return _manifest(tmp_path, split="final_v3", set_sha=set_sha)
+
+    original = Checkpoint.open(final_v3_dir, _final_v3_manifest())
+    original.write_row(
+        question_hash("q1"),
+        "q1",
+        {"question": "q1", "verdict": "correct"},
+        ["api.kimi.com"],
+        1.457917,
+    )
+    snapshot = {
+        p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in sorted(final_v3_dir.iterdir())
+    }
+
+    # A rerun at a new commit (the phase-2c situation): refusal, zero writes.
+    rerun = _final_v3_manifest()
+    rerun.commit = "0123456789abcdef0123456789abcdef01234567"
+    with pytest.raises(SystemExit):
+        Checkpoint.open(final_v3_dir, rerun)
+    assert {
+        p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in sorted(final_v3_dir.iterdir())
+    } == snapshot
+
+    # A new run id gets its own directory; the final_v3 dir stays untouched.
+    fresh_dir = runs_root / make_run_id("final_v4", "b" * 64)
+    fresh = Checkpoint.open(fresh_dir, _manifest(tmp_path, split="final_v4", set_sha="b" * 64))
+    fresh.write_row(question_hash("q1"), "q1", {"question": "q1"}, ["localhost"], 0.0)
+    assert fresh_dir != final_v3_dir
+    assert {
+        p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in sorted(final_v3_dir.iterdir())
+    } == snapshot

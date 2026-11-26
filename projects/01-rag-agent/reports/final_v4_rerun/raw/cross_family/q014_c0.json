@@ -1,0 +1,19 @@
+{
+  "slot": "q014_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Model hyperparameters cannot be inferred while fitting the machine to the training set because they refer to the model selection task.",
+  "evidence_chunk_ids": "machine-learning-079#c000+machine-learning-079#c002+machine-learning-038#c011+machine-learning-121#c007+machine-learning-038#c009",
+  "usage": {
+    "input_tokens": 1380,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.1,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

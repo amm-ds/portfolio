@@ -1,0 +1,19 @@
+{
+  "slot": "q000_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "GE Renewable Energy acquired LM Wind Power in April 2017 for €1.5 billion.",
+  "evidence_chunk_ids": "renewable-energy-065#c001+renewable-energy-091#c005+renewable-energy-065#c000+renewable-energy-115#c009+renewable-energy-041#c002",
+  "usage": {
+    "input_tokens": 1622,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 3.65,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

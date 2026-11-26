@@ -1,0 +1,19 @@
+{
+  "slot": "q080_c2",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "They also use websites specifically for aircraft, such as airliners.net, and social networking services, such as Twitter, Facebook and Instagram, to record their sightings and upload their photos.",
+  "evidence_chunk_ids": "aviation-124#c001+aviation-123#c003+aviation-123#c004+aviation-124#c002+aviation-000#c001",
+  "usage": {
+    "input_tokens": 1490,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.39,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

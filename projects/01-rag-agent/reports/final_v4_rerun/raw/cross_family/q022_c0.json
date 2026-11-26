@@ -1,0 +1,19 @@
+{
+  "slot": "q022_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The film is The Day After Tomorrow (2004), directed by Roland Emmerich and starring Dennis Quaid, in which an abrupt shutdown of thermohaline circulation causes catastrophic abrupt climate change, plunging the Northern Hemisphere into a new ice age.",
+  "evidence_chunk_ids": "climate-081#c003+climate-081#c008+climate-084#c000+climate-016#c006+climate-011#c008",
+  "usage": {
+    "input_tokens": 1395,
+    "output_tokens": 32
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.42,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The Day After Tomorrow (2004) is mentioned and the director and star are correctly stated\"}",
+  "label": "supported",
+  "reason": "The Day After Tomorrow (2004) is mentioned and the director and star are correctly stated"
+}

@@ -1,0 +1,19 @@
+{
+  "slot": "q005_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Aviation Farm Ltd is listed with the location Poland.",
+  "evidence_chunk_ids": "aviation-117#c008+aviation-017#c000+aviation-080#c000+aviation-114#c002+aviation-117#c004",
+  "usage": {
+    "input_tokens": 1673,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.32,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

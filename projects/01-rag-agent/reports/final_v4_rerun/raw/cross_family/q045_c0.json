@@ -1,0 +1,19 @@
+{
+  "slot": "q045_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "According to a 2019 report from the University of Oxford's Center for the Governance of AI, 82% of Americans believed that robots and AI should be carefully managed.",
+  "evidence_chunk_ids": "machine-learning-032#c007+machine-learning-032#c011+machine-learning-044#c010+machine-learning-105#c004+machine-learning-028#c011",
+  "usage": {
+    "input_tokens": 1216,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.95,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

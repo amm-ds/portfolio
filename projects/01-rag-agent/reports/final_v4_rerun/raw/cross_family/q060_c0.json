@@ -1,0 +1,19 @@
+{
+  "slot": "q060_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Some global warming games demonstrate the difficulty of international cooperation by making players represent different countries and requiring them to negotiate to fulfill game objectives.",
+  "evidence_chunk_ids": "climate-115#c001+climate-115#c000+climate-114#c000+climate-116#c008+climate-114#c001",
+  "usage": {
+    "input_tokens": 1039,
+    "output_tokens": 40
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 1.28,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The passage states that games sometimes demonstrate the difficulty of international cooperation by making players represent different countries and require them to negotiate to fulfill game objectives.\"}",
+  "label": "supported",
+  "reason": "The passage states that games sometimes demonstrate the difficulty of international cooperation by making players represent different countries and require them to negotiate to fulfill game objectives."
+}

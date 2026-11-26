@@ -1,0 +1,19 @@
+{
+  "slot": "q001_c1",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "Rule-based machine learning methods therefore typically comprise a set of rules, or knowledge base, that collectively make up the prediction model.",
+  "evidence_chunk_ids": "machine-learning-103#c007+machine-learning-111#c001+machine-learning-103#c009+machine-learning-111#c000+machine-learning-025#c010",
+  "usage": {
+    "input_tokens": 1208,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.47,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

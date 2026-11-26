@@ -1,0 +1,19 @@
+{
+  "slot": "q066_c0",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "William Herschel was the first to deduce the low density of the Martian atmosphere, in his 1784 paper.",
+  "evidence_chunk_ids": "climate-078#c002+climate-078#c007+climate-119#c009+aviation-124#c010+climate-012#c010",
+  "usage": {
+    "input_tokens": 1076,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.81,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"one short line\"}",
+  "label": "supported",
+  "reason": "one short line"
+}

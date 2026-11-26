@@ -1,0 +1,19 @@
+{
+  "slot": "q090_c3",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "In Nevada, government policy has shaped commercial renewable development: the state passed a renewable portfolio standard in 1999, and in 2001 the governor signed SB 372, at the time the country's most aggressive renewable portfolio standard, requiring that 15 percent of all electricity generated in Nevada be derived from new renewables by 2013.",
+  "evidence_chunk_ids": "renewable-energy-059#c011+renewable-energy-059#c000+renewable-energy-113#c001+renewable-energy-078#c001+renewable-energy-113#c005",
+  "usage": {
+    "input_tokens": 1406,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.54,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

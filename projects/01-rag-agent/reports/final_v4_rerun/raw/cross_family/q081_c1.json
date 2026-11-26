@@ -1,0 +1,19 @@
+{
+  "slot": "q081_c1",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "claim": "The Liberty Belle is currently under rebuild to airworthy status, using the forward fuselage of another B-17 and other new parts, but it is not known when the restoration will be completed.",
+  "evidence_chunk_ids": "aviation-022#c011+aviation-023#c013+aviation-054#c001+aviation-022#c000+aviation-023#c014",
+  "usage": {
+    "input_tokens": 1380,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.69,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

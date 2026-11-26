@@ -1,0 +1,1484 @@
+[
+  {
+    "question": "Which company acquired LM Wind Power in April 2017 for €1.5 billion?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "LM Wind Power"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-065#c001"
+    ]
+  },
+  {
+    "question": "Why does a single rule fail to function as a complete model on its own?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Rule-based machine learning"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-111#c001"
+    ]
+  },
+  {
+    "question": "How would assuming the Pacific reconstruction is in error affect estimates of climate sensitivity?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Climate: Long range Investigation, Mapping, and Prediction"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-014#c002"
+    ]
+  },
+  {
+    "question": "Which French aeronautical pioneer's design served as the basis for the toy helicopter that sparked the brothers' interest in flight?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Wright brothers"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-122#c004"
+    ]
+  },
+  {
+    "question": "Which mushroom species resembles Chlorophyllum agaricoides but differs by preferring forest habitats and developing a black gleba as it ages?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Chlorophyllum agaricoides"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "photosynthesis-073#c001"
+    ]
+  },
+  {
+    "question": "Which country is listed as the location for Aviation Farm Ltd?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "List of aircraft manufacturers by ICAO name"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-117#c008"
+    ]
+  },
+  {
+    "question": "Which three performance guarantees does the text state are not assured for MLC across a range of operating conditions?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Machine learning control"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-117#c002"
+    ]
+  },
+  {
+    "question": "Who proposed creating the Russian Association for Logic Programming that eventually led to the establishment of LPAR?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Logic for Programming, Artificial Intelligence and Reasoning"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-099#c000"
+    ]
+  },
+  {
+    "question": "Approximately how many species of green algae are currently recognized?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Green algae"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "photosynthesis-083#c000"
+    ]
+  },
+  {
+    "question": "How do individual neural units in a TDNN gather input to support contextual modeling at each layer?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Time delay neural network"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-057#c000"
+    ]
+  },
+  {
+    "question": "Which diatom species comprise the majority of the phytoplankton community in Lake Tahoe's epilimnion?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Deep chlorophyll maximum"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "photosynthesis-023#c011"
+    ]
+  },
+  {
+    "question": "On which date did the Wright brothers achieve their first controlled, sustained flight of a powered aircraft?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Wright brothers"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-122#c000"
+    ]
+  },
+  {
+    "question": "Which constitutional provision did Indira Gandhi add in 1977 to mandate the state's effort to protect and improve the environment?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Ministry of Environment, Forest and Climate Change"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-029#c001"
+    ]
+  },
+  {
+    "question": "Which aircraft manufacturer appears at the beginning of this ICAO-recognized list?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "List of aircraft manufacturers by ICAO name"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-117#c000"
+    ]
+  },
+  {
+    "question": "How do algorithm hyperparameters differ from model hyperparameters regarding their effect on the final model?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Hyperparameter (machine learning)"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-079#c000"
+    ]
+  },
+  {
+    "question": "According to Spain's updated 2023 National Energy and Climate Plan, how much solar PV capacity is projected for 2030?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Solar power in Spain"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-107#c002"
+    ]
+  },
+  {
+    "question": "Which predators are capable of entering and hunting below the snowpack?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Subnivean climate"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-062#c001"
+    ]
+  },
+  {
+    "question": "On which exam did GPT-4 score between the 99th and 100th percentile?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Progress in artificial intelligence"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-044#c007"
+    ]
+  },
+  {
+    "question": "Which five non-profit organizations established the International Renewable Energy Alliance in June 2004?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "International Renewable Energy Alliance"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-086#c000"
+    ]
+  },
+  {
+    "question": "Who serves as the senior editor-in-chief for the International Journal of Computer Vision?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "International Journal of Computer Vision"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-093#c000"
+    ]
+  },
+  {
+    "question": "How does the electron flux diverted by plastid terminal oxidase compare to the total photosynthetic electron transport when the enzyme is activated?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Plastid terminal oxidase"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "photosynthesis-056#c004"
+    ]
+  },
+  {
+    "question": "Which two continental philosophers provided the insights that formed the basis of Dreyfus's critique of early AI research?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Hubert Dreyfus's views on artificial intelligence"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-020#c000"
+    ]
+  },
+  {
+    "question": "Which 2004 film directed by Roland Emmerich portrays an abrupt shutdown of thermohaline circulation that plunges the Northern Hemisphere into a new ice age?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Climate change in popular culture"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-081#c003"
+    ]
+  },
+  {
+    "question": "In forensic practices, which organisms serve as a diagnostic tool for drowning?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Algae DNA barcoding"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "photosynthesis-066#c012"
+    ]
+  },
+  {
+    "question": "Which federal agency assumed control of numerous SAGE radar stations after the command's surface-to-air missiles were deactivated?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Aerospace Defense Command"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-009#c011"
+    ]
+  },
+  {
+    "question": "Which financial tool is cited as an example of a potential action in climate risk management?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Climate risk management"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-107#c000"
+    ]
+  },
+  {
+    "question": "Which Scottish Government minister provided support to the Cabinet Secretary for Environment, Climate Change and Land Reform?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Cabinet Secretary for Environment, Climate Change and Land Reform"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-118#c000"
+    ]
+  },
+  {
+    "question": "Which soil type is typically associated with the mesophytic ecosystem?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Tropical marine climate"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-046#c001"
+    ]
+  },
+  {
+    "question": "Which organism possesses two copies of the gene for plastid terminal oxidase?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Plastid terminal oxidase"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "photosynthesis-056#c003"
+    ]
+  },
+  {
+    "question": "Where does Dreyfus say inessential details are relegated when we process our surroundings?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Hubert Dreyfus's views on artificial intelligence"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-020#c008"
+    ]
+  },
+  {
+    "question": "In the 1961 film Voyage to the Bottom of the Sea, what event causes the abrupt global warming?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Climate change in popular culture"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-081#c001"
+    ]
+  },
+  {
+    "question": "Which Texas city became one of the first in America to run completely on renewable energy in 2015 for financial stability reasons?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Renewable energy in the United States"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-081#c008"
+    ]
+  },
+  {
+    "question": "Since when has all power generated by these facilities been allocated to Victoria's portion of the National Electricity Market?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Murray Hydroelectric Power Station"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-005#c000"
+    ]
+  },
+  {
+    "question": "Which message protocol was inspired by the Constructionist design methodology?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Artificial intelligence systems integration"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-017#c004"
+    ]
+  },
+  {
+    "question": "Which violin dealer was designated to sell the Stradivarius cello following Greenhouse's death?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Bernard Greenhouse"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-066#c001"
+    ]
+  },
+  {
+    "question": "How many general aviation aircraft operations were recorded at Cessna Aircraft Field during the twelve-month period ending July 19, 2019?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Cessna Aircraft Field"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-075#c000"
+    ]
+  },
+  {
+    "question": "Which two squadrons quickly joined Headquarters Squadron 15 at Marine Corps Air Station Ewa in April 1945?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Marine Aircraft Group 15"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-110#c001"
+    ]
+  },
+  {
+    "question": "Which two consecutive months hold the records for the highest mean temperatures in Oklahoma City?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Climate of Oklahoma City"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-041#c003"
+    ]
+  },
+  {
+    "question": "Which research discipline focuses on designing artificially intelligent computers or robots that act as Artificial Moral Agents?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Ethics of artificial intelligence"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-032#c000"
+    ]
+  },
+  {
+    "question": "Which two types of data are combined via scientific modeling to display potential future risks in a climate appraisal report?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Climate appraisal"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-099#c000"
+    ]
+  },
+  {
+    "question": "Which 2019 film drew its plot inspiration from the controversy surrounding the Alta Hydroelectric Power Station?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Alta Hydroelectric Power Station"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-085#c002"
+    ]
+  },
+  {
+    "question": "Who performed the contralto part alongside Bernard Greenhouse on cello for the 1966 recording of Bach's Cantata No. 79?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Bernard Greenhouse"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-066#c004"
+    ]
+  },
+  {
+    "question": "During the September 1999 Hurricane Floyd evacuation, which Alabama air base received the flyable CH-53E Super Stallion aircraft from Marine Aircraft Group 26?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Marine Aircraft Group 26"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-048#c003"
+    ]
+  },
+  {
+    "question": "When was Marine Aircraft Group 15 officially commissioned?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Marine Aircraft Group 15"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-110#c000"
+    ]
+  },
+  {
+    "question": "Why did plants evolve a light-dependent protochlorophyllide reductase instead of relying solely on the dark-operative version?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Protochlorophyllide"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "photosynthesis-027#c000"
+    ]
+  },
+  {
+    "question": "According to a 2019 report from the University of Oxford's Center for the Governance of AI, what percentage of Americans believed robots and artificial intelligence should be carefully managed?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Ethics of artificial intelligence"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-032#c007"
+    ]
+  },
+  {
+    "question": "Which Norwegian state-owned electric company operates the Alta power station?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Alta Hydroelectric Power Station"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-085#c000"
+    ]
+  },
+  {
+    "question": "Which major city receives all of the electricity produced by the Blenheim–Gilboa Pumped Storage Power Station?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Blenheim–Gilboa Hydroelectric Power Station"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-035#c000"
+    ]
+  },
+  {
+    "question": "How much funding did voters approve during the January 1916 special election for the new hydroelectric plant?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Lake Zumbro Hydroelectric Generating Plant"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-034#c001"
+    ]
+  },
+  {
+    "question": "Which utility's refusal to purchase firm energy resulted in the indefinite postponement of the Conawapa project in 1992?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Nelson River Hydroelectric Project"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-022#c005"
+    ]
+  },
+  {
+    "question": "In which programming language were the command-line tools for the Waffles machine learning toolkit implemented?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Waffles (machine learning)"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-081#c000"
+    ]
+  },
+  {
+    "question": "Which organization originally put forward the concept of greenhouse debt to define environmental harm caused by developed nations?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Greenhouse debt"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-075#c000"
+    ]
+  },
+  {
+    "question": "How many neurons are contained within the aggregate that makes up a trion?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Trion (neural networks)"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-067#c000"
+    ]
+  },
+  {
+    "question": "Which South Atlantic tropical cyclone uniquely achieved hurricane strength and struck Santa Catarina in 2004?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Climate of Brazil"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-110#c007"
+    ]
+  },
+  {
+    "question": "On what date did the Signal Corps Aviation Station at Mineola officially open?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Aviation Section, U.S. Signal Corps"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-071#c008"
+    ]
+  },
+  {
+    "question": "Which letter suffix was used to differentiate Imperial Japanese Navy trainer aircraft from operational models?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "List of aircraft of Japan during World War II"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-092#c000"
+    ]
+  },
+  {
+    "question": "In August 2017, which acquisition propelled DAE into the top tier of global aircraft lessors?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Dubai Aerospace Enterprise"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-014#c000"
+    ]
+  },
+  {
+    "question": "Which organization did the Aerospace Operational Support Group become after being disbanded in 2016?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Aerospace Operational Support Group RAAF"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-104#c000"
+    ]
+  },
+  {
+    "question": "In which year was this peer-reviewed journal originally established?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Electronic Letters on Computer Vision and Image Analysis"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-045#c000"
+    ]
+  },
+  {
+    "question": "Which private sector company notably partnered with the LCCA on its projects?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "London Climate Change Agency"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-036#c000"
+    ]
+  },
+  {
+    "question": "How do some games demonstrate the challenges of international cooperation in addressing global warming?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "List of climate change video games"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-115#c001"
+    ]
+  },
+  {
+    "question": "Which former lawyer currently chairs the Stop Climate Chaos Scotland coalition?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Stop Climate Chaos Scotland"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-031#c000"
+    ]
+  },
+  {
+    "question": "Which two English counties host the primary fire stations where Aircraft Handlers are typically stationed?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Aircraft handler"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-085#c007"
+    ]
+  },
+  {
+    "question": "Which Enzyme Commission number is assigned to 7-Hydroxymethyl chlorophyll a reductase?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "7-Hydroxymethyl chlorophyll a reductase"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "photosynthesis-055#c000"
+    ]
+  },
+  {
+    "question": "When does the monsoon season typically conclude in Delhi?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Climate of Delhi"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-054#c005"
+    ]
+  },
+  {
+    "question": "Which two other British military or civilian groups utilized aircraft during the Second World War alongside the RAF and Fleet Air Arm?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "List of aircraft of the United Kingdom in World War II"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-078#c000"
+    ]
+  },
+  {
+    "question": "Which astronomer correctly inferred the scarcity of Martian air by observing that Mars passing near two faint stars did not dim their brightness?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Climate of Mars"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-078#c002"
+    ]
+  },
+  {
+    "question": "How does an extension neural network determine its estimated class?",
+    "category": "single_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Extension neural network"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-073#c002"
+    ]
+  },
+  {
+    "question": "In what years did the United States see its first merchant wind plant development and the introduction of the BioFuels Security Act, respectively?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Merchant wind power",
+      "BioFuels Security Act"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-049#c000",
+      "renewable-energy-111#c000"
+    ]
+  },
+  {
+    "question": "How does the robot David's emergence of love, jealousy, and self-protection in A.I. Artificial Intelligence reflect Isaac Asimov's conclusion regarding fixed rules for governing AI?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Ethics of artificial intelligence",
+      "A.I. Artificial Intelligence"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-032#c001",
+      "machine-learning-077#c002"
+    ]
+  },
+  {
+    "question": "Which country is highlighted for its substantial installed wind capacity in Article A, and which of its energy companies are listed as major shareholders in the Andasol 3 solar project described in Article B?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Wind power in Europe",
+      "Andasol Solar Power Station"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-055#c002",
+      "renewable-energy-072#c003"
+    ]
+  },
+  {
+    "question": "How many years after the formation of the Civil Aviation Authority of New Zealand was the Boeing F/A-18E/F Super Hornet introduced?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "List of attack aircraft",
+      "Civil Aviation Authority of New Zealand"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-096#c003",
+      "aviation-107#c000"
+    ]
+  },
+  {
+    "question": "How does the post-World War II boom in United States general aviation relate to the kit-form, homebuilt nature of the Van's Aircraft RV-10?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Van's Aircraft RV-10",
+      "Aviation"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-076#c000",
+      "aviation-123#c005"
+    ]
+  },
+  {
+    "question": "What potential human-like traits might neuromorphic robots develop according to AI ethics discussions, and how does this contrast with the emotional fulfillment experienced by the resurrected robot David in A.I. Artificial Intelligence?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Ethics of artificial intelligence",
+      "A.I. Artificial Intelligence"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-032#c005",
+      "machine-learning-077#c006"
+    ]
+  },
+  {
+    "question": "In the United States, what renewable energy technology is utilized by the Bear Swamp facility compared to the primary focus of the companies listed in the photovoltaics article?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Bear Swamp Hydroelectric Power Station",
+      "List of photovoltaics companies"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-048#c000",
+      "renewable-energy-083#c007"
+    ]
+  },
+  {
+    "question": "Which aircraft manufacturer produced both the \"Lady Peace II\" displayed at the Virginia Aviation Museum and the PS-43 transport used by the Red Army Air Forces?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Virginia Aviation Museum",
+      "List of aircraft of the Red Army Air Forces"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-056#c003",
+      "aviation-081#c001"
+    ]
+  },
+  {
+    "question": "While Germany's photovoltaic sector is driven by domestic manufacturers like Q-Cells and widespread solar installations, which U.S. federal office administers prize competitions like the Wave Energy Prize to advance renewable energy technologies such as solar power?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Solar power in Germany",
+      "Office of Energy Efficiency and Renewable Energy"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-079#c008",
+      "renewable-energy-101#c009"
+    ]
+  },
+  {
+    "question": "Both Stop Climate Chaos Scotland's Scottish climate legislation and the UK Climate Change Act influenced by environmental groups share what common carbon reduction target for 2050?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Stop Climate Chaos Scotland",
+      "Climate Change Act 2008"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "climate-031#c000",
+      "climate-089#c010"
+    ]
+  },
+  {
+    "question": "What is the initial research focus of the Centre for Artificial Intelligence and Robotics, and which open-source machine learning framework listed in the outline replaced DistBelief?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Centre for Artificial Intelligence and Robotics",
+      "Outline of machine learning"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-033#c000",
+      "machine-learning-116#c001"
+    ]
+  },
+  {
+    "question": "Following World War II, what 1958 international agreement established jurisdiction over aircraft hijacking, and what type of primary armament do modern SPAAGs typically combine with short-range missiles?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Aircraft hijacking",
+      "Self-propelled anti-aircraft weapon"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-001#c011",
+      "aviation-003#c012"
+    ]
+  },
+  {
+    "question": "Which 19th-century pioneer established the foundation for heavier-than-air flight with gliders, and what specific digital tools do modern aircraft spotters use to track and share photos of these planes?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Aircraft spotting",
+      "Aviation"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-004#c001",
+      "aviation-123#c003"
+    ]
+  },
+  {
+    "question": "What shared historical conflict links the Japanese aircraft carrier Hiyō and the B-17 bomber Liberty Belle, and what was the combat record of the Hiyō's air group compared to the current status of the Liberty Belle?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Japanese aircraft carrier Hiyō",
+      "Liberty Belle (aircraft)"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-022#c013",
+      "aviation-054#c002"
+    ]
+  },
+  {
+    "question": "Aircraft hijacking is considered a capital crime in which two states of the United States, and what Sonex Aircraft model featuring a Y-tail was flight tested by Bob Carlton in August 2011?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Aircraft hijacking",
+      "Sonex Aircraft Sonex"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-001#c002",
+      "aviation-061#c003"
+    ]
+  },
+  {
+    "question": "Which has a higher nominal power capacity, Egypt's Benban Solar Park or Himachal Pradesh's Nathpa Jhakri Project, and what is the difference in megawatts?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Solar power by country",
+      "Hydroelectric power in Himachal Pradesh"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-023#c003",
+      "renewable-energy-102#c004"
+    ]
+  },
+  {
+    "question": "What nation is both the home base for the 1st Battalion, 227th Aviation Regiment described in Article A and the headquarters location for aircraft manufacturers like Aircraft Spruce & Specialty Company and American Jet Industries Inc listed in Article B?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "1st Battalion, 227th Aviation Regiment (United States)",
+      "List of aircraft manufacturers by ICAO name"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-052#c006",
+      "aviation-117#c005"
+    ]
+  },
+  {
+    "question": "How do the founding timeline and primary host countries of the AAAI Conference on Artificial Intelligence and the Mexican International Conference on Artificial Intelligence (MICAI) compare?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "AAAI Conference on Artificial Intelligence",
+      "Mexican International Conference on Artificial Intelligence"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "machine-learning-061#c002",
+      "machine-learning-087#c000"
+    ]
+  },
+  {
+    "question": "Which U.S. military figure authorized the postwar flight in Article A, and which regulatory agency mentioned in Article B oversees approved aircraft parts?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Memphis Belle (aircraft)",
+      "Aircraft part"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-060#c006",
+      "aviation-113#c004"
+    ]
+  },
+  {
+    "question": "By August of which respective years did Marine Aircraft Group 41's fighter squadrons transition to supersonic flight and UP Aerospace begin offering low-cost launches to students, and how many years apart are these milestones?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Marine Aircraft Group 41",
+      "UP Aerospace"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-072#c003",
+      "aviation-105#c002"
+    ]
+  },
+  {
+    "question": "What specific events involving Marine Aircraft Group 31 and UP Aerospace respectively occurred in November, and on what dates?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Marine Aircraft Group 31",
+      "UP Aerospace"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-049#c002",
+      "aviation-105#c003"
+    ]
+  },
+  {
+    "question": "How did the operational context and timeframe of the Naval Aircraft Factory TS aircraft differ from those of the Eastern Air Lines Shuttle flight 1320?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Aircraft hijacking",
+      "Naval Aircraft Factory TS"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-001#c009",
+      "aviation-016#c001"
+    ]
+  },
+  {
+    "question": "How do economic conditions and government policies respectively influence the commercial development of renewable energy in Brazil compared to Nevada, United States?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Renewable energy in Brazil",
+      "Nellis Solar Power Plant"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "renewable-energy-059#c010",
+      "renewable-energy-061#c003"
+    ]
+  },
+  {
+    "question": "Which WWII aircraft model, whose name connects the Liberty Belle and the Vega Aircraft Corporation, was modified postwar into a DB-17P drone director?",
+    "category": "multi_hop",
+    "expected_behavior": "answer",
+    "relevant_titles": [
+      "Liberty Belle (aircraft)",
+      "Vega Aircraft Corporation"
+    ],
+    "absent_terms": [],
+    "gold_chunk_ids": [
+      "aviation-054#c003",
+      "aviation-077#c000"
+    ]
+  },
+  {
+    "question": "What is the orbital period of Charon around Pluto, and how does this relate to their mutual tidal locking?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Charon",
+      "Pluto's moons",
+      "tidal locking"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "What is the traditional Japanese fermentation starter culture used to make miso and sake, and which specific fungal species is responsible for it?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "koji",
+      "Aspergillus oryzae",
+      "miso production"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "In which German city is TSMC constructing its first major semiconductor fabrication plant in Europe, and what advanced chip process technology will it initially produce?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "TSMC",
+      "Dresden",
+      "3nm process"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "What specific structural principle did Antoni Gaudí apply to the column design in the Sagrada Família to mimic natural load distribution?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Antoni Gaudí",
+      "Sagrada Família",
+      "catenary arches"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "What are the four distinct stages of a monarch butterfly's metamorphosis, and how long does each stage typically last?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "monarch butterfly",
+      "metamorphosis stages",
+      "developmental duration"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "When was movable type printing first invented in China, and which Song dynasty artisan is credited with its development?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "movable type printing",
+      "Song dynasty",
+      "Bi Sheng"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "What specific mineral-based pigment did Katsushika Hokusai use to achieve the vibrant blue gradient in his 1831 woodblock print 'The Great Wave off Kanagawa'?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Katsushika Hokusai",
+      "The Great Wave off Kanagawa",
+      "Prussian blue"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "Which quantum computing hardware company recently achieved a milestone in superconducting qubit coherence times, and what was their latest Series B funding amount?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "quantum computing hardware companies",
+      "superconducting qubits",
+      "Series B funding"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "What was the primary function of the Universal Docking Module developed for the Apollo-Soyuz Test Project?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Apollo-Soyuz Test Project",
+      "Universal Docking Module",
+      "docking compatibility"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "What specific FDA guidelines currently restrict the prophylactic use of medically important antibiotics in commercial livestock operations to combat antimicrobial resistance?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "FDA guidelines",
+      "prophylactic antibiotic use",
+      "commercial livestock operations"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "Which two Austrian mountaineers successfully reached the peak of Mount Everest without supplemental oxygen during the 1978 Polish-Austrian expedition?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Reinhold Messner",
+      "Peter Habeler",
+      "1978 Polish-Austrian expedition"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "How does the routine prophylactic use of critically important antibiotics in commercial swine production contribute to the spread of antibiotic resistance in local ecosystems?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "critically important antibiotics",
+      "commercial swine production",
+      "antibiotic resistance"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "Which two major tectonic plates are currently colliding to drive the ongoing geological uplift of the Himalayan mountain range?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Indian Plate",
+      "Eurasian Plate",
+      "continental collision"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "Which Berber confederation historically controlled the trans-Saharan caravan routes connecting Timbuktu to Sijilmasa?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Timbuktu",
+      "Sijilmasa"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "Who authored the Statutes of 1268 governing the Parisian Bakers' Guild?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Parisian Bakers' Guild",
+      "Statutes of 1268"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "What is the time recorded by Eliud Kipchoge for the men's marathon at the Tokyo 2020 Olympics?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Eliud Kipchoge",
+      "Tokyo 2020"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "Under the International Whaling Commission's management plan, what is the current annual catch limit for bowhead whales allocated to the Alaska Native subsistence harvest?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "International Whaling Commission",
+      "bowhead whales",
+      "Alaska Native subsistence harvest"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "Which Venetian glassmaker is credited with perfecting the avventurina glass technique using gold chloride?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "avventurina glass",
+      "gold chloride",
+      "Murano"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "What specific structural innovation did Antoni Gaudí introduce to support the weight of the Sagrada Família's towers?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Sagrada Família",
+      "Gaudí",
+      "catenary arch"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "Which Grand Vizier under Sultan Murad IV was primarily responsible for enforcing the strict crackdown on coffeehouses in Constantinople during the 1620s?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Kuyucu Murad Pasha",
+      "Sultan Murad IV",
+      "Constantinople"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "Which variation of the Sicilian Defense is named after Miguel Najdorf and features the move ...a6 on Black's fifth turn?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Sicilian Defense",
+      "Miguel Najdorf"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "Which Icelandic volcano erupted in April 2010 and caused widespread commercial flight cancellations across Europe?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Eyjafjallajökull",
+      "April 2010 eruption",
+      "European aviation disruption"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "What is the name of the golden roof structure located on top of the Potala Palace?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Potala Palace",
+      "golden roof"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "What is the chemical formula of the cathode material typically used in commercial lithium-cobalt-oxide batteries, and how does its layered structure facilitate lithium intercalation during charging?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "lithium cobalt oxide",
+      "cathode material",
+      "lithium intercalation"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "Which specific aircraft model, equipped with skis and reinforced landing gear, is used to support the 'Polar Bridge' logistics operation delivering fuel and supplies to the Amundsen-Scott South Pole Station?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Amundsen-Scott South Pole Station",
+      "LC-130 Hercules",
+      "Polar Bridge"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "What was the estimated financial loss to the Icelandic agricultural sector caused by ash deposition during the 2010 Eyjafjallajökull eruption?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Eyjafjallajökull",
+      "Icelandic agricultural sector",
+      "2010 Eyjafjallajökull eruption"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "What percentage tax did the Sasanian Empire levy on silk imports passing through Ctesiphon?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Sasanian Empire",
+      "Ctesiphon"
+    ],
+    "gold_chunk_ids": []
+  },
+  {
+    "question": "How does the Kenya Coffee Directorate calculate the minimum export price for Arabica beans sold through the Nairobi Coffee Exchange auction system?",
+    "category": "unanswerable",
+    "expected_behavior": "abstain",
+    "relevant_titles": [],
+    "absent_terms": [
+      "Kenya Coffee Directorate",
+      "Nairobi Coffee Exchange",
+      "minimum export price"
+    ],
+    "gold_chunk_ids": []
+  }
+]
