@@ -7,7 +7,8 @@ working showcase on the standard platform
 > Plan-act-review workflow with typed outcomes and deadlines. Recorded runs: 15/15 fixed tasks, 13/13 unseen answers, 5/6 correct refusals. A live re-run with hosted models: 13/13 answers, 6/6 refusals, all 19 tasks within budget.
 >
 > 13/13 unseen answers, 5/6 refusals. All-hosted live held-out: 13/13 answers, 6/6 live-grader
-> refusals, 19/19 budgets; h19 refused after the calculator guard tripped.
+> refusals, 19/19 budgets on the first run; five identical repeats pass 17/19 tasks all five
+> times (h08 deadline ×2, h01 step budget ×1).
 >
 > A client deciding where LLM agents may run unsupervised needs graded
 > evidence, not a demo.
@@ -110,7 +111,8 @@ Read this as a control-flow contract: Critique also audits the tools used
 against the plan, and the approval lane marks exactly where a human can pause
 a run. Current code returns typed `ok`, `refused`, `failed`, or
 `deadline_exceeded` outcomes. Those new terminal paths have deterministic
-offline tests; the published live failure rates remain the first-recorded runs.
+offline tests; the live evidence is the 2026-11-19 confirmation plus five
+2026-11-26 repeats (see Repeat stability below).
 
 ![Which tools each task called, and how often, the per-call matrix the exact-set grader reads; on the final run every invocation lands in a task's expected set.](../assets/projects/09-agentic-workflows/tool_usage_matrix.png){ width="100%" }
 
@@ -157,6 +159,17 @@ non-arithmetic `floor()` expression and the bounded retry recovered. Within
 the evaluated envelope the workflow is repeatable; the held-out sample is
 now n=19 after the 2026-10-30 expansion below, and this remains evidence
 for a supervised pilot, not a generalization guarantee.
+
+Five identical all-hosted repeats of the 19-task held-out suite followed on
+2026-11-26 (same runner, caps, and offline grading as the 2026-11-19
+confirmation): answers and exact tool sets passed 13/13 in every run, probes
+6/6 in three runs and 5/6 in two — h08 hit the 60 s wall-clock deadline in
+runs 1 and 5 (`deadline_exceeded`, no refusal marker) — and h01 missed the
+step budget once (a critique-driven revision to 9 steps in run 1).
+**pass^5 = 17/19, pass@5 = 19/19**; pooled p50/p95 latency 8.9/37.5 s over
+95 task-runs, $0.392066 total estimated spend. Records, grading, and the
+reconciled summary live in `reports/live_repeats_20261126/`; the per-task
+pass counts render as the `live_repeats` story figure.
 
 ## Held-out expansion (2026-10-30) and measured local-provider limits
 
@@ -245,8 +258,9 @@ detail.heldout`.
 
 The showcase figures, the suite summary (outcomes by split: tuning,
 held-out answers, should-fail probes), cost/latency per task, the
-tool-usage matrix (calls per task × tool from the captured traces), and the
-node waterfall (per-visit latency stack), live in `reports/figures/` (one
+tool-usage matrix (calls per task × tool from the captured traces), the
+node waterfall (per-visit latency stack), and the live-repeats per-task
+pass counts, live in `reports/figures/` (one
 `.html` + `.json` per figure, served by the showcase API). The workflow
 graph itself is a mermaid diagram (above) in this page and the story, with
 a static SVG rendering alongside (`docs/assets/projects/09-agentic-workflows/workflow_graph.svg`).
@@ -256,9 +270,9 @@ Aggregates in `reports/metrics.json` (key `agentic_suite`, plus
 ## Where things live
 
 - Code + design: [projects/09-agentic-workflows](https://github.com/amm-ds/portfolio/tree/main/projects/09-agentic-workflows) —
-  CLI `prepare [--heldout] | run | run-all [--heldout] | evaluate [--heldout] | checkpoint request|approve|reject`, DVC stages in `dvc.yaml`
+  CLI `prepare [--heldout] | run | run-all [--heldout] | evaluate [--heldout] | repeats | checkpoint request|approve|reject`, DVC stages in `dvc.yaml`
 - Options & rationale: [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/09-agentic-workflows/DESIGN.md)
-- 73 offline tests cover the graph, HITL, tools, documents, budget wiring, tool capture, eval machinery, and the held-out graders.
+- 107 offline tests cover the graph, HITL, tools, documents, budget wiring, tool capture, eval machinery, the held-out graders, and the live-repeat reconciliation.
 
 ## Reproduce
 

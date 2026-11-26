@@ -190,7 +190,11 @@ the 65- or 55-question denominators above:
 
 The author hand-labelled 30 judged claims without seeing the judge's labels,
 then accepted seven corrections checked against the cited passages; the judge
-agreed on all 30 (Wilson 95% [0.887, 1.0]). Set C failed because the verifier
+agreed on all 30 (Wilson 95% [0.887, 1.0]). A second judge from another model
+family (local qwen2.5:3b) matched 28 of the 30 hand labels and agreed with
+95.9% of the 147 committed claim labels (kappa 0.92); the final answer texts
+were never committed, so a second-judge F1 on the same answers could not be
+computed. Set C failed because the verifier
 crashed, not because of answer quality. The revision history is in
 DESIGN.md.
 

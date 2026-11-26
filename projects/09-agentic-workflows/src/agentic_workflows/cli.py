@@ -149,6 +149,22 @@ def run_all(
     )
 
 
+@app.command(name="repeats")
+def repeats_cmd(
+    repeats_dir: Annotated[
+        Path,
+        typer.Option("--repeats-dir", help="Folder with run<i>/ live-repeat artifacts."),
+    ] = Path("reports/live_repeats_20261126"),
+    config: str = "params.yaml",
+) -> None:
+    """Aggregate repeated held-out live runs (offline) → summary + live_repeats figure."""
+    from agentic_workflows.repeats import write_repeats_report
+
+    cfg = load_config(Path(config))
+    summary_path = write_repeats_report(repeats_dir, cfg)
+    typer.echo(f"repeats summary written: {summary_path}")
+
+
 @app.command()
 def evaluate(
     config: str = "params.yaml",

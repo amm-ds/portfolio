@@ -57,6 +57,19 @@ def _m01() -> list[str]:
     return [_fmt(f1["f1"], 4), _fmt(s3["metrics"]["recall_at_5"], 3)]
 
 
+def _m01_cross_family_judge() -> list[str]:
+    """Cross-family judge calibration + claim-level agreement (E8)."""
+    base = "projects/01-rag-agent/reports/cross_family_judge_2026-11-26"
+    c = _load(f"{base}/calibration.json")
+    a = _load(f"{base}/agreement.json")
+    v = a["vs_committed_kimi_labels"]
+    return [
+        f"{c['matches_owner']}/{c['n_items']}",
+        f"{v['agreement'] * 100:.1f}",
+        f"{v['kappa']:.2f}",
+    ]
+
+
 def _m02() -> list[str]:
     m = _load("projects/02-demand-forecasting/reports_m5_full/metrics.json")
     v = m["test"]["convex_ensemble"]["official_wrmsse"]
@@ -107,6 +120,18 @@ def _m04() -> list[str]:
         _fmt(fresh["cascade_f1_macro"], 4),
         _fmt(c["ops"]["est_cost_usd"], 6),
     ]
+
+
+def _m04_paired() -> list[str]:
+    """Paired cascade gain interval + McNemar p (E6 replication).
+
+    Surfaces print the negative bound with U+2212, so claim the digits
+    (same convention as _m05_repeated).
+    """
+    c = _load("projects/04-nlp-classification/reports/llm_cascade_paired_ci.json")
+    paired = c["fresh_holdout_paired"]
+    lo, hi = paired["f1_macro"]["ci_95"]
+    return [_fmt(abs(lo), 4), _fmt(hi, 4), _fmt(paired["mcnemar"]["p_value"], 3)]
 
 
 def _m05() -> list[str]:
@@ -178,6 +203,16 @@ def _m09() -> list[str]:
     t = m["detail"]["pass_rate_intervals"]["answer_success"]
     h = m["detail"]["heldout"]["pass_rate_intervals"]["answer_success"]
     return [f"{t['passed']}/{t['n']}", f"{h['passed']}/{h['n']}"]
+
+
+def _m09_repeats() -> list[str]:
+    """Held-out live repeats: pass^5 + pooled p50/p95 latency (E7)."""
+    s = _load("projects/09-agentic-workflows/reports/live_repeats_20261126/repeats_summary.json")
+    return [
+        f"{s['pass5']['k']}/{s['pass5']['n']}",
+        _fmt(s["latency"]["p50_s"], 1),
+        _fmt(s["latency"]["p95_s"], 1),
+    ]
 
 
 _M10_PAIRED_CI = re.compile(
@@ -284,6 +319,12 @@ CLAIMS: list[dict[str, Any]] = [
         "surfaces": ["README.md", "story.yaml"],
     },
     {
+        "project": "01-rag-agent",
+        "label": "cross-family judge calibration + claim agreement",
+        "values": _m01_cross_family_judge,
+        "surfaces": ["README.md", "story.yaml"],
+    },
+    {
         "project": "02-demand-forecasting",
         "label": "headline WRMSSE + reduction",
         "values": _m02,
@@ -318,6 +359,12 @@ CLAIMS: list[dict[str, Any]] = [
         "label": "fresh macro-F1 baseline -> cascade + cascade cost",
         "values": _m04,
         "surfaces": ["README.md", "story.yaml"],
+    },
+    {
+        "project": "04-nlp-classification",
+        "label": "paired cascade gain interval + McNemar p (E6 replication)",
+        "values": _m04_paired,
+        "surfaces": ["README.md", "story.yaml", "//docs/projects/04-nlp-classification.md"],
     },
     {
         "project": "05-ml-pipeline-churn",
@@ -359,6 +406,12 @@ CLAIMS: list[dict[str, Any]] = [
         "project": "09-agentic-workflows",
         "label": "tuning + held-out answer counts",
         "values": _m09,
+        "surfaces": ["README.md", "story.yaml"],
+    },
+    {
+        "project": "09-agentic-workflows",
+        "label": "held-out live repeats pass^5 + pooled p50/p95",
+        "values": _m09_repeats,
         "surfaces": ["README.md", "story.yaml"],
     },
     {

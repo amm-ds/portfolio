@@ -1,0 +1,1486 @@
+{
+  "n_items": 147,
+  "n_parse_failures": 0,
+  "vs_committed_kimi_labels": {
+    "matches": 141,
+    "agreement": 0.9592,
+    "kappa": 0.9182
+  },
+  "vs_construction_kind": {
+    "matches": 141,
+    "agreement": 0.9592,
+    "kappa": 0.9182
+  },
+  "items": [
+    {
+      "index": 0,
+      "chunk_id": "machine-learning-075#c002",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 1,
+      "chunk_id": "aviation-122#c002",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "The passage states that Charles Taylor built the Wright brothers' first airplane engine in close collaboration with them."
+    },
+    {
+      "index": 2,
+      "chunk_id": "machine-learning-080#c003",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 3,
+      "chunk_id": "photosynthesis-057#c005",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 4,
+      "chunk_id": "climate-011#c001",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 5,
+      "chunk_id": "climate-000#c000",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "1.15°C"
+    },
+    {
+      "index": 6,
+      "chunk_id": "photosynthesis-042#c005",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "supported",
+      "agree_kimi": false,
+      "agree_kind": false,
+      "reason": "one short line"
+    },
+    {
+      "index": 7,
+      "chunk_id": "renewable-energy-055#c010",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 8,
+      "chunk_id": "photosynthesis-000#c010",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 9,
+      "chunk_id": "renewable-energy-055#c007",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "supported",
+      "agree_kimi": false,
+      "agree_kind": false,
+      "reason": "one short line"
+    },
+    {
+      "index": 10,
+      "chunk_id": "aviation-122#c010",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 11,
+      "chunk_id": "photosynthesis-057#c010",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 12,
+      "chunk_id": "photosynthesis-057#c003",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 13,
+      "chunk_id": "climate-003#c008",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 14,
+      "chunk_id": "photosynthesis-000#c007",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "see ambiregnal protists"
+    },
+    {
+      "index": 15,
+      "chunk_id": "climate-016#c006",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 16,
+      "chunk_id": "aviation-059#c008",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "The claim contradicts the evidence"
+    },
+    {
+      "index": 17,
+      "chunk_id": "photosynthesis-000#c010",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 18,
+      "chunk_id": "aviation-004#c001",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 19,
+      "chunk_id": "climate-032#c008",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "25%"
+    },
+    {
+      "index": 20,
+      "chunk_id": "aviation-002#c003",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 21,
+      "chunk_id": "climate-011#c001",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "permafrost, glacial retreat and sea ice loss"
+    },
+    {
+      "index": 22,
+      "chunk_id": "aviation-002#c003",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 23,
+      "chunk_id": "machine-learning-121#c003",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 24,
+      "chunk_id": "climate-054#c000",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "early October"
+    },
+    {
+      "index": 25,
+      "chunk_id": "climate-000#c008",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "50% instead of 70%"
+    },
+    {
+      "index": 26,
+      "chunk_id": "machine-learning-040#c002",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 27,
+      "chunk_id": "climate-032#c006",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 28,
+      "chunk_id": "machine-learning-121#c003",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 29,
+      "chunk_id": "climate-048#c005",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 30,
+      "chunk_id": "machine-learning-000#c002",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 31,
+      "chunk_id": "climate-000#c000",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 32,
+      "chunk_id": "climate-003#c008",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 33,
+      "chunk_id": "climate-011#c001",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 34,
+      "chunk_id": "climate-032#c009",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 35,
+      "chunk_id": "climate-003#c000",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "economic and financial"
+    },
+    {
+      "index": 36,
+      "chunk_id": "climate-048#c002",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 37,
+      "chunk_id": "aviation-122#c008",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 38,
+      "chunk_id": "renewable-energy-025#c002",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 39,
+      "chunk_id": "machine-learning-000#c002",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 40,
+      "chunk_id": "machine-learning-121#c005",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 41,
+      "chunk_id": "climate-046#c001",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 42,
+      "chunk_id": "climate-003#c007",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "green garden spaces can reduce heat stress and food insecurity for low-income neighbourhoods"
+    },
+    {
+      "index": 43,
+      "chunk_id": "climate-011#c001",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "supported",
+      "agree_kimi": false,
+      "agree_kind": false,
+      "reason": "one short line"
+    },
+    {
+      "index": 44,
+      "chunk_id": "aviation-000#c011",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 45,
+      "chunk_id": "aviation-004#c005",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "short distances"
+    },
+    {
+      "index": 46,
+      "chunk_id": "photosynthesis-000#c003",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 47,
+      "chunk_id": "aviation-059#c008",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 48,
+      "chunk_id": "photosynthesis-000#c007",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 49,
+      "chunk_id": "photosynthesis-000#c000",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 50,
+      "chunk_id": "photosynthesis-028#c009",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 51,
+      "chunk_id": "photosynthesis-016#c010",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 52,
+      "chunk_id": "renewable-energy-042#c009",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 53,
+      "chunk_id": "aviation-004#c001",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "Techniques"
+    },
+    {
+      "index": 54,
+      "chunk_id": "photosynthesis-031#c002",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 55,
+      "chunk_id": "photosynthesis-000#c000",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 56,
+      "chunk_id": "aviation-000#c009",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 57,
+      "chunk_id": "aviation-000#c011",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 58,
+      "chunk_id": "aviation-122#c007",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 59,
+      "chunk_id": "renewable-energy-042#c009",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 60,
+      "chunk_id": "renewable-energy-055#c010",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 61,
+      "chunk_id": "aviation-002#c004",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 62,
+      "chunk_id": "machine-learning-075#c002",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 63,
+      "chunk_id": "machine-learning-040#c006",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 64,
+      "chunk_id": "climate-048#c002",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 65,
+      "chunk_id": "renewable-energy-043#c002",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "Conventional Wind Turbine"
+    },
+    {
+      "index": 66,
+      "chunk_id": "photosynthesis-057#c005",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 67,
+      "chunk_id": "aviation-122#c012",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 68,
+      "chunk_id": "climate-003#c003",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 69,
+      "chunk_id": "machine-learning-000#c009",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 70,
+      "chunk_id": "renewable-energy-025#c007",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 71,
+      "chunk_id": "renewable-energy-042#c011",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 72,
+      "chunk_id": "machine-learning-121#c005",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 73,
+      "chunk_id": "aviation-122#c012",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "date differs"
+    },
+    {
+      "index": 74,
+      "chunk_id": "renewable-energy-055#c007",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 75,
+      "chunk_id": "climate-032#c007",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "mainly conflicting ways"
+    },
+    {
+      "index": 76,
+      "chunk_id": "machine-learning-075#c001",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "supported",
+      "agree_kimi": false,
+      "agree_kind": false,
+      "reason": "one short line"
+    },
+    {
+      "index": 77,
+      "chunk_id": "machine-learning-121#c009",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 78,
+      "chunk_id": "aviation-002#c004",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 79,
+      "chunk_id": "machine-learning-000#c009",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 80,
+      "chunk_id": "climate-016#c006",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 81,
+      "chunk_id": "aviation-000#c006",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "the year is different"
+    },
+    {
+      "index": 82,
+      "chunk_id": "climate-003#c005",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 83,
+      "chunk_id": "renewable-energy-050#c006",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 84,
+      "chunk_id": "renewable-energy-050#c010",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 85,
+      "chunk_id": "renewable-energy-025#c007",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 86,
+      "chunk_id": "aviation-002#c003",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 87,
+      "chunk_id": "machine-learning-040#c002",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 88,
+      "chunk_id": "machine-learning-121#c009",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 89,
+      "chunk_id": "aviation-000#c009",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 90,
+      "chunk_id": "climate-032#c011",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 91,
+      "chunk_id": "photosynthesis-000#c003",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "2015 instead of 2020"
+    },
+    {
+      "index": 92,
+      "chunk_id": "photosynthesis-000#c011",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 93,
+      "chunk_id": "machine-learning-000#c006",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 94,
+      "chunk_id": "machine-learning-040#c006",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 95,
+      "chunk_id": "aviation-000#c006",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "unsupported",
+      "agree_kimi": false,
+      "agree_kind": false,
+      "reason": "The passage states that George Cayley's glider carried out the first true manned, controlled flight in 1853, but it was not the first heavier-than-air craft capable of controlled free-flight. The Wright brothers invented the first powered and controllable fixed-wing aircraft."
+    },
+    {
+      "index": 96,
+      "chunk_id": "climate-003#c000",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "three categories instead of four"
+    },
+    {
+      "index": 97,
+      "chunk_id": "machine-learning-075#c001",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 98,
+      "chunk_id": "renewable-energy-042#c007",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 99,
+      "chunk_id": "climate-000#c008",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 100,
+      "chunk_id": "aviation-122#c002",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 101,
+      "chunk_id": "photosynthesis-000#c011",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 102,
+      "chunk_id": "climate-032#c005",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "1 short line"
+    },
+    {
+      "index": 103,
+      "chunk_id": "photosynthesis-028#c009",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 104,
+      "chunk_id": "climate-032#c007",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 105,
+      "chunk_id": "photosynthesis-016#c010",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 106,
+      "chunk_id": "climate-003#c000",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 107,
+      "chunk_id": "climate-032#c009",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 108,
+      "chunk_id": "climate-032#c008",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 109,
+      "chunk_id": "climate-054#c000",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 110,
+      "chunk_id": "climate-046#c001",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 111,
+      "chunk_id": "climate-032#c011",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 112,
+      "chunk_id": "aviation-002#c003",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 113,
+      "chunk_id": "aviation-122#c008",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 114,
+      "chunk_id": "climate-011#c013",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 115,
+      "chunk_id": "climate-003#c007",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 116,
+      "chunk_id": "climate-003#c000",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 117,
+      "chunk_id": "aviation-122#c007",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 118,
+      "chunk_id": "climate-003#c005",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "The claim is directly stated in the evidence passage."
+    },
+    {
+      "index": 119,
+      "chunk_id": "photosynthesis-031#c002",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "prokaryotic photoautotrophs due to their lack of nucleus"
+    },
+    {
+      "index": 120,
+      "chunk_id": "machine-learning-075#c009",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 121,
+      "chunk_id": "aviation-011#c006",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "The claim states that the airship R101 crashed in 1930 and used the Beardmore Tornado aero diesel engine, which is directly stated in the passage."
+    },
+    {
+      "index": 122,
+      "chunk_id": "machine-learning-000#c006",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "manual"
+    },
+    {
+      "index": 123,
+      "chunk_id": "renewable-energy-050#c010",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 124,
+      "chunk_id": "renewable-energy-042#c007",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "fixed_speed"
+    },
+    {
+      "index": 125,
+      "chunk_id": "aviation-011#c006",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "crashed in 1930"
+    },
+    {
+      "index": 126,
+      "chunk_id": "photosynthesis-057#c010",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "the number of occurrences is different"
+    },
+    {
+      "index": 127,
+      "chunk_id": "climate-003#c002",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 128,
+      "chunk_id": "climate-032#c005",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "1.0% yr−1 throughout the 1990s contradicted"
+    },
+    {
+      "index": 129,
+      "chunk_id": "climate-011#c013",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 130,
+      "chunk_id": "aviation-122#c010",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "short inner-tube box"
+    },
+    {
+      "index": 131,
+      "chunk_id": "climate-003#c002",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "Understanding the need"
+    },
+    {
+      "index": 132,
+      "chunk_id": "renewable-energy-043#c002",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 133,
+      "chunk_id": "photosynthesis-000#c007",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 134,
+      "chunk_id": "climate-003#c003",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 135,
+      "chunk_id": "machine-learning-080#c003",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 136,
+      "chunk_id": "photosynthesis-000#c007",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 137,
+      "chunk_id": "renewable-energy-042#c011",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "supported",
+      "agree_kimi": false,
+      "agree_kind": false,
+      "reason": "one short line"
+    },
+    {
+      "index": 138,
+      "chunk_id": "machine-learning-075#c009",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 139,
+      "chunk_id": "aviation-000#c009",
+      "kind": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "historical classification not stated"
+    },
+    {
+      "index": 140,
+      "chunk_id": "renewable-energy-050#c006",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 141,
+      "chunk_id": "aviation-004#c005",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "The claim is directly stated in the passage."
+    },
+    {
+      "index": 142,
+      "chunk_id": "photosynthesis-042#c005",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 143,
+      "chunk_id": "climate-048#c005",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 144,
+      "chunk_id": "photosynthesis-057#c003",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 145,
+      "chunk_id": "renewable-energy-025#c002",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 146,
+      "chunk_id": "climate-032#c006",
+      "kind": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_kimi": true,
+      "agree_kind": true,
+      "reason": "one short line"
+    }
+  ]
+}

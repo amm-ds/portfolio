@@ -1,0 +1,119 @@
+19:53:11 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert-base-uncased "HTTP/1.1 307 Temporary Redirect"
+19:53:12 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert/distilbert-base-uncased "HTTP/1.1 200 OK"
+19:53:12 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert-base-uncased/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 307 Temporary Redirect"
+19:53:12 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert/distilbert-base-uncased/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+19:53:12 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert-base-uncased/tree/main?recursive=true&expand=false "HTTP/1.1 307 Temporary Redirect"
+19:53:12 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert/distilbert-base-uncased/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+19:53:12 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert-base-uncased "HTTP/1.1 307 Temporary Redirect"
+19:53:12 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert/distilbert-base-uncased "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/100 [00:00<?, ?it/s]Loading weights: 100%|██████████| 100/100 [00:00<00:00, 5270.15it/s]
+[transformers] [1mDistilBertForSequenceClassification LOAD REPORT[0m from: distilbert-base-uncased
+Key                     | Status     | 
+------------------------+------------+-
+vocab_projector.bias    | UNEXPECTED | 
+vocab_transform.bias    | UNEXPECTED | 
+vocab_transform.weight  | UNEXPECTED | 
+vocab_layer_norm.weight | UNEXPECTED | 
+vocab_layer_norm.bias   | UNEXPECTED | 
+classifier.weight       | MISSING    | 
+pre_classifier.bias     | MISSING    | 
+classifier.bias         | MISSING    | 
+pre_classifier.weight   | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+19:53:15 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert-base-uncased "HTTP/1.1 307 Temporary Redirect"
+19:53:15 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert/distilbert-base-uncased "HTTP/1.1 200 OK"
+19:53:15 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert-base-uncased/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 307 Temporary Redirect"
+19:53:15 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert/distilbert-base-uncased/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+19:53:15 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert-base-uncased/tree/main?recursive=true&expand=false "HTTP/1.1 307 Temporary Redirect"
+19:53:15 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert/distilbert-base-uncased/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+19:53:16 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert-base-uncased "HTTP/1.1 307 Temporary Redirect"
+19:53:16 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert/distilbert-base-uncased "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/100 [00:00<?, ?it/s]Loading weights: 100%|██████████| 100/100 [00:00<00:00, 15673.78it/s]
+[transformers] [1mDistilBertForSequenceClassification LOAD REPORT[0m from: distilbert-base-uncased
+Key                     | Status     | 
+------------------------+------------+-
+vocab_projector.bias    | UNEXPECTED | 
+vocab_transform.bias    | UNEXPECTED | 
+vocab_transform.weight  | UNEXPECTED | 
+vocab_layer_norm.weight | UNEXPECTED | 
+vocab_layer_norm.bias   | UNEXPECTED | 
+classifier.weight       | MISSING    | 
+pre_classifier.bias     | MISSING    | 
+classifier.bias         | MISSING    | 
+pre_classifier.weight   | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:53:24 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:24 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001666 (cumulative est. $0.001666 of $0.036 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:53:27 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:27 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001710 (cumulative est. $0.003376 of $0.036 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:53:29 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:29 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001696 (cumulative est. $0.005072 of $0.036 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:53:32 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:32 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001616 (cumulative est. $0.006688 of $0.036 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:53:35 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:35 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001644 (cumulative est. $0.008332 of $0.036 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:53:38 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:38 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001781 (cumulative est. $0.010113 of $0.036 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:53:40 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:40 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000869 (cumulative est. $0.010982 of $0.036 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:53:40 INFO    nlp_classification.data :: loading dataset fancyzhx/ag_news from the HuggingFace hub
+19:53:40 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/datasets/fancyzhx/ag_news/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+19:53:40 WARNING huggingface_hub.utils._http :: Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+19:53:40 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/fancyzhx/ag_news/eb185aade064a813bc0b7f42de02595523103ca4/README.md?%2Fdatasets%2Ffancyzhx%2Fag_news%2Fresolve%2Fmain%2FREADME.md=&etag=%22fc01bffaf6b7ff9e9df5818a6fa2bd5cb4a27438%22 "HTTP/1.1 200 OK"
+19:53:40 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/datasets/fancyzhx/ag_news/resolve/eb185aade064a813bc0b7f42de02595523103ca4/ag_news.py "HTTP/1.1 404 Not Found"
+19:53:40 INFO    httpx :: HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/fancyzhx/ag_news/fancyzhx/ag_news.py "HTTP/1.1 404 Not Found"
+19:53:41 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/datasets/fancyzhx/ag_news/revision/eb185aade064a813bc0b7f42de02595523103ca4 "HTTP/1.1 200 OK"
+19:53:41 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/datasets/fancyzhx/ag_news/resolve/eb185aade064a813bc0b7f42de02595523103ca4/.huggingface.yaml "HTTP/1.1 404 Not Found"
+19:53:41 INFO    httpx :: HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=fancyzhx/ag_news "HTTP/1.1 200 OK"
+19:53:41 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/datasets/fancyzhx/ag_news/tree/eb185aade064a813bc0b7f42de02595523103ca4/data?recursive=true&expand=false "HTTP/1.1 200 OK"
+19:53:41 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/datasets/fancyzhx/ag_news/tree/eb185aade064a813bc0b7f42de02595523103ca4?recursive=false&expand=false "HTTP/1.1 200 OK"
+19:53:41 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/datasets/fancyzhx/ag_news/resolve/eb185aade064a813bc0b7f42de02595523103ca4/dataset_infos.json "HTTP/1.1 404 Not Found"
+19:53:42 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert-base-uncased "HTTP/1.1 307 Temporary Redirect"
+19:53:42 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert/distilbert-base-uncased "HTTP/1.1 200 OK"
+19:53:42 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert-base-uncased/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 307 Temporary Redirect"
+19:53:42 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert/distilbert-base-uncased/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+19:53:42 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert-base-uncased/tree/main?recursive=true&expand=false "HTTP/1.1 307 Temporary Redirect"
+19:53:42 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert/distilbert-base-uncased/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+19:53:43 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert-base-uncased "HTTP/1.1 307 Temporary Redirect"
+19:53:43 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/distilbert/distilbert-base-uncased "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/100 [00:00<?, ?it/s]Loading weights: 100%|██████████| 100/100 [00:00<00:00, 5800.13it/s]
+[transformers] [1mDistilBertForSequenceClassification LOAD REPORT[0m from: distilbert-base-uncased
+Key                     | Status     | 
+------------------------+------------+-
+vocab_projector.bias    | UNEXPECTED | 
+vocab_transform.bias    | UNEXPECTED | 
+vocab_transform.weight  | UNEXPECTED | 
+vocab_layer_norm.weight | UNEXPECTED | 
+vocab_layer_norm.bias   | UNEXPECTED | 
+classifier.weight       | MISSING    | 
+pre_classifier.bias     | MISSING    | 
+classifier.bias         | MISSING    | 
+pre_classifier.weight   | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+19:53:54 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:54 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001350 (cumulative est. $0.012332 of $0.036 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:53:57 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:57 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001740 (cumulative est. $0.014072 of $0.036 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:54:00 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:54:00 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001688 (cumulative est. $0.015760 of $0.036 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:54:02 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:54:02 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001621 (cumulative est. $0.017381 of $0.036 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:54:05 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:54:05 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001815 (cumulative est. $0.019196 of $0.036 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:54:05 WARNING portfolio_core.llm_budget :: llm budget 50% consumed: $0.019196 of $0.036 (cloud-equivalent estimate)
+19:54:08 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:54:08 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001387 (cumulative est. $0.020583 of $0.036 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+selected=transformer (tau=0.6) | test macro-F1 0.9460 → 0.9470 | fresh paired ΔF1 -0.0011 95% CI [-0.0081, +0.0060] McNemar p=1.000 | metered $0.020583
+EXIT_CODE=0

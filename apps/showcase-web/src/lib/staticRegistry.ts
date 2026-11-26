@@ -526,6 +526,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
   {
     "figure_names": [
       "cost_latency_bars",
+      "live_repeats",
       "node_waterfall",
       "suite_summary",
       "tool_usage_matrix"

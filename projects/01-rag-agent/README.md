@@ -251,7 +251,11 @@ times during development and is consumed, so the headline numbers are an
 upper-bound estimate. Generation, verification, and judging all use
 `kimi-for-coding`, so the generator and its graders share blind spots;
 the 30-claim owner-labelled audit is the current counter, and a cross-judge
-check from another model family is planned. Broader corpus quality and
+check from another model family (local `qwen2.5:3b`) agrees with 28/30
+hand-labelled claims and 95.9% of 147 committed claim labels (kappa 0.92,
+`reports/cross_family_judge_2026-11-26/`), though the uncommitted final
+answer texts still leave the headline F1 without a second-family re-grade.
+Broader corpus quality and
 always-on public chat remain unproven; `RAG_CHAT_ENABLED=1` stays opt-in and
 hosted calls require an explicit budget.
 

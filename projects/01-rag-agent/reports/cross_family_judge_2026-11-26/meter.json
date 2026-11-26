@@ -1,0 +1,13 @@
+{
+  "n_calls": 177,
+  "input_tokens": 61963,
+  "output_tokens": 2875,
+  "spend_usd": 0.0,
+  "hosted_spend_usd": 0.0,
+  "hosted_budget_cap_usd": 2.5,
+  "hosted_budget_stop_usd": 2.2,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "note": "local Ollama inference: $0 API cost; hosted budget untouched"
+}

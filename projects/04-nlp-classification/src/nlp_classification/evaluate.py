@@ -18,6 +18,7 @@ rungs exist) are written as HTML for the report and JSON for the showcase API.
 """
 
 import json
+import math
 from pathlib import Path
 from typing import Any, cast
 
@@ -115,6 +116,79 @@ def paired_macro_f1_delta(
         "n_bootstrap": n_bootstrap,
         "seed": seed,
         "inconclusive": bool(lower <= 0.0 <= upper),
+    }
+
+
+def paired_accuracy_delta(
+    y_true: list[int],
+    y_pred_candidate: list[int],
+    y_pred_reference: list[int],
+    *,
+    n_bootstrap: int = 2000,
+    seed: int = 42,
+) -> dict[str, Any]:
+    """Paired row-bootstrap interval for candidate minus reference accuracy."""
+    if not y_true or not (len(y_true) == len(y_pred_candidate) == len(y_pred_reference)):
+        raise ValueError("paired accuracy inputs must be non-empty and have equal lengths")
+    if n_bootstrap < 1:
+        raise ValueError("n_bootstrap must be positive")
+
+    candidate = np.asarray(y_pred_candidate)
+    reference = np.asarray(y_pred_reference)
+    truth = np.asarray(y_true)
+    observed = float((candidate == truth).mean() - (reference == truth).mean())
+    rng = np.random.default_rng(seed)
+    deltas = []
+    for indices in rng.integers(0, len(y_true), size=(n_bootstrap, len(y_true))):
+        deltas.append(
+            float((candidate[indices] == truth[indices]).mean())
+            - float((reference[indices] == truth[indices]).mean())
+        )
+    lower, upper = np.percentile(deltas, [2.5, 97.5])
+    return {
+        "delta_accuracy": observed,
+        "ci_95": [float(lower), float(upper)],
+        "method": "paired row bootstrap, percentile interval",
+        "n_bootstrap": n_bootstrap,
+        "seed": seed,
+        "inconclusive": bool(lower <= 0.0 <= upper),
+    }
+
+
+def mcnemar_exact(
+    y_true: list[int],
+    y_pred_candidate: list[int],
+    y_pred_reference: list[int],
+) -> dict[str, Any]:
+    """Two-sided exact McNemar test on the discordant pairs.
+
+    ``b`` counts rows the candidate gets right and the reference wrong, ``c``
+    the reverse; under the null both are Binomial(n_discordant, 0.5). The exact
+    test stays valid at the tiny discordant counts a selective cascade produces,
+    where the chi-square approximation is unreliable.
+    """
+    if not y_true or not (len(y_true) == len(y_pred_candidate) == len(y_pred_reference)):
+        raise ValueError("McNemar inputs must be non-empty and have equal lengths")
+    b = c = 0
+    for t, candidate, reference in zip(y_true, y_pred_candidate, y_pred_reference, strict=True):
+        candidate_ok = int(candidate) == int(t)
+        reference_ok = int(reference) == int(t)
+        if candidate_ok and not reference_ok:
+            b += 1
+        elif reference_ok and not candidate_ok:
+            c += 1
+    n_discordant = b + c
+    if n_discordant == 0:
+        p_value = 1.0
+    else:
+        tail = sum(math.comb(n_discordant, i) for i in range(min(b, c) + 1)) / 2**n_discordant
+        p_value = float(min(1.0, 2.0 * tail))
+    return {
+        "b_candidate_correct_reference_wrong": b,
+        "c_candidate_wrong_reference_correct": c,
+        "n_discordant": n_discordant,
+        "p_value": p_value,
+        "method": "two-sided exact binomial McNemar",
     }
 
 

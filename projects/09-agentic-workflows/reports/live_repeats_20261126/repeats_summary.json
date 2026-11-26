@@ -1,0 +1,510 @@
+{
+  "suite": "heldout-19",
+  "model": "kimi-for-coding",
+  "provider": "hosted Kimi coding endpoint (OpenAI-compatible, membership quota)",
+  "n_runs": 5,
+  "n_tasks": 19,
+  "runs": [
+    {
+      "run": "run1",
+      "records": "run1/heldout_live_records.json",
+      "grading": "run1/live_grading_metrics.json",
+      "answer_success": 1.0,
+      "tool_selection": 1.0,
+      "step_budget": 0.947,
+      "latency_budget": 0.947,
+      "should_fail_pass_rate": 0.833,
+      "tasks_passed": 17,
+      "spend_usd": "0.076560",
+      "input_tokens": 85317,
+      "output_tokens": 9525
+    },
+    {
+      "run": "run2",
+      "records": "run2/heldout_live_records.json",
+      "grading": "run2/live_grading_metrics.json",
+      "answer_success": 1.0,
+      "tool_selection": 1.0,
+      "step_budget": 1.0,
+      "latency_budget": 1.0,
+      "should_fail_pass_rate": 1.0,
+      "tasks_passed": 19,
+      "spend_usd": "0.077615",
+      "input_tokens": 88330,
+      "output_tokens": 10014
+    },
+    {
+      "run": "run3",
+      "records": "run3/heldout_live_records.json",
+      "grading": "run3/live_grading_metrics.json",
+      "answer_success": 1.0,
+      "tool_selection": 1.0,
+      "step_budget": 1.0,
+      "latency_budget": 1.0,
+      "should_fail_pass_rate": 1.0,
+      "tasks_passed": 19,
+      "spend_usd": "0.082598",
+      "input_tokens": 96336,
+      "output_tokens": 10304
+    },
+    {
+      "run": "run4",
+      "records": "run4/heldout_live_records.json",
+      "grading": "run4/live_grading_metrics.json",
+      "answer_success": 1.0,
+      "tool_selection": 1.0,
+      "step_budget": 1.0,
+      "latency_budget": 1.0,
+      "should_fail_pass_rate": 1.0,
+      "tasks_passed": 19,
+      "spend_usd": "0.076625",
+      "input_tokens": 91826,
+      "output_tokens": 9538
+    },
+    {
+      "run": "run5",
+      "records": "run5/heldout_live_records.json",
+      "grading": "run5/live_grading_metrics.json",
+      "answer_success": 1.0,
+      "tool_selection": 1.0,
+      "step_budget": 1.0,
+      "latency_budget": 0.947,
+      "should_fail_pass_rate": 0.833,
+      "tasks_passed": 18,
+      "spend_usd": "0.078668",
+      "input_tokens": 92156,
+      "output_tokens": 9709
+    }
+  ],
+  "per_task": {
+    "h01": {
+      "category": "lookup",
+      "expected_behavior": "answer",
+      "passes": [
+        false,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        15.074,
+        7.02,
+        7.0,
+        7.554,
+        7.056
+      ],
+      "pass_count": 4,
+      "pass_all_runs": false,
+      "pass_any_run": true
+    },
+    "h02": {
+      "category": "lookup",
+      "expected_behavior": "answer",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        19.129,
+        18.322,
+        16.25,
+        16.36,
+        16.225
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h03": {
+      "category": "calculation",
+      "expected_behavior": "answer",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        9.635,
+        8.398,
+        8.469,
+        8.548,
+        8.278
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h04": {
+      "category": "calculation",
+      "expected_behavior": "answer",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        9.088,
+        9.151,
+        9.753,
+        8.254,
+        9.958
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h05": {
+      "category": "conversion",
+      "expected_behavior": "answer",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        7.004,
+        6.528,
+        6.479,
+        6.576,
+        6.107
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h06": {
+      "category": "multi_step",
+      "expected_behavior": "answer",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        10.328,
+        9.169,
+        8.72,
+        8.715,
+        8.776
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h07": {
+      "category": "note_keeping",
+      "expected_behavior": "answer",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        10.955,
+        8.878,
+        8.371,
+        9.085,
+        8.712
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h08": {
+      "category": "out_of_scope",
+      "expected_behavior": "refuse",
+      "passes": [
+        false,
+        true,
+        true,
+        true,
+        false
+      ],
+      "durations_s": [
+        60.016,
+        56.877,
+        28.258,
+        37.478,
+        60.029
+      ],
+      "pass_count": 3,
+      "pass_all_runs": false,
+      "pass_any_run": true
+    },
+    "h09": {
+      "category": "out_of_scope",
+      "expected_behavior": "refuse",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        7.286,
+        19.859,
+        52.105,
+        8.196,
+        7.06
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h10": {
+      "category": "out_of_scope",
+      "expected_behavior": "refuse",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        9.184,
+        8.12,
+        8.438,
+        57.903,
+        10.732
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h11": {
+      "category": "lookup",
+      "expected_behavior": "answer",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        8.16,
+        7.031,
+        7.088,
+        6.328,
+        7.601
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h12": {
+      "category": "lookup",
+      "expected_behavior": "answer",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        20.991,
+        8.557,
+        7.967,
+        34.724,
+        8.37
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h13": {
+      "category": "calculation",
+      "expected_behavior": "answer",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        9.586,
+        12.431,
+        12.82,
+        11.849,
+        10.941
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h14": {
+      "category": "conversion",
+      "expected_behavior": "answer",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        7.076,
+        6.567,
+        7.324,
+        6.685,
+        6.44
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h15": {
+      "category": "multi_step",
+      "expected_behavior": "answer",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        9.543,
+        8.938,
+        8.796,
+        8.304,
+        9.297
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h16": {
+      "category": "note_keeping",
+      "expected_behavior": "answer",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        9.421,
+        8.602,
+        9.027,
+        8.484,
+        8.223
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h17": {
+      "category": "out_of_scope",
+      "expected_behavior": "refuse",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        11.363,
+        9.706,
+        6.686,
+        10.261,
+        9.194
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h18": {
+      "category": "out_of_scope",
+      "expected_behavior": "refuse",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        6.349,
+        5.016,
+        5.697,
+        16.886,
+        5.541
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    },
+    "h19": {
+      "category": "out_of_scope",
+      "expected_behavior": "refuse",
+      "passes": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "durations_s": [
+        9.264,
+        9.304,
+        9.361,
+        9.898,
+        9.175
+      ],
+      "pass_count": 5,
+      "pass_all_runs": true,
+      "pass_any_run": true
+    }
+  },
+  "pass5": {
+    "k": 17,
+    "n": 19,
+    "failing_tasks": [
+      "h01",
+      "h08"
+    ]
+  },
+  "pass_at_5": {
+    "k": 19,
+    "n": 19
+  },
+  "latency": {
+    "p50_s": 8.878,
+    "p95_s": 37.478,
+    "max_s": 60.029,
+    "n_observations": 95,
+    "method": "rounded-index percentile over per-task durations pooled across runs"
+  },
+  "spend": {
+    "per_run_usd": [
+      "0.076560",
+      "0.077615",
+      "0.082598",
+      "0.076625",
+      "0.078668"
+    ],
+    "total_usd": "0.392066",
+    "note": "cloud-equivalent estimates at the labelled rate card; membership-quota key, never billed"
+  }
+}

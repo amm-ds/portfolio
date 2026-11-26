@@ -1,0 +1,18 @@
+{
+  "slot": "agree_025",
+  "chunk_id": "climate-000#c008",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "usage": {
+    "input_tokens": 445,
+    "output_tokens": 21
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.18,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"50% instead of 70%\"}",
+  "label": "unsupported",
+  "reason": "50% instead of 70%"
+}

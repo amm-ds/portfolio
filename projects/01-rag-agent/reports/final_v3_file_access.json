@@ -16874,6 +16874,14 @@
    "op": "open",
    "path": "~/.cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2/refs/main",
    "ts": 1795368313.1257868
+  },
+  {
+   "op": "read",
+   "path": "projects/01-rag-agent/reports/final_v3_e2e/ (question_traces_heldout.json, f1_summary.json, metrics.json) + reports/runs/final_v3-432d6b705715/ (rows.jsonl, manifest.json)",
+   "label": "judge-agreement, no selection",
+   "read_of_consumed_set": 5,
+   "note": "fifth read of the consumed final_v3 set: E8 cross-family judge agreement analysis; committed traces read, nothing selected or tuned",
+   "ts": 1795719355.149668
   }
  ],
  "forbidden_pattern": "(eval_questions\\.json|golden_.*\\.json|stress.*\\.json)$"

@@ -85,3 +85,6 @@ data/*
 /reports/judge_calibration_v2/superseded_v2a/
 !/reports/e2e_dev_v1/
 !/reports/final_v3_e2e/
+# …and the E8 cross-family second-judge receipts (calibration gate + agreement
+# vs the committed kimi labels; every public agreement number traces to them).
+!/reports/cross_family_judge_2026-11-26/

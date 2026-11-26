@@ -1,0 +1,320 @@
+19:49:05 INFO    agentic_workflows.evals :: suite budget: $0.25 per task, $0.4 suite cap (cloud-equivalent estimates)
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:49:08 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:08 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000591 (cumulative est. $0.000591 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:49:08 INFO    agentic_workflows.workflow :: planned task into 1 steps
+19:49:10 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:12 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:12 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.002266 (cumulative est. $0.002857 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:49:15 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:15 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001096 (cumulative est. $0.003953 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:49:15 INFO    agentic_workflows.workflow :: critique requested revision (2 issues)
+19:49:17 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:18 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:18 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.002345 (cumulative est. $0.006298 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:49:20 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:20 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000661 (cumulative est. $0.006959 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:49:20 INFO    agentic_workflows.evals :: task h01 done in 15.1s (tools: ['search_handbook'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:49:22 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:22 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000687 (cumulative est. $0.007646 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:49:22 INFO    agentic_workflows.workflow :: planned task into 1 steps
+19:49:24 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:25 INFO    faiss.loader :: Loading faiss.
+19:49:25 INFO    faiss.loader :: Successfully loaded faiss.
+19:49:25 INFO    agentic_workflows.documents :: loaded 01 corpus index: /Users/alejandro/work/portfolio/projects/01-rag-agent/data/index/chunks_200 (3589 chunks)
+19:49:31 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+19:49:31 WARNING huggingface_hub.utils._http :: Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+19:49:31 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/modules.json?%2Fsentence-transformers%2Fall-MiniLM-L6-v2%2Fresolve%2Fmain%2Fmodules.json=&etag=%22952a9b81c0bfd99800fabf352f69c7ccd46c5e43%22 "HTTP/1.1 200 OK"
+19:49:32 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+19:49:32 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/config_sentence_transformers.json?%2Fsentence-transformers%2Fall-MiniLM-L6-v2%2Fresolve%2Fmain%2Fconfig_sentence_transformers.json=&etag=%22fd1b291129c607e5d49799f87cb219b27f98acdf%22 "HTTP/1.1 200 OK"
+19:49:32 INFO    sentence_transformers.base.model :: Loading SentenceTransformer model from sentence-transformers/all-MiniLM-L6-v2.
+19:49:32 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+19:49:32 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/config_sentence_transformers.json?%2Fsentence-transformers%2Fall-MiniLM-L6-v2%2Fresolve%2Fmain%2Fconfig_sentence_transformers.json=&etag=%22fd1b291129c607e5d49799f87cb219b27f98acdf%22 "HTTP/1.1 200 OK"
+19:49:32 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+19:49:32 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/README.md?%2Fsentence-transformers%2Fall-MiniLM-L6-v2%2Fresolve%2Fmain%2FREADME.md=&etag=%2244af2e3b0fa3a0b6239e48422972bf755f28fde0%22 "HTTP/1.1 200 OK"
+19:49:32 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+19:49:32 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/modules.json?%2Fsentence-transformers%2Fall-MiniLM-L6-v2%2Fresolve%2Fmain%2Fmodules.json=&etag=%22952a9b81c0bfd99800fabf352f69c7ccd46c5e43%22 "HTTP/1.1 200 OK"
+19:49:32 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+19:49:32 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/sentence_bert_config.json?%2Fsentence-transformers%2Fall-MiniLM-L6-v2%2Fresolve%2Fmain%2Fsentence_bert_config.json=&etag=%2259d594003bf59880a884c574bf88ef7555bb0202%22 "HTTP/1.1 200 OK"
+19:49:32 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+19:49:32 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 200 OK"
+19:49:33 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 6613.09it/s]
+19:49:33 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 200 OK"
+19:49:33 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+19:49:33 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+19:49:33 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+19:49:33 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/1_Pooling%2Fconfig.json?%2Fsentence-transformers%2Fall-MiniLM-L6-v2%2Fresolve%2Fmain%2F1_Pooling%2Fconfig.json=&etag=%22d1514c3162bbe87b343f565fadc62e6c06f04f03%22 "HTTP/1.1 200 OK"
+19:49:33 INFO    httpx :: HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/2_Normalize/config.json "HTTP/1.1 404 Not Found"
+19:49:34 INFO    httpx :: HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 200 OK"
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 12.40it/s]
+19:49:37 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:37 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.002880 (cumulative est. $0.010526 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:49:39 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:39 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001002 (cumulative est. $0.011528 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:49:39 INFO    agentic_workflows.evals :: task h02 done in 19.1s (tools: ['search_documents'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:49:41 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:41 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001002 (cumulative est. $0.012530 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:49:41 INFO    agentic_workflows.workflow :: planned task into 2 steps
+19:49:43 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:45 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:47 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:47 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.003493 (cumulative est. $0.016023 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:49:49 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:49 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000733 (cumulative est. $0.016756 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:49:49 INFO    agentic_workflows.evals :: task h03 done in 9.6s (tools: ['search_handbook', 'calculator'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:49:51 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:51 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000899 (cumulative est. $0.017655 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:49:51 INFO    agentic_workflows.workflow :: planned task into 2 steps
+19:49:53 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:54 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:56 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:56 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.003338 (cumulative est. $0.020993 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:49:58 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:49:58 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000707 (cumulative est. $0.021700 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:49:58 INFO    agentic_workflows.evals :: task h04 done in 9.1s (tools: ['search_handbook', 'calculator'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:50:00 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:00 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000648 (cumulative est. $0.022348 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:50:00 INFO    agentic_workflows.workflow :: planned task into 1 steps
+19:50:01 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:03 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:03 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001936 (cumulative est. $0.024284 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:50:05 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:05 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000465 (cumulative est. $0.024749 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:50:05 INFO    agentic_workflows.evals :: task h05 done in 7.0s (tools: ['unit_convert'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:50:07 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:07 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001009 (cumulative est. $0.025758 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:50:07 INFO    agentic_workflows.workflow :: planned task into 2 steps
+19:50:10 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:11 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:14 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:14 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.003702 (cumulative est. $0.029460 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:50:15 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:15 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000754 (cumulative est. $0.030214 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:50:15 INFO    agentic_workflows.evals :: task h06 done in 10.3s (tools: ['search_handbook', 'calculator'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:50:17 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:17 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001128 (cumulative est. $0.031342 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:50:17 INFO    agentic_workflows.workflow :: planned task into 3 steps
+19:50:19 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:21 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:24 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:24 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.003364 (cumulative est. $0.034706 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:50:26 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:26 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000878 (cumulative est. $0.035584 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:50:26 INFO    agentic_workflows.evals :: task h07 done in 11.0s (tools: ['search_handbook', 'note_store'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:50:28 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:28 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001070 (cumulative est. $0.036654 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:50:28 INFO    agentic_workflows.workflow :: planned task into 2 steps
+19:50:31 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:33 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:35 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:37 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:38 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:40 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:42 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:44 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:44 WARNING agentic_workflows.workflow :: agent run attempt 1/3 failed: The next request would exceed the request_limit of 8. Consider raising the limit, or see the docs on usage limits for budget-aware patterns: https://pydantic.dev/docs/ai/core-concepts/agent/#usage-limits
+19:50:46 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:48 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:49 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:51 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:53 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:54 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:56 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:58 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:50:58 WARNING agentic_workflows.workflow :: agent run attempt 2/3 failed: The next request would exceed the request_limit of 8. Consider raising the limit, or see the docs on usage limits for budget-aware patterns: https://pydantic.dev/docs/ai/core-concepts/agent/#usage-limits
+19:51:00 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:01 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:03 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:05 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:07 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:09 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:11 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:12 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:12 WARNING agentic_workflows.workflow :: agent run attempt 3/3 failed: The next request would exceed the request_limit of 8. Consider raising the limit, or see the docs on usage limits for budget-aware patterns: https://pydantic.dev/docs/ai/core-concepts/agent/#usage-limits
+19:51:12 WARNING agentic_workflows.workflow :: execute attempt 1 failed: The next request would exceed the request_limit of 8. Consider raising the limit, or see the docs on usage limits for budget-aware patterns: https://pydantic.dev/docs/ai/core-concepts/agent/#usage-limits
+19:51:14 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:16 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:18 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:19 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:21 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:22 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:24 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:26 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:26 WARNING agentic_workflows.workflow :: agent run attempt 1/3 failed: The next request would exceed the request_limit of 8. Consider raising the limit, or see the docs on usage limits for budget-aware patterns: https://pydantic.dev/docs/ai/core-concepts/agent/#usage-limits
+19:51:26 INFO    agentic_workflows.evals :: task h08 done in 60.0s (tools: [])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:51:28 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:28 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000676 (cumulative est. $0.037330 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:51:28 INFO    agentic_workflows.workflow :: planned task into 1 steps
+19:51:31 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:33 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:33 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.002673 (cumulative est. $0.040003 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:51:33 INFO    agentic_workflows.evals :: task h09 done in 7.3s (tools: ['search_handbook'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:51:35 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:35 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000862 (cumulative est. $0.040865 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:51:35 INFO    agentic_workflows.workflow :: planned task into 2 steps
+19:51:37 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:39 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:43 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:43 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.004110 (cumulative est. $0.044975 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:51:43 INFO    agentic_workflows.evals :: task h10 done in 9.2s (tools: ['search_handbook', 'search_handbook'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:51:45 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:45 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000670 (cumulative est. $0.045645 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:51:45 INFO    agentic_workflows.workflow :: planned task into 1 steps
+19:51:47 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:49 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:49 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.002238 (cumulative est. $0.047883 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:51:51 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:51 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000639 (cumulative est. $0.048522 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:51:51 INFO    agentic_workflows.evals :: task h11 done in 8.2s (tools: ['search_handbook'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:51:53 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:51:53 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000744 (cumulative est. $0.049266 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:51:53 INFO    agentic_workflows.workflow :: planned task into 1 steps
+19:51:55 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 91.83it/s]
+19:51:57 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 178.92it/s]
+19:51:59 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 257.79it/s]
+19:52:00 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 323.93it/s]
+19:52:02 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 319.69it/s]
+19:52:04 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 360.00it/s]
+19:52:05 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 71.60it/s]
+19:52:07 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 89.54it/s]
+19:52:07 WARNING agentic_workflows.workflow :: agent run attempt 1/3 failed: The next request would exceed the request_limit of 8. Consider raising the limit, or see the docs on usage limits for budget-aware patterns: https://pydantic.dev/docs/ai/core-concepts/agent/#usage-limits
+19:52:08 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 326.81it/s]
+19:52:10 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:10 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.002188 (cumulative est. $0.051454 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:12 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:12 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000702 (cumulative est. $0.052156 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:12 INFO    agentic_workflows.evals :: task h12 done in 21.0s (tools: ['search_documents'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:52:14 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:14 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000939 (cumulative est. $0.053095 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:14 INFO    agentic_workflows.workflow :: planned task into 2 steps
+19:52:16 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:17 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:20 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:20 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.003628 (cumulative est. $0.056723 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:21 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:21 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000776 (cumulative est. $0.057499 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:21 INFO    agentic_workflows.evals :: task h13 done in 9.6s (tools: ['search_handbook', 'calculator'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:52:23 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:23 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000640 (cumulative est. $0.058139 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:23 INFO    agentic_workflows.workflow :: planned task into 1 steps
+19:52:25 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:27 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:27 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.001914 (cumulative est. $0.060053 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:28 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:28 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000458 (cumulative est. $0.060511 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:28 INFO    agentic_workflows.evals :: task h14 done in 7.1s (tools: ['unit_convert'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:52:30 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:30 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000862 (cumulative est. $0.061373 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:30 INFO    agentic_workflows.workflow :: planned task into 2 steps
+19:52:33 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:34 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:36 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:36 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.003149 (cumulative est. $0.064522 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:38 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:38 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000682 (cumulative est. $0.065204 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:38 INFO    agentic_workflows.evals :: task h15 done in 9.5s (tools: ['search_handbook', 'calculator'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:52:40 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:40 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000951 (cumulative est. $0.066155 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:40 INFO    agentic_workflows.workflow :: planned task into 3 steps
+19:52:41 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:43 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:46 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:46 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.003336 (cumulative est. $0.069491 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:47 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:47 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000683 (cumulative est. $0.070174 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:47 INFO    agentic_workflows.evals :: task h16 done in 9.4s (tools: ['search_handbook', 'note_store'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:52:49 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:49 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000749 (cumulative est. $0.070923 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:49 INFO    agentic_workflows.workflow :: planned task into 1 steps
+19:52:51 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:51 WARNING agentic_workflows.workflow :: agent run attempt 1/3 failed: unknown unit: 'USD'
+19:52:52 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:52 WARNING agentic_workflows.workflow :: agent run attempt 2/3 failed: unknown unit: 'USD'
+19:52:54 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:54 WARNING agentic_workflows.workflow :: agent run attempt 3/3 failed: unknown unit: 'USD'
+19:52:54 WARNING agentic_workflows.workflow :: execute attempt 1 failed: unknown unit: 'USD'
+19:52:55 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:55 WARNING agentic_workflows.workflow :: agent run attempt 1/3 failed: unknown unit: 'USD'
+19:52:59 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:52:59 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.002068 (cumulative est. $0.072991 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:52:59 INFO    agentic_workflows.evals :: task h17 done in 11.4s (tools: [])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:53:01 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:01 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000644 (cumulative est. $0.073635 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:53:01 INFO    agentic_workflows.workflow :: planned task into 1 steps
+19:53:02 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:05 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:05 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.002306 (cumulative est. $0.075941 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:53:05 INFO    agentic_workflows.evals :: task h18 done in 6.3s (tools: ['search_handbook'])
+/Users/alejandro/work/portfolio/libs/portfolio-core/src/portfolio_core/llm.py:62: PydanticAIDeprecationWarning: `httpx.AsyncClient` support for OpenAI-compatible providers is deprecated and will be removed in v3; use `httpx2.AsyncClient` instead.
+  provider = OpenAIProvider(
+19:53:07 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:07 INFO    portfolio_core.llm_budget :: llm spend: kimi-for-coding cost=$0.000619 (cumulative est. $0.076560 of $0.4 cap) kimi-k2.8-preview reference card (cloud-equivalent estimate)
+19:53:07 INFO    agentic_workflows.workflow :: planned task into 1 steps
+19:53:08 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:08 WARNING agentic_workflows.workflow :: agent run attempt 1/3 failed: exponent too large
+19:53:09 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:09 WARNING agentic_workflows.workflow :: agent run attempt 2/3 failed: exponent too large
+19:53:11 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:11 WARNING agentic_workflows.workflow :: agent run attempt 3/3 failed: exponent too large
+19:53:11 WARNING agentic_workflows.workflow :: execute attempt 1 failed: exponent too large
+19:53:12 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:12 WARNING agentic_workflows.workflow :: agent run attempt 1/3 failed: exponent too large
+19:53:13 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:13 WARNING agentic_workflows.workflow :: agent run attempt 2/3 failed: exponent too large
+19:53:14 INFO    httpx :: HTTP Request: POST https://api.kimi.com/coding/v1/chat/completions "HTTP/1.1 200 OK"
+19:53:14 WARNING agentic_workflows.workflow :: agent run attempt 3/3 failed: exponent too large
+19:53:14 WARNING agentic_workflows.workflow :: execute attempt 2 failed: exponent too large
+19:53:14 INFO    agentic_workflows.evals :: task h19 done in 9.3s (tools: [])
+19:53:14 INFO    agentic_workflows.evals :: wrote 19 run records to reports/live_repeats_20261126/run1/heldout_live_records.json
+run-all complete: 13/19 tasks ok → reports/live_repeats_20261126/run1/heldout_live_records.json
+ledger: 51 metered calls, 85,317 in + 9,525 out tokens; estimated spend $0.076560 of $0.4 suite cap (cloud-equivalent, labelled estimate)
+Evaluating lookup ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00
+19:53:16 INFO    agentic_workflows.evals :: suite averages: {'AnswerSuccess': 1.0, 'ToolSelection': 1.0, 'StepBudget': 0.9473684210526315, 'LatencyBudget': 0.9473684210526315, 'RefusalSuccess': 0.8333333333333334}
+19:53:16 INFO    agentic_workflows.report :: held-out metrics merged into reports/live_repeats_20261126/run1/metrics.json
+held-out evaluation: answer success 100%, tool selection 100%, should-fail pass rate 83% (6 probes) → reports/live_repeats_20261126/run1/metrics.json

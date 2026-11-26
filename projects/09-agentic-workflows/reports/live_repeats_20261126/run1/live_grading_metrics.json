@@ -1,0 +1,1173 @@
+{
+  "detail": {
+    "heldout": {
+      "n_tasks": 19,
+      "n_answer": 13,
+      "n_should_fail": 6,
+      "run_label": "legacy recorded run \u2014 each task executed once",
+      "pass_rate_intervals": {
+        "answer_success": {
+          "passed": 13,
+          "n": 13,
+          "rate": 1.0,
+          "wilson95": {
+            "lo": 0.7719,
+            "hi": 1.0
+          },
+          "method": "Wilson score interval (z = 1.96)"
+        },
+        "tool_selection": {
+          "passed": 13,
+          "n": 13,
+          "rate": 1.0,
+          "wilson95": {
+            "lo": 0.7719,
+            "hi": 1.0
+          },
+          "method": "Wilson score interval (z = 1.96)"
+        },
+        "step_budget": {
+          "passed": 18,
+          "n": 19,
+          "rate": 0.947,
+          "wilson95": {
+            "lo": 0.7536,
+            "hi": 0.9906
+          },
+          "method": "Wilson score interval (z = 1.96)"
+        },
+        "latency_budget": {
+          "passed": 18,
+          "n": 19,
+          "rate": 0.947,
+          "wilson95": {
+            "lo": 0.7536,
+            "hi": 0.9906
+          },
+          "method": "Wilson score interval (z = 1.96)"
+        },
+        "should_fail_pass_rate": {
+          "passed": 5,
+          "n": 6,
+          "rate": 0.833,
+          "wilson95": {
+            "lo": 0.4365,
+            "hi": 0.9699
+          },
+          "method": "Wilson score interval (z = 1.96)"
+        }
+      },
+      "answer_success": 1.0,
+      "tool_selection": 1.0,
+      "step_budget": 0.947,
+      "latency_budget": 0.947,
+      "should_fail_pass_rate": 0.833,
+      "tooling": {
+        "n_tasks": 13,
+        "n_calls": 28,
+        "n_expected_calls": 28,
+        "call_precision": 1.0,
+        "tool_recall": 1.0,
+        "exact_set_rate": 1.0,
+        "per_tool": {
+          "calculator": {
+            "calls": 5,
+            "expected_calls": 5,
+            "extra_calls": 0,
+            "tasks": [
+              "h03",
+              "h04",
+              "h06",
+              "h13",
+              "h15"
+            ]
+          },
+          "note_store": {
+            "calls": 2,
+            "expected_calls": 2,
+            "extra_calls": 0,
+            "tasks": [
+              "h07",
+              "h16"
+            ]
+          },
+          "search_documents": {
+            "calls": 10,
+            "expected_calls": 10,
+            "extra_calls": 0,
+            "tasks": [
+              "h02",
+              "h12"
+            ]
+          },
+          "search_handbook": {
+            "calls": 9,
+            "expected_calls": 9,
+            "extra_calls": 0,
+            "tasks": [
+              "h01",
+              "h03",
+              "h04",
+              "h06",
+              "h07",
+              "h11",
+              "h13",
+              "h15",
+              "h16"
+            ]
+          },
+          "unit_convert": {
+            "calls": 2,
+            "expected_calls": 2,
+            "extra_calls": 0,
+            "tasks": [
+              "h05",
+              "h14"
+            ]
+          }
+        },
+        "extra_calls": {},
+        "unused_expected": {},
+        "per_task": {
+          "h01": {
+            "expected": [
+              "search_handbook"
+            ],
+            "called": [
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h02": {
+            "expected": [
+              "search_documents"
+            ],
+            "called": [
+              "search_documents"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h03": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h04": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h05": {
+            "expected": [
+              "unit_convert"
+            ],
+            "called": [
+              "unit_convert"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h06": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h07": {
+            "expected": [
+              "note_store",
+              "search_handbook"
+            ],
+            "called": [
+              "note_store",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h11": {
+            "expected": [
+              "search_handbook"
+            ],
+            "called": [
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h12": {
+            "expected": [
+              "search_documents"
+            ],
+            "called": [
+              "search_documents"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 9,
+            "exact_set": true
+          },
+          "h13": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h14": {
+            "expected": [
+              "unit_convert"
+            ],
+            "called": [
+              "unit_convert"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h15": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h16": {
+            "expected": [
+              "note_store",
+              "search_handbook"
+            ],
+            "called": [
+              "note_store",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          }
+        }
+      },
+      "per_task": {
+        "h01": {
+          "category": "lookup",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 15.074,
+          "tools_used": [
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='survey drone specifications maximum payload flight time per charge', top\u2026",
+              "latency_s": 0.0,
+              "result_chars": 391,
+              "ok": true,
+              "evidence_count": 2
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The survey drone's maximum payload is 2.5 kg, and its flight time per charge is up to 42 minutes.",
+          "error": null
+        },
+        "h02": {
+          "category": "lookup",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 19.129,
+          "tools_used": [
+            "search_documents"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query=\"who introduced the name 'dropout' for randomly removing connections in a\u2026",
+              "latency_s": 9.121,
+              "result_chars": 1798,
+              "ok": true,
+              "evidence_count": 3
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "According to the Wikipedia document corpus (article \"Dilution (neural networks)\"), the name 'dropout' for randomly removing connections between neurons in a neural network was first introduced by Geoffrey Hinton, et al. in 2012. The corpus also notes that Google currently holds the patent for the dropout technique.",
+          "error": null
+        },
+        "h03": {
+          "category": "calculation",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 9.635,
+          "tools_used": [
+            "search_handbook",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='generator full-load fuel consumption rate L/h', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 558,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='240 / 1.8'",
+              "latency_s": 0.0,
+              "result_chars": 10,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The generator can run for approximately 133.33 hours on a full 240 L tank at full load.\n\nCalculation:\n- Full-load fuel consumption rate (from handbook): 1.8 L/h\n- Tank capacity: 240 L\n- Runtime = 240 L \u00f7 1.8 L/h = 133.33 hours\n\nThis is equivalent to about 5 days and 13 hours of continuous full-load operation.",
+          "error": null
+        },
+        "h04": {
+          "category": "calculation",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 9.088,
+          "tools_used": [
+            "search_handbook",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='generator diesel consumption rate liters per hour', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 546,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='1.8 * 8 * 30'",
+              "latency_s": 0.0,
+              "result_chars": 5,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The station's prime diesel generator burns 1.8 L/h under full load (per the handbook's gen-fuel entry). Running it 8 hours per day for a 30-day month: 1.8 L/h \u00d7 8 h/day \u00d7 30 days = 432 liters of diesel.",
+          "error": null
+        },
+        "h05": {
+          "category": "conversion",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 7.004,
+          "tools_used": [
+            "unit_convert"
+          ],
+          "tool_calls": [
+            {
+              "name": "unit_convert",
+              "node": "execute",
+              "args_brief": "value=8.0, from_unit='km', to_unit='mi'",
+              "latency_s": 0.0,
+              "result_chars": 5,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The drone's rated range of 8 km is approximately 4.971 miles.",
+          "error": null
+        },
+        "h06": {
+          "category": "multi_step",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 10.328,
+          "tools_used": [
+            "search_handbook",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='satellite uplink window schedule windows per week transfer capacity per \u2026",
+              "latency_s": 0.0,
+              "result_chars": 636,
+              "ok": true,
+              "evidence_count": 4
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='14 * 250'",
+              "latency_s": 0.0,
+              "result_chars": 6,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "Satellite uplink windows open twice daily (06:10\u201306:40 and 18:20\u201318:50 UTC), so 2 \u00d7 7 = 14 windows open per week. Each window can transfer at most 250 MB, giving a total weekly transfer capacity of 14 \u00d7 250 MB = 3,500 MB per week.",
+          "error": null
+        },
+        "h07": {
+          "category": "note_keeping",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 10.955,
+          "tools_used": [
+            "search_handbook",
+            "note_store"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='weather station calibration interval', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 367,
+              "ok": true,
+              "evidence_count": 2
+            },
+            {
+              "name": "note_store",
+              "node": "execute",
+              "args_brief": "action='append', note='Weather station calibration interval: every 45 days (tem\u2026",
+              "latency_s": 0.0,
+              "result_chars": 117,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The weather station must be calibrated every 45 days. This interval has been recorded in the ops notebook, along with the accepted temperature drift tolerance of +/-0.4 \u00b0C between calibrations.",
+          "error": null
+        },
+        "h08": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "status": "deadline_exceeded",
+          "success": null,
+          "refusal_success": 0.0,
+          "tool_selection": null,
+          "duration_s": 60.016,
+          "tools_used": [],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='energy-to-water conversion factor battery capacity kWh to equivalent wat\u2026",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='convert kWh energy into liters of water equivalent conversion factor', t\u2026",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='kWh to liters water equivalence pumped hydro energy storage conversion',\u2026",
+              "latency_s": 0.0,
+              "result_chars": 662,
+              "ok": true,
+              "evidence_count": 4
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='energy water equivalence factor handbook conversion table', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 179,
+              "ok": true,
+              "evidence_count": 1
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='battery capacity equivalent water volume conversion factor liters per kW\u2026",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='conversion factor kWh to liters water energy equivalent', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='energy to water conversion factor kWh liters equivalent volume', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='energy-to-water conversion factor battery capacity kWh equivalent water \u2026",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='energy-to-water conversion factor kWh to liters battery capacity equival\u2026",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='conversion factor kWh equivalent liters water energy density', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='energy water equivalence conversion kWh liters hydro pumped storage', to\u2026",
+              "latency_s": 0.0,
+              "result_chars": 662,
+              "ok": true,
+              "evidence_count": 4
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='battery capacity water tank comparison conversion factor', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 515,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='kWh to liters conversion factor energy water equivalent', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='energy-to-water conversion factor', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 2,
+              "ok": true,
+              "evidence_count": 0
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='convert battery kWh to water liters equivalent volume', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='energy water nexus conversion factor kWh liters', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='energy to water conversion factor kWh battery capacity equivalent liters\u2026",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='conversion factor kWh to liters water equivalent energy density', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='pumped hydro water equivalent battery storage liters per kWh conversion'\u2026",
+              "latency_s": 0.0,
+              "result_chars": 662,
+              "ok": true,
+              "evidence_count": 4
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='equivalent volume water energy storage conversion factor handbook', top_\u2026",
+              "latency_s": 0.0,
+              "result_chars": 321,
+              "ok": true,
+              "evidence_count": 2
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='kWh equivalent liters water conversion factor energy water', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='energy water equivalence conversion factor kWh liters', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='battery water equivalent conversion factor', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 348,
+              "ok": true,
+              "evidence_count": 2
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='energy to water conversion factor kWh to liters', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true,
+              "evidence_count": 3
+            }
+          ],
+          "critique_verdict": null,
+          "answer": "Workflow stopped: per-task wall-clock deadline exceeded (60 s)",
+          "error": "per-task wall-clock deadline exceeded (60 s)"
+        },
+        "h09": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "status": "refused",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 7.286,
+          "tools_used": [
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='current diesel stock generator tank inventory remaining liters', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 537,
+              "ok": true,
+              "evidence_count": 3
+            }
+          ],
+          "critique_verdict": null,
+          "answer": "The handbook does not report a live diesel inventory. It only states that the generator's onboard fuel tank has a capacity of 240 L, burns 1.8 L/h at full load on a 6 h/day schedule, and that a 72-hour reserve (\u2248129.6 L) must be maintained. The current remaining liters in the generator tank cannot be determined from the available handbook entries.",
+          "error": "The handbook does not report a live diesel inventory. It only states that the generator's onboard fuel tank has a capacity of 240 L, burns 1.8 L/h at full load on a 6 h/day schedule, and that a 72-hour reserve (\u2248129.6 L) must be maintained. The current remaining liters in the generator tank cannot be determined from the available handbook entries."
+        },
+        "h10": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "status": "refused",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 9.184,
+          "tools_used": [
+            "search_handbook",
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='ration packs density kg to liters conversion factor', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 557,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='ration pack volume liters density conversion mass to volume', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 733,
+              "ok": true,
+              "evidence_count": 4
+            }
+          ],
+          "critique_verdict": null,
+          "answer": "The conversion cannot be performed. The handbook provides the mass of a ration pack (0.6 kg each) but does not provide any density or volume-per-pack figure for ration packs. Converting 40 kg to liters requires a density (kg/L) or a volume-per-unit value, which is not available in the handbook, and kg (mass) cannot be converted to liters (volume) without one. Per the ops rules, I will not invent a density factor. The water log entry for ration packs should therefore be recorded in kg (40 kg, i.e., about 67 packs at 0.6 kg each), not liters.",
+          "error": "The conversion cannot be performed. The handbook provides the mass of a ration pack (0.6 kg each) but does not provide any density or volume-per-pack figure for ration packs. Converting 40 kg to liters requires a density (kg/L) or a volume-per-unit value, which is not available in the handbook, and kg (mass) cannot be converted to liters (volume) without one. Per the ops rules, I will not invent a density factor. The water log entry for ration packs should therefore be recorded in kg (40 kg, i.e., about 67 packs at 0.6 kg each), not liters."
+        },
+        "h11": {
+          "category": "lookup",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 8.16,
+          "tools_used": [
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='station base call sign radio channel reserved for emergencies', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 508,
+              "ok": true,
+              "evidence_count": 3
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The station's base call sign is \"Atlas Base,\" and Channel 1 is reserved for emergencies. (Hourly check-ins use channel 3 at 146.46 MHz, per the radio protocol.)",
+          "error": null
+        },
+        "h12": {
+          "category": "lookup",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 20.991,
+          "tools_used": [
+            "search_documents"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query='main form of chlorophyll in plants and strongest light absorption ranges\u2026",
+              "latency_s": 0.014,
+              "result_chars": 1943,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query='chlorophyll a main photosynthetic pigment in plants absorbs violet-blue \u2026",
+              "latency_s": 0.007,
+              "result_chars": 1943,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query='chlorophyll a main photosynthetic pigment plants absorption spectrum vio\u2026",
+              "latency_s": 0.005,
+              "result_chars": 1943,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query='chlorophyll a main photosynthetic pigment plants absorption spectrum vio\u2026",
+              "latency_s": 0.004,
+              "result_chars": 1943,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query='chlorophyll a main photosynthetic pigment plants absorption spectrum vio\u2026",
+              "latency_s": 0.004,
+              "result_chars": 1943,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query='chlorophyll a main photosynthetic pigment plants absorption spectrum vio\u2026",
+              "latency_s": 0.004,
+              "result_chars": 1943,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query='chlorophyll a main photosynthetic pigment plants absorption spectrum vio\u2026",
+              "latency_s": 0.018,
+              "result_chars": 1943,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query='chlorophyll a main photosynthetic pigment plants absorption spectrum vio\u2026",
+              "latency_s": 0.015,
+              "result_chars": 1943,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query='main form of chlorophyll in plants and strongest light absorption ranges\u2026",
+              "latency_s": 0.004,
+              "result_chars": 1943,
+              "ok": true,
+              "evidence_count": 3
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "According to the Wikipedia document corpus, chlorophyll a is the main photosynthetic pigment in plants. It absorbs most strongly in the violet-blue and orange-red ranges of light, and is a poor absorber of green and near-green light.",
+          "error": null
+        },
+        "h13": {
+          "category": "calculation",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 9.586,
+          "tools_used": [
+            "search_handbook",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='battery bank usable capacity overnight base load kW', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 560,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='24 - (1.6 * 8)'",
+              "latency_s": 0.0,
+              "result_chars": 4,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The battery bank has 24 kWh of usable capacity. With no HVAC surge, the overnight base load is 1.6 kW for 8 hours, consuming 1.6 \u00d7 8 = 12.8 kWh. Remaining usable capacity: 24 \u2212 12.8 = 11.2 kWh.",
+          "error": null
+        },
+        "h14": {
+          "category": "conversion",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 7.076,
+          "tools_used": [
+            "unit_convert"
+          ],
+          "tool_calls": [
+            {
+              "name": "unit_convert",
+              "node": "execute",
+              "args_brief": "value=400.0, from_unit='ft', to_unit='m'",
+              "latency_s": 0.0,
+              "result_chars": 6,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The antenna mast height of 400 ft converts to 121.92 meters.",
+          "error": null
+        },
+        "h15": {
+          "category": "multi_step",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 9.543,
+          "tools_used": [
+            "search_handbook",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='survey drone full-endurance mission duration flight time per mission', t\u2026",
+              "latency_s": 0.0,
+              "result_chars": 391,
+              "ok": true,
+              "evidence_count": 2
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='42 * 7'",
+              "latency_s": 0.0,
+              "result_chars": 5,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The survey drone flies for up to 42 minutes per charge (full-endurance mission). Flying one such mission per day for 7 days logs 42 \u00d7 7 = 294 minutes of flight time in one week.",
+          "error": null
+        },
+        "h16": {
+          "category": "note_keeping",
+          "expected_behavior": "answer",
+          "status": "ok",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 9.421,
+          "tools_used": [
+            "search_handbook",
+            "note_store"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='sample freezer maximum sample-box capacity', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 511,
+              "ok": true,
+              "evidence_count": 3
+            },
+            {
+              "name": "note_store",
+              "node": "execute",
+              "args_brief": "action='append', note='Storage audit: Sample freezer maximum sample-box capacit\u2026",
+              "latency_s": 0.0,
+              "result_chars": 120,
+              "ok": true,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The sample freezer's maximum sample-box capacity is 180 sample boxes. This has been recorded in the ops notebook for the storage audit.",
+          "error": null
+        },
+        "h17": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "status": "refused",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 11.363,
+          "tools_used": [],
+          "tool_calls": [
+            {
+              "name": "unit_convert",
+              "node": "execute",
+              "args_brief": "value=1850.0, from_unit='USD', to_unit='EUR'",
+              "latency_s": 0.0,
+              "result_chars": 0,
+              "ok": false,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": null,
+          "answer": "The request to convert the $1,850 resupply invoice to euros cannot be fulfilled with the available tools. The unit_convert tool supports only length, mass, volume, and temperature conversions \u2014 not currencies (hence the prior failure: \"unknown unit: 'USD'\"). No exchange-rate lookup tool exists in this environment, and inventing an exchange rate would produce an unreliable figure for the accounting file. To complete this task, a current USD\u2192EUR exchange rate must be supplied (e.g., from a financial data source), after which the conversion is a simple multiplication: EUR amount = 1,850 \u00d7 rate.",
+          "error": "The request to convert the $1,850 resupply invoice to euros cannot be fulfilled with the available tools. The unit_convert tool supports only length, mass, volume, and temperature conversions \u2014 not currencies (hence the prior failure: \"unknown unit: 'USD'\"). No exchange-rate lookup tool exists in this environment, and inventing an exchange rate would produce an unreliable figure for the accounting file. To complete this task, a current USD\u2192EUR exchange rate must be supplied (e.g., from a financial data source), after which the conversion is a simple multiplication: EUR amount = 1,850 \u00d7 rate."
+        },
+        "h18": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "status": "refused",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 6.349,
+          "tools_used": [
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='new field tablet Wi-Fi password', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 2,
+              "ok": true,
+              "evidence_count": 0
+            }
+          ],
+          "critique_verdict": null,
+          "answer": "The ops handbook does not list a Wi-Fi password for the new field tablet. The closest relevant entry is the \"Field Tablet Setup\" document, which covers enrolling the tablet in MDM and installing the offline map pack, but it contains no Wi-Fi credentials. Per policy, the handbook search returned no relevant evidence, so I cannot provide the password.",
+          "error": "The ops handbook does not list a Wi-Fi password for the new field tablet. The closest relevant entry is the \"Field Tablet Setup\" document, which covers enrolling the tablet in MDM and installing the offline map pack, but it contains no Wi-Fi credentials. Per policy, the handbook search returned no relevant evidence, so I cannot provide the password."
+        },
+        "h19": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "status": "refused",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 9.264,
+          "tools_used": [],
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='2**500'",
+              "latency_s": 0.0,
+              "result_chars": 0,
+              "ok": false,
+              "evidence_count": null
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='2**500'",
+              "latency_s": 0.0,
+              "result_chars": 0,
+              "ok": false,
+              "evidence_count": null
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='2**500'",
+              "latency_s": 0.0,
+              "result_chars": 0,
+              "ok": false,
+              "evidence_count": null
+            }
+          ],
+          "critique_verdict": null,
+          "answer": "I cannot complete the request: execute failed after 2 attempts: exponent too large",
+          "error": "execute failed after 2 attempts: exponent too large"
+        }
+      }
+    }
+  }
+}

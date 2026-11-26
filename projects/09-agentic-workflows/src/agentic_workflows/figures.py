@@ -1,8 +1,11 @@
 """Story figures for the evaluation report (plotly, dark theme).
 
-Four builders — the suite summary, the tool-usage matrix, the node
+Four single-run builders — the suite summary, the tool-usage matrix, the node
 waterfall, and cost/latency bars — plus :func:`suite_figures`, the bundle
-the report builder writes as ``.html`` + ``.json`` pairs. All figures are
+the report builder writes as ``.html`` + ``.json`` pairs, and
+:func:`live_repeats_figure`, the per-task pass-count chart over the repeated
+live runs (built from ``repeats_summary.json`` by the ``repeats`` CLI command,
+never by the single-run evaluate stage). All figures are
 deterministic renderings of the graded report; ids are stable (ADR-0005:
 interactive figures are canonical). The workflow graph itself is a mermaid
 diagram in the story/docs, not a plotly figure.
@@ -474,6 +477,67 @@ def _fig_cost_latency_bars(cases: list[Any], config: EvalConfig | None) -> go.Fi
         fig,
         f"tokens (left) + cloud-cost labels (1.00/4.00 USD/Mtok); "
         f"latency vs dashed {budgets[0]:.0f}s budget",
+    )
+    return fig
+
+
+def live_repeats_figure(summary: dict[str, Any]) -> go.Figure:
+    """Per-task pass count across the repeated hosted live runs (pass-4 E7).
+
+    One bar per held-out task: in how many of the ``n_runs`` identical live
+    runs every applicable grader passed (answers: answer + exact tool set +
+    both budgets; probes: refusal + both budgets). Built from
+    ``repeats_summary.json`` by :func:`agentic_workflows.repeats.write_repeats_report`
+    — deliberately NOT part of :func:`suite_figures`, so the DVC ``evaluate``
+    stage (single-run grading) never touches it.
+    """
+    per_task = summary["per_task"]
+    n_runs = summary["n_runs"]
+    names = sorted(per_task)
+    counts = [int(per_task[name]["pass_count"]) for name in names]
+    colors = ["#2dd4bf" if count == n_runs else "#fbbf24" for count in counts]
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=names,
+                y=counts,
+                marker={"color": colors},
+                text=[f"{count}/{n_runs}" for count in counts],
+                textposition="inside",
+                textfont={"size": 13},
+                hovertemplate="%{x}: passed %{y}/" + str(n_runs) + " live runs<extra></extra>",
+                showlegend=False,
+            )
+        ]
+    )
+    fig.update_layout(
+        xaxis={"title": "", "tickfont": {"size": 13}},
+        # No authored y-range: bars pin the zero baseline and plotly autoranges
+        # past the count maximum (an authored window here only risks clipping).
+        yaxis={
+            "title": {"text": f"live runs passed (of {n_runs})", "font": {"size": 15}},
+            "tickmode": "linear",
+            "dtick": 1,
+            "tickfont": {"size": 14},
+        },
+        bargap=0.35,
+    )
+    apply_theme(fig)
+    k = summary["pass5"]["k"]
+    n = summary["n_tasks"]
+    fig.update_layout(
+        title=(
+            f"{k} of {n} tasks pass all five live runs"
+            if n_runs == 5
+            else f"{k} of {n} tasks pass all {n_runs} live runs"
+        ),
+    )
+    lat = summary["latency"]
+    add_takeaway(
+        fig,
+        f"one bar per held-out task over {n_runs} identical hosted runs; a pass needs every "
+        f"grader green; pooled p50/p95 latency {lat['p50_s']:.1f}/{lat['p95_s']:.1f} s "
+        f"over {lat['n_observations']} task-runs",
     )
     return fig
 

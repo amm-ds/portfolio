@@ -1,0 +1,18 @@
+{
+  "slot": "cal_002",
+  "chunk_id": "machine-learning-080#c003",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "usage": {
+    "input_tokens": 381,
+    "output_tokens": 15
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.15,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"unsupported\", \"reason\": \"one short line\"}",
+  "label": "unsupported",
+  "reason": "one short line"
+}

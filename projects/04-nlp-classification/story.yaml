@@ -14,7 +14,7 @@ sections:
 
     - **Fast pass:** Score every item locally with the full-data transformer.
     - **Confidence gate (`τ = 0.6`):** Send only the uncertain `2.2%` (`22` per `1,000`) to the `kimi-for-coding` reviewer.
-    - **Outcome:** Fresh `macro-F1` reaches `0.9539`; without per-row decisions, that small gain has no paired interval.
+    - **Outcome:** Fresh `macro-F1` reaches `0.9539`; the paired 95% interval for the gain is [`−0.0081`, `+0.0060`] (McNemar p = `1.000`), so the gain is not distinguishable from zero.
 
     We next define the rungs each candidate must climb ([Objectives →](#sec-objectives)).
 
@@ -235,9 +235,12 @@ sections:
     `+0.001`. Measured review latency,
     the time spent waiting for those reviews, is **`96.933` s** in total. The
     **`$0.023671` cloud-equivalent** cost is an estimate from a rate card, not
-    an observed cloud bill. No paired cascade interval can be computed from
-    committed artifacts — the per-row review decisions are not persisted —
-    so these deltas do not establish superiority.
+    an observed cloud bill. A per-row replication run puts the paired `95%`
+    interval for the fresh gain at [`−0.0081`, `+0.0060`] (McNemar p = `1.000`),
+    so the gain is not distinguishable from zero. The replication's fresh point
+    delta is `−0.0011`, a `0.0020` divergence from the committed score that
+    sits inside the `0.003` replication tolerance, so the committed run stays
+    the headline.
 
     The figure also keeps the cheaper baseline in view. Keyword-first routing
     reaches `0.9061` fresh `macro-F1` while `75.4%` of items run at keyword speed.
@@ -337,7 +340,9 @@ sections:
     - The reading is per-item, English-only, on four clean topics. Multi-label
       Business/Sci-Tech routing needs a different label and metric contract.
     - The cascade deltas (`+0.0001` validation, `+0.0030` bounded test,
-      `+0.001` fresh) lack paired intervals and are bounded to these fixed splits. They do not justify sending every item to an `LLM` or
+      `+0.001` fresh) are bounded to these fixed splits. The fresh delta's
+      paired `95%` interval is [`−0.0081`, `+0.0060`] (McNemar p = `1.000`),
+      so they do not justify sending every item to an `LLM` or
       establish production breadth or superiority.
     - All serving speeds come from one machine at batch size 1.
     - HPO's paired interval crosses zero at this scale. A larger budget might
@@ -390,8 +395,10 @@ sections:
     Total: 44 reviews, `96.933` s measured review latency, and `$0.023671`
     estimated cloud-equivalent cost. The threshold is fitted on validation only.
     Test and fresh are scored once, with no fresh/bounded overlap and no
-    test/fresh labels or examples used for tuning. Cascade deltas are point
-    estimates without a persisted paired interval.
+    test/fresh labels or examples used for tuning. A per-row replication
+    (`reports/llm_cascade_paired_ci.json`) puts the paired `95%` interval for
+    the fresh gain at [`−0.0081`, `+0.0060`] with McNemar p = `1.000`: the
+    gain is not distinguishable from zero.
 
     At fixed device and hyperparameters, each `3×` data step buys +1.5, +1.6,
     and +1.3 `macro-F1` points on test. Scores rise at every step, while the
@@ -475,14 +482,14 @@ roadmap:
   title: Ship full-data training at default settings
   detail: HPO's bounded edge has a CI crossing zero; scale, not tuning, set the model.
 - status: shipped
-  title: Beat every rung with full data
-  detail: The 108k-row fit reaches 0.9460 test macro-F1, above every cheaper rung.
-- status: shipped
   title: Ship the selective LLM cascade
   detail: 'Rows below τ=0.6 get review: 22 of 1,000 fresh, +0.001 macro-F1.'
-- status: next
+- status: shipped
   title: Persist per-row review decisions
-  detail: 'Gate: save all 1,000 fresh rows, then compute a paired cascade CI.'
+  detail: 'All 2,400 rows saved; fresh gain CI [−0.0081, +0.0060] includes zero.'
+- status: next
+  title: Calibrate the cascade gate
+  detail: 'Gate: fit temperature on full-data validation confidence, then re-fit τ.'
 key_concepts:
 - '**Macro-F1**: the unweighted mean of per-topic F1, so a rare topic counts as much as a common one.'
 - '**Model ladder**: cheapest-first rungs judged by one metric pair. A rung must beat the rung below it to justify its extra
@@ -507,7 +514,8 @@ figure_captions:
     the +0.0073 margin is about 1.7 seed standard deviations.
   llm_cascade_comparison: Full-data transformer versus the selected τ=0.6 selective LLM cascade on validation, bounded test,
     and disjoint fresh holdout. Fresh macro-F1 moves from 0.9529 to 0.9539 (+0.001) with 22 reviews;
-    no paired cascade interval is persisted, so the small point gain does not establish superiority.
+    the error bar is the paired 95% interval of the fresh gain from the per-row replication
+    ([−0.0081, +0.0060], McNemar p = 1.000), and it includes zero.
   confusion_matrix_selected: Actual versus predicted topics for the validation-selected bounded model on the 1,000-row test
     sample. Business → Sci/Tech remains the dominant off-diagonal pair.
   per_class_f1_comparison: Topic-level F1 for the validation-selected bounded model and TF-IDF baseline. The residual gap

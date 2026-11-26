@@ -12,6 +12,9 @@ figure_captions:
   cost_latency_bars: For each task, bars show input and output tokens, estimated cloud-equivalent cost, and latency against
     the 60 s budget. The 15-task suite totals $0.13 of the $2.00 cap (~$0.0088 per task mean) at the labelled rate card, not
     billed spend.
+  live_repeats: Each bar is one held-out task and counts how many of the five identical 2026-11-26 live runs it passed every
+    grader in (answer, exact tool set, step and latency budgets; refusal for the probes). 17 of 19 tasks pass all five runs;
+    h08 missed twice on the 60 s deadline, h01 once on the step budget.
 sections:
 - id: background
   text_md: |
@@ -292,7 +295,10 @@ sections:
       The suite chart records passes rather than dollar amounts; this is a
       measured-run estimate, not a bill.
     - **Stability:** Two hosted repeat passes kept `15/15` answers and exact
-      tool sets (Details). These repeats are separate from the single-run
+      tool sets (Details). Five identical live runs of the held-out suite
+      (`2026-11-26`): pass^5 = `17/19`, with every task passing at least once —
+      h08 hit the `60 s` deadline in two runs, h01 the step budget in one (the
+      `live_repeats` chart). These repeats are separate from the single-run
       bars and do not establish cross-provider repeatability.
 
     The grades are recorded; the summary table below pairs with `suite_summary` and `node_waterfall` before we review the full protocol ([Conclusions →](#sec-conclusions)).
@@ -302,13 +308,16 @@ sections:
     | Tuning (hosted, n = 15) | **15 / 15** | **15 / 15** | — | **15 / 15** & **15 / 15** |
     | Held-out first run (n = 19) | **13 / 13** | **13 / 13** | 5 / 6 | 18 / 19 & 12 / 19 |
     | Held-out live rerun, all hosted (2026-11-19) | **13 / 13** | **13 / 13** | **6 / 6** | **19 / 19** & **19 / 19** |
+    | Held-out live repeats ×5, all hosted (2026-11-26) | **13 / 13** ×5 | **13 / 13** ×5 | 28 / 30 probe-runs | 94 / 95 & 93 / 95 task-runs |
 
     The live rerun used the hosted endpoint for all `19` tasks, unlike the first recorded run,
     mix of `10` hosted and `9` local tasks. Its `19/19` latency result therefore
     confirms the hosted contract, not a like-for-like fix for local generation.
+    The five repeats used the same all-hosted setup; their pooled p50/p95 latency
+    is `8.9`/`37.5` s over `95` task-runs.
 
     **In plain terms:** The workflow got every practice and unseen answer right with no unplanned tool calls on answer tasks, finishing typical tasks in 18 seconds; an all-hosted rerun passed the remaining refusal check.
-  figures: [suite_summary, node_waterfall]
+  figures: [suite_summary, node_waterfall, live_repeats]
   metrics_keys: []
 - id: conclusions
   text_md: |
@@ -331,8 +340,9 @@ sections:
       run: `30/30` planned calls, `100%` call precision, and `100%` tool recall.
     - Should-fail probes exposed one refusal miss in the first recorded run after a terminal
       calculator failure, not confabulation. Typed refusal, no-evidence, and
-      deadline exits have offline regressions and one live confirmation; repeated
-      live efficacy remains unmeasured.
+      deadline exits have offline regressions, one live confirmation, and five
+      repeated live runs (pass^5 = `17/19`; h08 missed two runs on the `60 s`
+      deadline, h01 one on the step budget).
     - Budgets depend on the provider. The local model exceeded the hosted
       `60 s` cap on `7/9` tasks. Local runs cost `$0` but are not
       budget-comparable.
@@ -345,8 +355,8 @@ sections:
 
     - The terminal-outcome and deadline changes have deterministic offline
       tests and one live confirmation (2026-11-19): `6/6` refusals under the
-      live grader, with h19 refused after its calculator guard tripped. Both runs are single
-      runs of 19 tasks, so all published rates remain single-run records.
+      live grader, with h19 refused after its calculator guard tripped. Five repeated live
+      runs (2026-11-26): pass^5 = `17`/19; p50/p95 `8.9`/`37.5` s.
     - The held-out sample has 19 tasks. It checks overfitting and
       confabulation, but does not guarantee generalization.
     - Tasks are fixed research-operations procedures over two corpora.

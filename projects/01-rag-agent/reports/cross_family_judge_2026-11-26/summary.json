@@ -1,0 +1,63 @@
+{
+  "generated_at": "2026-11-26T18:53:25.631152+00:00",
+  "experiment": "E8 cross-family second judge (pass-3 P2.3, pass-4 E8)",
+  "judge": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.17",
+    "endpoint": "http://127.0.0.1:11434/api/chat",
+    "temperature": 0,
+    "seed": 44
+  },
+  "committed_judge": "kimi-for-coding (Moonshot/Kimi family)",
+  "prompt_path": "scripts/label_judge_calibration_v2.py SYSTEM_PROMPT + label_prompt (verbatim; judge-only comparison)",
+  "calibration": {
+    "n_items": 30,
+    "n_parse_failures": 0,
+    "matches_owner": 28,
+    "agreement_owner": 0.9333,
+    "agreement_owner_wilson95": [
+      0.786765,
+      0.981523
+    ],
+    "kappa_owner": 0.8618,
+    "matches_kimi": 28,
+    "kappa_kimi": 0.8618,
+    "gate_threshold": ">= 25/30 agreement with owner labels",
+    "gate_passed": true
+  },
+  "final_v3_regrade": {
+    "status": "blocked",
+    "reason": "final_v3 answer texts and per-claim verdicts were never committed: reports/final_v3_e2e/ and reports/runs/final_v3-432d6b705715/ carry question traces only (no answer text, no claim text). A judge-only re-grade has no committed input; regenerating answers would violate 'fixed outputs; nothing is selected or tuned'."
+  },
+  "meter": {
+    "n_calls": 177,
+    "input_tokens": 61963,
+    "output_tokens": 2875,
+    "spend_usd": 0.0,
+    "hosted_spend_usd": 0.0,
+    "hosted_budget_cap_usd": 2.5,
+    "hosted_budget_stop_usd": 2.2,
+    "request_hosts": [
+      "127.0.0.1"
+    ],
+    "note": "local Ollama inference: $0 API cost; hosted budget untouched"
+  },
+  "agreement_147": {
+    "n_items": 147,
+    "n_parse_failures": 0,
+    "vs_committed_kimi_labels": {
+      "matches": 141,
+      "agreement": 0.9592,
+      "kappa": 0.9182
+    },
+    "vs_construction_kind": {
+      "matches": 141,
+      "agreement": 0.9592,
+      "kappa": 0.9182
+    }
+  }
+}

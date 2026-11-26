@@ -1,0 +1,80 @@
+{
+  "generated_by": "nlp_classification.cli llm-cascade",
+  "generated_at": "20261126",
+  "rows_file": "reports/llm_cascade_rows_20261126.jsonl",
+  "committed_reference": "reports/llm_cascade.json",
+  "protocol": "threshold fitted on validation only; test and fresh holdout each scored once; one persisted decision row per example",
+  "replication": {
+    "threshold": 0.6,
+    "challenger_model": "kimi-for-coding",
+    "selected": "transformer",
+    "validation": {
+      "baseline_f1_macro": 0.9601530812383795,
+      "cascade_f1_macro": 0.9576663012984701,
+      "baseline_accuracy": 0.96,
+      "cascade_accuracy": 0.9575,
+      "n_reviews": 6
+    },
+    "bounded test": {
+      "baseline_f1_macro": 0.9460236394680519,
+      "cascade_f1_macro": 0.9470398123527978,
+      "baseline_accuracy": 0.946,
+      "cascade_accuracy": 0.947,
+      "n_reviews": 16
+    },
+    "fresh holdout": {
+      "baseline_f1_macro": 0.9529432473490507,
+      "cascade_f1_macro": 0.951885060251729,
+      "baseline_accuracy": 0.953,
+      "cascade_accuracy": 0.952,
+      "n_reviews": 22
+    },
+    "ops": {
+      "input_tokens": 9807,
+      "output_tokens": 3231,
+      "review_latency_s": 35.39,
+      "est_cost_usd": 0.022731,
+      "meter_spend_usd": 0.020583
+    }
+  },
+  "fresh_holdout_paired": {
+    "n_rows": 1000,
+    "n_reviews": 22,
+    "f1_macro": {
+      "delta_f1_macro": -0.001058187097321639,
+      "ci_95": [
+        -0.008113299381395309,
+        0.005961360825496633
+      ],
+      "method": "paired row bootstrap, percentile interval",
+      "n_bootstrap": 2000,
+      "seed": 42,
+      "inconclusive": true
+    },
+    "accuracy": {
+      "delta_accuracy": -0.0010000000000000009,
+      "ci_95": [
+        -0.008000000000000007,
+        0.006000000000000005
+      ],
+      "method": "paired row bootstrap, percentile interval",
+      "n_bootstrap": 2000,
+      "seed": 42,
+      "inconclusive": true
+    },
+    "mcnemar": {
+      "b_candidate_correct_reference_wrong": 6,
+      "c_candidate_wrong_reference_correct": 7,
+      "n_discordant": 13,
+      "p_value": 1.0,
+      "method": "two-sided exact binomial McNemar"
+    }
+  },
+  "committed_fresh_cascade_f1_macro": 0.9539264554684488,
+  "replication_minus_committed_cascade_f1": -0.0020413952167197547,
+  "publish_beside": {
+    "divergence_abs_f1": 0.0020413952167197547,
+    "expected_acceptable_above": 0.003,
+    "note": "LLM verdicts are not bit-reproducible; the committed reference stays and the replication is published beside it (owner decision)"
+  }
+}

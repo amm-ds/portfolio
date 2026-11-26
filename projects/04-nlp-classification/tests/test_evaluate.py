@@ -205,3 +205,38 @@ def test_committed_figure_titles_state_their_own_data() -> None:
     probe = max(_decode(next(t for t in f1_traces if len(t["x"]) == 4)["y"]))
     assert f"Extra epochs add {probe - headline:+.4f} val macro-F1" in title
     assert f"{probe:.4f} probe peak vs {headline:.4f} headline" in title
+
+
+def test_paired_accuracy_delta_recovers_observed_sign() -> None:
+    from nlp_classification.evaluate import paired_accuracy_delta
+
+    y_true = [0, 1, 2, 3] * 25
+    candidate = y_true.copy()
+    reference = y_true.copy()
+    for i in range(0, 100, 10):  # candidate fixes 10 rows the reference misses
+        reference[i] = (reference[i] + 1) % 4
+    out = paired_accuracy_delta(y_true, candidate, reference, n_bootstrap=200, seed=1)
+    assert out["delta_accuracy"] == pytest.approx(0.1)
+    lo, hi = out["ci_95"]
+    assert lo > 0.0 and hi <= 0.2
+    assert out["inconclusive"] is False
+
+
+def test_mcnemar_exact_known_discordant_counts() -> None:
+    from nlp_classification.evaluate import mcnemar_exact
+
+    # 6 discordant pairs, all candidate-only correct: p = 2 * (1/2)^6 = 0.03125.
+    y_true = [1] * 6 + [0] * 4
+    candidate = [1] * 6 + [0] * 4
+    reference = [0] * 6 + [0] * 4
+    out = mcnemar_exact(y_true, candidate, reference)
+    assert out["b_candidate_correct_reference_wrong"] == 6
+    assert out["c_candidate_wrong_reference_correct"] == 0
+    assert out["n_discordant"] == 6
+    assert out["p_value"] == pytest.approx(0.03125)
+
+    # Balanced discordance is never significant; no discordance gives p = 1.
+    tied = mcnemar_exact([1, 1], [1, 0], [0, 1])
+    assert tied["p_value"] == pytest.approx(1.0)
+    none = mcnemar_exact([1, 0], [1, 0], [1, 0])
+    assert none["n_discordant"] == 0 and none["p_value"] == 1.0

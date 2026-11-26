@@ -19,8 +19,8 @@
 | `workflow.py` | pydantic-graph `Plan → Execute → Critique → End` workflow with typed state, bounded repair/critique loops, typed ok/refused/failed/deadline outcomes, generic no-evidence stopping, per-node traces, and hosted/local model presets |
 | `hitl.py` | Human-in-the-loop checkpoint: plan, pause with a typed `ApprovalRequest`, serialize to `data/checkpoint.json`, resume via CLI (approve / reject-with-feedback) |
 | `evals.py` | 15-task tuning suite + 19-task held-out set (13 answer tasks + 6 refusal probes) with exact ground truths, deterministic graders, hard per-task wall-clock deadlines, spend-ledger caps, and per-call traces |
-| `figures.py` / `report.py` | The four story figure builders and the report/metrics assembly (`reports/metrics.json` + `detail.tooling` + `detail.heldout`, HTML report) — split out of `evals.py` (audit P1), re-exported for import stability |
-| `cli.py` | `prepare [--heldout]` / `run` / `run-all [--heldout]` / `evaluate [--heldout]` / `checkpoint request|approve|reject` |
+| `figures.py` / `report.py` | The story figure builders (four single-run charts + the `live_repeats` pass-count chart) and the report/metrics assembly (`reports/metrics.json` + `detail.tooling` + `detail.heldout`, HTML report) — split out of `evals.py` (audit P1), re-exported for import stability |
+| `cli.py` | `prepare [--heldout]` / `run` / `run-all [--heldout]` / `evaluate [--heldout]` / `repeats` / `checkpoint request|approve|reject` |
 
 ## Results
 
@@ -28,8 +28,11 @@ These are **first-recorded measurements** (before the typed-refusal fix), regene
 model calls. The new terminal-outcome/no-evidence/deadline contracts have
 deterministic tests. A 2026-11-19 all-hosted live rerun confirmed 13/13
 answers, 6/6 graceful refusals, and 19/19 step and latency budgets
-([`reports/live_confirmation_20261119/`](reports/live_confirmation_20261119/));
-it remains one confirmation run, not repeated efficacy evidence.
+([`reports/live_confirmation_20261119/`](reports/live_confirmation_20261119/)).
+Five identical repeats on 2026-11-26 measured consistency: **pass^5 = 17/19**
+(every task passed at least once), pooled p50/p95 latency 8.9/37.5 s, $0.392
+total estimated spend
+([`reports/live_repeats_20261126/`](reports/live_repeats_20261126/)).
 
 All **15 tuning-suite tasks** ran end-to-end on the hosted Kimi coding
 endpoint (`kimi-for-coding`) via plain `run-all` with per-call tool capture
@@ -125,11 +128,27 @@ grader caught both. Captured calls rose from 30 to 33–35 (repeated same-tool
 lookups, exact sets unchanged). Stability holds for answers and tool
 discipline; latency and step count vary run to run on a hosted endpoint.
 
+### Held-out live repeats (2026-11-26)
+
+Five identical all-hosted runs of the 19-task held-out suite on
+`kimi-for-coding` (same runner, caps, and offline grading as the 2026-11-19
+confirmation; [`reports/live_repeats_20261126/`](reports/live_repeats_20261126/)):
+answers 13/13 and exact tool sets 13/13 in every run; probes 6/6 in three
+runs and 5/6 in two — h08 hit the 60 s wall-clock deadline in runs 1 and 5
+(`deadline_exceeded`, no refusal marker) — and one step-budget miss (h01 in
+run 1: a critique-driven revision took `steps_taken` to 9 of 8 allowed).
+**pass^5 = 17/19; pass@5 = 19/19.** Pooled across the 95 task-runs: p50
+8.878 s, p95 37.478 s, max 60.029 s. Estimated spend $0.0766–$0.0826 per run,
+**$0.392066 total**; wall time ~20.5 min including offline grading. The
+per-task pass counts render as the `live_repeats` figure, and
+`tests/test_repeats.py` rebuilds every derived number from the raw records.
+
 Figures (in `reports/figures/`, `.html` + `.json` per figure):
 `suite_summary` (outcomes by split: tuning × 4 graders, held-out answers,
 should-fail probes), `tool_usage_matrix` (captured calls per task × tool),
 `node_waterfall` (latency stacked per graph visit), `cost_latency_bars`
-(tokens, cost, latency per task). The workflow graph is interactive React Flow
+(tokens, cost, latency per task), `live_repeats` (per-task pass counts across
+the five 2026-11-26 held-out live runs). The workflow graph is interactive React Flow
 in `story.yaml` and mermaid on the docs page. Every record's `tool_calls` trace
 shows each tool invocation with args, latency, result size, and success.
 
@@ -151,9 +170,10 @@ quota.
 Ready for supervised pilots, not unattended use: legacy held-out records pass
 only 5/6 refusals, 18/19 step budgets, and 12/19 latency budgets. The
 hosted-tuned 60 s latency budget is provider-sensitive — 7 of 9 local Ollama
-tasks exceed it. Terminal/deadline behavior has deterministic tests and one
-2026-11-19 all-hosted live confirmation; repeated live efficacy is unmeasured.
-Suite costs are cloud-equivalent estimates, not invoices.
+tasks exceed it. Terminal/deadline behavior has deterministic tests, one
+2026-11-19 all-hosted live confirmation, and five 2026-11-26 live repeats
+(pass^5 = 17/19: h08 missed two runs on the 60 s deadline, h01 one on the
+step budget). Suite costs are cloud-equivalent estimates, not invoices.
 
 ## Reproduce
 
@@ -212,6 +232,7 @@ uv run pytest projects/09-agentic-workflows/tests
 | figure | file |
 |---|---|
 | cost latency bars | [reports/figures/cost_latency_bars.html](reports/figures/cost_latency_bars.html) |
+| live repeats | [reports/figures/live_repeats.html](reports/figures/live_repeats.html) |
 | node waterfall | [reports/figures/node_waterfall.html](reports/figures/node_waterfall.html) |
 | suite summary | [reports/figures/suite_summary.html](reports/figures/suite_summary.html) |
 | tool usage matrix | [reports/figures/tool_usage_matrix.html](reports/figures/tool_usage_matrix.html) |

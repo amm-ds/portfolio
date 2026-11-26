@@ -1,0 +1,18 @@
+{
+  "slot": "agree_121",
+  "chunk_id": "aviation-011#c006",
+  "model": "qwen2.5:3b",
+  "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+  "usage": {
+    "input_tokens": 422,
+    "output_tokens": 50
+  },
+  "cost_usd_est": "0.0",
+  "latency_s": 0.62,
+  "request_hosts": [
+    "127.0.0.1"
+  ],
+  "raw_response": "{\"label\": \"supported\", \"reason\": \"The claim states that the airship R101 crashed in 1930 and used the Beardmore Tornado aero diesel engine, which is directly stated in the passage.\"}",
+  "label": "supported",
+  "reason": "The claim states that the airship R101 crashed in 1930 and used the Beardmore Tornado aero diesel engine, which is directly stated in the passage."
+}

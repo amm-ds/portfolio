@@ -81,10 +81,12 @@ fresh labels or examples tune the router.
 The earlier keyword-first router remains the cheaper, lower-quality baseline:
 0.9061 fresh macro-F1 with 75.4% of items on the keyword path. The full-data
 transformer reaches 0.9529432 fresh; the selected cascade moves it by +0.001
-macro-F1 with 22 reviews, no measurable change. No paired cascade interval
-can be computed from committed artifacts (the per-row review decisions are not
-persisted), so these point deltas are descriptive rather than established
-superiority.
+macro-F1 with 22 reviews, no measurable change. A per-row replication run
+([`reports/llm_cascade_rows_20261126.jsonl`](reports/llm_cascade_rows_20261126.jsonl))
+puts the paired 95% interval for the fresh gain at **[−0.0081, +0.0060]** with
+McNemar p = 1.000 ([`reports/llm_cascade_paired_ci.json`](reports/llm_cascade_paired_ci.json)),
+so the gain is not distinguishable from zero and the point deltas are
+descriptive rather than established superiority.
 
 Macro-F1 ladder vs. the better naive floor (`random_uniform`): TF-IDF **+61.8
 pp.**, encoder_b **+64.5 pp.**, bounded DistilBERT family **+64.9 pp.**, full-data

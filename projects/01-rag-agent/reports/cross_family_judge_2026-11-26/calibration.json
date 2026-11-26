@@ -1,0 +1,317 @@
+{
+  "n_items": 30,
+  "n_parse_failures": 0,
+  "matches_owner": 28,
+  "agreement_owner": 0.9333,
+  "agreement_owner_wilson95": [
+    0.786765,
+    0.981523
+  ],
+  "kappa_owner": 0.8618,
+  "matches_kimi": 28,
+  "kappa_kimi": 0.8618,
+  "gate_threshold": ">= 25/30 agreement with owner labels",
+  "gate_passed": true,
+  "items": [
+    {
+      "index": 2,
+      "chunk_id": "machine-learning-080#c003",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 7,
+      "chunk_id": "renewable-energy-055#c010",
+      "owner_label": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 8,
+      "chunk_id": "photosynthesis-000#c010",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 9,
+      "chunk_id": "renewable-energy-055#c007",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "supported",
+      "agree_owner": false,
+      "agree_kimi": false,
+      "reason": "one short line"
+    },
+    {
+      "index": 14,
+      "chunk_id": "photosynthesis-000#c007",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "see ambiregnal protists"
+    },
+    {
+      "index": 20,
+      "chunk_id": "aviation-002#c003",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 25,
+      "chunk_id": "climate-000#c008",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "50% instead of 70%"
+    },
+    {
+      "index": 29,
+      "chunk_id": "climate-048#c005",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 36,
+      "chunk_id": "climate-048#c002",
+      "owner_label": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 40,
+      "chunk_id": "machine-learning-121#c005",
+      "owner_label": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 43,
+      "chunk_id": "climate-011#c001",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "supported",
+      "agree_owner": false,
+      "agree_kimi": false,
+      "reason": "one short line"
+    },
+    {
+      "index": 45,
+      "chunk_id": "aviation-004#c005",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "short distances"
+    },
+    {
+      "index": 57,
+      "chunk_id": "aviation-000#c011",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 65,
+      "chunk_id": "renewable-energy-043#c002",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "Conventional Wind Turbine"
+    },
+    {
+      "index": 74,
+      "chunk_id": "renewable-energy-055#c007",
+      "owner_label": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 75,
+      "chunk_id": "climate-032#c007",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "mainly conflicting ways"
+    },
+    {
+      "index": 77,
+      "chunk_id": "machine-learning-121#c009",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 79,
+      "chunk_id": "machine-learning-000#c009",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 83,
+      "chunk_id": "renewable-energy-050#c006",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 91,
+      "chunk_id": "photosynthesis-000#c003",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "2015 instead of 2020"
+    },
+    {
+      "index": 96,
+      "chunk_id": "climate-003#c000",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "three categories instead of four"
+    },
+    {
+      "index": 97,
+      "chunk_id": "machine-learning-075#c001",
+      "owner_label": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 103,
+      "chunk_id": "photosynthesis-028#c009",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 104,
+      "chunk_id": "climate-032#c007",
+      "owner_label": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 107,
+      "chunk_id": "climate-032#c009",
+      "owner_label": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 131,
+      "chunk_id": "climate-003#c002",
+      "owner_label": "unsupported",
+      "kimi_label": "unsupported",
+      "qwen_label": "unsupported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "Understanding the need"
+    },
+    {
+      "index": 133,
+      "chunk_id": "photosynthesis-000#c007",
+      "owner_label": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 138,
+      "chunk_id": "machine-learning-075#c009",
+      "owner_label": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 140,
+      "chunk_id": "renewable-energy-050#c006",
+      "owner_label": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    },
+    {
+      "index": 143,
+      "chunk_id": "climate-048#c005",
+      "owner_label": "supported",
+      "kimi_label": "supported",
+      "qwen_label": "supported",
+      "agree_owner": true,
+      "agree_kimi": true,
+      "reason": "one short line"
+    }
+  ]
+}

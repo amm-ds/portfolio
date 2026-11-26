@@ -287,14 +287,25 @@ def evaluate() -> None:
 
 @app.command(name="llm-cascade")
 def llm_cascade_cmd() -> None:
-    """Fit validation-only selective review, then score test/fresh once."""
+    """Fit validation-only selective review, then score test/fresh once.
+
+    Persists per-row decisions (reports/llm_cascade_rows_<date>.jsonl) and the
+    paired fresh-holdout report (reports/llm_cascade_paired_ci.json). The
+    committed reports/llm_cascade.json reference is never overwritten.
+    """
     from nlp_classification.llm_cascade import run_cascade
 
     result = run_cascade(_cfg())
     test = result["bounded test"]
+    paired = result["paired_fresh_holdout"]
+    f1_ci = paired["f1_macro"]["ci_95"]
     typer.echo(
         f"selected={result['selected']} (tau={result['threshold']}) | "
-        f"test macro-F1 {test['baseline_f1_macro']:.4f} → {test['cascade_f1_macro']:.4f}"
+        f"test macro-F1 {test['baseline_f1_macro']:.4f} → {test['cascade_f1_macro']:.4f} | "
+        f"fresh paired ΔF1 {paired['f1_macro']['delta_f1_macro']:+.4f} "
+        f"95% CI [{f1_ci[0]:+.4f}, {f1_ci[1]:+.4f}] "
+        f"McNemar p={paired['mcnemar']['p_value']:.3f} | "
+        f"metered ${result['ops']['meter_spend_usd']:.6f}"
     )
 
 

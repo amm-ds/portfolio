@@ -7,9 +7,10 @@
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/04-nlp-classification)
 
-The cascade delta is +0.001 macro-F1 — no measurable change, not established
-superiority: no paired cascade interval can be computed from committed
-artifacts (the per-row review decisions are not persisted), and the dollar
+The cascade delta is +0.001 macro-F1: no measurable change, not established
+superiority. A per-row replication puts the paired 95% interval for the gain
+at [−0.0081, +0.0060] (McNemar p = 1.000), so the gain is not distinguishable
+from zero. The dollar
 figure is a rate-card
 estimate rather than an observed cloud bill.
 
@@ -63,8 +64,11 @@ frozen; the fresh 1,000 are disjoint from bounded test.
 The 44 total reviews take 96.933 s and an estimated $0.023671 cloud-equivalent
 across validation, test, and fresh. The keyword-first router remains the cheaper
 alternative at 0.9061 fresh macro-F1, with 75.4% of items staying on the keyword
-path. Neither router's small point gains establish superiority without a paired
-interval. Exact artifact: `projects/04-nlp-classification/reports/llm_cascade.json`.
+path. The per-row replication's paired 95% interval for the fresh cascade gain
+is [−0.0081, +0.0060] (McNemar p = 1.000), so neither router's small point gain
+establishes superiority. Exact artifacts:
+`projects/04-nlp-classification/reports/llm_cascade.json` (committed reference)
+and `reports/llm_cascade_paired_ci.json` (replication interval).
 
 ### Controlled data scale
 
@@ -120,8 +124,9 @@ than fp32 in this probe. Data: `reports/latency_probe.json`.
 
 - The evidence covers English-only, single-label items with four clean topics;
   hybrid Business/Sci-Tech articles need a multi-label contract.
-- Cascade gains are small, cover 44 reviews on fixed splits, and have no paired
-  interval. They do not justify reviewing every item with an LLM.
+- Cascade gains are small and cover 44 reviews on fixed splits; the fresh
+  gain's paired 95% interval is [−0.0081, +0.0060] (McNemar p = 1.000). They
+  do not justify reviewing every item with an LLM.
 - Serving speeds are machine-specific, and quantized quality is not measured on
   test data.
 
