@@ -12,13 +12,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** Render the nested metrics object: one row per run, one column per metric.
  *  Runs are the top-level keys whose value is a record; runs prefixed with
- *  "_" (e.g. "_meta") are shown as a footnote, not table rows. Top-level
- *  non-record values (lists, strings — e.g. 02's `candidates`) are metadata
- *  and are skipped. Non-numeric cells render as "—". */
+ *  "_" (e.g. "_meta") and the top-level "analysis" block are metadata, not
+ *  table rows. Top-level non-record values (lists, strings — e.g. 02's
+ *  `candidates`) are metadata and are skipped. Non-numeric cells render as
+ *  "—". */
 export function MetricsTable({ metrics }: { metrics: Metrics }) {
   const runEntries = Object.entries(metrics).filter(
     (entry): entry is [string, Record<string, unknown>] =>
-      !entry[0].startsWith("_") && isRecord(entry[1]),
+      !entry[0].startsWith("_") && entry[0] !== "analysis" && isRecord(entry[1]),
   );
   const meta = metrics["_meta"];
   if (runEntries.length === 0) return null;

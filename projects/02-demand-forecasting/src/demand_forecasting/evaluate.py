@@ -669,8 +669,9 @@ def _finalize_metrics_json(settings: DemandSettings, result: BacktestResult) -> 
 
     Adds the list-valued metrics (``fold_maes``, ``horizon_mae``, ``horizon_mase``)
     that the platform MetricResult (float-only) cannot carry, plus the machine-
-    checkable ``_meta`` protocol block. Existing float keys written by the
-    ReportBuilder (headline test-window metrics + ``legacy_pooled_*``) stay.
+    checkable ``analysis`` protocol block (``_meta`` is reserved for the
+    provenance stamp). Existing float keys written by the ReportBuilder
+    (headline test-window metrics + ``legacy_pooled_*``) stay.
     """
     path = Path(settings.reports_dir) / "metrics.json"
     metrics: dict[str, Any] = json.loads(path.read_text())
@@ -681,7 +682,7 @@ def _finalize_metrics_json(settings: DemandSettings, result: BacktestResult) -> 
         block["horizon_mae"] = result.horizon_mae[run.name]
         block["horizon_mase"] = result.horizon_mase[run.name]
     n_folds = max(f.fold for f in result.folds) + 1
-    metrics["_meta"] = {
+    metrics["analysis"] = {
         "protocol": "rolling_origin_holdout_v1",
         "best_model": best_model(result),
         "strongest_naive": strongest_naive(result),

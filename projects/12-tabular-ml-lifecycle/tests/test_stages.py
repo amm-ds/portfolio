@@ -56,18 +56,19 @@ def test_train_and_evaluate_core_smoke(small_cfg: LifecycleConfig) -> None:
         assert name in metrics, name
         for key in ("mae", "rmse", "mape"):
             assert metrics[name][key] >= 0
-    meta = metrics["_meta"]
-    ci = meta["mae_improvement_vs_floor_ci"]
+    analysis = metrics["analysis"]
+    assert "_meta" not in metrics  # reserved for the provenance stamper
+    ci = analysis["mae_improvement_vs_floor_ci"]
     assert ci["n_boot"] == small_cfg.bootstrap_resamples
     assert ci["point"] > 0  # at least one learned model must beat the floor here
     train_runs = json.loads((small_cfg.reports_dir / "train_runs.json").read_text())
     assert len(train_runs["ablation"]) == 8
     assert all("test_mae" not in row for row in train_runs["ablation"])
-    diagnostics = meta["ablation_post_freeze_diagnostics"]
+    diagnostics = analysis["ablation_post_freeze_diagnostics"]
     assert len(diagnostics) == 8
     assert sum(1 for row in diagnostics if row["selected"]) == 1
     assert all(row["test_mae"] >= 0 for row in diagnostics)
-    sensitivity = meta["serial_dependence_sensitivity"]
+    sensitivity = analysis["serial_dependence_sensitivity"]
     assert set(sensitivity) == {"hourly", "day", "week"}
     assert sensitivity["day"]["block_hours"] == 24
     assert sensitivity["week"]["block_hours"] == 168
@@ -91,7 +92,7 @@ def test_report_assembly_smoke(small_cfg: LifecycleConfig) -> None:
             {
                 "seasonal_naive": {"mae": 90.0, "rmse": 120.0, "mape": 30.0},
                 "mlp": {"mae": 60.0, "rmse": 85.0, "mape": 18.0},
-                "_meta": {
+                "analysis": {
                     "champion": "mlp",
                     "mae_improvement_vs_floor_ci": {
                         "point": 30.0,
@@ -136,6 +137,25 @@ def test_report_assembly_smoke(small_cfg: LifecycleConfig) -> None:
     assert "smoke protocol" in results
     assert "tabular MLP (PyTorch)" in results
     assert "smoke limit" in results
+
+
+def test_report_requires_analysis_block(small_cfg: LifecycleConfig) -> None:
+    """A metrics.json without ``analysis`` (e.g. only the provenance ``_meta``
+    stamp) fails with a re-run hint, not silently-degraded report copy."""
+    import pytest
+
+    reports_dir = small_cfg.reports_dir
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    (reports_dir / "metrics.json").write_text(
+        json.dumps(
+            {
+                "seasonal_naive": {"mae": 90.0, "rmse": 120.0, "mape": 30.0},
+                "_meta": {"git_sha": "stamp"},
+            }
+        )
+    )
+    with pytest.raises(ValueError, match=r"analysis\.champion missing — re-run the evaluate stage"):
+        build_report(reports_dir, Path(__file__).resolve().parents[1])
 
 
 def test_selection_reads_validation_scores_only() -> None:

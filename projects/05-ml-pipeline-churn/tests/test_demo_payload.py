@@ -53,7 +53,7 @@ def payload(small_cfg: ChurnConfig, tiny_synthetic: pd.DataFrame) -> dict:
     metrics = {
         "naive_majority": {"business_cost": 1035.0},
         "selected_model_calibrated": {"roc_auc": 0.83, "ece": 0.02, "business_cost": 601.0},
-        "_meta": {
+        "analysis": {
             "cost_delta_ci": {
                 "point": -416.0,
                 "lo": -485.0,
@@ -67,6 +67,23 @@ def payload(small_cfg: ChurnConfig, tiny_synthetic: pd.DataFrame) -> dict:
     }
     (small_cfg.reports_dir / "metrics.json").write_text(json.dumps(metrics))
     return build_demo_payload(small_cfg)
+
+
+def test_payload_requires_analysis_block(
+    small_cfg: ChurnConfig, tiny_synthetic: pd.DataFrame
+) -> None:
+    """A metrics.json without ``analysis`` (e.g. only the provenance ``_meta``
+    stamp) fails with a re-run hint, not a bare KeyError."""
+    _fixture_context(small_cfg, tiny_synthetic)
+    small_cfg.reports_dir.mkdir(parents=True, exist_ok=True)
+    metrics = {
+        "naive_majority": {"business_cost": 1035.0},
+        "selected_model_calibrated": {"roc_auc": 0.83, "ece": 0.02, "business_cost": 601.0},
+        "_meta": {"git_sha": "stamp"},
+    }
+    (small_cfg.reports_dir / "metrics.json").write_text(json.dumps(metrics))
+    with pytest.raises(ValueError, match=r"analysis.*re-run the evaluate stage"):
+        build_demo_payload(small_cfg)
 
 
 def test_payload_uses_calibrated_threshold(payload: dict) -> None:

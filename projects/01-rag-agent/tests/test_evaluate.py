@@ -283,7 +283,15 @@ def test_rebuild_report_from_artifacts(
     figures = {"chunk_size_sweep": sweep_figure(scores_sample)}
     rag_run = _synthetic_rag_run()
     extra = {"n_questions": 2, "rag": rag_run.eval_result.to_dict()}
-    _write_reports(config, scores_sample, rag_run, figures, extra, random_scores=scores_sample)
+    _write_reports(
+        config,
+        scores_sample,
+        rag_run,
+        figures,
+        extra,
+        random_scores=scores_sample,
+        analysis={"taxonomy": {"correct": 1}},
+    )
     # the committed per-question artifact the offline rebuild consumes
     trace_row = {
         "question": "why are plants green",
@@ -309,9 +317,12 @@ def test_rebuild_report_from_artifacts(
     assert "Chunk Size Sweep" in html
     # per-question trace section re-appended from the committed traces
     assert "<h2>Per-question trace</h2>" in html
-    # detail/_meta blocks survive the metrics.json rewrite
+    # detail/analysis blocks survive the metrics.json rewrite; the rebuild
+    # never writes ``_meta`` (the provenance stamper owns that key)
     metrics = json.loads((config.reports_dir / "metrics.json").read_text(encoding="utf-8"))
     assert metrics["detail"]["n_questions"] == 2
+    assert metrics["analysis"]["taxonomy"] == {"correct": 1}
+    assert "_meta" not in metrics
     assert metrics["retrieval_chunks_50"]["recall@5"] == 0.5
 
 

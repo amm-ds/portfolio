@@ -383,13 +383,16 @@ def _headline_metric(data: Any) -> dict[str, str | float | int] | None:
     """Mirror the web's pickHeadlineMetric: champion, then non-baselines."""
     if not isinstance(data, dict):
         return None
-    meta = data.get("_meta")
-    champion = meta.get("champion") if isinstance(meta, dict) else None
+    analysis = data.get("analysis")
+    champion = analysis.get("champion") if isinstance(analysis, dict) else None
+    if not isinstance(champion, str):
+        meta = data.get("_meta")
+        champion = meta.get("champion") if isinstance(meta, dict) else None
     if isinstance(champion, str):
         headline = _first_numeric_metric(data.get(champion))
         if headline is not None:
             return headline
-    runs = [run for run in data if not run.startswith("_")]
+    runs = [run for run in data if not run.startswith("_") and run != "analysis"]
     ordered = [
         *[
             run

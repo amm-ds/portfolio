@@ -59,7 +59,7 @@ def demo_context(tmp_path: Path) -> tuple[UpliftConfig, pd.DataFrame]:
     # functions produce on this frame; CIs/break-evens ride along as published.
     reads = per_arm_qini_read(seg, conversion.astype(float), u_m, u_w)
     metrics = {
-        "_meta": {
+        "analysis": {
             "cost_model": {"revenue_per_conversion": 114.0, "cost_per_email": 0.01},
             "cost_sensitivity": {"breakeven_cost_per_email": TWO_ARM_BREAK_EVEN},
         },
@@ -96,6 +96,18 @@ def demo_context(tmp_path: Path) -> tuple[UpliftConfig, pd.DataFrame]:
 def payload(demo_context: tuple[UpliftConfig, pd.DataFrame]) -> dict:
     cfg, _scores = demo_context
     return build_demo_payload(cfg)
+
+
+def test_payload_requires_analysis_block(demo_context: tuple[UpliftConfig, pd.DataFrame]) -> None:
+    """A metrics.json without ``analysis`` (e.g. only the provenance ``_meta``
+    stamp) fails with a re-run hint, not a bare KeyError."""
+    cfg, _scores = demo_context
+    metrics_path = cfg.reports_dir / "metrics.json"
+    metrics = json.loads(metrics_path.read_text())
+    metrics["_meta"] = metrics.pop("analysis")  # simulate the pre-move artifact shape
+    metrics_path.write_text(json.dumps(metrics))
+    with pytest.raises(ValueError, match=r"analysis.*re-run the evaluate stage"):
+        build_demo_payload(cfg)
 
 
 def _expected_profit_grids(scores: pd.DataFrame) -> dict[str, np.ndarray]:

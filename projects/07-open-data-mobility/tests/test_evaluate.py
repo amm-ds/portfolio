@@ -153,7 +153,7 @@ def test_build_report_writes_artifacts(cfg: MobilityConfig, curated: pl.DataFram
     preds.write_parquet(cfg.models_dir / "predictions.parquet")
     cfg.reports_dir.mkdir(parents=True, exist_ok=True)
     (cfg.reports_dir / "metrics.json").write_text(
-        '{"_meta":{"schema_version":1,"git_sha":"fixture"}}'
+        '{"_meta":{"schema_version":1,"git_sha":"fixture"},"analysis":{"prior_key":"kept"}}'
     )
     report_path = build_report(cfg)
     assert report_path.exists()
@@ -162,9 +162,12 @@ def test_build_report_writes_artifacts(cfg: MobilityConfig, curated: pl.DataFram
     assert len(figures) >= 5
     metrics = json.loads((cfg.reports_dir / "metrics.json").read_text())
     assert "gbm_mean" in metrics and "mae" in metrics["gbm_mean"]
-    assert metrics["_meta"]["n_test_rows"] == preds.height
-    assert metrics["_meta"]["schema_version"] == 1
-    assert metrics["_meta"]["git_sha"] == "fixture"
+    analysis = metrics["analysis"]
+    assert analysis["n_test_rows"] == preds.height
+    assert 0.0 <= analysis["p90_coverage"] <= 1.0
+    assert analysis["prior_key"] == "kept"  # prior analysis keys survive the merge
+    # the writer never emits ``_meta`` — the provenance stamper re-adds it
+    assert "_meta" not in metrics
 
 
 def test_hour_borough_heatmap_matches_groupby() -> None:

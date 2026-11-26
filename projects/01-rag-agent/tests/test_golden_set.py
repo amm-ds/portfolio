@@ -224,10 +224,12 @@ def test_run_offline_end_to_end(
 
     metrics = json.loads((config.reports_dir / "metrics.json").read_text(encoding="utf-8"))
     assert metrics["detail"]["offline"] is True
-    assert metrics["_meta"]["golden_set"] == {
+    assert metrics["analysis"]["golden_set"] == {
         "single_hop/answer": 1,
         "unanswerable/abstain": 1,
     }
+    # ``_meta`` is reserved for the provenance stamper — the writer must not emit it
+    assert "_meta" not in metrics
     assert (config.reports_dir / "report.html").exists()
     assert (config.reports_dir / "figures" / "chunk_size_sweep.html").exists()
 
@@ -249,7 +251,7 @@ def test_taxonomy_figure_renders() -> None:
     assert list(fig.data[0].y) == [1, 0, 1, 1, 0, 0]
 
 
-def test_write_reports_with_traces_and_meta(config: RAGConfig) -> None:
+def test_write_reports_with_traces_and_analysis(config: RAGConfig) -> None:
     from rag_agent.reporting import write_reports
 
     scores = [
@@ -264,10 +266,12 @@ def test_write_reports_with_traces_and_meta(config: RAGConfig) -> None:
         {},
         {"n_questions": 4},
         traces=[_trace(), _trace(format_ok=False)],
-        meta={"golden_set": {"single_hop/answer": 2}, "taxonomy": {"correct": 1}},
+        analysis={"golden_set": {"single_hop/answer": 2}, "taxonomy": {"correct": 1}},
     )
     metrics = json.loads((config.reports_dir / "metrics.json").read_text(encoding="utf-8"))
-    assert metrics["_meta"]["taxonomy"] == {"correct": 1}
+    assert metrics["analysis"]["taxonomy"] == {"correct": 1}
+    # analysis goes under ``analysis``; ``_meta`` stays the stamper's key
+    assert "_meta" not in metrics
     assert (config.reports_dir / "question_traces.json").exists()
     html = (config.reports_dir / "report.html").read_text(encoding="utf-8")
     assert "Per-question trace" in html

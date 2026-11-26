@@ -401,10 +401,11 @@ def evaluate_core(cfg: ChurnConfig) -> Path:
     for name, fig in figures.items():
         save_json(fig, cfg.reports_dir / "figures" / f"{name}.json")
 
-    # Annotate metrics.json with run-level metadata (bootstrap CI etc.).
+    # Annotate metrics.json with the run-level analysis block (bootstrap CI
+    # etc.); ``_meta`` is reserved for the provenance stamp.
     metrics_path = cfg.reports_dir / "metrics.json"
     metrics = json.loads(metrics_path.read_text())
-    metrics["_meta"] = {
+    metrics["analysis"] = {
         "cost_delta_ci": summary["cost_delta_ci"],
         "cost_delta_ci_logreg": summary["cost_delta_ci_logreg"],
         "threshold_selection": {
@@ -460,6 +461,9 @@ def sensitivity_core(cfg: ChurnConfig, fn_costs: list[float]) -> Path:
     base_rate = float(meta["train_churn_rate"])
 
     baseline_metrics = json.loads((cfg.reports_dir / "metrics.json").read_text())
+    baseline_analysis = baseline_metrics.get("analysis")
+    if not isinstance(baseline_analysis, dict) or "calibrated_opt" not in baseline_analysis:
+        raise ValueError("metrics.json analysis.calibrated_opt missing — re-run the evaluate stage")
     with np.load(paths["training_predictions"]) as training:
         y_train = np.asarray(training["y_train"], dtype=int)
         training_proba = {
@@ -491,7 +495,7 @@ def sensitivity_core(cfg: ChurnConfig, fn_costs: list[float]) -> Path:
                     ("calibrated", "selected_model_calibrated"),
                 )
             )
-            and summary["calibrated_opt"] == float(baseline_metrics["_meta"]["calibrated_opt"])
+            and summary["calibrated_opt"] == float(baseline_analysis["calibrated_opt"])
         )
         variants[key] = {
             "fn_cost": float(fn_cost),

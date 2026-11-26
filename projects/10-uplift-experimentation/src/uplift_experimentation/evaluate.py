@@ -406,9 +406,10 @@ def cuped_multivariate_outcome_read(
 ) -> dict[str, Any]:
     """CUPED with several pre-treatment covariates (adds cfg.cuped_extra_covariates).
 
-    Additive read: the univariate ``cuped_outcome_read`` (and its ``_meta.cuped``
-    metrics keys) is untouched; this sibling measures how much the extra
-    covariates (e.g. ``recency``) remove on top of the primary covariate.
+    Additive read: the univariate ``cuped_outcome_read`` (and its
+    ``analysis.cuped`` metrics keys) is untouched; this sibling measures how
+    much the extra covariates (e.g. ``recency``) remove on top of the primary
+    covariate.
     """
     covariates = [cfg.cuped_covariate, *cfg.cuped_extra_covariates]
     y = df[outcome].to_numpy(dtype=float)
@@ -1270,7 +1271,7 @@ def build_report(
         report.add_html(
             "CUPED, second covariate",
             "<p>Adding <b>recency</b> alongside log_history (multivariate CUPED, additive "
-            "read under <code>_meta.cuped_multivariate</code>): conversion variance "
+            "read under <code>analysis.cuped_multivariate</code>): conversion variance "
             f"reduction moves from {conv['variance_reduction'] * 100:.2f}% to "
             f"<b>{m_conv['variance_reduction'] * 100:.2f}%</b>, visit from "
             f"{visit['variance_reduction'] * 100:.2f}% to "
@@ -1489,7 +1490,9 @@ def evaluate_core(cfg: UpliftConfig) -> Path:
 
     metrics: dict[str, Any] = {policy: dict(vals) for policy, vals in policy_metrics.items()}
     metrics["multi_arm"] = multi_arm
-    metrics["_meta"] = {
+    # Analysis lives under top-level ``analysis``; ``_meta`` is reserved for
+    # the provenance stamp (scripts/stamp_metrics_meta.py replaces it).
+    metrics["analysis"] = {
         "best_policy": best,
         "cuped": cuped,
         "cuped_multivariate": cuped_multi,

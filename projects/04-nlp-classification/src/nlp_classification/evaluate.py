@@ -516,6 +516,26 @@ def _predict_with(
     return [int(v) for v in predict_nn(model, tokenized, device, cfg.batch_size)]
 
 
+def _write_analysis_block(
+    metrics_path: Path, previous_analysis: dict[str, Any], cal: dict[str, Any]
+) -> dict[str, Any]:
+    """Refresh the metrics.json ``analysis`` block, preserving prior keys.
+
+    Calibration and HPO seed-variance are refreshed here; analysis keys this
+    stage does not own carry over from ``previous_analysis``. ``_meta`` is
+    never touched — it is the provenance stamper's key
+    (scripts/stamp_metrics_meta.py replaces it wholesale).
+    """
+    analysis: dict[str, Any] = {**previous_analysis, "calibration": cal}
+    seeds_file = metrics_path.parent / "hpo_seeds.json"
+    if seeds_file.exists():
+        analysis["hpo_seeds"] = json.loads(seeds_file.read_text())
+    metrics_data = json.loads(metrics_path.read_text())
+    metrics_data["analysis"] = analysis
+    metrics_path.write_text(json.dumps(metrics_data, indent=2))
+    return analysis
+
+
 def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     """Score all runs on the bounded test split and build the report.
 
@@ -524,9 +544,11 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     Returns the metrics dict exactly as written to ``reports/metrics.json``.
     """
     metrics_path = Path(cfg.reports_dir) / "metrics.json"
-    previous_meta: dict[str, Any] = {}
+    previous_analysis: dict[str, Any] = {}
     if metrics_path.exists():
-        previous_meta = json.loads(metrics_path.read_text()).get("_meta", {})
+        prior = json.loads(metrics_path.read_text()).get("analysis")
+        if isinstance(prior, dict):
+            previous_analysis = prior
     train_ds = Dataset.load_from_disk(str(cfg.train_dir))
     val_ds = Dataset.load_from_disk(str(cfg.val_dir))
     test_ds = Dataset.load_from_disk(str(cfg.test_dir))
@@ -693,18 +715,12 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     for name, fig in figures.items():
         save_json(fig, Path(cfg.reports_dir) / "figures" / f"{name}.json")
 
-    # Preserve platform provenance across derived-artifact regeneration, then
+    # Preserve prior analysis across derived-artifact regeneration, then
     # refresh seed-variance and calibration blocks (not model runs).
-    meta: dict[str, Any] = {**previous_meta, "calibration": cal}
-    seeds_file = Path(cfg.reports_dir) / "hpo_seeds.json"
-    if seeds_file.exists():
-        meta["hpo_seeds"] = json.loads(seeds_file.read_text())
-    metrics_data = json.loads(metrics_path.read_text())
-    metrics_data["_meta"] = meta
-    metrics_path.write_text(json.dumps(metrics_data, indent=2))
+    analysis_block = _write_analysis_block(metrics_path, previous_analysis, cal)
 
     result = {run.name: {m.name: m.value for m in run.metrics} for run in runs}
-    result["_meta"] = meta
+    result["analysis"] = analysis_block
     return result
 
 

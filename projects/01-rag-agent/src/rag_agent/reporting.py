@@ -439,7 +439,7 @@ def write_reports(
     topk_runs: list[RunResult] | None = None,
     ragas_scores: dict[str, float] | None = None,
     traces: list[QuestionTrace] | None = None,
-    meta: dict[str, Any] | None = None,
+    analysis: dict[str, Any] | None = None,
 ) -> None:
     """Assemble report.html + figures + metrics.json (RunBuilder + detail block)."""
     from portfolio_eval.report import ReportBuilder
@@ -474,12 +474,14 @@ def write_reports(
     # Persist machine-readable figure payloads for the showcase app.
     for name, fig in figures.items():
         save_json(fig, config.reports_dir / "figures" / f"{name}.json")
-    # Augment metrics.json with the full detail the README cites.
+    # Augment metrics.json with the full detail the README cites. Analysis
+    # lives under top-level ``analysis``; ``_meta`` is reserved for the
+    # provenance stamp (scripts/stamp_metrics_meta.py replaces it wholesale).
     metrics_path = config.reports_dir / "metrics.json"
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     metrics["detail"] = extra_metrics
-    if meta:
-        metrics["_meta"] = meta
+    if analysis:
+        metrics["analysis"] = analysis
     metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
     if traces:
         write_question_traces(config, traces)
@@ -492,7 +494,7 @@ def rebuild_report_from_artifacts(config: RAGConfig) -> Path:
 
     For report-template changes (embedded figures, styling): reconstructs the
     run table from metrics.json and figures from the committed Plotly payloads,
-    restores the ``detail``/``_meta`` blocks, and re-appends the per-question
+    restores the ``detail``/``analysis`` blocks, and re-appends the per-question
     trace section. No numbers change; nothing calls a model.
     """
     from portfolio_eval.report import ReportBuilder, figures_from_json, runs_from_metrics
@@ -505,12 +507,16 @@ def rebuild_report_from_artifacts(config: RAGConfig) -> Path:
         figures_dir=config.reports_dir / "figures",
     )
     for run in runs_from_metrics(config.reports_dir):
+        if run.name == "analysis":
+            continue  # top-level analysis block, not a run — restored below
         builder.add_run(run)
     builder.build(config.reports_dir, figures=figures_from_json(config.reports_dir / "figures"))
 
-    # build() rewrote metrics.json from runs alone — restore the detail blocks.
+    # build() rewrote metrics.json from runs alone — restore the detail and
+    # analysis blocks, and carry the provenance ``_meta`` stamp over untouched
+    # (scripts/stamp_metrics_meta.py owns it; the payload here is unchanged).
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
-    for key in ("detail", "_meta"):
+    for key in ("detail", "analysis", "_meta"):
         if key in old:
             metrics[key] = old[key]
     metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")

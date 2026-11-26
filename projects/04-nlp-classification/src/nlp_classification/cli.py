@@ -279,7 +279,7 @@ def evaluate() -> None:
     started = time.perf_counter()
     metrics = run_evaluate(_cfg())
     for run, values in metrics.items():
-        if run == "_meta":
+        if run == "analysis":
             continue  # nested dict (calibration, hpo_seeds) — not a scalar ladder row
         typer.echo(f"{run}: " + ", ".join(f"{k}={v:.4f}" for k, v in values.items()))
     typer.echo(f"report written to reports/report.html in {time.perf_counter() - started:.1f}s")

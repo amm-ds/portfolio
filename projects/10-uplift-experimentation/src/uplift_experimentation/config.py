@@ -65,7 +65,7 @@ class UpliftConfig(PortfolioBaseModel):
         default_factory=lambda: ["recency"],
         description="Additional strictly pre-treatment covariates adjusted alongside "
         "``cuped_covariate`` in the multivariate CUPED read (additive read; the "
-        "univariate ``_meta.cuped`` metrics keep their current meaning and values).",
+        "univariate ``analysis.cuped`` metrics keep their current meaning and values).",
     )
 
     # Uplift models

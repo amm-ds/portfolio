@@ -482,7 +482,10 @@ def evaluate_core(cfg: LifecycleConfig) -> Path:
                     "the MLP is the served artifact, not a proven winner."
                 ),
             },
-            "_meta": {
+            # Run-level analysis blocks live under ``analysis``; ``_meta`` is
+            # reserved for the provenance stamp (scripts/stamp_metrics_meta.py
+            # replaces it wholesale).
+            "analysis": {
                 "split": "test window: final test_weeks; one score per candidate",
                 "champion": champion,
                 "champion_selected_by": "lowest validation MAE (test never consulted)",

@@ -315,9 +315,9 @@ def run_multistep(
 def merge_metrics_json(settings: DemandSettings, result: MultiStepResult) -> None:
     """Add the ``_multistep`` block to the track's metrics.json.
 
-    The per-model nowcast blocks (and ``_meta``) are untouched; keys starting
-    with ``_`` are ignored by the demo payload's run parser, so the payload
-    keeps working unchanged.
+    The per-model nowcast blocks (and the ``analysis`` protocol block) are
+    untouched; keys starting with ``_`` are ignored by the demo payload's run
+    parser, so the payload keeps working unchanged.
     """
     path = Path(settings.reports_dir) / "metrics.json"
     metrics: dict[str, Any] = json.loads(path.read_text())

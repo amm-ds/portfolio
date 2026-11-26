@@ -81,12 +81,12 @@ def test_evaluate_writes_report_and_figures(
         "xgb_tuned",
         "lgbm_tuned",
         "temporal_net",
-        "_meta",
+        "analysis",  # protocol block; ``_meta`` is the provenance stamper's key
         "_multistep",  # primary multi-step track (direct_multihorizon_v1)
     }
-    assert metrics["_meta"]["protocol"] == "rolling_origin_holdout_v1"
+    assert metrics["analysis"]["protocol"] == "rolling_origin_holdout_v1"
     assert metrics["_multistep"]["protocol"] == "direct_multihorizon_v1"
-    assert metrics["_meta"]["test_origin"] not in metrics["_meta"]["selection_used_origins"]
+    assert metrics["analysis"]["test_origin"] not in metrics["analysis"]["selection_used_origins"]
     for run in result.runs:
         for m in run.metrics:
             assert metrics[run.name][m.name] == pytest.approx(m.value)

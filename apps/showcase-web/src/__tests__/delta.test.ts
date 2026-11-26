@@ -182,4 +182,23 @@ describe("pickHeadlineMetric", () => {
     expect(pickHeadlineMetric({ _meta: { version: "1" } } as never)).toBeNull();
     expect(pickHeadlineMetric({ weird: { note: "n/a" } } as never)).toBeNull();
   });
+
+  it("prefers analysis.champion over the legacy _meta.champion", () => {
+    const picked = pickHeadlineMetric({
+      naive_last: { mae: 100 },
+      tuned: { mae: 72 },
+      challenger: { mae: 70 },
+      analysis: { champion: "challenger" },
+      _meta: { champion: "tuned" },
+    } as never)!;
+    expect(picked).toEqual({ run: "challenger", metric: "mae", value: 70 });
+  });
+
+  it("never picks the analysis block itself as a run", () => {
+    const picked = pickHeadlineMetric({
+      naive_last: { mae: 100 },
+      analysis: { n_test_rows: 5000, p90_coverage: 0.908 },
+    } as never)!;
+    expect(picked.run).toBe("naive_last");
+  });
 });

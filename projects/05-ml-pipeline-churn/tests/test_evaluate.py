@@ -182,20 +182,21 @@ def test_end_to_end_cli_cores(small_cfg: ChurnConfig, params_file: Path) -> None
     ]
     assert len(tuned) == 1, "exactly one tuned logreg row"
     for name, run in metrics.items():
-        if name.startswith("_"):
-            continue  # metadata block, not a run
+        if name.startswith("_") or name == "analysis":
+            continue  # metadata/analysis block, not a run
         assert {"roc_auc", "f1_macro", "business_cost"} <= set(run)
     for run in ("selected_model", "selected_model_calibrated"):
         assert "ece" in metrics[run], "ECE reported for selected runs"
-    ci = metrics["_meta"]["cost_delta_ci"]
+    assert "_meta" not in metrics  # reserved for the provenance stamper
+    ci = metrics["analysis"]["cost_delta_ci"]
     assert ci["n_boot"] == 2000 and ci["lo"] <= ci["point"] <= ci["hi"]
     calibrated_cost = metrics["selected_model_calibrated"]["business_cost"]
     assert ci["point"] == calibrated_cost - metrics["naive_majority"]["business_cost"]
-    logreg_ci = metrics["_meta"]["cost_delta_ci_logreg"]
+    logreg_ci = metrics["analysis"]["cost_delta_ci_logreg"]
     assert logreg_ci["point"] == (
         calibrated_cost - metrics["logreg_threshold_0.5"]["business_cost"]
     )
-    assert metrics["_meta"]["threshold_selection"]["data"] == "training_oof"
+    assert metrics["analysis"]["threshold_selection"]["data"] == "training_oof"
     assert (small_cfg.reports_dir / "figures" / "bootstrap_ci.json").exists()
 
     policy = json.loads(paths["operating_policy"].read_text())
@@ -209,7 +210,7 @@ def test_end_to_end_cli_cores(small_cfg: ChurnConfig, params_file: Path) -> None
             },
         )
     assert policy["thresholds"] == expected_thresholds
-    assert metrics["_meta"]["calibrated_opt"] == expected_thresholds["selected_calibrated"]
+    assert metrics["analysis"]["calibrated_opt"] == expected_thresholds["selected_calibrated"]
 
     # HPO persisted its selection into the isolated params file
     prod = params_file.read_text()

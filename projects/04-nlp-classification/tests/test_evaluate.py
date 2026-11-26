@@ -86,6 +86,37 @@ def test_error_analysis_quotes_most_confused_pair() -> None:
     assert "| World | Sports | 3 |" in md
 
 
+def test_write_analysis_block_emits_analysis_not_meta(tmp_path: Path) -> None:
+    """The writer refreshes calibration/hpo_seeds under ``analysis``, keeps
+    prior analysis keys it does not own, and never touches the ``_meta``
+    provenance stamp."""
+    from nlp_classification.evaluate import _write_analysis_block
+
+    metrics_path = tmp_path / "metrics.json"
+    metrics_path.write_text(
+        json.dumps(
+            {
+                "distilbert": {"f1_macro": 0.9},
+                "_meta": {"git_sha": "stamp"},  # provenance stamp — must survive untouched
+                "analysis": {"scale_ladder_note": "kept", "calibration": {"ece": 0.9}},
+            }
+        )
+    )
+    (tmp_path / "hpo_seeds.json").write_text(json.dumps({"seeds": [1, 2]}))
+
+    block = _write_analysis_block(metrics_path, {"scale_ladder_note": "kept"}, {"ece": 0.05})
+
+    assert block == {
+        "scale_ladder_note": "kept",
+        "calibration": {"ece": 0.05},
+        "hpo_seeds": {"seeds": [1, 2]},
+    }
+    written = json.loads(metrics_path.read_text())
+    assert written["analysis"] == block
+    assert written["_meta"] == {"git_sha": "stamp"}
+    assert written["distilbert"] == {"f1_macro": 0.9}
+
+
 def _decode(arr: Any) -> Any:
     """Plotly 6 binary arrays ({"bdata": ..., "dtype": ...}) back to lists."""
     if isinstance(arr, dict) and "bdata" in arr:

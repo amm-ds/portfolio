@@ -45,4 +45,19 @@ describe("MetricsTable", () => {
     expect(screen.getByText(/split: temporal holdout/)).toBeInTheDocument();
     expect(screen.getByText(/p90_coverage: 0.9100/)).toBeInTheDocument();
   });
+
+  it("never renders the analysis block as a run row", () => {
+    render(
+      <MetricsTable
+        metrics={{
+          gbm: { mae: 4.67 },
+          analysis: { n_test_rows: 5000, champion: "challenger" },
+        }}
+      />,
+    );
+    expect(screen.getByText("gbm")).toBeInTheDocument();
+    expect(screen.queryByText("analysis")).not.toBeInTheDocument();
+    expect(screen.queryByText("challenger")).not.toBeInTheDocument();
+    expect(screen.queryByText(/n_test_rows/)).not.toBeInTheDocument();
+  });
 });

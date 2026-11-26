@@ -36,6 +36,29 @@ from churn_pipeline.model import TARGET_COL, feature_cols, slice_cols
 logger = get_logger(__name__)
 
 DEMO_PAYLOAD_NAME = "demo_payload.json"
+
+
+def _analysis_block(metrics: dict[str, Any]) -> dict[str, Any]:
+    """The metrics.json ``analysis`` block, with a re-run hint instead of a KeyError.
+
+    The evaluate stage writes the block; artifacts committed before the
+    analysis move carry only the provenance ``_meta`` stamp until re-run.
+    """
+    analysis = metrics.get("analysis")
+    if not isinstance(analysis, dict):
+        raise ValueError(
+            "metrics.json has no top-level 'analysis' block — re-run the evaluate stage"
+        )
+    return analysis
+
+
+def _required(block: dict[str, Any], key: str) -> Any:
+    """One analysis-block key, with a re-run hint instead of a bare KeyError."""
+    if key not in block:
+        raise ValueError(f"metrics.json analysis.{key} missing — re-run the evaluate stage")
+    return block[key]
+
+
 # Fine grid: the UI recomputes cost for arbitrary cost ratios, so this is
 # denser than params.yaml's threshold_grid (which optimizes one cost model).
 DEMO_GRID = [round(0.02 + 0.02 * i, 2) for i in range(45)]  # 0.02 .. 0.90
@@ -95,7 +118,8 @@ def build_demo_payload(cfg: ChurnConfig) -> dict[str, Any]:
     metrics = json.loads((cfg.reports_dir / "metrics.json").read_text())
     run = metrics["selected_model_calibrated"]
     naive = metrics["naive_majority"]
-    delta_ci = metrics["_meta"]["cost_delta_ci"]
+    analysis = _analysis_block(metrics)
+    delta_ci = _required(analysis, "cost_delta_ci")
 
     overall = [{"t": t, **_confusion_counts(y_test, proba, t)} for t in DEMO_GRID]
     contract_col = "contract"
@@ -137,7 +161,7 @@ def build_demo_payload(cfg: ChurnConfig) -> dict[str, Any]:
             "roc_auc": run["roc_auc"],
             "ece": run["ece"],
             "threshold_default": 0.5,
-            "threshold_selected": metrics["_meta"]["calibrated_opt"],
+            "threshold_selected": _required(analysis, "calibrated_opt"),
         },
         "cost_model": {
             "fp_cost": cfg.fp_cost,

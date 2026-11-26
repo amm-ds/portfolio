@@ -142,10 +142,11 @@ def test_evaluate_writes_metadata_and_metric_suite(
     assert ms["origins"]["gap_days"] == 0
 
     metrics = json.loads((settings.reports_dir / "metrics.json").read_text())
-    assert metrics["_meta"]["protocol"] == "rolling_origin_holdout_v1"
-    assert metrics["_meta"]["best_model"] == meta["best_model"]
-    assert metrics["_meta"]["selection_used_origins"] == meta["selection_used_origins"]
-    assert metrics["_meta"]["test_origin"] == meta["test_origin"]
+    assert "_meta" not in metrics  # reserved for the provenance stamper
+    assert metrics["analysis"]["protocol"] == "rolling_origin_holdout_v1"
+    assert metrics["analysis"]["best_model"] == meta["best_model"]
+    assert metrics["analysis"]["selection_used_origins"] == meta["selection_used_origins"]
+    assert metrics["analysis"]["test_origin"] == meta["test_origin"]
     for block in metrics.values():
         if not isinstance(block, dict) or "mae" not in block:
             continue

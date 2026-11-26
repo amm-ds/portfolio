@@ -305,6 +305,50 @@ def test_project_headlines_are_compact_and_match_card_selection(
     }
 
 
+def test_headline_prefers_analysis_champion_and_skips_analysis_block(
+    tmp_path: Path, monkeypatch
+) -> None:  # type: ignore[no-untyped-def]
+    """analysis.champion wins over legacy _meta.champion; the analysis block
+    itself is metadata and must never be picked as a run."""
+    from showcase_api import main
+
+    for pid in ("01-demo", "02-demo"):
+        project = tmp_path / pid
+        project.mkdir()
+        (project / "portfolio.yaml").write_text(
+            f"id: {pid}\ntitle: Demo\ndomain: x\ntopic: T\ntechniques: [t]\n"
+            f"data: s\norder: {pid[:2]}\n"
+        )
+        (project / "reports").mkdir()
+    (tmp_path / "01-demo" / "reports" / "metrics.json").write_text(
+        json.dumps(
+            {
+                "naive_last": {"mae": 100},
+                "tuned": {"mae": 72},
+                "challenger": {"mae": 70},
+                "analysis": {"champion": "challenger", "n_test_rows": 5000},
+                "_meta": {"champion": "tuned"},
+            }
+        )
+    )
+    (tmp_path / "02-demo" / "reports" / "metrics.json").write_text(
+        json.dumps(
+            {
+                "naive_last": {"mae": 100},
+                "analysis": {"n_test_rows": 5000, "p90_coverage": 0.908},
+            }
+        )
+    )
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    r = client.get("/projects/headlines")
+    assert r.status_code == 200
+    assert r.json() == {
+        "01-demo": {"metric": "mae", "value": 70},
+        "02-demo": {"metric": "mae", "value": 100},
+    }
+
+
 def test_metrics_404_for_unknown(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     from showcase_api import main
 

@@ -1310,14 +1310,14 @@ def _build_figures(
     return figures
 
 
-def _run_meta(
+def _run_analysis(
     config: RAGConfig,
     questions: list[EvalQuestion],
     rag_run: RAGRun | None,
     rag_ci: dict[str, Any] | None,
     ragas_ci: dict[str, Any] | None,
 ) -> dict[str, Any]:
-    """Report metadata: golden-set composition, abstention, CIs, taxonomy."""
+    """Run-level analysis block: golden-set composition, abstention, CIs, taxonomy."""
     golden_counts: dict[str, int] = {}
     for q in questions:
         key = f"{q.category}/{q.expected_behavior}"
@@ -1433,7 +1433,7 @@ def _write_reports_stage(
     rag_run: RAGRun | None,
     figures: dict[str, go.Figure],
     extra: dict[str, Any],
-    meta: dict[str, Any],
+    analysis: dict[str, Any],
     ragas_scores: dict[str, float] | None,
     chosen_tokens: float,
     wall_time_s: float,
@@ -1454,7 +1454,7 @@ def _write_reports_stage(
         topk_runs=topk_runs,
         ragas_scores=ragas_scores,
         traces=rag_run.traces if rag_run is not None else None,
-        meta=meta,
+        analysis=analysis,
     )
     if rag_run is not None:
         write_cost_telemetry(config, rag_run, wall_time_s, phases=get_meter().snapshot())
@@ -1520,8 +1520,8 @@ def run(
     verify_stats = _verify_stats(config, rag_run)
     chosen_tokens = hpo.est_at[hpo.chosen.chunk_size][hpo.chosen.top_k]
 
-    # --- Reporting: meta/detail blocks, figures, reports ---------------------
-    meta = _run_meta(config, questions, rag_run, rag_ci, rag_stage.ragas_ci)
+    # --- Reporting: analysis/detail blocks, figures, reports -----------------
+    analysis = _run_analysis(config, questions, rag_run, rag_ci, rag_stage.ragas_ci)
     extra = _extra_payload(
         config,
         questions,
@@ -1540,7 +1540,7 @@ def run(
         rag_run,
         figures,
         extra,
-        meta,
+        analysis,
         rag_stage.ragas_scores,
         chosen_tokens,
         rag_stage.wall_time_s,

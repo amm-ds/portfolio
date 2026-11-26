@@ -952,12 +952,15 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
 
     metrics: dict[str, Any] = {r.name: {m.name: m.value for m in r.metrics} for r in runs}
     metrics_path = cfg.reports_dir / "metrics.json"
-    prior_meta: dict[str, Any] = {}
+    # Analysis lives under top-level ``analysis`` (read-modify-write, so keys
+    # this stage does not own survive); ``_meta`` is the provenance stamper's
+    # key (scripts/stamp_metrics_meta.py replaces it wholesale).
+    prior_analysis: dict[str, Any] = {}
     if metrics_path.exists():
-        prior = json.loads(metrics_path.read_text()).get("_meta")
+        prior = json.loads(metrics_path.read_text()).get("analysis")
         if isinstance(prior, dict):
-            prior_meta = prior
-    metrics["_meta"] = prior_meta | {
+            prior_analysis = prior
+    metrics["analysis"] = prior_analysis | {
         "split": f"temporal holdout from {cfg.train_cutoff.isoformat()}",
         "p90_coverage": coverage,
         "p90_coverage_by_borough": {

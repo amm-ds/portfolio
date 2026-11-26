@@ -167,6 +167,13 @@ def _check_close(name: str, actual: float, committed: float) -> None:
         raise ValueError(f"{name}: recomputed {actual} != committed metrics {committed}")
 
 
+def _required(block: dict[str, Any], key: str) -> Any:
+    """One analysis-block key, with a re-run hint instead of a bare KeyError."""
+    if key not in block:
+        raise ValueError(f"metrics.json analysis.{key} missing — re-run the evaluate stage")
+    return block[key]
+
+
 def build_demo_payload(cfg: UpliftConfig) -> dict[str, Any]:
     """Assemble the simulator payload from committed train/evaluate artifacts."""
     scores = pd.read_parquet(cfg.data_dir / "scores_multi.parquet")
@@ -175,7 +182,13 @@ def build_demo_payload(cfg: UpliftConfig) -> dict[str, Any]:
         raise FileNotFoundError(f"{metrics_path} missing — run the evaluate stage first")
     metrics: dict[str, Any] = json.loads(metrics_path.read_text())
     multi_arm: dict[str, Any] = metrics["multi_arm"]
-    meta: dict[str, Any] = metrics["_meta"]
+    # The analysis block is written by the evaluate stage; artifacts committed
+    # before the analysis move carry only the provenance ``_meta`` stamp.
+    analysis = metrics.get("analysis")
+    if not isinstance(analysis, dict):
+        raise ValueError(
+            f"{metrics_path} has no top-level 'analysis' block — re-run the evaluate stage"
+        )
 
     u_m = scores["uplift_mens"].to_numpy(dtype=float)
     u_w = scores["uplift_womens"].to_numpy(dtype=float)
@@ -185,8 +198,9 @@ def build_demo_payload(cfg: UpliftConfig) -> dict[str, Any]:
     recommended = recommend_arm(u_m, u_w)
     est = assigned_uplift(u_m, u_w, recommended)
 
-    revenue = float(meta["cost_model"]["revenue_per_conversion"])
-    cost_default = float(meta["cost_model"]["cost_per_email"])
+    cost_model = _required(analysis, "cost_model")
+    revenue = float(cost_model["revenue_per_conversion"])
+    cost_default = float(cost_model["cost_per_email"])
 
     # Empirical per-arm reads, recomputed with the committed functions and
     # verified against the committed metrics block (same data, deterministic).
@@ -296,8 +310,10 @@ def build_demo_payload(cfg: UpliftConfig) -> dict[str, Any]:
         "recommended_arm_shares": {label: round(share, 6) for label, share in shares_raw.items()},
         "break_even": {
             "two_arm_committed": {
-                "cost_per_email": float(meta["cost_sensitivity"]["breakeven_cost_per_email"]),
-                "source": "committed two-arm read (_meta.cost_sensitivity, "
+                "cost_per_email": float(
+                    _required(analysis, "cost_sensitivity")["breakeven_cost_per_email"]
+                ),
+                "source": "committed two-arm read (analysis.cost_sensitivity, "
                 "t_learner vs mail-everyone at 25% budget)",
             },
             "multi_arm_best_arm": {

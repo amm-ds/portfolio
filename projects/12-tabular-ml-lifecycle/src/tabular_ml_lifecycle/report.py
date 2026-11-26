@@ -35,12 +35,12 @@ def _results_table(metrics: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _ablation_table(meta: dict[str, Any]) -> str:
+def _ablation_table(analysis: dict[str, Any]) -> str:
     lines = [
         "| dropout | weight decay | early stopping | val MAE | post-freeze test MAE |",
         "|---|---|---|---|---|",
     ]
-    for row in meta.get("ablation_post_freeze_diagnostics", []):
+    for row in analysis.get("ablation_post_freeze_diagnostics", []):
         flag = " (shipped)" if row["selected"] else ""
         lines.append(
             f"| {'on' if row['dropout_on'] else 'off'} | "
@@ -54,12 +54,16 @@ def _ablation_table(meta: dict[str, Any]) -> str:
 def build_report(reports_dir: Path, project_dir: Path) -> Path:
     """Assemble report.html + results.md from committed metrics and figures."""
     metrics = json.loads((reports_dir / "metrics.json").read_text())
-    meta = metrics.get("_meta", {})
+    # The evaluate stage writes the analysis block; artifacts committed before
+    # the analysis move carry only the provenance ``_meta`` stamp until re-run.
+    analysis = metrics.get("analysis")
+    if not isinstance(analysis, dict) or "champion" not in analysis:
+        raise ValueError("metrics.json analysis.champion missing — re-run the evaluate stage")
     metadata = json.loads((reports_dir / "evaluation_metadata.json").read_text())
     figures = figures_from_json(reports_dir / "figures")
-    ci = meta.get("mae_improvement_vs_floor_ci", {})
+    ci = analysis.get("mae_improvement_vs_floor_ci", {})
 
-    sensitivity = meta.get("serial_dependence_sensitivity", {})
+    sensitivity = analysis.get("serial_dependence_sensitivity", {})
     sensitivity_text = "; ".join(
         f"{method}: [{row['lo']:.1f}, {row['hi']:.1f}]" for method, row in sensitivity.items()
     )
@@ -74,7 +78,7 @@ def build_report(reports_dir: Path, project_dir: Path) -> Path:
         "seasonal-naive floor: point +{:.1f} rentals, hourly 95% paired-bootstrap CI "
         "[{:.1f}, {:.1f}] over {:,} resamples — significant_95={}. Serial-dependence "
         "sensitivity (95% CI): {}.</p>".format(
-            RUN_LABELS.get(meta.get("champion", ""), meta.get("champion", "?")),
+            RUN_LABELS.get(analysis.get("champion", ""), analysis.get("champion", "?")),
             ci.get("point", float("nan")),
             ci.get("lo", float("nan")),
             ci.get("hi", float("nan")),
@@ -89,7 +93,7 @@ def build_report(reports_dir: Path, project_dir: Path) -> Path:
         "column below contains post-freeze diagnostics only and never selects a variant.</p>",
     )
     report.add_markdown_table(
-        "Post-freeze MLP regularization diagnostics (2x2x2)", _ablation_table(meta)
+        "Post-freeze MLP regularization diagnostics (2x2x2)", _ablation_table(analysis)
     )
     first_plotly = True
     for name, fig in figures.items():
@@ -104,14 +108,14 @@ def build_report(reports_dir: Path, project_dir: Path) -> Path:
         f"# {REPORT_TITLE}\n\n"
         f"## Protocol\n\n{metadata['protocol']}\n\n"
         f"## Frozen test window\n\n{_results_table(metrics)}\n\n"
-        f"Validation-selected model: **{meta.get('champion')}** — MAE improvement vs floor "
+        f"Validation-selected model: **{analysis.get('champion')}** — MAE improvement vs floor "
         f"+{ci.get('point', float('nan')):.1f}, hourly 95% CI "
         f"[{ci.get('lo', float('nan')):.1f}, {ci.get('hi', float('nan')):.1f}], "
         f"significant_95={ci.get('significant_95')}. Serial-dependence sensitivity "
         f"(95% CI): {sensitivity_text}.\n\n"
         f"## Post-freeze MLP regularization diagnostics (2x2x2)\n\n"
         "Validation selected the shipped configuration before test scoring. These test "
-        f"scores are diagnostics, never selectors.\n\n{_ablation_table(meta)}\n\n"
+        f"scores are diagnostics, never selectors.\n\n{_ablation_table(analysis)}\n\n"
         f"## Limits\n\n{limits}\n\n"
         "Figures: `reports/figures/` (JSON + HTML). "
         "Full record: `reports/metrics.json`, `reports/train_runs.json`, "

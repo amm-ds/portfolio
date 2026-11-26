@@ -5,7 +5,7 @@ NLL of the val logits scaled by 1/T; test predictions are then re-softmaxed.
 Expected Calibration Error (ECE, equal-width confidence bins) is reported
 before and after — the verdict on whether calibration matters for this model
 goes into the story, the numbers go into ``reports/metrics.json`` under
-``_meta.calibration``.
+``analysis.calibration``.
 """
 
 import numpy as np

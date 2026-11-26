@@ -83,8 +83,8 @@ def test_telco_end_to_end_offline(small_telco_cfg: ChurnConfig, tmp_path: Path) 
     assert contract["name"] == "churn_telco"
 
     metrics = json.loads((cfg.reports_dir / "metrics.json").read_text())
-    assert "slices" in metrics["_meta"]
-    slices = metrics["_meta"]["slices"]
+    assert "slices" in metrics["analysis"]
+    slices = metrics["analysis"]["slices"]
     assert "overall" in slices and any(k.startswith("gender=") for k in slices)
     assert (cfg.reports_dir / "figures" / "fairness_slices.json").exists()
 
