@@ -1,7 +1,5 @@
 project_id: 09-agentic-workflows
-short_version: 'Auditable plan-act-review workflow with typed outcomes and deadlines. Legacy: 15/15 fixed tasks,
-  13/13 unseen answers, 5/6 refusals. All-hosted live held-out: 13/13 answers, 6/6 live-grader refusals, 19/19 budgets;
-  h19 refused after the calculator guard tripped.'
+short_version: 'Plan-act-review workflow with typed outcomes and deadlines. Recorded runs: 15/15 fixed tasks, 13/13 unseen answers, 5/6 correct refusals. A live re-run with hosted models: 13/13 answers, 6/6 refusals, all 19 tasks within budget.'
 figure_captions:
   suite_summary: 'Each row is one automated check. Each bar shows passes out of the tasks in one split: 15 tuning tasks, 13
     held-out answer tasks, or 6 should-fail probes. Compare bars within each row. A shorter bar marks a failed check; here,
@@ -17,21 +15,20 @@ figure_captions:
 sections:
 - id: background
   text_md: |
-    **Legacy tuning passed `15/15` fixed tasks; held-out did not pass every check.**
-    This supervised workflow plans steps, calls approved tools, and logs state changes in `StepTrace`; it is not for unattended runs. Legacy tuning passed `15/15` at `~$0.13` of the `$2.00` cap. Held-out legacy runs hit `13/13` answers, `5/6` refusals, `18/19` step caps, and `12/19` time caps. An all-hosted live check on `2026-11-19` passed `6/6` refusals and `19/19` budgets.
+    **The workflow passed all 15 practice tasks; on 19 unseen tasks it answered all 13 answerable ones but missed one refusal and seven deadlines.**
+    It plans steps, calls approved tools, and logs state changes in `StepTrace`; not for unattended runs. The first recorded run passed `15/15` at `~$0.13` of the `$2.00` cap. Held-out runs hit `13/13` answers, `5/6` refusals, `18/19` step caps, `12/19` time caps (7 of 19 ran past the 60 s local-model deadline). A live all-hosted check (`2026-11-19`) passed `6/6` refusals and `19/19` budgets.
 
     ```diagram 09-agent-loop
     ```
 
-    Follow the loop in three steps:
 
-    - **Plan:** Write steps and allowed tools for the `12`-document handbook and `3,589` Wikipedia passages (`CC BY-SA`).
-    - **Checkpoint & Execute:** Pause consequential runs for approval, then run approved tools under a `60 s` deadline.
-    - **Critique & Trace:** Audit tool use, return one draft to `Execute` for revision if needed, and log each state change in `StepTrace`.
+    - **Plan:** Write steps and allowed tools over the handbook and Wikipedia corpora.
+    - **Checkpoint & Execute:** Pause for approval, then run tools under a `60 s` deadline.
+    - **Critique & Trace:** Audit tool use, revise one draft if needed, and log each state change.
 
     Next, the loop's testable targets ([Objectives →](#sec-objectives)).
 
-    **In plain terms:** The workflow passed all 15 practice tasks and all 13 unseen answer tasks, refused 5 of 6 impossible requests, and cost about 13 cents for the 15-task practice suite.
+    **In plain terms:** All 15 practice tasks and all 13 unseen answer tasks passed, 5 of 6 impossible requests were refused, and the practice suite cost about 13 cents.
   figures: []
   metrics_keys: []
 - id: objectives
@@ -123,7 +120,7 @@ sections:
 
     Follow a task into the same four checks used for tuning and held-out
     splits. Then inspect the probe box. A pass requires a typed refused
-    status (or ok in a legacy record) and a refusal marker, which is a
+    status (or ok in the first recorded run) and a refusal marker, which is a
     recorded signal that the workflow declined. A fabricated number, failed
     or deadline status, or crash fails. This visible path supports grading
     honesty as well as accuracy, and makes re-grading a captured run stable.
@@ -201,7 +198,7 @@ sections:
     - All `15` tuning tasks passed all four checks: answers, exact tool set, step budget, and latency budget. *Limit:* one suite, one hosted endpoint.
     - All `30` captured calls were planned: `100%` call precision and tool recall, with zero unplanned calls.
     - Median latency was `18.2 s` and `p95` was `31.1 s` against the `60 s` budget. Usage was `~85k` input and `~12k` output tokens (`~$0.13` of the `$2.00` cap, `~$0.0088` per task).
-    - Held out (legacy recorded run): `13/13` answers with exact tool sets, `22` planned calls, zero unplanned calls, and `5/6` refusals (`h19` hit a calculator-guard error without fabricating a number). A `2026-11-19` live run confirms `13/13` answers, `6/6` refusals under the live grader, and `19/19` budgets — see the [live confirmation records](https://github.com/amm-ds/portfolio/tree/main/projects/09-agentic-workflows/reports/live_confirmation_20261119).
+    - Held out (first recorded run): `13/13` answers with exact tool sets, `22` planned calls, zero unplanned calls, and `5/6` refusals (`h19` hit a calculator-guard error without fabricating a number). A `2026-11-19` live run confirms `13/13` answers, `6/6` refusals under the live grader, and `19/19` budgets — see the [live confirmation records](https://github.com/amm-ds/portfolio/tree/main/projects/09-agentic-workflows/reports/live_confirmation_20261119).
     - Latency depends on the provider: hosted held-out tasks ran `9.0–40.9 s`, while `7/9` local-model tasks exceeded `60 s` (`12/19` overall).
     - Scripted `tests/test_hitl.py` checks pause, reject-with-feedback, and re-plan; no live checkpoint run is recorded, and nothing here demonstrates unattended operation.
 
@@ -262,19 +259,19 @@ sections:
   metrics_keys: []
 - id: results
   text_md: |
-    **The legacy graders recorded refusal, step, and latency failures.** Start
+    **The first recorded run's graders recorded refusal, step, and latency failures.** Start
     with the suite-summary chart. Its visible short bar is held-out refusal
     at `5/6`; tuning and held-out answer/tool bars are full. The chart does not
     plot held-out step or latency results, which passed `18/19` and `12/19`.
 
     Read across the answer and tool rows for the split-level results. The
     hosted tuning suite has `15/15` answers, `15/15` exact tool sets, all step
-    and latency budgets met, and zero unplanned calls. The legacy held-out run
+    and latency budgets met, and zero unplanned calls. The first recorded held-out run
     has `13/13` answers with exact tool sets, 22 planned calls, and
     zero unplanned calls. Latency misses occur on local-model tasks because
     of slow generation, not answer quality.
 
-    The short refusal bar corresponds to one specific legacy failure. The
+    The short refusal bar corresponds to one specific failure in the first recorded run. The
     task used two Execute attempts (one retry) on an out-of-bounds calculator call, then
     exited with a failure message lacking a refusal marker. No number was
     made up. The replacement typed-refusal behavior is covered offline and
@@ -303,10 +300,10 @@ sections:
     | Split | Answers | Exact tools | Refusals | Step / latency budgets |
     |---|---:|---:|---:|---:|
     | Tuning (hosted, n = 15) | **15 / 15** | **15 / 15** | — | **15 / 15** & **15 / 15** |
-    | Held-out legacy (n = 19) | **13 / 13** | **13 / 13** | 5 / 6 | 18 / 19 & 12 / 19 |
+    | Held-out first run (n = 19) | **13 / 13** | **13 / 13** | 5 / 6 | 18 / 19 & 12 / 19 |
     | Held-out live rerun, all hosted (2026-11-19) | **13 / 13** | **13 / 13** | **6 / 6** | **19 / 19** & **19 / 19** |
 
-    The live rerun used the hosted endpoint for all `19` tasks, unlike the legacy
+    The live rerun used the hosted endpoint for all `19` tasks, unlike the first recorded run,
     mix of `10` hosted and `9` local tasks. Its `19/19` latency result therefore
     confirms the hosted contract, not a like-for-like fix for local generation.
 
@@ -317,7 +314,7 @@ sections:
   text_md: |
     ## Results summary
 
-    The legacy record run passed `15/15` fixed tasks with exact tool sets and
+    The first recorded run passed `15/15` fixed tasks with exact tool sets and
     step budgets. With tuning frozen, held-out results were `13/13` answers
     with exact tool sets, `5/6` should-fail probes refused, `18/19` step budgets,
     and `12/19` latency budgets. All `52` answer-task calls (`30` tuning, `22` held-out) were planned.
@@ -332,7 +329,7 @@ sections:
     - Deterministic grading caught behavior that answer scores missed.
     - Tightened tool descriptions eliminated unplanned calls in the record
       run: `30/30` planned calls, `100%` call precision, and `100%` tool recall.
-    - Should-fail probes exposed one legacy refusal miss after a terminal
+    - Should-fail probes exposed one refusal miss in the first recorded run after a terminal
       calculator failure, not confabulation. Typed refusal, no-evidence, and
       deadline exits have offline regressions and one live confirmation; repeated
       live efficacy remains unmeasured.

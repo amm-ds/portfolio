@@ -105,7 +105,7 @@ origins):
 evaluation on the final 28 days, so the ensemble–floor gap carries no
 uncertainty bound.
 
-The demo and sample curves come from an earlier 0.6161 blend with weights 0.60/0.10/0.30, not the current 0.6211 champion. The demo keeps the earlier blend because its payload comes from a run that chose weights on 2 selection origins; the article reports 0.95/0.00/0.05 because the current run chose weights on 9 selection origins, and both were scored once on the same test origin, 2016-05-22, at 0.6161 and 0.6211 WRMSSE respectively.
+The demo and sample curves come from an earlier 0.6161 blend with weights 0.60/0.10/0.30, not the scored 0.6211 blend. The demo keeps the earlier blend because its payload comes from a run that chose weights on 2 selection origins; the article reports 0.95/0.00/0.05 because the current run chose weights on 9 selection origins, and both were scored once on the same test origin, 2016-05-22, at 0.6161 and 0.6211 WRMSSE respectively.
 
 - **The committed comparison is the seasonal-naive floor**: the convex
   ensemble lands at **0.6211**, a **−30.4%** cut over the floor's 0.8929,

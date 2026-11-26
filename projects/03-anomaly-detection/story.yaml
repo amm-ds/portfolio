@@ -1,12 +1,10 @@
 project_id: 03-anomaly-detection
-short_version: 'NAB (9 series): IsolationForest touches 16/17 incidents with 1,609 raw alerts. One fit per series; no-skill
-  = 16 seeded baselines. Budgeting cuts to 80 pages; like-for-like, the ensemble halves 66 budgeted pages to 35 at recall
-  0.604, range-F1 0.533. NAB score not reported.'
+short_version: On 9 NAB series, IsolationForest touches 16 of 17 incidents but fires 1,609 alerts. Merging bursts and capping one page per series per day cuts that to 80 pages. Averaging three detectors halves 66 pages to 35 at the same recall (0.604). No official NAB score yet.
 sections:
 - id: background
   text_md: |
     **How do you page on alerts without drowning on-call in false alarms?**
-    On nine `NAB` series, `IsolationForest` hits `16/17` events yet fires `1,609` raw alerts. Minute `PR-AUC` (`0.527`) hides alert storms that whole-event `range-F1` (`0.157`) exposes.
+    On nine `NAB` series, `IsolationForest` hits `16/17` events yet fires `1,609` raw alerts. Minute-level `PR-AUC` (`0.527`; not the per-series range precision in Conclusions) hides alert storms that whole-event `range-F1` (`0.157`) exposes.
 
     ```diagram 03-detection-pipeline
     ```
@@ -17,7 +15,6 @@ sections:
     - **Cap pages:** Merge each burst into one alert and cap volume at `1` page per series per `24 h`. For `IsolationForest` with rolling+residual features, that takes `1,609` raw alerts to `80` pages.
     - **Outcome:** On rolling features, the ensemble cuts load from `66` to `35` pages. It holds `0.604` recall, `0.533` `range-F1`, and `0.553` range precision.
 
-    The hero shows the `IsolationForest` alert problem. The recommended path averages `IsolationForest`, `LOF`, and `OCSVM` ranks before the same page budget.
 
     Next, four rules keep the test fair ([Objectives →](#sec-objectives)).
 
@@ -97,7 +94,7 @@ sections:
     - **Rank blending wins on budgeted event scoring, not minute ranking:** We average `[0, 1]` ranks across `IsolationForest`, `LOF`, and `OCSVM`. Minute `PR-AUC` is `0.566–0.577` for the ensemble and `0.515–0.574` for single models, a negligible edge. The useful gain appears after budgeting: on rolling features, the ensemble drops from `66` to `35` pages and raises `range-F1` from `0.388` to `0.533` at equal `0.604` recall.
     - **Page caps cut load with no refit:** At the ringed `(2%, 24 h)` mark in `nab_tune_surface`, merging bursts and capping at `1` page per day cuts load `20–33×` and raises `range-F1` in every cell. For `IsolationForest` with rolling+residual features, that means `1,609` to `80` pages and `range-F1` `0.157` to `0.315`.
     - **Tuning trades recall for fewer pages:** On the `80/20` inner split (`6` windows across `5` series), the ensemble's best change is `+0.010`, below the `+0.05` adoption margin, so its `(2%, 24 h)` default stays. Tuned `IsolationForest` at `(0.5%, 24 h)` cuts rolling pages `66` to `33` but lowers recall `0.604` to `0.500`; rolling+residual falls `80` to `46` pages while recall drops `0.562` to `0.479`. Tuned `OCSVM` at `(0.5%, 72 h)` cuts rolling/rolling+residual pages from `87/91` to `35/35`, but recall falls by `0.229/0.125`; test `range-F1` changes by `−0.043/+0.033`.
-    - **Synthetic runs check mechanics only:** Tuned `OCSVM` is the synthetic champion, with selection `PR-AUC` `0.1514` versus tuned `IsolationForest` `0.1330`. Its test `PR-AUC` is `0.1355` versus tuned `IsolationForest` `0.1208` and random `0.0194`. The separate `OCSVM` HPO objective is `0.126`; it is not the selection metric. `NSL-KDD` remains a `56.9%`-prevalence contract check (`0.8877` `ROC-AUC` / `0.8979` `PR-AUC`).
+    - **Synthetic runs check mechanics only:** Tuned `OCSVM` is the best synthetic detector, with selection `PR-AUC` `0.1514` versus tuned `IsolationForest` `0.1330`. Its test `PR-AUC` is `0.1355` versus tuned `IsolationForest` `0.1208` and random `0.0194`. The separate `OCSVM` HPO objective is `0.126`; it is not the selection metric. `NSL-KDD` remains a `56.9%`-prevalence contract check (`0.8877` `ROC-AUC` / `0.8979` `PR-AUC`).
 
     ```python
     def _ranks(scores: np.ndarray) -> np.ndarray:
@@ -164,7 +161,7 @@ sections:
     - **Report the tuning trade-off.** Tuned `IsolationForest` moves from `66` to `33` rolling pages while recall falls `0.604` to `0.500`; rolling+residual moves `80` to `46` while recall falls `0.562` to `0.479`. The ensemble's `+0.010` validation change does not justify a new default.
     - **Keep synthetic evidence in its lane.** Residual-feature gains do not transfer to `NAB`; they support pipeline mechanics only.
     - **Name the failed gate.** Calibration fails precision and `range-F1`. Both fusions pass precision but fail the `16/17` coverage requirement, at `14/17` and `15/17`.
-    - **Keep precision in the decision.** The `0.527` threshold-sweep precision has a series bootstrap `95%` `CI` of `[0.230, 0.811]` (`2,000` resamples, seed `42`). That interval lies wholly above the no-skill band `[0.063, 0.105]`, but remains wide across nine series. It supports an alert-budget dial, not unattended paging. The official `NAB` score is not reported: it requires the official scorer and an application profile. These tables use the project's window semantics instead.
+    - **Keep precision in the decision.** Averaged per series, range precision at the `2%` budget (point-adjusted, `k = 2`) is `0.527`, `95%` `CI` `[0.230, 0.811]` over `9` series (`2,000` resamples, seed `42`). This is a different metric from the minute-level `PR-AUC` (also `0.527` by coincidence). The interval sits above the no-skill band `[0.063, 0.105]` but is wide. It supports an alert-budget dial, not unattended paging. The official `NAB` score is not reported: it requires the official scorer and an application profile. These tables use the project's window semantics instead.
 
     ## Limits
 

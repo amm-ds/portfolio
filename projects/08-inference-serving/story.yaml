@@ -54,7 +54,7 @@ sections:
 
     - **Same prompts & schema:** Run `8` fixed prompts under one strict answer schema across all `760` requests.
     - **Sweep load (`1/2/4/8`):** Measure `p95` latency, median time, tokens/s, and failure rate at every concurrency level.
-    - **Outcome:** A `4`-bit `MoE` (`3B` active params) wins at `0.81 s` `p95` (`0.63 s` median, `7×` the dense `32B` output tok/s, `~$0.12` per `1M` output tokens).
+    - **Outcome:** A `4`-bit `MoE` (`3B` active params) is fastest at `0.81 s` `p95` (`0.63 s` median, `7×` the dense `32B` output tok/s, `~$0.12` per `1M` output tokens); quality was not compared beyond a saturated format check.
 
     Next, the measurement contract behind each cell ([Objectives →](#sec-objectives)).
 
@@ -227,7 +227,7 @@ sections:
   metrics_keys: []
 - id: evaluation
   text_md: |
-    On this machine, the 4-bit `MoE` model is the serving choice. The
+    On this machine, the 4-bit `MoE` model is the fastest setup measured; choosing it for serving assumes its answers are good enough, which this run does not test. The
     latency-versus-concurrency chart shows the load-sensitive part of that
     verdict. Read the x-axis as one, two, four, or eight requests in flight.
     Each point is `p95` latency, and each whisker spans the committed `p50`–`p99`
@@ -314,7 +314,7 @@ sections:
     - **Cost completeness:** the $0.12-per-1M estimate is electricity only at
       declared assumptions. Wall power was not measured because a meter was
       unavailable. Hardware amortization, the purchase cost spread over its
-      useful life, is excluded. This is not total cost of ownership.
+      useful life, is excluded. This is not total cost of ownership. Project 13 assumes 65 W for a lighter CPU load on the same class of laptop; neither wattage is measured.
     - **Engine causality:** packaging and quantization confound engine
       differences. No same-quant cross-runner pair exists for these models; the
       missing MLX tag and failed conversion attempt were recorded rather than forced.

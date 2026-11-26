@@ -9,17 +9,17 @@
 > at a 25% send budget, CI [+$718, +$4,767]; at $0.01 per email, mailing
 > everyone still wins. Targeting pays when sending is costly.
 >
-> A campaign owner who mails "most likely to convert" targets sure things —
+> A marketer who mails "most likely to convert" targets sure things —
 > and wastes the budget that persuadables would repay.
 > Headline: on the canonical Hillstrom benchmark, the recommended top-25%
 > T-learner targeting beats random by **+$2,812 (+70%)** at equal budget,
-> with the revenue-minus-send-cost ranking established by paired-bootstrap CIs.
+> the gain over random is established by a paired bootstrap; the ranking against a plain response model is not.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/10-uplift-experimentation)
 
 ## What it shows
 
-Campaign owners deciding who gets the next send face a counterfactual
+Marketers deciding who gets the next send face a counterfactual
 question (who buys *because of us*?) that conversion scorers cannot
 answer. This project runs the full experimentation stack that turns a
 randomized campaign into an operating targeting policy. On the canonical

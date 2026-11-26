@@ -6,7 +6,7 @@ returns structured, cited answers. The promoted retriever is S3: title-anchored
 chunks, dense FAISS fused with BM25 by reciprocal rank fusion, cross-encoder
 reranking, and a per-article diversity cap.
 
-Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybrid retrieval reaches 0.946 recall@5. Judge sample: 30/30 owner-labelled. Final 120-question pass: F1 0.909, precision 0.952, faithfulness 0.872, 1/120 unsupported.
+Cited question answering over 593 Wikipedia articles. Hybrid search finds a correct passage in the top five 94.6% of the time (recall@5 0.946). Final 120-question test: F1 0.9091, precision 0.952, one unsupported answer. The judge agreed with all 30 hand-labelled checks.
 
 The runtime default is local Ollama (`qwen3.6:35b-a3b-q4_K_M`); any
 OpenAI-compatible endpoint uses the same path. There is no runtime mock.
@@ -100,7 +100,7 @@ or agent change must be measured on a newly sealed set (`final_v4`).
 | faithfulness (95% CI) | **0.8717 [0.8092, 0.9304]** |
 | failure taxonomy | 104 correct / 1 unsupported-claim / 10 empty-answer / 1 retrieval-miss / 4 budget-terminated |
 | single_hop / multi_hop / unanswerable correct | 60/68 / 20/24 / 24/28 |
-| judge sample agreement (owner-labelled, blind to model labels) | 30/30 [0.8865, 1.0] |
+| judge sample agreement (hand-labelled, blind to model labels) | 30/30 [0.8865, 1.0] |
 | final pass meter (answer path / incl. judging) | $1.014 ($0.0084/q) / $1.458 ($0.0121/q) |
 
 ### Tuning baseline (65 questions, prior)

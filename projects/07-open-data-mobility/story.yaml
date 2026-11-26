@@ -264,11 +264,10 @@ sections:
   metrics_keys: []
 - id: results
   text_md: |
-    The hour-borough heatmap gives the demand scale behind the errors.
-    Rows are boroughs, columns are hours, and color shows pickups per
-    zone-hour. Manhattan peaks at 103.7 at 18:00, while the Bronx tops out
-    at 0.73. Across all borough-hour cells, the color scale spans about four
-    orders of magnitude, so the model must handle very different demand levels.
+    **Demand spans four orders of magnitude across borough-hours, and the
+    p90 band holds its 90% target city-wide but not in no-borough zones.**
+    The hour-borough heatmap gives the demand scale behind the errors: Manhattan
+    peaks at 103.7 pickups/zone-hour at 18:00, while the Bronx tops out at 0.73.
 
     In the city-wide band figure, compare actual outcomes with the `p90`
     upper line. Coverage is `90.8%`, on target on average. The named

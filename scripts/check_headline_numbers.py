@@ -65,6 +65,20 @@ def _m02() -> list[str]:
     return [_fmt(v, 4), f"{red:.1f}"]
 
 
+def _m02_pinned() -> list[str]:
+    """Hand-written docs-index "Pinned:" line quotes the scored blend."""
+    return [f"ensemble official WRMSSE {_m02()[0]}"]
+
+
+def _m02_origins() -> list[str]:
+    """Blend-vs-floor reduction range over the nine selection origins."""
+    sel = _load("projects/02-demand-forecasting/reports_m5_full/metrics.json")["selection"]
+    blend = sel["convex_ensemble"]["official_wrmsse_per_origin"]
+    floor = sel["seasonal_naive"]["official_wrmsse_per_origin"]
+    red = [(f - b) / f * 100 for b, f in zip(blend, floor, strict=True)]
+    return [f"`{min(red):.0f}%` to `{max(red):.0f}%`"]
+
+
 def _m03() -> list[str]:
     m = _load("projects/03-anomaly-detection/reports/nab_metrics.json")
     return [
@@ -205,6 +219,18 @@ CLAIMS: list[dict[str, Any]] = [
         "surfaces": ["README.md", "story.yaml"],
     },
     {
+        "project": "02-demand-forecasting",
+        "label": "docs index Pinned WRMSSE",
+        "values": _m02_pinned,
+        "surfaces": ["//docs/projects/index.md"],
+    },
+    {
+        "project": "02-demand-forecasting",
+        "label": "nine-origin blend-vs-floor range",
+        "values": _m02_origins,
+        "surfaces": ["story.yaml"],
+    },
+    {
         "project": "03-anomaly-detection",
         "label": "2%-budget precision + CI + raw alerts",
         "values": _m03,
@@ -282,7 +308,11 @@ def check_claim(claim: dict[str, Any]) -> list[str]:
     except Exception as exc:
         return [f"{project}: could not derive headline from metrics: {exc}"]
     for surface in claim["surfaces"]:
-        path = ROOT / "projects" / project / surface
+        # "//path" is repo-root relative; anything else is project relative.
+        if surface.startswith("//"):
+            path = ROOT / surface[2:]
+        else:
+            path = ROOT / "projects" / project / surface
         if not path.exists():
             failures.append(f"{project}/{surface}: surface missing")
             continue

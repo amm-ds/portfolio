@@ -266,10 +266,11 @@ sections:
   figures: [scalability_lines]
 - id: results
   text_md: |
-    Read the three figures together. The dot plot shows absolute task time
-    and repeat-to-repeat whiskers. The lollipop chart shows peak memory.
-    The heatmap divides each task's time by its fastest engine, making the
-    pattern readable on a logarithmic color scale.
+    **Polars wins 9 of 10 tasks, DuckDB wins one, and sqlite is slowest on 9;
+    pandas uses the most memory on compute tasks.** The dot plot shows absolute
+    task time and repeat-to-repeat whiskers. The lollipop chart shows peak
+    memory. The heatmap divides each task's time by its fastest engine, making
+    the pattern readable on a logarithmic color scale.
 
     - In `task_times_dotplot`, `pandas` `CSV` read (`1.16 s`) towers over the columnar band (`2–83 ms`), while `sqlite` sits in a higher band (`1.9–5.9 s`) for a workflow that includes file loading.
     - In `memory_lollipop`, `pandas` peaks at `549–945 MB` (`945 MB` on `join`). `Polars` stays at `200–529 MB`, `DuckDB` at `178–633 MB`, and `sqlite` at `396–1,520 MB` because it holds both frame and database in one process. On `write_parquet`, all three applicable engines sit near `529–633 MB`.

@@ -4,10 +4,7 @@
 Benchmark (12 series; seeded synthetic telemetry as the labelled CI fast path;
 NSL-KDD transfer probe) · **Status:** working showcase
 
-> NAB (9 series): IsolationForest touches 16/17 incidents with 1,609 raw
-> alerts. One fit per series; no-skill = 16 seeded baselines. Budgeting cuts
-> to 80 pages; like-for-like, the ensemble halves 66 budgeted pages to 35 at
-> recall 0.604, range-F1 0.533. NAB score not reported.
+> On 9 NAB series, IsolationForest touches 16 of 17 incidents but fires 1,609 alerts. Merging bursts and capping one page per series per day cuts that to 80 pages. Averaging three detectors halves 66 pages to 35 at the same recall (0.604). No official NAB score yet.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/03-anomaly-detection)
 
@@ -40,7 +37,7 @@ The range-PR sweep gives area 0.804 against a 16-seed no-skill band of 0.228
 0.944 over evaluable windows; these threshold-sweep values are not the raw
 headline's range precision 0.107 or twelve-series range recall 0.729.
 
-## Alert budgeting and current champion
+## Alert budgeting and the recommended detector
 
 Deduplication emits one page per contiguous burst; the budgeted stream adds at
 most one page per series per 24 hours. Compare raw and budgeted values within
@@ -53,7 +50,7 @@ each row, not across different feature sets:
 | **rank-average ensemble + rolling** | **1,157 → 35** | **0.729 → 0.604** | **0.485 → 0.533** |
 | rank-average ensemble + rolling+residual | 1,003 → 45 | 0.729 → 0.562 | 0.316 → 0.365 |
 
-The current champion is the ensemble on rolling features at the frozen (2%,
+The recommended detector is the ensemble on rolling features at the frozen (2%,
 24 h) default. Against IsolationForest on that same budgeted rolling stream,
 it cuts 66 pages to 35, raises range-F1 0.388 → 0.533 and range precision
 0.347 → 0.553, and holds range recall at 0.604. Nearly half of its pages still

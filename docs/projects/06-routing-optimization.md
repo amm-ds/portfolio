@@ -54,7 +54,7 @@ hardware benchmark.
 ALNS wins 52 of 56 intra-ladder distance comparisons; `alns_fleet` wins the
 other four. With fleet size ranked first, ALNS wins 38 of 56, `alns_fleet` five,
 and naive solvers 13 by using fewer vehicles at much worse distance. No solver
-beats the best-known fleet size. ALNS undercuts eight published distance
+beats the best-known fleet size. ALNS undercuts five published distances (three more are −0.00% rounding ties), always with more vehicles published distance
 references, with RC202 best at −3.85%; the worst residual is C203 at 19.48%.
 The means therefore do not describe every instance.
 

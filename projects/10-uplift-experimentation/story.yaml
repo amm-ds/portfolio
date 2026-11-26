@@ -223,13 +223,10 @@ sections:
     win over random. They do not establish the response-versus-T `Qini` ranking,
     either per-arm `AUUC`, or best-arm superiority over single-arm Mens.**
 
-    Read the Qini-curves figure as a race down the mailing list. The
-    horizontal axis shows the targeted fraction. The vertical axis shows
-    incremental conversions: purchases caused by the email and captured so far.
-    Each curve is one ranking; the random diagonal is the floor. A useful curve
-    bows above that diagonal. Its `Qini` coefficient is the area between them.
-    The `95%` paired-bootstrap bands do not separate the curves: response minus
-    T is [`−8.18`, `9.52`], which spans zero.
+    The Qini curves plot incremental conversions against the targeted
+    fraction; the random diagonal is the floor. The `95%` paired-bootstrap
+    bands do not separate the curves: response minus T is [`−8.18`, `9.52`],
+    which spans zero.
 
     The value-frontier figure shows the money. Revenue minus send cost subtracts
     send costs from revenue earned by incremental conversions. At `$114` per conversion and
@@ -241,6 +238,11 @@ sections:
     The per-arm `AUUC` figure separates the email effects and omits the duplicate
     Mens/binary curve. Mens is `12.03` [`−0.47`, `24.21`]. Womens is `3.37`
     [`−6.78`, `13.75`]. Both intervals span zero, so neither ranking is established.
+    Mens's `12.03` is the same score as the T-learner's Qini in the two-arm
+    table. Its interval differs because this figure resamples all three arms
+    together (seed 2041) while the table resamples only Mens vs control (seed
+    1041): [`0.77`, `24.39`] there excludes zero, [`−0.47`, `24.21`] here does
+    not. Read the ranking as weak either way.
 
     A separate read uses observed outcomes for fixed three-arm policies. It reports
     cross-fitted doubly robust (`DR`) and inverse-propensity-weighted (`IPW`) estimates.

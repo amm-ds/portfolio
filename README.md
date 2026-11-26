@@ -5,8 +5,10 @@
 **Data Scientist & ML Engineer.** A growing set of end-to-end case studies —
 from data engineering and classical ML to agentic AI — where every project
 ships with its design record, a reproducible DVC pipeline, and an evaluation
-harness with honest baselines. Every number in the showcase re-runs from a
-clean clone.
+harness with honest baselines. Every headline number is read from a committed
+artifact and checked in CI. Most pipelines re-run from a clean clone; the LLM
+projects (01, 04, 09) need a model endpoint, 08 and 13 need comparable
+hardware, and 02's full run takes about 375 CPU-hours.
 
 🌐 **Site:** https://alejandromerida.dev ·
 📚 **Docs (GitHub Pages):** https://amm-ds.github.io/portfolio/ ·
@@ -17,23 +19,27 @@ clean clone.
 | Tool | Role | Where |
 |---|---|---|
 | `pydantic` (+settings) | Typed contracts at every boundary | everywhere |
-| `pydantic-ai` | Agentic AI: typed tools, structured outputs, provider abstraction | 01 |
-| `scikit-learn` | Classical ML: pipelines, baselines, metrics | 02, 03, 05, 07 |
-| `pytorch` | Deep learning with hand-written training loops | 02, 04, 07 |
+| `pydantic-ai` | Agentic AI: typed tools, structured outputs, provider abstraction | 01, 09 |
+| `scikit-learn` | Classical ML: pipelines, baselines, metrics | 02, 03, 05, 07, 10, 12, 13 |
+| `pytorch` | Deep learning with hand-written training loops | 02, 04, 07, 12, 13 |
 | `plotly` | The single figure authoring path — every payload is built in Python through `portfolio_core.plotting` (shared theme) and exported as JSON | all |
 | `apache echarts` | Showcase-web figure renderer — converts the committed plotly payloads (smaller chunks, better mobile), per-figure plotly.js fallback (ADR-0008) | `apps/showcase-web` |
 | `dvc` | Pipelines + data versioning, reproduces from clean clone | all |
 | `uv` | Single workspace monorepo, committed lockfile | root |
-| `polars` | Lazy/streaming ETL over GB-scale open data | 03, 07 |
+| `polars` | Lazy/streaming ETL over GB-scale open data | 03, 07, 11 |
+| `lightgbm` | Gradient-boosted trees for tabular and forecasting baselines | 02, 05, 07, 12 |
+| `duckdb` | In-process SQL engine in the DataFrame benchmark | 11 |
+| `onnxruntime` + Docker | Exported-model serving and container images | 13 |
+| `stable-baselines3` | PPO training for the pricing agent | 15 |
 | `FastAPI` + `React/TypeScript` | Showcase API + web UI (no Streamlit) | `apps/` |
 
 ## Show it, don't just say it
 
 Real artifacts from the pipelines (interactive versions in each [case study](https://alejandromerida.dev/projects/)):
 
-| Flagship demand intelligence (41.2M trips, zone map) | RAG retrieval ladder: S3 hybrid wins the sealed tournament | Anomaly detection over NAB telemetry (897 alerts vs labelled windows) |
+| Flagship demand intelligence (41.2M trips, zone map) | Hybrid retrieval lifts recall@5 from 0.924 to 0.946 | Six of nine NAB series: 897 of 1,609 alerts vs labelled windows |
 |---|---|---|
-| ![NYC taxi-zone demand map](docs/assets/readme/mobility-demand-map.png) | ![RAG retrieval ladder: S3 lifts sealed recall@5 to 0.9457 across the R0-S3 tournament](docs/assets/readme/rag-retrieval-ladder.png) | ![NAB telemetry: champion alerts vs labelled incident windows](docs/assets/readme/anomaly-timelines.png) |
+| ![NYC taxi-zone demand map](docs/assets/readme/mobility-demand-map.png) | ![RAG retrieval ladder: hybrid retrieval lifts recall@5 from 0.924 to 0.946](docs/assets/readme/rag-retrieval-ladder.png) | ![NAB telemetry: IsolationForest alerts vs labelled incident windows](docs/assets/readme/anomaly-timelines.png) |
 
 ## Projects
 
@@ -41,19 +47,19 @@ Fourteen projects, all working showcases on the same platform.
 
 | # | Project | Domain | Data | Highlights |
 |---|---|---|---|---|
-| 01 | [RAG & Agentic AI Assistant](projects/01-rag-agent/) | Agentic AI | Wikipedia (real) | Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybrid retrieval reaches 0.946 recall@5. Judge sample: 30/30 owner-labelled. Final 120-question pass: F1 0.909, precision 0.952, faithfulness 0.872, 1/120 unsupported.<br>Stack: pydantic-ai agent, final_v3 120-question sealed pass (F1 0.9091), promoted S3 hybrid retrieval, judge_v2 calibration (30/30 owner-labelled, blind to model labels), per-phase cost metering |
+| 01 | [RAG & Agentic AI Assistant](projects/01-rag-agent/) | Agentic AI | Wikipedia (real) | Cited question answering over 593 Wikipedia articles. Hybrid search finds a correct passage in the top five 94.6% of the time (recall@5 0.946). Final 120-question test: F1 0.9091, precision 0.952, one unsupported answer. The judge agreed with all 30 hand-labelled checks.<br>Stack: pydantic-ai agent, hybrid FAISS+BM25 retrieval with reranking, per-claim verification, per-phase cost metering |
 | 02 | [Hierarchical Demand Forecasting](projects/02-demand-forecasting/) | Time series | Walmart M5 full panel (real) | M5 full panel: 30,490 series, one scored test origin (final 28 days) with official 42,840-node WRMSSE. Pooled LightGBM ensemble: 0.6211 vs seasonal-naive 0.8929 (−30.4%); no bootstrap interval bounds the result; quiet days favor the floor.<br>Stack: rolling origins scored once, global + pooled LightGBM, Tweedie arm, AutoETS, stability-screened convex ensemble |
-| 03 | [Anomaly Detection over Telemetry](projects/03-anomaly-detection/) | Unsupervised ML | NAB (real) + seeded synthetic CI path | NAB (9 series): IsolationForest touches 16/17 incidents with 1,609 raw alerts. One fit per series; no-skill = 16 seeded baselines. Budgeting cuts to 80 pages; like-for-like, the ensemble halves 66 budgeted pages to 35 at recall 0.604, range-F1 0.533. NAB score not reported.<br>Stack: event-based metrics (PR-AUC, range-F1), detector HPO, threshold sweeps |
+| 03 | [Anomaly Detection over Telemetry](projects/03-anomaly-detection/) | Unsupervised ML | NAB (real) + seeded synthetic CI path | On 9 NAB series, IsolationForest touches 16 of 17 incidents but fires 1,609 alerts. Merging bursts and capping one page per series per day cuts that to 80 pages. Averaging three detectors halves 66 pages to 35 at the same recall (0.604). No official NAB score yet.<br>Stack: event-based metrics (PR-AUC, range-F1), detector HPO, threshold sweeps |
 | 04 | [NLP Classification with Transformers](projects/04-nlp-classification/) | Deep learning NLP | AG News 120k (real) | AG News sorter: the selected transformer + selective LLM cascade shows no measurable change in fresh macro-F1 (0.953 → 0.954, +0.001) and accuracy (0.953 → 0.954), reviewing 22 of 1,000 fresh items. Full evaluation: $0.023671 cloud-equivalent. License: research purposes.<br>Stack: hand-written fine-tuning loop, selective LLM cascade (τ=0.6), calibration analysis |
 | 05 | [Churn Modeling, sklearn Pipelines](projects/05-ml-pipeline-churn/) | Classical ML | IBM telco churn (real) + synthetic | On 7,043 IBM telco customers, a calibrated churn policy frozen at 0.175 from training OOF predictions costs $601 versus $1,035 for contact-everyone (95% paired bootstrap cost-delta CI -$508 to -$353). Re-select the cutoff when missed-churner cost changes.<br>Stack: pipeline-embedded preprocessing, cost-aware HPO, fairness slices |
 | 06 | [Routing Optimization (VRPTW)](projects/06-routing-optimization/) | Combinatorial optimization | CVRPLIB Solomon (real benchmark) | Routing planner for 56 Solomon 100-customer problems with time windows. Hand-written search returns feasible plans within 4.2% of best-known distance in ~1 second each, using about 3.7 more vehicles on average; an exact solver certifies small cases only.<br>Stack: hand-written ALNS vs best-known solutions, dual distance + vehicle gap |
 | 07 | [Urban Mobility Demand Intelligence](projects/07-open-data-mobility/) | Data engineering + ML | NYC TLC + NOAA (real, GB-scale) | Next-hour NYC taxi demand by zone, built on 41.2M real 2024 yellow-taxi trips and public weather: on a strict Oct–Dec test holdout the served GBM cuts error 28.3% vs the persistence floor (4.68 vs 6.52 MAE); its 90% band reached 90.8% coverage (no-borough zones excepted).<br>Stack: lazy Polars ETL, zone-demand forecasting, weather elasticity, choropleths |
 | 08 | [LLM Inference & Serving](projects/08-inference-serving/) | AI infrastructure | Local Ollama stack (real serving target) | One laptop, five LLM serving setups, 760 requests, zero failures. The 4-bit MoE records 0.81 s p95 latency (0.63 s median) at about $0.12 per 1M output tokens (electricity only). Reuse the harness to re-measure target hardware.<br>Stack: latency percentiles vs concurrency, GGUF-vs-MLX engine panel, quantization frontier |
-| 09 | [Agentic Workflows](projects/09-agentic-workflows/) | Agentic AI | Synthetic 12-doc "Atlas Valley" handbook + read-only Wikipedia slice from 01 (CC BY-SA) | Auditable plan-act-review workflow with typed outcomes and deadlines. Legacy: 15/15 fixed tasks, 13/13 unseen answers, 5/6 refusals. All-hosted live held-out: 13/13 answers, 6/6 live-grader refusals, 19/19 budgets; h19 refused after the calculator guard tripped.<br>Stack: pydantic-graph Plan→Execute→Critique, HITL checkpoints, budget-capped offline graders |
+| 09 | [Agentic Workflows](projects/09-agentic-workflows/) | Agentic AI | Synthetic 12-doc "Atlas Valley" handbook + read-only Wikipedia slice from 01 (CC BY-SA) | Plan-act-review workflow with typed outcomes and deadlines. Recorded runs: 15/15 fixed tasks, 13/13 unseen answers, 5/6 correct refusals. A live re-run with hosted models: 13/13 answers, 6/6 refusals, all 19 tasks within budget.<br>Stack: pydantic-graph Plan→Execute→Critique, HITL checkpoints, deterministic graders (no AI judge) |
 | 10 | [Uplift & Experimentation](projects/10-uplift-experimentation/) | Decision science | Hillstrom email RCT (real) | On 42,613 customers (Men's E-Mail vs No E-Mail) from the 64,000-row Hillstrom dataset, uplift targeting beat random targeting by +$2,812 (+70%) at a 25% send budget, CI [+$718, +$4,767]; at $0.01 per email, mailing everyone still wins. Targeting pays when sending is costly.<br>Stack: CUPED, power analysis, T/X-learner uplift, Qini & value curves |
 | 11 | [DataFrame Engines Benchmark](projects/11-data-engineering/) | Data engineering | NYC TLC yellow 2024-01 (real, sha-pinned) + seeded synthetic CI/scalability tracks | Ten data tasks over 2.96M NYC taxi trips, parity-checked on pandas, Polars, DuckDB and stdlib sqlite: Polars 19x, DuckDB 15x pandas; sqlite's from-files workflow is ~29x slower, with loading not timed separately; parity catches 1,658 dropped trips. NYC TLC 2024-01.<br>Stack: 10-task contract on pandas / Polars / DuckDB / sqlite, parity gate, median-of-5 untraced timing + traced allocation pass + fresh-process RSS probes |
 | 12 | [Tabular ML & Deep Learning Lifecycle](projects/12-tabular-ml-lifecycle/) | Classical ML + deep learning | UCI Bike Sharing, Capital Bikeshare hourly (real, sha256-pinned) + seeded synthetic CI twin | Real UCI Capital Bikeshare hourly demand (17,379 rows): the validation-selected PyTorch MLP reaches 25.4 test MAE vs 83.2 for the seasonal-naive floor. The 57.8/hour gain has hourly 95% CI 52.5-63.1 and week-block sensitivity 38.8-73.4.<br>Stack: sklearn Pipelines ladder, seeded Optuna HPO (50 trials, 240 s budget), hand-written PyTorch MLP (hour embedding, Huber, early stopping), three-lens feature selection, paired bootstrap CIs |
-| 13 | [Model API Serving & Docker Deployment](projects/13-model-serving/) | Model serving & deployment | Champion MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly) | Project 12's MLP (25.4316 test MAE) is rebuilt and exported to ONNX behind a 7.2e-07 parity gate. One FastAPI schema serves both backends. Paired tests: 1.6 ms p50, ~950 req/s knee, ~56k rows/s batched; image 6.5 GB, or 291 MB ONNX-only.<br>Stack: FastAPI contract schema (422 on malformed), ONNX export behind a 1e-4 parity gate, seeded paired httpx load harness (concurrency + batch curves), fresh-process RSS probes, multi-stage Docker build |
+| 13 | [Model API Serving & Docker Deployment](projects/13-model-serving/) | Model serving & deployment | Project 12's served MLP, re-derived from its committed recipe (UCI Bike Sharing hourly) | Project 12's MLP (25.4316 test MAE) is rebuilt and exported to ONNX behind a 7.2e-07 parity gate. One FastAPI schema serves both backends. Paired tests: 1.6 ms p50, ~950 req/s knee, ~56k rows/s batched; image 6.5 GB, or 291 MB ONNX-only.<br>Stack: FastAPI contract schema (422 on malformed), ONNX export behind a 1e-4 parity gate, seeded paired httpx load harness (concurrency + batch curves), fresh-process RSS probes, multi-stage Docker build |
 | 15 | [Dynamic Pricing with RL](projects/15-dynamic-pricing-rl/) | Reinforcement learning & pricing simulation | 600 M5 store-item series (real calibration, simulated response) | Masked PPO for constrained pricing on 600 M5-calibrated series reaches 0.5120 sealed mean profit, but trails tuned static B1 by -1.86% (paired 95% CI [-0.0114, -0.0080]); zero violations across all executable policies.<br>Stack: masked PPO with history encoder, action masks, common random numbers, fluid LP ceiling, four tuned baselines, single sealed evaluation |
 
 Flagships (01, 07) are complete end-to-end; the rest are working showcases

@@ -260,6 +260,8 @@ sections:
   text_md: |
     ## Results summary
 
+    **Both backends answer in 1.6 ms at the median, the service saturates near
+    950 requests/s, and the ONNX-only image is 22× smaller (291 MB vs 6.5 GB).**
     The summary diagram below connects each deployment stage to its result.
     Experiment 12's served `MLP` reproduces exactly, `ONNX` parity is gated at
     7.2e-07 max-abs, and single-request `p50` is 1.6 ms. The load curve reaches
@@ -304,7 +306,7 @@ sections:
       this CPU service. The ONNX-only slim image (`Dockerfile.slim`, `291 MB`,
       smoke-passed) is the built answer. Stripping the stack from the
       *native* image remains a separate variant.
-    - Cost is electricity-only at a declared 65 W and `$0.30` per kWh. There is
+    - Cost is electricity-only at a declared 65 W and `$0.30` per kWh. Project 08 assumes 100 W for LLM load on the same class of laptop; neither wattage is measured. There is
       no wall meter or amortized hardware. Re-derive the number on your
       hardware before quoting it.
 

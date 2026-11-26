@@ -75,7 +75,7 @@ macro-F1, so device choice does not explain the scale gain.
 
 | Train rows | Run | Device | Val F1 | Test macro-F1 | Fresh macro-F1 |
 |---|---|---|---|---|---|
-| 3.6k | `distilbert` (legacy bounded) | CPU | 0.8880 | 0.9021 | 0.8962 |
+| 3.6k | `distilbert` (earlier bounded config) | CPU | 0.8880 | 0.9021 | 0.8962 |
 | 3.6k | `distilbert_scale_4000` | MPS | 0.8849 | 0.9019 | 0.9067 |
 | 10.8k | `distilbert_scale_12000` | MPS | 0.9120 | 0.9170 | 0.9219 |
 | 36k | `distilbert_scale_40000` | MPS | 0.9320 | 0.9331 | 0.9428 |

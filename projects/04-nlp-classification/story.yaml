@@ -253,21 +253,20 @@ sections:
   figures: [llm_cascade_comparison]
 - id: results
   text_md: |
-    **The three figures explain both the gain and its limits.** Validation
-    freezes the bounded candidate before these test diagnostics are scored;
+    **The transformer's remaining errors are mostly Business read as Sci/Tech
+    (25 of 250); LLM review of the uncertain 2% does not measurably fix them.**
+    Validation freezes the bounded candidate before these test diagnostics are scored;
     the paired validation comparison remains inconclusive.
 
     - In `confusion_matrix_selected`, look for the largest off-diagonal cell.
-      A confusion matrix compares actual topics with predicted topics. It uses
-      the bounded transformer, not the final cascade. Business predicted as
+      The confusion matrix uses the bounded transformer, not the final
+      cascade. Business predicted as
       Sci/Tech dominates, with 25 of 250 bounded test items.
     - In `per_class_f1_comparison`, compare the topic bars. Per-class F1
-      measures each topic separately. The same Business and Sci/Tech blur
-      accounts for the residual gap.
+      The same Business and Sci/Tech blur accounts for the residual gap.
     - In `scale_ladder`, follow the rising scores as training rows increase.
-      Same-rows CPU and MPS twins sit `0.0002` test `macro-F1` apart. CPU is the
-      computer's main processor. MPS is Apple's framework for GPU computing.
-      A GPU is a processor built for parallel numerical work. Their fresh gap is
+      Same-rows CPU and Apple-GPU (MPS) twins sit `0.0002` test `macro-F1`
+      apart. Their fresh gap is
       `0.0105`, comparable to the last fresh scale gain; the fixed-device ladder,
       not the fresh twin alone, isolates the data-scale effect.
 
@@ -324,8 +323,7 @@ sections:
       times the `0.0042` standard deviation across three seeds (mean `0.8910`).
     - Selective `LLM` review changed `macro-F1` by `+0.0001`, `+0.0030`,
       and `+0.001` on validation, bounded test, and fresh respectively.
-    - Data leakage means evaluation information influencing model choices.
-      Validation-only model and threshold fitting keep test/fresh labels out
+    - Validation-only model and threshold fitting keep test/fresh labels out
       of those choices; fresh candidate scores are diagnostics only.
     - Temperature scaling cut test `ECE` from `0.0360` to `0.0227` without
       changing a single prediction.
@@ -405,8 +403,7 @@ sections:
     across the original default 3.6k / 20k-subset (18k train / 2k validation) /
     full runs (`DESIGN.md`).
 
-    Serving means using a trained model to make predictions. This
-    confidence-routed table uses the fresh holdout. The `TF-IDF` max-probability
+    This confidence-routed table uses the fresh holdout. The `TF-IDF` max-probability
     router sends items below τ to the served transformer:
 
     | τ | escalated | macro-F1 |
@@ -459,8 +456,8 @@ sections:
       (mean `0.8910` ± `0.0042`).
     - Serving probe: Apple M4 Max, CPU batch=1, n=200; rate card `$1` per 1M
       input + `$4` per 1M output tokens. The router uses raw, uncalibrated `TF-IDF`
-      maximum class probability and escalates below τ. Uncalibrated means the
-      confidence has not received calibration adjustment. The transformer leg
+      maximum class probability and escalates below τ; the confidence has not
+      received calibration adjustment. The transformer leg
       is the validation-selected bounded model.
     - Selected cascade: fit τ on validation only, review rows below τ=0.6 in
       batches of eight, then score test and fresh once. Fresh is disjoint from

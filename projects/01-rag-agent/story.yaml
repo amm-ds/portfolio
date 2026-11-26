@@ -1,10 +1,10 @@
 project_id: 01-rag-agent
-short_version: "Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybrid retrieval reaches 0.946 recall@5. Judge sample: 30/30 owner-labelled. Final 120-question pass: F1 0.909, precision 0.952, faithfulness 0.872, 1/120 unsupported."
+short_version: "Cited question answering over 593 Wikipedia articles. Hybrid search finds a correct passage in the top five 94.6% of the time (recall@5 0.946). Final 120-question test: F1 0.9091, precision 0.952, one unsupported answer. The judge agreed with all 30 hand-labelled checks."
 sections:
 - id: background
   text_md: |
     **When every answer carries a citation, what can still go wrong?**
-    A footnote looks safe, yet a model can misread a source or stitch two facts into a false bridge. This assistant answers from `593` pinned Wikipedia pages, citing each claim or declining when proof fails.
+    A model can misread a source or stitch two facts into a false bridge. This assistant answers from `593` pinned Wikipedia pages, citing each claim or declining when proof fails.
 
     ```diagram 01-rag-pipeline
     ```
@@ -13,7 +13,7 @@ sections:
 
     - **Hybrid search (`S3`):** Blend `FAISS` vectors and `BM25` keywords over titled chunks, rerank, and cap at `2` chunks per page.
     - **Draft & verify:** Run code span checks and verify each claim against full text, with at most `2` repairs.
-    - **Outcome (`n = 120`):** `104` finish cleanly (`F1 0.9091`) and `1` keeps an unsupported claim; single-family judging and `4` reads make this an upper bound.
+    - **Outcome (`n = 120`):** `104` answered or refused correctly (`F1 0.9091`); `1` kept an unsupported claim. One model family wrote, checked and graded the answers; the set was read four times, so treat this as an upper bound.
 
     Next, we set the rules each answer must clear ([Objectives →](#sec-objectives)).
 
@@ -151,14 +151,14 @@ sections:
     - Search scores anchor on seeded random (`0.031` recall@5) and word-match baselines (`0.677` on tuning). Measuring above chance floors shows real gain over basic rules.
     - Before an LLM judge runs, deterministic code checks verify quoted substrings, numbers, dates, months, and negation words. They logged zero false rejections on the final pass.
     - Our first judge failed openly on the 194-claim tuning set (`Q3a`), missing `86 of 194` claims (`39.7%` hosted miss rate, `kappa 0.605`; `44.3%` local miss rate, `kappa 0.546`). We rebuilt calibration (`judge_v2`) with 72 subtle one-detail swaps out of 147 claims.
-    - The owner then hand-checked 30 claims blind to model tags (11 supported, 19 unsupported). Seven items were re-checked against the cited passage text and corrected, hitting `30/30` (`Wilson 95% [0.8865, 1.0]`, well over `0.85`).
+    - The author then hand-checked 30 claims blind to model tags (11 supported, 19 unsupported). Seven items were re-checked against the cited passage text and corrected, hitting `30/30` (`Wilson 95% [0.8865, 1.0]`, well over `0.85`).
     - Hard loop rails (12 requests, 16 tool calls, 200k input tokens, plus an in-tool ceiling) block runaway searches. Verification abstained twice and skipped 33 claim-free outputs such as refusals.
 
-    **How clean are the test set and judge?** The `30`-claim blind owner audit is complete (`30/30`), yet full end-to-end independence is still open. One model (`kimi-for-coding`) drafted, verified, and graded the `120`-question run, and `final_v3` was read four times (`R0`, `S3` gate, held-out check, and final run). Treat these scores as an upper estimate until a second model family grades a fresh `final_v4` split ([Results →](#sec-results)).
+    **How clean are the test set and judge?** The `30`-claim blind hand check is complete (`30/30`), yet full end-to-end independence is still open. One model (`kimi-for-coding`) drafted, verified, and graded the `120`-question run, and `final_v3` was read four times (`R0`, `S3` gate, held-out check, and final run). Treat these scores as an upper estimate until a second model family grades a fresh `final_v4` split ([Results →](#sec-results)).
 
     | Check | Role | Model | Audit status |
     |---|---|---|---|
-    | Claim verifier | Passage support (>= 0.6 answer floor) | kimi-for-coding | 30/30 owner-labelled (blind to model labels) |
+    | Claim verifier | Passage support (>= 0.6 answer floor) | kimi-for-coding | 30/30 hand-labelled (blind to model labels) |
     | Rubric judge | Answer vs. abstain failure class | kimi-for-coding | Calibrated on judge_v2 |
     | RAGAS suite | Faithfulness & answer relevance | kimi-for-coding | Library v0.3.1 (tuning pass) |
 
@@ -174,7 +174,7 @@ sections:
 
     Follow one real traced question from start to end to see the loop in action. For *"Which company acquired LM Wind Power in April 2017 for €1.5 billion?"*, search ranks the gold chunk first (`top_rank 1`), the draft cites it, and the verifier accepts its claim unchanged. The final answer *"GE Renewable Energy"* ships at `faithfulness 1.0` with zero retries (`question_traces_heldout.json`).
 
-    - **Over-caution replaced false claims as the top failure:** Fourteen of 16 misses came from saying too little (`10` empty answers on answerable rows, or `11/92` missed with 1 search miss, plus `4` budget-stop refusals counted as false positives). Only `1 of 120` answers kept an unsupported claim (`2 of 150` judged claims before drops or repairs).
+    - **Most misses were silence, not false claims:** `14` of `16` misses came from saying too little (`10` empty answers to answerable questions and `4` refusals forced by the tool budget); `1` was a search miss and `1` an unsupported claim (`2 of 150` judged claims before drops or repairs).
     - **Slice balance holds:** Single-hop (`60/68`), multi-hop (`20/24`), and unanswerable (`24/28`, refusal accuracy `0.8571`) questions all hold steady. Top-5 search covered `88.6%` of exact gold chunks and `93.5%` of key articles (`cite_when_expected 90.2%`).
     - **Claim verification funnel:** Out of `166` drafted claims, `16` failed code checks and `150` reached the judge (`148` passed first check). Then `15` repair calls saved `11` more and `7` dropped, retaining `95.8%` (`159` surviving claims at `0.9739` mean support).
     - **Cost and speed:** Claim checks add `6.2 s` (`31%` of answer latency). Cached reads (`74%`) kept answer cost at `$1.014` (`$0.781` agent + `$0.233` verify = `$0.0084/query`, under `$0.01`); judging raised total spend to `$1.458` (`$0.0121/query`), at `p50 16.5 s` and `p95 40.5 s`.
@@ -206,7 +206,9 @@ sections:
     ## Limits
 
     - The 120-question final set (`final_v3`) was read four times and is now consumed; a fresh sealed set (`final_v4`) is required before claiming further gains.
-    - Answers, claim checks, and grading all used `kimi-for-coding`, partially mitigated by the 30-claim blind owner audit but still awaiting a cross-model judge.
+    - Answers, claim checks, and grading all used `kimi-for-coding`, partially mitigated by the 30-claim blind hand check but still awaiting a cross-model judge.
+    - Against dense-only retrieval (R0) the hybrid lifts recall@5 `0.924` → `0.946` on the same set; no end-to-end F1 for R0 is committed, so the F1 gain from hybrid search is not measured.
+    - Against dense-only retrieval (`R0`) the hybrid lifts recall@5 `0.924` → `0.946` on the same set; no end-to-end F1 for `R0` is committed, so the F1 gain from hybrid search is not measured.
     - Results cover 593 capped Wikipedia articles and off-topic unanswerables, not noisy enterprise corpora or near-miss unanswerable traps.
 
     Below, `final_outcome` summarizes the 120-question confusion matrix and slice totals beside the full historical appendix; see the [full evaluation report](https://amm-ds.github.io/portfolio/projects/01-rag-agent/) for supporting artifacts.
@@ -278,7 +280,7 @@ roadmap:
   detail: "Add tool-budget rails, claim repair loops, and checkpointed runs."
 - status: shipped
   title: "Audit judge and score full pipeline"
-  detail: "30/30 blind owner-labelled audit; 104/120 final answers."
+  detail: "30/30 blind hand-labelled check; 104/120 final answers."
 - status: next
   title: "Cut abstentions and confirm judge"
   detail: "Gate: cross-judge check and fresh final_v4 evaluation set."

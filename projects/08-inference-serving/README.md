@@ -56,7 +56,7 @@ Author run, one laptop (Apple Silicon): 19 cells / 760 requests / 0 failures.
 records 0.81 s p95 latency (0.63 s median) at about $0.12 per 1M output tokens
 (electricity only: measured 67.7 aggregate output tok/s on that cell, declared
 100 W system draw at $0.30/kWh — the
-assumptions behind the figure, not a metered bill). Aggregates in `reports/metrics.json`; the re-aggregable
+assumptions behind the figure, not a metered bill). Project 13 assumes 65 W for a lighter CPU load on the same class of laptop; neither wattage is measured. Aggregates in `reports/metrics.json`; the re-aggregable
 record in `data/bench_run.json`.
 
 ## Limits

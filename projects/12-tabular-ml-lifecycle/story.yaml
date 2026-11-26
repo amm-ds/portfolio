@@ -5,7 +5,8 @@ headline: The served tabular MLP (PyTorch) — validation-tied with LightGBM —
 data_note: Real UCI Bike Sharing hour.csv (17,379 hourly rows, Capital Bikeshare 2011-2012, sha256-pinned) plus a seeded synthetic
   CI twin; time-based split.
 limits: Validation made every modeling choice; ablation test scores are post-freeze diagnostics. Hourly errors are serially
-  dependent; positional lags drift up to 36 hours after the October 2012 validation gap; one city over two years/four seasons.
+  dependent; positional lags drift up to 36 hours after the October 2012 validation gap; the correlation-pruning rule drops
+  `atemp`, the higher-information member of the `temp`/`atemp` pair; one city over two years/four seasons.
 short_version: |
   Real UCI Capital Bikeshare hourly demand (17,379 rows): the validation-selected
   PyTorch MLP reaches 25.4 test MAE vs 83.2 for the seasonal-naive floor. The
@@ -22,7 +23,7 @@ sections:
     Follow the lifecycle in three steps:
 
     - **Clean split:** Strip answer-derived columns and lock the final `8`-week window out of training and tuning.
-    - **Compare fairly:** Tune each model family on past validation data and pick the winner before touching test.
+    - **Compare fairly:** Tune each model family on past validation data and pick the model on validation before touching test; the MLP and LightGBM tie there (34.2 vs 34.4).
     - **Outcome:** The served tabular `MLP` cuts test error from `83.2` to `25.4` rentals/hour (`−57.8` `MAE`), with block intervals as sensitivity analyses.
 
     Next, the three checks behind the verdict ([Objectives →](#sec-objectives)).
@@ -264,11 +265,11 @@ sections:
   figures: [model_comparison, residual_heatmap, residual_vs_fitted]
 - id: results
   text_md: |
-    **The candidate ledger carries the margin; the ablation carries the
-    control evidence.** Use the exact table for model scores and
-    `ablation_dotplot` for validation
-    effects of switching `MLP` controls on or off. The ablation figure does not
-    establish the served-model-versus-floor margin.
+    **The served MLP cuts error from 83.2 to 25.4 rentals/hour, but it does
+    not beat LightGBM, which is 0.06 lower on test.** Use the exact table for
+    model scores and `ablation_dotplot` for validation effects of switching
+    `MLP` controls on or off. The ablation figure does not establish the
+    served-model-versus-floor margin.
 
     - The table records the decision-relevant margin: **83.2 → 25.4 test `MAE`,
       or 57.8 rentals/hour** against the seasonal-naive floor. Validation chose

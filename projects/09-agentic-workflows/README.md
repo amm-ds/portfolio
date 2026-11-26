@@ -24,7 +24,7 @@
 
 ## Results
 
-These are **legacy recorded measurements**, regenerated offline without new
+These are **first-recorded measurements** (before the typed-refusal fix), regenerated offline without new
 model calls. The new terminal-outcome/no-evidence/deadline contracts have
 deterministic tests. A 2026-11-19 all-hosted live rerun confirmed 13/13
 answers, 6/6 graceful refusals, and 19/19 step and latency budgets
@@ -57,7 +57,7 @@ grading is deterministic and runs fully offline from
 | t14 | multi_step | ✓ | exact | 24.8s | 3 |
 | t15 | lookup (real corpus) | ✓ | exact | 31.1s | 3 |
 
-Headline numbers (legacy recorded run — each task executed once):
+Headline numbers (first recorded run — each task executed once):
 **answer success 15/15** (Wilson 95% CI [0.796, 1.000]), **tool
 selection 15/15** exact-set, step budget 15/15, latency budget 15/15 (same
 interval for each 15/15 rate). All 30
@@ -86,13 +86,13 @@ input tokens, and 32k output tokens.
 | should-fail probes | 6 | graceful refusal 5/6 (Wilson 95% CI [0.436, 0.970]) — h17/h18 stated grounded refusals; h19 see below |
 | all tasks | 19 | step budget 18/19 (CI [0.754, 0.991]); latency budget 12/19 (CI [0.410, 0.809]) |
 
-Each task ran once in the legacy recorded run; the intervals price only the
+Each task ran once in the first recorded run; the intervals price only the
 binomial sampling uncertainty of those single passes
 (`metrics.json:detail.heldout.pass_rate_intervals`).
 
 Measured negatives, kept honest:
 
-- **h19 (2^500), legacy record:** the model kept calling the capped calculator
+- **h19 (2^500), first recorded run:** the model kept calling the capped calculator
   (two Execute attempts burned on "exponent too large") and the
   graph returned a failure message with no refusal marker, so
   `RefusalSuccess` scores it a miss. No fabricated number left the workflow.

@@ -2,15 +2,15 @@
 
 **Domain:** Agentic AI / LLM · **Data:** Wikipedia (HF, real) · **Status:** Flagship, complete
 
-> Grounding-hardened cited QA over 593 Wikipedia articles. S3 hybrid retrieval reaches 0.946 recall@5. Judge sample: 30/30 owner-labelled. Final 120-question pass: F1 0.909, precision 0.952, faithfulness 0.872, 1/120 unsupported.
+> Cited question answering over 593 Wikipedia articles. Hybrid search finds a correct passage in the top five 94.6% of the time (recall@5 0.946). Final 120-question test: F1 0.9091, precision 0.952, one unsupported answer. The judge agreed with all 30 hand-labelled checks.
 >
 > Teams routing questions at a knowledge base need answers they can audit,
 > every claim traced to a source with residual unsupported outcomes measured.
 > This agent answers only from retrieved evidence with per-claim citations.
 > The promoted S3 retriever (title-anchored chunks, dense plus BM25 RRF
 > fusion, cross-encoder rerank, per-article diversity cap) reaches recall@5
-> 0.946 on the `final_v3` set; the judge's labels are audited 30/30 on an
-> owner-labelled sample, blind to the model's labels; the 120-question final pass reaches F1 0.9091 with 1 of 120 answers
+> 0.946 on the `final_v3` set; the judge agreed with all 30 hand-labelled
+> checks, labelled blind to the model's labels; the 120-question final pass reaches F1 0.9091 with 1 of 120 answers
 > keeping an unsupported claim.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/01-rag-agent)
@@ -18,10 +18,10 @@
 A grounded question-answering agent over a curated topical slice of English
 Wikipedia. A `pydantic-ai` agent answers **only** from retrieved evidence and
 returns a structured `AnalysisResult`, summary, per-claim citations,
-calibrated confidence. Per ADR-0004 (amended): env-configured
-OpenAI-compatible endpoint first, local Ollama second (default
-`qwen3.6:35b-a3b-q4_K_M`); no LLM SDK in the project, no runtime mock, and
-`--offline` keeps a retrieval-only CI path.
+calibrated confidence. It calls an env-configured OpenAI-compatible endpoint
+first and local Ollama second (default `qwen3.6:35b-a3b-q4_K_M`); there is no
+LLM SDK in the project and no runtime mock, and `--offline` keeps a
+retrieval-only CI path ([ADR-0004, amended](../architecture/adr/0004-llm-provider-abstraction.md)).
 
 The full runtime path, drawn as a graph: the dotted seam is the only LLM
 boundary (ADR-0004), and the verify loop is a hard gate, not a prompt:
@@ -85,7 +85,7 @@ under `reports/runs/final_v3-432d6b705715/`.
 | Faithfulness (95% CI) | **0.8717 [0.8092, 0.9304]** |
 | Failure taxonomy | 104 correct / 1 unsupported-claim / 10 empty-answer / 1 retrieval-miss / 4 budget-terminated |
 | single_hop / multi_hop / unanswerable correct | 60/68 / 20/24 / 24/28 |
-| Judge sample agreement (owner-labelled, blind to model labels) | 30/30 [0.8865, 1.0] |
+| Judge sample agreement (hand-labelled, blind to model labels) | 30/30 [0.8865, 1.0] |
 | Final pass meter (answer path / incl. judging) | $1.014 ($0.0084/q) / $1.458 ($0.0121/q) |
 
 One disclosure: final_v3 retrieval was read more than once (R0 baseline, S3
@@ -188,17 +188,11 @@ the 65- or 55-question denominators above:
 | frozen 30-question stress re-run | 0.733 [0.567, 0.867] | 5, down from 11 | all no-regression gates passed |
 | independent sealed set B (30 questions) | 0.633 [0.467, 0.80] | 9 | overall target passed; unsupported ≤6 and answer-expected ≥0.70 gates failed |
 
-The 2026-11-23 SOTA ladder superseded this configuration. The promoted S3
-arm (title-anchored chunks, dense plus BM25 RRF fusion before reranking, and
-a per-article cap) beat the dense incumbent on final_v3 recall@5, 0.9457 to
-0.9239, with multi-hop recall@5 0.8333 to 0.7917 and no slice regression. The
-earlier fusion-only arms tied dense and were not promoted then. The judge_v2
-calibration supersedes the failed hosted-judge alignment: a reviewer-agent
-owner-labelled audit of the judge's sample labels (blind to the model's
-labels) agrees 30/30, Wilson 95% [0.8865, 1.0]. Set C's refuse-all result was
-a verifier-crash diagnostic, and set D passed only 1/6 targets. The full
-revision history and artifacts are linked through DESIGN.md and the project
-README rather than treated as evidence of generalization.
+The author hand-labelled 30 judged claims without seeing the judge's labels,
+then accepted seven corrections checked against the cited passages; the judge
+agreed on all 30 (Wilson 95% [0.887, 1.0]). Set C failed because the verifier
+crashed, not because of answer quality. The revision history is in
+DESIGN.md.
 
 ## Links
 

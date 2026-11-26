@@ -158,7 +158,7 @@ sections:
     - The Tweedie arm scores `0.6473` and `AutoETS` scores `0.7093`.
     - The blend combines `0.95` store×category + `0.00` store + `0.05` department. Its edge over the best single is about `1.3` times the routed arm's `0.000644` noise band. The single fit also has slightly better bottom `WAPE` (`0.7617` versus `0.7623`) and bias (`+0.0177` versus `+0.0222`).
 
-    Spike capture was a separate experiment for dense series with severe swings. On a capped development run, its erratic win-rate leg passed, but the adoption gate was already rejected: routed `WRMSSE` regressed by `+0.0204`, about twice the noise band. On the full test window, the routed arm scored `0.6235` against the champion's `0.6211`, a `+0.0025` setback about `3.9` times the paired bootstrap noise band. Its erratic-class win rate also slipped from `0.8260` to `0.8247`. The gate rejected both checks. This adoption gate was a second use of the test window; the champion was unchanged.
+    A spike-capture variant for erratic series was rejected twice: on development (`+0.0204` `WRMSSE`) and on the test window (`+0.0025`, CI `[0.0018, 0.0031]`, about `3.9` times the noise band). That test-window check was a second use of the window; the headline model did not change.
 
     A later `Huber` variant never reached the test window. Screening stopped it after the first of nine selection origins, at `0.8683` against `0.7409` for the champion. Neither challenger appears in the main candidate ranking; only spike capture has a full test result, while the `Huber` claim is limited to that one origin.
 
@@ -170,7 +170,7 @@ sections:
   text_md: |
     ## Results summary
 
-    **Use the screened pooled blend for this internal full-panel baseline, with its quiet-day and selection limits attached.** Across `30,490` series and `42,840` hierarchy nodes, official `WRMSSE` is `0.6211` against the seasonal-naive floor's `0.8929` on the competition window. This is not evidence of external leaderboard rank. See the [full evaluation report](https://amm-ds.github.io/portfolio/projects/02-demand-forecasting/) or [try the live demo](https://amm-ds.github.io/portfolio/demos/forecast-workbench/). The demo and sample curves come from an earlier `0.6161` blend with weights `0.60/0.10/0.30`, not the current `0.6211` champion.
+    **Use the screened pooled blend for this internal full-panel baseline, with its quiet-day and selection limits attached.** Across `30,490` series and `42,840` hierarchy nodes, official `WRMSSE` is `0.6211` against the seasonal-naive floor's `0.8929` on the competition window. This is not evidence of external leaderboard rank. See the [full evaluation report](https://amm-ds.github.io/portfolio/projects/02-demand-forecasting/) or [try the live demo](https://amm-ds.github.io/portfolio/demos/forecast-workbench/). The demo and sample curves come from an earlier `0.6161` blend with weights `0.60/0.10/0.30`, not the scored `0.6211` blend.
 
     ## What the experiment taught
 
@@ -182,7 +182,7 @@ sections:
 
     ## Limits
 
-    - Members and weights use nine selection origins. The headline `30.4%` reduction has no bootstrap interval; the separate spike-capture challenger does have a paired interval of `[0.00178, 0.00307]` for its regression.
+    - Members and weights use nine selection origins. The headline `30.4%` reduction has no bootstrap interval; the separate spike-capture challenger does have a paired interval of `[0.00178, 0.00307]` for its regression. On the nine earlier origins used to select it, the blend beat the floor every time, by `23.6%` to `41.6%`; those origins are not independent tests. On the nine earlier origins used to select it, the blend beat the floor every time, by `24%` to `42%`; those origins are not independent tests.
     - On zero-actual days the floor still wins, `66.6%` versus `57.2%` accuracy. Scaling the hierarchy does not solve intermittent demand.
     - The demo band is the per-day minimum/maximum envelope of blend members, not a calibrated prediction interval with measured coverage.
     - `N-HiTS`, `TFT`, and Chronos-class foundation models are not benchmarked. Stockouts, promotions, and returns are unmodeled, so no savings or safety-stock claim follows.
@@ -238,7 +238,7 @@ roadmap:
   title: Gate a new erratic challenger
   detail: 'Gate: beat 0.7409 on origin 1 with no zero-day accuracy loss.'
 figure_captions:
-  m5_full_sample_series: 'Three catalog series at the test origin on 2016-05-22: top-units, hardest-intermittent, and mid-volume. Each panel shows 56 days of history, 28 days of actual sales, and the earlier 0.6161 blend (weights 0.60/0.10/0.30) with its member envelope, not the current 0.6211 champion. The demo keeps the earlier blend because its payload comes from a run that chose weights on 2 selection origins; the article reports 0.95/0.00/0.05 because the current run chose weights on 9 selection origins, and both were scored once on the same test origin, 2016-05-22, at 0.6161 and 0.6211 WRMSSE respectively. The envelope is member spread, not a calibrated interval.'
+  m5_full_sample_series: 'Three catalog series at the test origin. The curve is the earlier demo blend (0.6161, weights 0.60/0.10/0.30), not the scored 0.6211 blend; the two differ in selection origins (2 vs 9).'
   m5_full_candidate_ranking: All 8 candidates ranked by official hierarchical WRMSSE on the competition window across 42,840 revenue-weighted nodes. Lower bars are better. The convex ensemble leads at 0.6211, the best single pooled fit scores 0.6219, and the seasonal-naive floor scores 0.8929.
   m5_full_per_level_wrmsse: 'Official WRMSSE by hierarchy level for the convex ensemble, seasonal-naive floor, and best single fit. Each level receives equal total weight. Total has the largest relative cut against the floor (43.9%); item-store has the largest absolute gap (about 0.341).'
   m5_full_pooling_panel: 'All eight candidates on the full M5 test panel. Left: signed bias as a percentage of mean actual sales; positive means over-forecasting. Right: accuracy on zero-actual days, where a forecast below 0.5 is correct. The floor leads at 66.6% versus 57.2% for the blend.'

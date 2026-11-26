@@ -10,7 +10,7 @@ trips) + NOAA GHCN-Daily weather · **Status:** flagship — complete
 > **TL;DR:** NYC taxi fleet planners staging vehicles and driver shifts one hour
 > ahead across 265 zones — demand must be forecast before it arrives.
 > The served tuned GBM removes **28.3% of forecast error** vs "same hour
-> yesterday" on a strict future holdout, with a 90.8%-calibrated p90 staffing band.
+> yesterday" on a strict future holdout, with a p90 staffing band that covered 90.8% of test zone-hours (84.7% in zones without a borough).
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility)
 

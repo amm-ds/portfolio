@@ -278,6 +278,14 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 
 ## 6. Changelog
 
+- 2026-11-23 — SOTA ladder (moved here from the docs page). The promoted S3 arm (title-anchored
+  chunks, dense plus BM25 RRF fusion before reranking, and a per-article cap)
+  beat the dense incumbent on final_v3 recall@5, 0.9457 to 0.9239, with
+  multi-hop recall@5 0.8333 to 0.7917 and no slice regression. The earlier
+  fusion-only arms tied dense and were not promoted then. The judge_v2
+  calibration superseded the failed hosted-judge alignment (30/30 agreement
+  on the hand-labelled sample). Set C's refuse-all result was a
+  verifier-crash diagnostic, and set D passed only 1/6 targets.
 - 1.2.1 (2026-11-15) — R8.1 integrity fixes: empty judge batch no longer
   crashes (UnboundLocalError), claims survive infrastructure failures as
   `verification_error` (drafted = surviving + dropped + verification_error

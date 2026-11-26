@@ -153,7 +153,7 @@ sections:
       vehicles. This measured trade-off gives a fleet-first client a clear
       choice.
     - **References beaten:** look below zero in the gap figure. `ALNS` undercuts
-      the best-known reference on 5 of 56 instances in the per-instance record
+      the best-known reference on 5 of 56 instances in the per-instance record, always with more trucks
       (`reports/results.md`), excluding three `−0.00%` rounding ties (C108, C109,
       C207); the count is 6 including `alns_fleet`. On RC202, `ALNS` reaches
       `−3.85%` and `alns_fleet` reaches `−5.79%`. The remaining gaps include C2 at
@@ -246,11 +246,11 @@ sections:
   figures: []
 - id: results
   text_md: |
-    **Read the measured results with their spread, runtime, and limits.** The
-    three figures separate those views. The family-gap figure shows variation
-    across problem types. The runtime-gap figure shows the cost of each mean
-    gap. The anytime frontier tracks improvement over elapsed time from the
-    same starting plan.
+    **ALNS averages 4.23% above best-known distance but always needs more
+    trucks (+3.73); the gap reaches 19.48% on C203.** The three figures
+    separate those views. The family-gap figure shows variation across problem
+    types. The runtime-gap figure shows the cost of each mean gap. The anytime
+    frontier tracks improvement over elapsed time from the same starting plan.
 
     - In the family-gap figure, `4.23%` and `+3.73` trucks are means over 56
       instances, not results for every problem. The spread reaches `19.48%` on
@@ -276,7 +276,7 @@ sections:
     The figures bound the claims. The exact tables and protocol
     are housed in the conclusions ([Conclusions →](#sec-conclusions)).
 
-    **In plain terms:** Across the six route families, average extra distance is 4.2% (worst day 19.5%) and the solver beats published references on 5 of 56 days.
+    **In plain terms:** Across the six route families, average extra distance is 4.2% (worst day 19.5%) and the solver finds a shorter route than the published reference on 5 of 56 days, always with more trucks.
   figures: [family_gap, pareto_gap_runtime, frontier_gap_time]
 - id: conclusions
   text_md: |

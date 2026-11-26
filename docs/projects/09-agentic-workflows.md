@@ -4,15 +4,16 @@
 handbook + project 01's Wikipedia FAISS index (read-only) · **Status:**
 working showcase on the standard platform
 
-> Auditable plan-act-review workflow with typed outcomes and deadlines. Legacy: 15/15 fixed tasks,
+> Plan-act-review workflow with typed outcomes and deadlines. Recorded runs: 15/15 fixed tasks, 13/13 unseen answers, 5/6 correct refusals. A live re-run with hosted models: 13/13 answers, 6/6 refusals, all 19 tasks within budget.
+>
 > 13/13 unseen answers, 5/6 refusals. All-hosted live held-out: 13/13 answers, 6/6 live-grader
 > refusals, 19/19 budgets; h19 refused after the calculator guard tripped.
 >
 > A client deciding where LLM agents may run unsupervised needs graded
 > evidence, not a demo.
 > Headline: a 15-task deterministic suite grades a hosted multi-step
-> workflow at 15/15 on every grader, answers, exact tool-set, step budget,
-> latency, for $0.13 cloud-equivalent per suite (~$0.0088/task mean) of the
+> workflow at 15/15 on all four checks (answer, tool set, step budget,
+> deadline) for $0.13 cloud-equivalent per suite (~$0.0088/task mean) of the
 > $2.00 cap. The 19-task held-out set (13 answer tasks + 6 designed-to-fail
 > probes) checks behavior beyond the tuning prompts: answers and exact tool
 > sets pass 13/13, but graceful refusals pass 5/6, step budgets 18/19, and
@@ -109,7 +110,7 @@ Read this as a control-flow contract: Critique also audits the tools used
 against the plan, and the approval lane marks exactly where a human can pause
 a run. Current code returns typed `ok`, `refused`, `failed`, or
 `deadline_exceeded` outcomes. Those new terminal paths have deterministic
-offline tests; the published live failure rates remain the legacy records.
+offline tests; the published live failure rates remain the first-recorded runs.
 
 ![Which tools each task called, and how often, the per-call matrix the exact-set grader reads; on the final run every invocation lands in a task's expected set.](../assets/projects/09-agentic-workflows/tool_usage_matrix.png){ width="100%" }
 

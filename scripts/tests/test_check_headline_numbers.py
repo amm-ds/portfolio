@@ -130,3 +130,25 @@ def test_m10_claim_verifies_against_real_repo() -> None:
     """README and article both carry the delta and both paired intervals."""
     claim = next(c for c in headline.CLAIMS if c["project"] == "10-uplift-experimentation")
     assert headline.check_claim(claim) == []
+
+
+def test_root_relative_surface_is_checked(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "index.md").write_text("Pinned: WRMSSE 0.6161\n", encoding="utf-8")
+    claim = {
+        "project": "99-fixture",
+        "label": "root surface",
+        "values": lambda: ["0.6211"],
+        "surfaces": ["//docs/index.md"],
+    }
+    monkeypatch.setattr(headline, "ROOT", tmp_path)
+    failures = headline.check_claim(claim)
+    assert len(failures) == 1 and "'0.6211' not found" in failures[0]
+
+
+def test_m02_pinned_and_origin_range_verify_against_real_repo() -> None:
+    assert headline._m02_pinned() == ["ensemble official WRMSSE 0.6211"]
+    assert headline._m02_origins() == ["`24%` to `42%`"]
+    for claim in headline.CLAIMS:
+        if claim["values"] in (headline._m02_pinned, headline._m02_origins):
+            assert headline.check_claim(claim) == []

@@ -212,11 +212,14 @@ sections:
   figures: []
 - id: results
   text_md: |
-    **The fairness-slices figure exposes a contract-shaped blind spot in the
-    raw model.** The recall bars show results at its OOF-frozen `0.225` threshold. In the contract panel, recall is `0.918` for month-to-month
-    customers, `0.250` for one-year customers, and `0.000` for two-year
-    customers. The gender bars are nearly level. This figure therefore
-    exposes a contract-shaped blind spot, not a gender gap.
+    **On the 1,409-customer holdout the served policy costs $601 against
+    $1,035 for contacting everyone (CI −$508 to −$353); the raw model's slices
+    show a contract-length blind spot to check before rollout.** The recall
+    bars show results at its OOF-frozen `0.225` threshold. In the contract
+    panel, recall is `0.918` for month-to-month customers, `0.250` for one-year
+    customers, and `0.000` for two-year customers. The gender bars are nearly
+    level. This figure therefore exposes a contract-shaped blind spot, not a
+    gender gap.
 
     These are raw-model slices, not the served calibrated policy. The raw model
     misses `27` of `36` one-year churners and all `9` two-year churners; those
@@ -224,8 +227,9 @@ sections:
     raw-policy costs, not the calibrated policy's `$601` total. Cost and slices
     use the same `1,409`-row holdout, but recall alone cannot verify a budget result.
 
-    The source has `21` columns, while the fitted pipeline uses `4` model
-    features. Transfer to other customer bases remains unmeasured.
+    The source has `21` columns; feature selection keeps `4` model features
+    (`tenure_months`, `monthly_charges`, `contract`, `internet_service`).
+    Transfer to other customer bases remains unmeasured.
 
     We next give the exact tables and protocol behind the measured record ([Conclusions →](#sec-conclusions)).
 
@@ -240,7 +244,8 @@ sections:
     cost. The measured cost is `$601` versus `$1,035` on the frozen 1,409-row
     holdout, a `41.9%` cut. The observed cost delta is `−$434`. Its `95%` confidence interval
     (`CI`) is [−$508, −$353]. This interval estimates a range
-    for the saving from repeated customer resamples.
+    for the saving from repeated customer resamples. Contacting nobody would
+    cost `$1,870` on the same holdout (`374` churners at `$5` each).
 
     The pipeline diagram shows numeric and categorical preprocessing branches
     joining at a `ColumnTransformer` before the classifier. Raw and isotonic

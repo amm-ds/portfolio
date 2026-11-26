@@ -10,7 +10,7 @@ the standard platform
 >
 > Anyone deciding between local and cloud LLM serving usually gets vendor
 > rate cards, not measurements of the stack they would actually run.
-> Headline: the 4-bit MoE arm serves locally at ~$0.12 per 1M output tokens
+> Headline: on this laptop the 4-bit MoE is the fastest setup at ~$0.12 per 1M output tokens
 > with single-digit-second p95 through concurrency 8 — measured on the real
 > endpoint, 760 requests, zero failures.
 >
