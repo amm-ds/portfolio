@@ -188,5 +188,53 @@
     "colsample_bytree": 0.43564738242134776
   },
   "pooled_strategy": "direct",
-  "n_jobs_ets": 1
+  "n_jobs_ets": 1,
+  "e9_blend_refit": {
+    "date": "2026-11-26",
+    "wave": "grade pass 4 E9 (pass-3 finding P3.2)",
+    "purpose": "targeted refit of the positive-weight blend members at the test origin so the catalog, demo payload and sample-series figure serve the committed 0.6211 blend instead of the superseded 0.6161 one",
+    "origin": "2016-05-22",
+    "origin_index": 1940,
+    "members_refit": [
+      "lgbm_pool_storecat",
+      "lgbm_pool_dept"
+    ],
+    "config": "committed run configuration (pooled_strategy=direct, seed 42, params.yaml m5_lgbm, n_jobs=1 + force_row_wise per fit); per-group fits parallelized across threads \u2014 identical numerics to the committed sequential loop",
+    "reproduction": {
+      "tolerance": 1e-06,
+      "passed": true,
+      "members": {
+        "lgbm_pool_storecat": {
+          "committed": 0.6225244256467695,
+          "refit": 0.6225244256467695,
+          "abs_delta": 0.0
+        },
+        "lgbm_pool_dept": {
+          "committed": 0.6458598274148597,
+          "refit": 0.6458598274148597,
+          "abs_delta": 0.0
+        },
+        "convex_ensemble": {
+          "committed": 0.6210518262820993,
+          "refit": 0.6210518262820993,
+          "abs_delta": 0.0
+        }
+      }
+    },
+    "headline_interval": "reports_m5_full/headline_interval.json",
+    "fit_seconds": {
+      "lgbm_pool_storecat": 4027.0,
+      "lgbm_pool_dept": 6348.0
+    },
+    "runtime_seconds": 10441.0,
+    "n_workers": 12,
+    "package_versions": {
+      "statsforecast": "2.1.1",
+      "mlforecast": "1.1.0",
+      "lightgbm": "4.7.0",
+      "datasetsforecast": "1.0.2",
+      "numpy": "2.5.4"
+    },
+    "timing_note": "fit/runtime timings from the initial cold-cache run (2026-11-26 20:31-23:25 UTC+1, 12 workers); a verification re-run on the parquet forecast cache (84.9 s total) reproduced the identical gate deltas (0.0) and artifacts"
+  }
 }

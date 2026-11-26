@@ -13,16 +13,18 @@ them through ``reports_m5_full/figures/`` first):
 - ``m5_full_per_level_wrmsse`` — per-level official WRMSSE on the test window:
   ensemble vs seasonal-naive floor vs best single candidate.
 - ``m5_full_sample_series`` — three catalog series (top-units, hardest
-  intermittent, mid-volume): 56-day history + 28-day actual + ensemble curve
-  with the member-envelope band.
+  intermittent, mid-volume): 56-day history + 28-day actual + the committed
+  0.6211 blend curve with the member-envelope band.
 - ``m5_full_candidate_ranking`` — all 8 candidates ranked by official WRMSSE.
 - ``m5_full_pooling_panel`` — full-panel bias and zero-day accuracy for all
   candidates, including the pooled fits and blend.
 """
 
+import json
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from portfolio_core.logging import get_logger
@@ -48,6 +50,89 @@ SAMPLE_SERIES: tuple[tuple[str, str], ...] = (
 )
 
 PAYLOAD_NAME = "demo_payload.json"
+
+
+def fig_sample_series(
+    catalog: pd.DataFrame, cat_meta: dict[str, Any], payload: dict[str, Any]
+) -> go.Figure:
+    """56-day history + 28-day actual + ensemble curve for the three samples.
+
+    The history tails ship only in the demo payload (sliced from the raw
+    panel); the scored window (actuals, curves, band) comes from the committed
+    ``catalog_forecasts.parquet`` — the payload's curves are verbatim copies
+    of it (self-check drift 0.0), so the two join exactly.
+    """
+    history_of = {e["series_id"]: e["windows"]["history"] for e in payload["catalog"]}
+    ranks = {d["unique_id"]: d for d in cat_meta["series"]}
+    n = len(SAMPLE_SERIES)
+    fig = make_subplots(
+        rows=n,
+        cols=1,
+        shared_xaxes=True,
+        subplot_titles=[
+            f"{sid} — {label} · {ranks[sid]['units_last_28d']:.0f} units/28d, "
+            f"{ranks[sid]['class']} (ADI {ranks[sid]['adi']:.2f})"
+            for sid, label in SAMPLE_SERIES
+        ],
+        vertical_spacing=0.08,
+    )
+    origin = cat_meta["origin"]
+    x_hist = [f"d{i - 55}" for i in range(56)]
+    x_fcst = [str(d.date()) for d in sorted(catalog["ds"].unique())]
+    colors = {"history": "#94a3b8", "actual": "#f472b6", "convex_ensemble": "#fbbf24"}
+    shown: set[str] = set()
+    for i, (sid, _label) in enumerate(SAMPLE_SERIES, start=1):
+        row = catalog[catalog["unique_id"] == sid].sort_values("ds")
+        for key, y in (
+            ("history", history_of[sid]),
+            ("actual", list(row["actual"])),
+            ("convex_ensemble", list(row["convex_ensemble"])),
+        ):
+            show = key not in shown
+            shown.add(key)
+            fig.add_scatter(
+                x=x_hist if key == "history" else x_fcst,
+                y=y,
+                name=key,
+                mode="lines",
+                line={"color": colors[key], "width": 2.5 if key == "convex_ensemble" else 1.5},
+                showlegend=show,
+                row=i,
+                col=1,
+            )
+        fig.add_scatter(
+            x=x_fcst,
+            y=list(row["band_lo"]),
+            name="member envelope lo",
+            mode="lines",
+            line={"color": "#fbbf24", "width": 0.5, "dash": "dot"},
+            showlegend=False,
+            row=i,
+            col=1,
+        )
+        fig.add_scatter(
+            x=x_fcst,
+            y=list(row["band_hi"]),
+            name="member envelope hi",
+            mode="lines",
+            fill="tonexty",
+            fillcolor="rgba(251, 191, 36, 0.12)",
+            line={"color": "#fbbf24", "width": 0.5, "dash": "dot"},
+            showlegend=False,
+            row=i,
+            col=1,
+        )
+    fig.update_layout(
+        title=(
+            f"Sample catalog series at {origin}: history, actuals, and the committed 0.6211 blend"
+        )
+    )
+    return add_takeaway(
+        apply_theme(fig, height=300 * n),
+        "the committed 0.6211 blend (weights 0.95 store-cat / 0.05 department) "
+        "tracks the weekly shape on dense volume and stays near zero on the hardest "
+        "intermittent series; the member envelope is not a calibrated interval",
+    )
 
 
 def fig_candidate_ranking(metrics: dict[str, Any]) -> go.Figure:
@@ -152,9 +237,15 @@ def build_figures_full(reports_dir: Path) -> Path:
     reports_dir = Path(reports_dir)
     art = load_artifacts(reports_dir)
     metrics = art["metrics"]
+    from demand_forecasting.m5_full_catalog import CATALOG_FORECASTS_NAME, CATALOG_META_NAME
+
+    frame = pd.read_parquet(reports_dir / CATALOG_FORECASTS_NAME)
+    cat_meta = json.loads((reports_dir / CATALOG_META_NAME).read_text())
+    payload = json.loads((reports_dir / PAYLOAD_NAME).read_text())
 
     figures: dict[str, go.Figure] = {
         "m5_full_per_level_wrmsse": fig_per_level_bars(metrics),
+        "m5_full_sample_series": fig_sample_series(frame, cat_meta, payload),
         "m5_full_candidate_ranking": fig_candidate_ranking(metrics),
         "m5_full_pooling_panel": fig_pooling_panel(metrics),
     }

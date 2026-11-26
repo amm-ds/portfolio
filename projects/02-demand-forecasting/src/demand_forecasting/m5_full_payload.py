@@ -61,7 +61,9 @@ DRIFT_TOL = 1e-9
 
 SCOPE = {
     "headline": "panel: built from the committed full metrics test block "
-    "(official hierarchical WRMSSE); no bootstrap CIs — the full track has none",
+    "(official hierarchical WRMSSE); the blend level carries a seeded "
+    "node-bootstrap CI (reports_m5_full/headline_interval.json) — not a "
+    "paired interval for the vs-floor gap",
     "test_pooled": "panel: full-panel test bottom WAPE + official WRMSSE + bias "
     "per candidate, copied from the committed metrics block",
     "test_by_class": "catalog: per-class WAPE pooled over the catalog series "
@@ -76,8 +78,7 @@ SCOPE = {
     "committed members) — NOT a calibrated interval; no conformal band exists "
     "on the full track",
     "stability": "panel: population std of the per-origin official WRMSSE "
-    "across the 2 selection origins (thin screen — see the report's protocol "
-    "limit note)",
+    "across the 9 selection origins",
 }
 
 

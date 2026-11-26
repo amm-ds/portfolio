@@ -775,7 +775,13 @@ pipeline build). The queue commands above are the exact ones to re-run once
   committed full-panel run's champion is convex_ensemble 0.62105 (−30.4% vs
   the floor); the earlier 0.6161 blend remains in the demo payload, labelled
   as the earlier blend; the full-window routed result is 0.6235 (rejected,
-  story.yaml:161-163); the catalog refit was not run. Tests +5
+  story.yaml:161-163); the catalog refit was not run. Correction (Wave 8,
+  pass-4 E9): the refit ran — the two positive-weight members were refit at
+  the test origin under the committed direct config (reproduction gate:
+  member and blend test WRMSSE match metrics.json to <1e-6), the catalog,
+  demo payload, and sample-series figure now serve the committed 0.6211
+  blend, and `reports_m5_full/headline_interval.json` adds a seeded
+  node-bootstrap CI for the headline level. Tests +5
   (weight-rule hand case + multistep parity, gate branches, paired-bootstrap
   determinism, refinement structure + run-twice byte identity, and the
   selection-reads-no-test-actuals property). Capped-run runtime 2,956 s.

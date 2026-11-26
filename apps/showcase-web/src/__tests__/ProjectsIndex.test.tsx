@@ -446,8 +446,8 @@ describe("ProjectsIndex", () => {
     // both static fallback cards carry the same structure: the labeled
     // "description" block only, plus the results chip with the headline
     // metric (churn hero "$601 vs $1,035 contact-everyone", forecast hero
-    // "0.6161 vs 0.8929")
-    const metrics = ["$601 vs $1,035 contact-everyone", "0.6161 vs 0.8929"];
+    // "0.6211 vs 0.8929")
+    const metrics = ["$601 vs $1,035 contact-everyone", "0.6211 vs 0.8929"];
     demoCards.forEach((card, i) => {
       const blockLabels = [...card.querySelectorAll(".study-block-label")].map(
         (el) => el.textContent,
@@ -457,13 +457,13 @@ describe("ProjectsIndex", () => {
       expect(card.querySelector(".study-result-chip")!.textContent).toContain(metrics[i]);
       expect(card.querySelector(".study-metric")!.textContent).toBe(metrics[i]);
     });
-    // the chip label identifies the historical blend while staying compact;
+    // the chip label identifies the champion blend while staying compact;
     // the metric value stays intact
     const forecastChip = demoCards[1].querySelector(".study-result-chip")!;
     const labelText = forecastChip.childNodes[0].textContent!.replace(/:\s*$/, "");
     expect(labelText.split(/\s+/).filter(Boolean).length).toBeLessThanOrEqual(6);
-    expect(labelText).toBe("earlier blend · official WRMSSE");
-    expect(forecastChip.textContent).toContain("0.6161 vs 0.8929");
+    expect(labelText).toBe("champion blend · official WRMSSE");
+    expect(forecastChip.textContent).toContain("0.6211 vs 0.8929");
   });
 
   it("renders two muted blocks per experiment card — what it does / what it achieves — and exactly 4 technique tags", async () => {

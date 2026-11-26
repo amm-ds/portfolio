@@ -13,8 +13,8 @@ const HORIZONS = [7, 14, 21, 28];
 const NAIVE = "seasonal_naive";
 
 /** Default overlay: the seasonal-naive floor against the payload's convex
- *  entry, which is the earlier 0.60/0.10/0.30 blend (not the current
- *  champion). Every other candidate stays one chip away. */
+ *  entry, which is the committed 0.6211 champion blend (weights 0.95/0.05).
+ *  Every other candidate stays one chip away. */
 const DEFAULT_MODELS = "seasonal_naive,convex_ensemble";
 
 /** Minimal manifest so the workbench renders before/if the manifest fetch fails.
@@ -23,15 +23,15 @@ const DEFAULT_MODELS = "seasonal_naive,convex_ensemble";
 const FALLBACK_MANIFEST: DemoManifest = {
   id: "forecast-workbench",
   title: "Demand Forecast Workbench",
-  hook: "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the earlier screened blend on the headline competition window — curves, model spread and per-series WAPE respond.",
+  hook: "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the champion screened blend on the headline competition window — curves, model spread and per-series WAPE respond.",
   project: "02-demand-forecasting",
   group: "plan operations",
   skills: ["time series forecasting", "prediction intervals", "demand classification"],
   modes: ["browser"],
   hero: {
-    label: "earlier blend · official WRMSSE",
-    value: "0.6161 vs 0.8929",
-    ci: "−31.0% (0.60/0.10/0.30); current champion 0.6211 (−30.4%)",
+    label: "champion blend · official WRMSSE",
+    value: "0.6211 vs 0.8929",
+    ci: "−30.4% (0.95/0.05 store-cat/dept); seeded node-bootstrap CI in the report",
   },
   scenarios: [
     { name: "base", controls: { models: "seasonal_naive,lgbm", horizon: 28 } },
@@ -102,7 +102,7 @@ export default function ForecastWorkbench() {
   usePageMeta({
     title: "Demand forecast workbench",
     description:
-      "Interactive full-panel M5 demand-forecasting demo: compare the seasonal naive, AutoETS, global and pooled LightGBM arms and the earlier screened blend on the headline competition window.",
+      "Interactive full-panel M5 demand-forecasting demo: compare the seasonal naive, AutoETS, global and pooled LightGBM arms and the champion screened blend on the headline competition window.",
   });
 
   const [manifest, setManifest] = useState<DemoManifest | null>(null);
@@ -299,21 +299,21 @@ function Workbench({
             value={`${(modelWape * 100).toFixed(1)}%`}
             sub={`${best ? MODEL_LABELS[best] : "—"} vs naive ${(naiveWape * 100).toFixed(1)}%${
               committedGap !== null
-                ? ` · earlier-run pooled WRMSSE ${committedGap > 0 ? "+" : "−"}${Math.abs(committedGap).toFixed(4)}`
+                ? ` · committed pooled WRMSSE ${committedGap > 0 ? "+" : "−"}${Math.abs(committedGap).toFixed(4)}`
                 : ""
             }`}
             tone={modelWape < naiveWape ? "good" : modelWape > naiveWape ? "bad" : "neutral"}
           />
           <KpiTile
-            label="earlier blend · official WRMSSE"
+            label="champion blend · official WRMSSE"
             value={`${ensemblePooled.wrmsse.toFixed(4)}`}
-            sub={`0.60/0.10/0.30 vs floor ${naivePooled.wrmsse.toFixed(4)} (${(relGap * 100).toFixed(1)}%) · current champion 0.6211`}
+            sub={`0.95/0.05 store-cat/dept vs floor ${naivePooled.wrmsse.toFixed(4)} (${(relGap * 100).toFixed(1)}%)`}
             tone="good"
           />
           <KpiTile
-            label="earlier blend · zero-day accuracy"
+            label="champion blend · zero-day accuracy"
             value={`${(ensemblePooled.zero_day_accuracy * 100).toFixed(1)}%`}
-            sub={`earlier blend vs floor ${(naivePooled.zero_day_accuracy * 100).toFixed(1)}% · current champion 57.2%`}
+            sub={`blend vs floor ${(naivePooled.zero_day_accuracy * 100).toFixed(1)}% — the floor still wins quiet days`}
             tone={ensemblePooled.zero_day_accuracy < naivePooled.zero_day_accuracy ? "bad" : "good"}
           />
         </>
@@ -356,9 +356,8 @@ function Workbench({
               a deterministic {payload.catalog.length}-series sample on the headline window
               ({originBlock.origin} →{" "}
               {originBlock.forecast_dates[originBlock.forecast_dates.length - 1]}). These curves use
-              the earlier 0.60/0.10/0.30 blend: official WRMSSE {ensemblePooled.wrmsse.toFixed(4)} vs
+              the committed 0.95/0.05 champion blend: official WRMSSE {ensemblePooled.wrmsse.toFixed(4)} vs
               the seasonal-naive floor {naivePooled.wrmsse.toFixed(4)} (gap {signed(relGap * 100)}%).
-              The current 0.95/0.00/0.05 champion scores 0.6211 (−30.4%) in the project report.
             </p>
             {entry.class === "intermittent" ? (
               <p className="wb-evidence-line" data-testid="honest-gap">
@@ -391,8 +390,8 @@ function Workbench({
                 catalog win rate {(winRate.pooled * 100).toFixed(1)}%
               </span>
               <span className="wb-tag">
-                earlier blend bottom WAPE {ensemblePooled.wape.toFixed(3)} vs{" "}
-                {naivePooled.wape.toFixed(3)} · current champion 0.762
+                champion blend bottom WAPE {ensemblePooled.wape.toFixed(3)} vs{" "}
+                {naivePooled.wape.toFixed(3)}
               </span>
               <span className="wb-tag">
                 envelope {band.mean_width.toFixed(1)}u mean width (catalog)
@@ -422,10 +421,11 @@ function Workbench({
             <h4 className="wb-evidence-tag">the experiment</h4>
             <p className="wb-evidence-line">
               Walmart M5 accuracy competition, full panel (30,490 series). The
-              earlier 0.60/0.10/0.30 blend shown here was selected on 2 origins
-              (2016-05-08, 2016-05-15) and scored once on the 2016-05-22 test
-              window. The current 0.95/0.00/0.05 champion was selected on 9
-              origins and scored on the same single test window. Curves are
+              0.95/0.00/0.05 blend shown here was selected on 9 origins
+              (2016-03-20 → 2016-05-15) and scored once on the 2016-05-22 test
+              window. An earlier 0.60/0.10/0.30 blend (selected on 2 origins)
+              scored 0.6161 on the same window; the served curves were refit to
+              the current champion in the pass-4 E9 reproduction run. Curves are
               copied from the committed catalog run — no re-fitting in the
               browser.
             </p>

@@ -101,11 +101,13 @@ origins):
 | auto_ets | 0.7093 | −20.6% | 0.7710 | −0.0063 | 0.0525 |
 | seasonal_naive (floor) | 0.8929 | — | 0.9159 | −0.0120 | 0.0577 |
 
-¹ **One scored test origin; no bootstrap interval**. 0.6211 is a single
-evaluation on the final 28 days, so the ensemble–floor gap carries no
+¹ **One scored test origin.** 0.6211 is a single evaluation on the final 28
+days. A seeded node bootstrap over the 42,840 hierarchy nodes (2,000
+resamples, `reports_m5_full/headline_interval.json`) bounds the blend level
+at [0.5588, 0.6974]; the ensemble–floor gap itself still carries no paired
 uncertainty bound.
 
-The demo and sample curves come from an earlier 0.6161 blend with weights 0.60/0.10/0.30, not the scored 0.6211 blend. The demo keeps the earlier blend because its payload comes from a run that chose weights on 2 selection origins; the article reports 0.95/0.00/0.05 because the current run chose weights on 9 selection origins, and both were scored once on the same test origin, 2016-05-22, at 0.6161 and 0.6211 WRMSSE respectively.
+The demo curves show the scored 0.6211 blend (weights 0.95/0.00/0.05, chosen on 9 selection origins). They previously carried an earlier 0.6161 blend with weights 0.60/0.10/0.30 from a run whose weights were chosen on 2 selection origins; both were scored once on the same test origin, 2016-05-22, at 0.6161 and 0.6211 WRMSSE respectively. The pass-4 E9 refit regenerated the catalog, demo payload, and sample-series figure on the current champion, reproducing the committed member and blend scores to under 1e-6.
 
 - **The committed comparison is the seasonal-naive floor**: the convex
   ensemble lands at **0.6211**, a **−30.4%** cut over the floor's 0.8929,
@@ -140,8 +142,10 @@ screen, computed exactly from the forecast-level blend re-aggregated through
 the hierarchy.
 
 Stated limits: the selection screen is thin (9 selection origins, a protocol
-limit, not a tight selection bound); the headline gap has no bootstrap CI,
-although the separate spike-capture regression does; the demo band is the per-day min/max envelope of the
+limit, not a tight selection bound); the headline gap has no paired bootstrap
+CI (the blend level's node-bootstrap interval is footnoted above), although
+the separate spike-capture regression does; the demo band is the per-day
+min/max envelope of the
 blend members, not a calibrated prediction interval; neural global models
 (N-HiTS, TFT, Chronos-class) are not benchmarked; stockouts, promotions, and
 returns are unmodeled, so no savings or safety-stock claim follows.

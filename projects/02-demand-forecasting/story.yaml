@@ -1,6 +1,6 @@
 project_id: 02-demand-forecasting
 short_version: 'M5 full panel: 30,490 series, one scored test origin (final 28 days) with official 42,840-node WRMSSE. Pooled
-  LightGBM ensemble: 0.6211 vs seasonal-naive 0.8929 (−30.4%); no bootstrap interval bounds the result; quiet days favor the
+  LightGBM ensemble: 0.6211 vs seasonal-naive 0.8929 (−30.4%); level 95% CI [0.5588, 0.6974]; quiet days favor the
   floor.'
 sections:
 - id: background
@@ -71,7 +71,8 @@ sections:
     Only `2,754` are dense, meaning they sell regularly. Across the panel, `59.5%`
     of days have zero demand.
 
-    The panel-wide patterns are concrete at the series level: the top-units
+    The `m5_full_sample_series` figure makes the panel-wide patterns concrete
+    at the series level: the top-units
     series has a strong weekly shape that a model can learn, the hardest
     intermittent series stays at zero for weeks, and the mid-volume example is
     smooth with no zero days.
@@ -85,7 +86,7 @@ sections:
     candidates and the stability screen come next ([Training →](#sec-training)).
 
     **In plain terms:** 91% of products sell only sporadically and nearly 60% of all days have zero sales—making quiet days hard to beat with complex models.
-  figures: []
+  figures: [m5_full_sample_series]
 - id: training
   text_md: |
     **Eight candidates share one selection rule.** They do not share one forecasting strategy. Five candidates use `LightGBM`. The others are the seasonal floor, `AutoETS`, and the convex ensemble.
@@ -168,7 +169,7 @@ sections:
   text_md: |
     ## Results summary
 
-    **Use the screened pooled blend for this internal full-panel baseline, with its quiet-day and selection limits attached.** Across `30,490` series and `42,840` hierarchy nodes, official `WRMSSE` is `0.6211` against the seasonal-naive floor's `0.8929` on the competition window. This is not evidence of external leaderboard rank. See the [full evaluation report](https://amm-ds.github.io/portfolio/projects/02-demand-forecasting/) or [try the live demo](https://amm-ds.github.io/portfolio/demos/forecast-workbench/). The demo and sample curves come from an earlier `0.6161` blend with weights `0.60/0.10/0.30`, not the scored `0.6211` blend.
+    **Use the screened pooled blend for this internal full-panel baseline, with its quiet-day and selection limits attached.** Across `30,490` series and `42,840` hierarchy nodes, official `WRMSSE` is `0.6211` against the seasonal-naive floor's `0.8929` on the competition window. This is not evidence of external leaderboard rank. See the [full evaluation report](https://amm-ds.github.io/portfolio/projects/02-demand-forecasting/) or [try the live demo](https://amm-ds.github.io/portfolio/demos/forecast-workbench/). The demo and sample curves show the scored `0.6211` blend; they previously carried an earlier `0.6161` blend with weights `0.60/0.10/0.30` from a superseded run.
 
     ## What the experiment taught
 
@@ -180,7 +181,7 @@ sections:
 
     ## Limits
 
-    - Members and weights use nine selection origins. The headline `30.4%` reduction has no bootstrap interval; the separate spike-capture challenger does have a paired interval of `[0.00178, 0.00307]` for its regression. On the nine earlier origins used to select it, the blend beat the floor every time, by `23.6%` to `41.6%`; those origins are not independent tests. On the nine earlier origins used to select it, the blend beat the floor every time, by `24%` to `42%`; those origins are not independent tests.
+    - Members and weights use nine selection origins. The headline blend level carries a seeded node-bootstrap interval of `[0.5588, 0.6974]` over the `42,840` nodes (`2,000` resamples, `headline_interval.json`); the `30.4%` reduction against the floor has no paired interval. The separate spike-capture challenger does have a paired interval of `[0.00178, 0.00307]` for its regression. On the nine earlier origins used to select it, the blend beat the floor every time, by `23.6%` to `41.6%`; those origins are not independent tests. On the nine earlier origins used to select it, the blend beat the floor every time, by `24%` to `42%`; those origins are not independent tests.
     - On zero-actual days the floor still wins, `66.6%` versus `57.2%` accuracy. Scaling the hierarchy does not solve intermittent demand.
     - The demo band is the per-day minimum/maximum envelope of blend members, not a calibrated prediction interval with measured coverage.
     - `N-HiTS`, `TFT`, and Chronos-class foundation models are not benchmarked. Stockouts, promotions, and returns are unmodeled, so no savings or safety-stock claim follows.
@@ -237,5 +238,6 @@ roadmap:
   detail: 'Gate: beat 0.7409 on origin 1 with no zero-day accuracy loss.'
 figure_captions:
   m5_full_candidate_ranking: All 8 candidates ranked by official hierarchical WRMSSE on the competition window across 42,840 revenue-weighted nodes. Lower bars are better. The convex ensemble leads at 0.6211, the best single pooled fit scores 0.6219, and the seasonal-naive floor scores 0.8929.
+  m5_full_sample_series: 'Three catalog series at the 2016-05-22 test origin: 56-day history, 28-day actuals, and the committed 0.6211 blend (weights 0.95 store×category / 0.05 department) with its member-envelope band. The envelope is the per-day min/max of the blend members, not a calibrated interval.'
   m5_full_per_level_wrmsse: 'Official WRMSSE by hierarchy level for the convex ensemble, seasonal-naive floor, and best single fit. Each level receives equal total weight. Total has the largest relative cut against the floor (43.9%); item-store has the largest absolute gap (about 0.341).'
   m5_full_pooling_panel: 'All eight candidates on the full M5 test panel. Left: signed bias as a percentage of mean actual sales; positive means over-forecasting. Right: accuracy on zero-actual days, where a forecast below 0.5 is correct. The floor leads at 66.6% versus 57.2% for the blend.'

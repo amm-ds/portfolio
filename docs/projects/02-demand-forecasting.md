@@ -4,7 +4,7 @@
 full scale (30,490 daily store-item series) · **Status:** working showcase on
 the standard platform (flagships: [01](01-rag-agent.md), [07](07-open-data-mobility.md))
 
-> M5 full panel: 30,490 series, one scored test origin (final 28 days) with official 42,840-node WRMSSE. Pooled LightGBM ensemble: 0.6211 vs seasonal-naive 0.8929 (−30.4%); no bootstrap interval bounds the result; quiet days favor the floor.
+> M5 full panel: 30,490 series, one scored test origin (final 28 days) with official 42,840-node WRMSSE. Pooled LightGBM ensemble: 0.6211 vs seasonal-naive 0.8929 (−30.4%); level 95% CI [0.5588, 0.6974]; quiet days favor the floor.
 
 [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
 
@@ -62,14 +62,17 @@ Ensemble composition (selection screen, test never consulted): lgbm_pool_storeca
 - **91% of the panel is intermittent** (27,736 of 30,490 series by ADI/CV²) —
   on zero-actual days the naive floor still wins (66.6% vs 57.2% accuracy);
   full scale prices that in instead of solving it.
-- **Stated limits** — the selection screen runs on nine origins and the headline
-  has no bootstrap confidence interval. The demo envelope is member spread, not
+- **Stated limits** — the selection screen runs on nine origins; the headline
+  level carries a seeded node-bootstrap interval [0.5588, 0.6974] over the
+  42,840 nodes (2,000 resamples; the vs-floor gap has no paired interval).
+  The demo envelope is member spread, not
   a calibrated interval; neural global models (N-HiTS/TFT/foundation) are not
   benchmarked, and stockouts, promotions, and returns remain unmodeled.
 
 ## Artifacts
 
 - Metrics + protocol: `reports_m5_full/metrics.json` · `evaluation_metadata.json`
+- Headline node-bootstrap interval: `reports_m5_full/headline_interval.json`
 - Full evaluation report (embedded interactive figures):
   `reports_m5_full/report.html` — also served by the showcase API at
   `/projects/02-demand-forecasting/report`

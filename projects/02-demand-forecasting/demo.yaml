@@ -1,16 +1,16 @@
 id: forecast-workbench
 title: Demand Forecast Workbench
 hook: Pick one of 48 committed M5 store-product series, overlay all 8 candidates
-  from the seasonal naive to the earlier screened blend on the headline
+  from the seasonal naive to the champion screened blend on the headline
   competition window — curves, model spread and per-series WAPE respond.
 project: 02-demand-forecasting
 group: plan operations
 skills: [time series forecasting, prediction intervals, demand classification]
 modes: [browser]
 hero:
-  label: earlier blend · official WRMSSE
-  value: 0.6161 vs 0.8929
-  ci: −31.0% (0.60/0.10/0.30); current champion 0.6211 (−30.4%)
+  label: champion blend · official WRMSSE
+  value: 0.6211 vs 0.8929
+  ci: −30.4% (0.95/0.05 store-cat/dept); seeded node-bootstrap CI in the report
 scenarios:
   - name: base
     controls: {models: "seasonal_naive,lgbm", horizon: 28}

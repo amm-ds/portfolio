@@ -22,9 +22,9 @@
       "lgbm_pool_dept"
     ],
     "weights": [
-      0.6,
-      0.1,
-      0.30000000000000004
+      0.95,
+      0.0,
+      0.050000000000000044
     ]
   },
   "band": "band_lo/band_hi = per-day min/max of the committed ensemble member forecasts (an envelope, NOT a calibrated prediction interval)",
@@ -57,8 +57,8 @@
   "self_check": {
     "ensemble_blend_max_abs_drift": 0.0,
     "actuals_max_abs_drift": 0.0,
-    "ensemble_catalog_wape": 0.2819056453280673,
-    "panel_committed_test_bottom_wape": 0.7633248499710978,
+    "ensemble_catalog_wape": 0.29506608906255377,
+    "panel_committed_test_bottom_wape": 0.762270036780871,
     "note": "the catalog WAPE is a subset statistic \u2014 never compared to the panel-wide committed number"
   },
   "series": [
@@ -686,5 +686,48 @@
       "intermittency_rank": 88,
       "half": "bottom_intermittency"
     }
-  ]
+  ],
+  "e9_blend_refit": {
+    "date": "2026-11-26",
+    "wave": "grade pass 4 E9 (pass-3 finding P3.2)",
+    "members_refit": [
+      "lgbm_pool_dept",
+      "lgbm_pool_storecat"
+    ],
+    "members_carried_over": [
+      "seasonal_naive",
+      "lgbm",
+      "lgbm_tweedie",
+      "lgbm_pool_store",
+      "auto_ets"
+    ],
+    "carried_over_note": "non-refit candidate columns (including the zero-weight lgbm_pool_store member) carry over from the wave-32 catalog run (recursive pooled fits) \u2014 they are demo comparison curves only and contribute nothing to the committed blend",
+    "config": "committed run configuration: pooled_strategy=direct, seed 42, params.yaml m5_lgbm, n_jobs=1 + force_row_wise per fit; per-group fits parallelized across threads (identical numerics to the sequential path)",
+    "reproduction": {
+      "lgbm_pool_storecat": {
+        "committed": 0.6225244256467695,
+        "refit": 0.6225244256467695,
+        "abs_delta": 0.0
+      },
+      "lgbm_pool_dept": {
+        "committed": 0.6458598274148597,
+        "refit": 0.6458598274148597,
+        "abs_delta": 0.0
+      },
+      "convex_ensemble": {
+        "committed": 0.6210518262820993,
+        "refit": 0.6210518262820993,
+        "abs_delta": 0.0
+      }
+    },
+    "refit_runtime_seconds": 10441.0,
+    "package_versions": {
+      "statsforecast": "2.1.1",
+      "mlforecast": "1.1.0",
+      "lightgbm": "4.7.0",
+      "datasetsforecast": "1.0.2",
+      "numpy": "2.5.4"
+    },
+    "timing_note": "fit/runtime timings from the initial cold-cache run (2026-11-26 20:31-23:25 UTC+1, 12 workers); a verification re-run on the parquet forecast cache (84.9 s total) reproduced the identical gate deltas (0.0) and artifacts"
+  }
 }

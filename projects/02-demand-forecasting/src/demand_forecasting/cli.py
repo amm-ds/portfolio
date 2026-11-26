@@ -429,6 +429,48 @@ def evaluate_m5_erratic_challenger(
     )
 
 
+@app.command("evaluate-m5-full-refit")
+def evaluate_m5_full_refit(
+    data_dir: Annotated[Path | None, typer.Option(help="M5 full-panel raw dir.")] = None,
+    reports_dir: Annotated[Path | None, typer.Option(help="M5 full reports dir.")] = None,
+    n_workers: Annotated[
+        int, typer.Option(help="Thread-pool width over per-group fits (each fit n_jobs=1).")
+    ] = 8,
+    n_boot: Annotated[int, typer.Option(help="Headline node-bootstrap resamples.")] = 2000,
+) -> None:
+    """Pass-4 E9: refit the active blend members at the test origin, repair the catalog.
+
+    Refits ONLY the committed ensemble's positive-weight members
+    (lgbm_pool_storecat, lgbm_pool_dept) at the scored-once test origin through
+    the committed direct code path, gates on reproducing the committed test
+    WRMSSE per member and for the blend (1e-6 — aborts writing nothing on a
+    mismatch), then updates catalog_forecasts.parquet/catalog_meta.json onto
+    the committed 0.6211 blend, writes reports_m5_full/headline_interval.json
+    (seeded node bootstrap of the headline WRMSSE) and logs the check into
+    evaluation_metadata.json. Hours at full scale; per-candidate forecasts are
+    parquet-cached so a rerun resumes. Run `demo-payload-m5-full` and
+    `build-figures-m5-full` afterwards.
+    """
+    root = Path.cwd()
+    data_dir = data_dir or root / "data_m5" / "raw"
+    reports_dir = reports_dir or root / "reports_m5_full"
+    from demand_forecasting.m5_full_refit import run_m5_full_refit
+
+    result = run_m5_full_refit(
+        data_dir,
+        reports_dir,
+        n_workers=n_workers,
+        n_boot=n_boot,
+    )
+    logger = get_logger(__name__)
+    logger.info(
+        "e9 refit done: blend %.6f [%.6f, %.6f] (reproduction passed)",
+        result["headline_interval"]["point"],
+        result["headline_interval"]["ci95"][0],
+        result["headline_interval"]["ci95"][1],
+    )
+
+
 @app.command("demo-payload-m5-full")
 def demo_payload_m5_full(
     data_dir: Annotated[Path | None, typer.Option(help="M5 full-panel raw dir.")] = None,

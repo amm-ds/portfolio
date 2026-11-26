@@ -1,0 +1,31 @@
+{
+  "protocol": "m5_full_v1",
+  "candidate": "convex_ensemble",
+  "metric": "official_wrmsse",
+  "origin": "2016-05-22",
+  "origin_index": 1940,
+  "point": 0.6210518747621924,
+  "ci95": [
+    0.5587819973531373,
+    0.6973637018329537
+  ],
+  "method": "node bootstrap of the official hierarchical WRMSSE: the (revenue weight, per-node RMSSE) pairs of the committed blend's valid hierarchy nodes are resampled with replacement, weights renormalized per draw, weighted mean recomputed; percentile 2.5/97.5 over the resamples. Bounds the node-sampling uncertainty of the single test window's blend level \u2014 NOT a paired interval for the vs-floor gap and NOT across-origin uncertainty",
+  "n_valid_nodes": 41957,
+  "n_boot": 2000,
+  "seed": 3543,
+  "seed_rule": "m5_track.SEED (42) + 3501 \u2014 distinct from the erratic-refinement bootstrap offsets (3301/3401)",
+  "ensemble": {
+    "members": [
+      "lgbm_pool_storecat",
+      "lgbm_pool_store",
+      "lgbm_pool_dept"
+    ],
+    "weights": [
+      0.95,
+      0.0,
+      0.050000000000000044
+    ]
+  },
+  "committed_source": "reports_m5_full/metrics.json test.convex_ensemble.official_wrmsse",
+  "reproduction_abs_delta": 0.0
+}

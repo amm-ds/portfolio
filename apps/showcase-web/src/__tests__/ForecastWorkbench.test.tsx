@@ -278,26 +278,26 @@ describe("ForecastWorkbench", () => {
     ).toBeInTheDocument();
     const tiles = document.querySelectorAll(".wb-kpi-band .wb-kpi");
     expect(tiles).toHaveLength(3);
-    expect(screen.getByText("earlier blend · official WRMSSE")).toBeInTheDocument();
-    expect(screen.getByText("earlier blend · zero-day accuracy")).toBeInTheDocument();
+    expect(screen.getByText("champion blend · official WRMSSE")).toBeInTheDocument();
+    expect(screen.getByText("champion blend · zero-day accuracy")).toBeInTheDocument();
     // the demo opens on the full scored window (h=28) with the seasonal naive
     // and the historical catalog ensemble selected; the ensemble leads the fixture window
     const wapeTile = screen.getByText("WAPE @ 28d").closest(".wb-kpi")!;
-    expect(wapeTile.textContent).toMatch(/earlier blend vs naive [\d.]+%/);
+    expect(wapeTile.textContent).toMatch(/champion blend vs naive [\d.]+%/);
     // the committed pooled chip is quoted at the full scored horizon (the
     // fixture's per-series winner is the ensemble → its committed pooled gap)
-    expect(wapeTile.textContent).toMatch(/earlier-run pooled WRMSSE −0\.2768/);
+    expect(wapeTile.textContent).toMatch(/committed pooled WRMSSE −0\.2768/);
     fireEvent.click(screen.getByRole("button", { name: "7d" }));
     expect(screen.getByText("WAPE @ 7d").closest(".wb-kpi")!.textContent).not.toMatch(/committed/);
     // the headline tile distinguishes the historical payload from the current champion
-    const wrmsseTile = screen.getByText("earlier blend · official WRMSSE").closest(".wb-kpi")!;
+    const wrmsseTile = screen.getByText("champion blend · official WRMSSE").closest(".wb-kpi")!;
     expect(wrmsseTile.textContent).toContain("0.6161");
     expect(wrmsseTile.textContent).toContain("0.8929");
-    expect(wrmsseTile.textContent).toContain("current champion 0.6211");
-    const zeroTile = screen.getByText("earlier blend · zero-day accuracy").closest(".wb-kpi")!;
+    expect(wrmsseTile.textContent).toContain("0.95/0.05");
+    const zeroTile = screen.getByText("champion blend · zero-day accuracy").closest(".wb-kpi")!;
     expect(zeroTile.textContent).toMatch(/57\.3%/);
     expect(zeroTile.textContent).toMatch(/66\.6%/);
-    expect(zeroTile.textContent).toContain("current champion 57.2%");
+    expect(zeroTile.textContent).toContain("the floor still wins quiet days");
   });
 
   it("opens with horizon 28d, the seasonal naive and the champion ensemble selected", async () => {
@@ -309,7 +309,7 @@ describe("ForecastWorkbench", () => {
     ).toBe("true");
     // the default overlay is the floor vs the champion — the six other
     // candidates stay one chip away
-    for (const name of ["seasonal naive", "earlier blend"]) {
+    for (const name of ["seasonal naive", "champion blend"]) {
       const chip = screen.getByRole("button", { name });
       expect(chip.getAttribute("aria-pressed"), name).toBe("true");
     }
@@ -338,11 +338,11 @@ describe("ForecastWorkbench", () => {
     renderDemo();
     await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     const polylinesBefore = document.querySelectorAll(".demo-chart polyline").length;
-    fireEvent.click(screen.getByRole("button", { name: "earlier blend" }));
+    fireEvent.click(screen.getByRole("button", { name: "champion blend" }));
     const after = document.querySelectorAll(".demo-chart polyline").length;
     // the ensemble curve plus its two envelope edges leave the chart
     expect(after).toBe(polylinesBefore - 3);
-    fireEvent.click(screen.getByRole("button", { name: "earlier blend" }));
+    fireEvent.click(screen.getByRole("button", { name: "champion blend" }));
     expect(document.querySelectorAll(".demo-chart polyline").length).toBe(polylinesBefore);
   });
 
@@ -400,7 +400,7 @@ describe("ForecastWorkbench", () => {
     expect(document.querySelector(".demo-chart path[d]")).not.toBeNull();
     expectFiniteChartGeometry();
     // toggle the ensemble off (envelope indices shift by two)
-    fireEvent.click(screen.getByRole("button", { name: "earlier blend" }));
+    fireEvent.click(screen.getByRole("button", { name: "champion blend" }));
     expectFiniteChartGeometry();
     // switch to an intermittent series
     fireEvent.click(screen.getByRole("button", { name: /FOODS_1_032/ }));
@@ -449,11 +449,11 @@ describe("ForecastWorkbench", () => {
     expect(spreadCard().textContent).toMatch(/not a calibrated interval/);
     // deselecting the ensemble does NOT collapse the card — it recomputes
     // into the single-model |error| view
-    fireEvent.click(screen.getByRole("button", { name: "earlier blend" }));
+    fireEvent.click(screen.getByRole("button", { name: "champion blend" }));
     expect(spreadCard().textContent).toMatch(/1 model — \|error\| view/);
     expect(spreadCard().querySelector(".state-box")).toBeNull();
     const before = spreadCard().textContent;
-    fireEvent.click(screen.getByRole("button", { name: "earlier blend" }));
+    fireEvent.click(screen.getByRole("button", { name: "champion blend" }));
     expect(spreadCard().textContent).not.toBe(before);
   });
 
@@ -540,7 +540,7 @@ describe("ForecastWorkbench", () => {
       // dot + name + tinted bar fill + value label at the bar end + peak-day MAE
       expect(item.querySelector(".fwb-dot")).not.toBeNull();
       expect(item.querySelector(".fwb-verdict-name")!.textContent).toMatch(
-        /seasonal naive|AutoETS|LightGBM|tweedie|pooled|earlier blend/,
+        /seasonal naive|AutoETS|LightGBM|tweedie|pooled|champion blend/,
       );
       expect(item.querySelector(".fwb-bar-fill")).not.toBeNull();
       expect(item.querySelector(".fwb-bar-value")!.textContent).toMatch(/^\d+\.\d{3}$/);
@@ -588,13 +588,13 @@ describe("ForecastWorkbench", () => {
     expect(verdictCard().querySelectorAll(".fwb-verdict-item")).toHaveLength(4);
     const widthBefore = (lightgbmRow().querySelector(".fwb-bar-fill") as HTMLElement).style.width;
     fireEvent.click(screen.getByRole("button", { name: "AutoETS" }));
-    fireEvent.click(screen.getByRole("button", { name: "earlier blend" }));
+    fireEvent.click(screen.getByRole("button", { name: "champion blend" }));
     expect(verdictCard().querySelectorAll(".fwb-verdict-item")).toHaveLength(2);
     expect((lightgbmRow().querySelector(".fwb-bar-fill") as HTMLElement).style.width).toBe(widthBefore);
     expect(scaleLabel().textContent).toBe(scaleBefore);
     // toggling back restores the four at the same widths
     fireEvent.click(screen.getByRole("button", { name: "AutoETS" }));
-    fireEvent.click(screen.getByRole("button", { name: "earlier blend" }));
+    fireEvent.click(screen.getByRole("button", { name: "champion blend" }));
     expect(verdictCard().querySelectorAll(".fwb-verdict-item")).toHaveLength(4);
     expect((lightgbmRow().querySelector(".fwb-bar-fill") as HTMLElement).style.width).toBe(widthBefore);
 
@@ -612,7 +612,7 @@ describe("ForecastWorkbench", () => {
     // back at h=28 the pooled committed chip reappears — the restored
     // four-candidate selection crowns LightGBM on this fixture window
     fireEvent.click(screen.getByRole("button", { name: "28d" }));
-    expect(verdictCard().textContent).toMatch(/earlier-run pooled official WRMSSE −0\.2328/);
+    expect(verdictCard().textContent).toMatch(/committed pooled official WRMSSE −0\.2328/);
     expect(verdictCard().textContent).toMatch(/h = 28/);
   });
 
@@ -623,10 +623,10 @@ describe("ForecastWorkbench", () => {
 
     const evidence = document.querySelector(".wb-evidence")!;
     expect(evidence.textContent).toContain(
-      "earlier 0.60/0.10/0.30 blend: official WRMSSE 0.6161 vs the seasonal-naive floor 0.8929 (gap −31.0%)",
+      "the committed 0.95/0.05 champion blend: official WRMSSE 0.6161 vs the seasonal-naive floor 0.8929 (gap −31.0%)",
     );
     expect(evidence.textContent).toContain(
-      "current 0.95/0.00/0.05 champion scores 0.6211 (−30.4%)",
+      "An earlier 0.60/0.10/0.30 blend (selected on 2 origins) scored 0.6161",
     );
     expect(evidence.textContent).toContain("headline window (2016-05-22 → 2016-06-19)");
     expect(evidence.textContent).toContain("2,754 dense + 27,736 intermittent series, 8 candidates");

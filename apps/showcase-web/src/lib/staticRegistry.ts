@@ -324,7 +324,8 @@ export const STATIC_STORIES: StaticStorySummary[] = [
     "figure_names": [
       "m5_full_candidate_ranking",
       "m5_full_per_level_wrmsse",
-      "m5_full_pooling_panel"
+      "m5_full_pooling_panel",
+      "m5_full_sample_series"
     ],
     "has_roadmap": true,
     "metrics_keys": [],
@@ -676,11 +677,11 @@ export const STATIC_DEMO_REGISTRY: StaticDemoRegistryEntry[] = [
   {
     "group": "plan operations",
     "hero": {
-      "ci": "−31.0% (0.60/0.10/0.30); current champion 0.6211 (−30.4%)",
-      "label": "earlier blend · official WRMSSE",
-      "value": "0.6161 vs 0.8929"
+      "ci": "−30.4% (0.95/0.05 store-cat/dept); seeded node-bootstrap CI in the report",
+      "label": "champion blend · official WRMSSE",
+      "value": "0.6211 vs 0.8929"
     },
-    "hook": "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the earlier screened blend on the headline competition window — curves, model spread and per-series WAPE respond.",
+    "hook": "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the champion screened blend on the headline competition window — curves, model spread and per-series WAPE respond.",
     "href": "/demos/forecast-workbench",
     "id": "forecast-workbench",
     "project": "02-demand-forecasting",

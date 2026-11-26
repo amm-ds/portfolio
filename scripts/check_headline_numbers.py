@@ -92,6 +92,12 @@ def _m02_origins() -> list[str]:
     return [f"`{min(red):.0f}%` to `{max(red):.0f}%`"]
 
 
+def _m02_headline_interval() -> list[str]:
+    """Node-bootstrap level CI for the 02 headline (E9)."""
+    iv = _load("projects/02-demand-forecasting/reports_m5_full/headline_interval.json")
+    return [_fmt(iv["ci95"][0], 4), _fmt(iv["ci95"][1], 4)]
+
+
 def _m03() -> list[str]:
     m = _load("projects/03-anomaly-detection/reports/nab_metrics.json")
     return [
@@ -332,6 +338,12 @@ CLAIMS: list[dict[str, Any]] = [
         "label": "nine-origin blend-vs-floor range",
         "values": _m02_origins,
         "surfaces": ["story.yaml"],
+    },
+    {
+        "project": "02-demand-forecasting",
+        "label": "headline node-bootstrap CI",
+        "values": _m02_headline_interval,
+        "surfaces": ["README.md", "story.yaml"],
     },
     {
         "project": "03-anomaly-detection",

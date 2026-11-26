@@ -88,10 +88,10 @@ describe("forecast-workbench payload contract (real committed JSON)", () => {
     expect(headline.metric).toBe("official_wrmsse");
     expect(headline.champion).toBe("convex_ensemble");
     expect(test_pooled.seasonal_naive.wrmsse).toBeCloseTo(0.8929, 3);
-    expect(test_pooled.convex_ensemble.wrmsse).toBeCloseTo(0.6161, 3);
-    expect(test_pooled.lgbm_pool_store.wrmsse).toBeCloseTo(0.6217, 3);
-    expect(test_pooled.lgbm_pool_storecat.wrmsse).toBeCloseTo(0.6575, 3);
-    expect(test_pooled.lgbm_pool_dept.wrmsse).toBeCloseTo(0.6313, 3);
+    expect(test_pooled.convex_ensemble.wrmsse).toBeCloseTo(0.6211, 3);
+    expect(test_pooled.lgbm_pool_store.wrmsse).toBeCloseTo(0.6219, 3);
+    expect(test_pooled.lgbm_pool_storecat.wrmsse).toBeCloseTo(0.6225, 3);
+    expect(test_pooled.lgbm_pool_dept.wrmsse).toBeCloseTo(0.6459, 3);
     expect(test_pooled.lgbm_tweedie.wrmsse).toBeCloseTo(0.6473, 3);
     expect(test_pooled.lgbm.wrmsse).toBeCloseTo(0.6601, 3);
     expect(test_pooled.auto_ets.wrmsse).toBeCloseTo(0.7093, 3);
@@ -99,16 +99,16 @@ describe("forecast-workbench payload contract (real committed JSON)", () => {
     for (const pooled of ["lgbm_pool_store", "lgbm_pool_storecat", "lgbm_pool_dept"]) {
       expect(test_pooled[pooled].wrmsse).toBeLessThan(test_pooled.lgbm.wrmsse);
     }
-    expect(headline.convex_ensemble_vs_naive.wrmsse.rel).toBeCloseTo(-0.31, 2);
+    expect(headline.convex_ensemble_vs_naive.wrmsse.rel).toBeCloseTo(-0.3, 2);
     expect(test_pooled.seasonal_naive.wape).toBeCloseTo(0.9159, 3);
-    expect(test_pooled.convex_ensemble.wape).toBeCloseTo(0.7633, 3);
-    expect(test_pooled.convex_ensemble.bias).toBeCloseTo(0.0328, 3);
+    expect(test_pooled.convex_ensemble.wape).toBeCloseTo(0.7623, 3);
+    expect(test_pooled.convex_ensemble.bias).toBeCloseTo(0.0222, 3);
     expect(test_pooled.seasonal_naive.zero_day_accuracy).toBeCloseTo(0.6663, 3);
-    expect(test_pooled.convex_ensemble.zero_day_accuracy).toBeCloseTo(0.5734, 3);
-    expect(stability.convex_ensemble).toBeLessThan(0.001);
+    expect(test_pooled.convex_ensemble.zero_day_accuracy).toBeCloseTo(0.5724, 3);
+    expect(stability.convex_ensemble).toBeCloseTo(0.0538, 3);
     // panel-wide class counts + the thin-screen stability caveat
     expect(classes.counts).toEqual({ dense: 2754, intermittent: 27736 });
-    expect(win_rate_vs_naive.convex_ensemble.pooled).toBeCloseTo(0.5625, 3);
+    expect(win_rate_vs_naive.convex_ensemble.pooled).toBeCloseTo(0.5208, 3);
     // the envelope is a member min/max, not a calibrated interval
     expect(band.candidates.convex_ensemble.mean_width).toBeGreaterThan(0);
     expect(band.level).toBeNull();
@@ -119,9 +119,9 @@ describe("forecast-workbench payload contract (real committed JSON)", () => {
   it("ships the committed ensemble (members + weights) verbatim", () => {
     const ens = payload.groups.ensemble;
     expect(ens.members).toEqual(["lgbm_pool_storecat", "lgbm_pool_store", "lgbm_pool_dept"]);
-    expect(ens.weights[0]).toBeCloseTo(0.6, 5);
-    expect(ens.weights[1]).toBeCloseTo(0.1, 5);
-    expect(ens.weights[2]).toBeCloseTo(0.3, 5);
+    expect(ens.weights[0]).toBeCloseTo(0.95, 5);
+    expect(ens.weights[1]).toBeCloseTo(0.0, 5);
+    expect(ens.weights[2]).toBeCloseTo(0.05, 5);
     // the selection screen carries every pool candidate
     expect(Object.keys(ens.selection_screen).sort()).toEqual([...ens.pool].sort());
     for (const block of Object.values(ens.selection_screen)) {
