@@ -174,8 +174,13 @@ def _comparison_figure(result: dict[str, Any]) -> go.Figure:
     fig = go.Figure()
     fig.add_bar(x=labels, y=baseline, name="transformer")
     fig.add_bar(x=labels, y=cascade, name="transformer + selective Kimi review")
+    fresh = result["fresh holdout"]
     fig.update_layout(
-        title="Selective review — frozen threshold, final scores",
+        title=(
+            f"Reviewing {fresh['n_reviews']} uncertain items moves fresh macro-F1 "
+            f"{fresh['baseline_f1_macro']:.4f} → {fresh['cascade_f1_macro']:.4f}: "
+            "no measurable change"
+        ),
         barmode="group",
         yaxis_title="macro-F1",
         yaxis_range=[0, 1],

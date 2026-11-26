@@ -500,7 +500,7 @@ def range_pr_figure(results: dict[str, dict[str, Any]], no_skill: dict[str, Any]
         x=grid,
         y=champion,
         mode="lines",
-        name="champion (mean over series)",
+        name="IsolationForest (mean over series)",
         line={"color": "#2dd4bf", "width": 2.5},
     )
     pa2 = [r["pa_k_2"] for r in results.values() if r.get("pa_k_2")]
@@ -513,7 +513,7 @@ def range_pr_figure(results: dict[str, dict[str, Any]], no_skill: dict[str, Any]
             marker={"color": "#f472b6", "size": 12, "symbol": "diamond"},
         )
     fig.update_layout(
-        title="Range precision vs recall under window matching",
+        title="IsolationForest stays above the 16-seed random band at every recall level",
         xaxis_title="range recall",
         yaxis_title="range precision",
         yaxis={"range": [0, 1.05]},
@@ -521,8 +521,8 @@ def range_pr_figure(results: dict[str, dict[str, Any]], no_skill: dict[str, Any]
     add_takeaway(
         fig,
         (
-            f"threshold sweep, project window semantics — champion vs a 16-seed random band; "
-            f"no-skill area {no_skill['range_pr_auc']['mean']:.3f} "
+            "threshold sweep, project window semantics — IsolationForest vs a 16-seed "
+            f"random band; no-skill area {no_skill['range_pr_auc']['mean']:.3f} "
             f"[{no_skill['range_pr_auc']['p2.5']:.3f}, {no_skill['range_pr_auc']['p97.5']:.3f}]"
         ),
     )
@@ -606,7 +606,7 @@ def nab_figures(
     dist_fig.update_yaxes(type="log", title="count (log scale)")
     dist_fig.update_xaxes(title="anomaly score")
     dist_fig.update_layout(
-        title="NAB anomaly-score distribution",
+        title="In-window minutes score higher than the rest, but the distributions overlap",
         barmode="overlay",
     )
     dist_fig.update_traces(opacity=0.65)

@@ -1,7 +1,10 @@
 """Evaluate stage: metrics, figures, and report assembly on synthetic predictions."""
 
+import base64
 import importlib.util
 import json
+import math
+import struct
 from pathlib import Path
 
 import polars as pl
@@ -212,3 +215,76 @@ def test_zone_hour_heatmap_uses_global_top_zones_and_week_orientation() -> None:
     assert len(trace.x) == 168
     assert len(trace.z) == 2
     assert all(len(row) == 168 for row in trace.z)
+
+
+def _decode(arr: object) -> list:
+    """Decode a plotly 6 binary array ({"bdata": ..., "dtype": ...}) or return as-is."""
+    if isinstance(arr, dict) and "bdata" in arr:
+        raw = base64.b64decode(arr["bdata"])
+        fmt = {"f8": "d", "f4": "f", "i8": "q", "i4": "i", "u8": "Q", "u4": "I"}[
+            arr.get("dtype", "f8")
+        ]
+        return list(struct.unpack(f"<{len(raw) // struct.calcsize(fmt)}{fmt}", raw))
+    return list(arr)  # type: ignore[arg-type]
+
+
+def test_committed_figure_titles_state_their_own_data() -> None:
+    """Committed figure payloads (patched without a full re-run) must agree
+    with the numbers in their own traces."""
+    figures = Path(__file__).parents[1] / "reports" / "figures"
+
+    heat = json.loads((figures / "hour_borough_heatmap.json").read_text())
+    title = heat["layout"]["title"]["text"]
+    trace = heat["data"][0]
+    z = {b: _decode(row) for b, row in zip(trace["y"], trace["z"], strict=True)}
+    manhattan = z["Manhattan"]
+    peak = trace["x"][manhattan.index(max(manhattan))]
+    assert f"Manhattan peaks at {max(manhattan):.1f} pickups/zone-hour at {peak}" in title
+    assert f"the Bronx tops out at {max(z['Bronx']):.2f}" in title
+
+    mae = json.loads((figures / "borough_mae.json").read_text())
+    title = mae["layout"]["title"]["text"]
+    bronx = {}
+    for t in mae["data"]:
+        xs = _decode(t["x"])
+        bronx[t["name"]] = _decode(t["y"])[list(xs).index("Bronx")]
+    assert bronx["naive_lag24"] < bronx["gbm_mean"]
+    assert (
+        "Persistence beats the GBM in the Bronx "
+        f"({bronx['naive_lag24']:.2f} vs {bronx['gbm_mean']:.2f} MAE)" in title
+    )
+
+    conf = json.loads((figures / "conformal_coverage.json").read_text())
+    title = conf["layout"]["title"]["text"]
+    traces = {(t["name"], t.get("yaxis", "y")): t for t in conf["data"]}
+    raw, conf_band = traces[("raw quantile band", "y")], traces[("stratum-conformal band", "y")]
+    before = dict(zip(_decode(raw["x"]), _decode(raw["y"]), strict=True))
+    after = dict(zip(_decode(conf_band["x"]), _decode(conf_band["y"]), strict=True))
+    width_before = _decode(traces[("raw quantile band", "y2")]["y"])[0]
+    width_after = _decode(traces[("stratum-conformal band", "y2")]["y"])[0]
+    assert f"coverage {before['overall']:.1%} → {after['overall']:.1%}" in title
+    assert f"{width_after - width_before:+.2f} pickups of band height" in title
+    calib = json.loads((figures / "p90_calibration.json").read_text())
+    calib_x = _decode(calib["data"][0]["x"])
+    overall = _decode(calib["data"][0]["y"])[list(calib_x).index("OVERALL")]
+    assert f"the {overall:.1%} headline is the full window" in title
+
+    wx = json.loads((figures / "weather_elasticity.json").read_text())
+    title = wx["layout"]["title"]["text"]
+    trace = wx["data"][0]
+    ratio = dict(zip(_decode(trace["x"]), _decode(trace["y"]), strict=True))
+    below = {b: (1.0 - r) * 100.0 for b, r in ratio.items() if r < 1.0}
+    assert {"Manhattan", "Queens", "Staten Island"} <= set(below)
+    lo, hi = math.floor(min(below.values())), math.ceil(max(below.values()))
+    assert f"average {lo}\u2013{hi}% fewer pickups in Manhattan, Queens and Staten Island" in title
+
+    ladder = json.loads((figures / "gbm_vs_nn.json").read_text())
+    title = ladder["layout"]["title"]["text"]
+    traces = {t["name"]: t for t in ladder["data"]}
+    mae_y = dict(zip(_decode(traces["mae"]["x"]), _decode(traces["mae"]["y"]), strict=True))
+    mase_y = dict(zip(_decode(traces["mase"]["x"]), _decode(traces["mase"]["y"]), strict=True))
+    leader = min(mae_y, key=lambda k: mae_y[k])
+    assert "gbm" in leader and "tuned" in leader
+    assert all(v < 1.0 for k, v in mase_y.items() if "naive" not in k)
+    assert "The tuned GBM leads the run ladder" in title
+    assert "every learned model beats persistence (MASE < 1)" in title

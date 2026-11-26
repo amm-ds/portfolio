@@ -174,28 +174,20 @@ def fig_conformal_coverage(block: dict[str, Any]) -> go.Figure:
         col=2,
     )
     fig.add_hline(y=1.0 - block["alpha"], line_dash="dash", line_color="#fbbf24", row=1, col=1)
-    fig.update_layout(
-        barmode="group",
-        title="Conformal coverage and band-width cost",
-        yaxis_title="empirical coverage (target 90%)",
-        yaxis={"range": [0, 1.05]},
-        yaxis2_title="pickups above point forecast",
-    )
 
     def _pct(v: float) -> str:
         return f"{v:.1%}" if v == v else "n/a"
 
-    sparse_gain = (
-        block["after"]["coverage_by_stratum"]["sparse"]
-        - block["before"]["coverage_by_stratum"]["sparse"]
+    fig.update_layout(
+        barmode="group",
+        title=(
+            f"Conformal lifts second-half coverage {_pct(block['before']['coverage_overall'])} → "
+            f"{_pct(block['after']['coverage_overall'])} for "
+            f"{width_after - width_before:+.2f} pickups of band height"
+        ),
+        yaxis_title="empirical coverage (target 90%)",
+        yaxis={"range": [0, 1.05]},
+        yaxis2_title="pickups above point forecast",
     )
-    add_takeaway(
-        fig,
-        f"demand-sparse zones {_pct(block['before']['coverage_by_stratum']['sparse'])} -> "
-        f"{_pct(block['after']['coverage_by_stratum']['sparse'])} "
-        f"({sparse_gain:+.1%}); overall {_pct(block['before']['coverage_overall'])} -> "
-        f"{_pct(block['after']['coverage_overall'])}; mean band height {width_before:.3f} -> "
-        f"{width_after:.3f} pickups ({width_after - width_before:+.3f}) on the held-out "
-        "second half",
-    )
+    add_takeaway(fig, "second half only; the 90.8% headline is the full window")
     return apply_theme(fig, height=560)

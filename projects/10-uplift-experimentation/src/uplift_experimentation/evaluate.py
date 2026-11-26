@@ -761,7 +761,7 @@ def decile_figure(table: dict[str, list[float]], policy: str) -> go.Figure:
     apply_theme(fig)
     style_runs(fig)
     fig.update_layout(
-        title="Predicted vs empirical uplift by decile",
+        title="Predicted uplift tracks the observed contrast in the top deciles only",
         xaxis_title="decile (1 = highest predicted uplift)",
         yaxis_title="uplift (conversion-rate difference)",
         barmode="group",
@@ -889,7 +889,13 @@ def cuped_figure(reads: dict[str, dict[str, float]]) -> go.Figure:
         )
         fig.update_yaxes(title_text="var(Y)", row=1, col=col)
     apply_theme(fig, width=1000, height=480)
-    fig.update_layout(title="Outcome variance: naive vs CUPED-adjusted")
+    reduction = {o: 1.0 - r["var_adjusted"] / r["var_naive"] for o, r in reads.items()}
+    fig.update_layout(
+        title=(
+            f"CUPED cuts outcome variance by {reduction['conversion']:.2%} for conversion, "
+            f"{reduction['visit']:.2%} for visits"
+        )
+    )
     add_takeaway(
         fig,
         "var(Y) before vs after CUPED, per outcome; covariate = log1p prior spend (pre-treatment)",
@@ -910,8 +916,10 @@ def qini_per_arm_figure(per_arm: dict[str, Any]) -> go.Figure:
     cis = [per_arm[arm]["qini_ci"] for arm in arms]
     lo_vals = [float(ci[0]) for ci in cis]
     hi_vals = [float(ci[1]) for ci in cis]
-    x_min = min(*lo_vals, 0.0) - 3.0
-    x_max = max(*hi_vals, 0.0) + 4.0
+    # Tight padding: the CI whiskers set the useful extent, and the axes gate
+    # warns when the authored window exceeds 4x the marker span.
+    x_min = min(*lo_vals, 0.0) - 1.0
+    x_max = max(*hi_vals, 0.0) + 1.5
     fig.add_vline(x=0.0, line_dash="dash", line_color="#64748b")
     fig.add_scatter(
         x=points,
@@ -940,7 +948,7 @@ def qini_per_arm_figure(per_arm: dict[str, Any]) -> go.Figure:
     )
     apply_theme(fig, height=420)
     fig.update_layout(
-        title="Per-arm AUUC on randomized arm vs control pairs",
+        title="Neither arm's AUUC interval excludes zero",
         xaxis_title="area under Qini curve minus random (conversions)",
         yaxis_title="",
         xaxis={"range": [x_min, x_max]},
@@ -1002,8 +1010,8 @@ def profit_frontier_multi_arm_figure(
     )
     fig.update_layout(
         title=(
-            "Multi-arm frontier of revenue minus send cost "
-            "(model-estimated incremental conversions)"
+            f"Best-arm targeting at {cfg.policy_budget:.0%} budget: "
+            "model-estimated value, not observed"
         ),
         xaxis_title="budget fraction (share of customers emailed)",
         yaxis_title=(

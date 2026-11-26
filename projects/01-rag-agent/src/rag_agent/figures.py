@@ -146,7 +146,7 @@ def sweep_figure(
         )
     fig.update_layout(
         barmode="group",
-        title="Retrieval recall vs chunk size",
+        title="All chunk sizes tie on recall@5 (0.831); 200-token chunks lead MRR@5 (0.808)",
         xaxis={
             "type": "category",
             "categoryorder": "array",
@@ -170,7 +170,7 @@ def sweep_figure(
     fig = _finish_themed(
         fig,
         takeaway=(
-            f"recall@5, recall@10, MRR@5 — 65 golden questions; lexical "
+            f"recall@5, recall@10, MRR@5 — 65 tuning questions; lexical "
             f"(word-match) floor dashed; seeded random floor 0.02-0.03 "
             f"tabulated in Exact numbers · categorical axis: "
             f"{' / '.join(labels)} only, no 600-token configuration exists"
@@ -199,13 +199,13 @@ def model_comparison_figure(model_scores: dict[str, RetrievalScores], best_slug:
     )
     style_runs(fig, best=best_slug)
     fig.update_layout(
-        title="Retrieval metrics by encoder",
+        title="MiniLM ties BGE-small on recall@5 (0.831) and edges MRR@5; lexical floor 0.677",
         yaxis_title="score",
     )
     return _finish_themed(
         fig,
         takeaway=(
-            "recall@5, recall@10, MRR@5 per encoder — 65 golden questions; "
+            "recall@5, recall@10, MRR@5 per encoder — 65 tuning questions; "
             "grey = floors, accent = best"
         ),
     )
@@ -307,7 +307,7 @@ def corpus_eda_figure(articles: list[Article]) -> go.Figure:
     fig.add_trace(go.Bar(x=topics, y=counts, name="articles"), row=1, col=1)
     fig.add_trace(go.Histogram(x=lengths, nbinsx=40, name="article length"), row=1, col=2)
     fig.update_layout(
-        title="Corpus composition",
+        title="Aviation holds the most articles (125 of 593); long pages capped at 12k characters",
         showlegend=False,
     )
     return _finish_themed(
@@ -357,7 +357,10 @@ def taxonomy_figure(traces: list[QuestionTrace], *, scope: str = "hosted") -> go
         ]
     )
     fig.update_layout(
-        title=f"Answer verdicts by category (n = {len(traces)})",
+        title=(
+            "Misses are mostly silence: 10 empty answers vs 1 unsupported claim"
+            f" (n = {len(traces)})"
+        ),
         xaxis_title="verdict",
         yaxis={"title": "questions", "range": [0, max(counts.values()) * 1.2]},
     )
@@ -565,11 +568,13 @@ def retrieval_ladder_figure(rows: list[dict[str, Any]]) -> go.Figure:
             )
     fig.update_layout(
         barmode="group",
-        title="Retrieval tournament ladder: R0 to S3 across frozen splits",
+        title="Hybrid retrieval (S3) lifts recall@5 from 0.924 (R0) to 0.946 on the final set",
         xaxis={"type": "category", "title": "frozen split (answerable n)"},
         xaxis2={"type": "category", "title": "frozen split (answerable n)"},
-        yaxis={"title": "recall@5", "range": [0, 1.15]},
-        yaxis2={"title": "all_articles@5", "range": [0, 1.15]},
+        # Bars pin the zero baseline (trimming would mislead); 1.1 leaves
+        # headroom for the outside value labels at 1.000.
+        yaxis={"title": "recall@5", "range": [0, 1.1]},
+        yaxis2={"title": "all_articles@5", "range": [0, 1.1]},
     )
     return _finish_themed(
         fig,

@@ -1,6 +1,9 @@
 """Evaluation tests: name normalization, best-known loading, gap math, figures."""
 
+import base64
 import json
+import statistics
+import struct
 from pathlib import Path
 
 import polars as pl
@@ -334,3 +337,80 @@ def test_hinted_cp_sat_label_set_whenever_hint_is_used() -> None:
         results_markdown(evaluations),
     ):
         assert "ortools_cp (ALNS-hinted; not independent of ALNS)" in table
+
+
+def _decode(arr: object) -> list:
+    """Decode a plotly 6 binary array ({"bdata": ..., "dtype": ...}) or return as-is."""
+    if isinstance(arr, dict) and "bdata" in arr:
+        raw = base64.b64decode(arr["bdata"])
+        fmt = {"f8": "d", "f4": "f", "i8": "q", "i4": "i", "u8": "Q", "u4": "I"}[
+            arr.get("dtype", "f8")
+        ]
+        return list(struct.unpack(f"<{len(raw) // struct.calcsize(fmt)}{fmt}", raw))
+    return list(arr)  # type: ignore[arg-type]
+
+
+def test_committed_figure_titles_state_their_own_data() -> None:
+    """Committed figure payloads (patched without a full re-run) must agree
+    with the numbers in their own traces."""
+    figures = Path(__file__).parents[1] / "reports" / "figures"
+
+    gap = json.loads((figures / "gap_pct.json").read_text())
+    title = gap["layout"]["title"]["text"]
+    alns_y = _decode(next(t for t in gap["data"] if t["name"] == "alns")["y"])
+    n_under = sum(1 for v in alns_y if v < -0.005)
+    assert f"{n_under} runs undercut best-known distance" in title
+    assert f"{n_under} ALNS results undercut best-known references" in title
+    iqrs = {}
+    for t in gap["data"]:
+        q = statistics.quantiles(_decode(t["y"]), n=4)
+        iqrs[t["name"]] = q[2] - q[0]
+    assert iqrs["alns"] <= min(iqrs.values())  # "tightest gap distribution"
+
+    profile = json.loads((figures / "solver_profile.json").read_text())
+    title = profile["layout"]["title"]["text"]
+    per_inst: dict[str, dict[str, float]] = {}
+    for t in profile["data"]:
+        for inst, dist in zip(_decode(t["customdata"]), _decode(t["y"]), strict=True):
+            per_inst.setdefault(inst[0], {})[t["name"]] = dist
+    n_best = sum(1 for s in per_inst.values() if s["alns"] == min(s.values()))
+    winners = {min(s, key=s.get) for s in per_inst.values() if s["alns"] != min(s.values())}
+    assert f"shortest routes on {n_best} of {len(per_inst)} instances" in title
+    assert winners == {"alns_fleet"}
+    assert f"alns_fleet takes the other {len(per_inst) - n_best}" in title
+
+    fam = json.loads((figures / "family_gap.json").read_text())
+    title = fam["layout"]["title"]["text"]
+    traces = {(t["name"], t.get("yaxis", "y")): t for t in fam["data"]}
+    gap_y = dict(
+        zip(_decode(traces[("alns", "y")]["x"]), _decode(traces[("alns", "y")]["y"]), strict=True)
+    )
+    veh_y = dict(
+        zip(
+            _decode(traces[("alns", "y2")]["x"]),
+            _decode(traces[("alns", "y2")]["y"]),
+            strict=True,
+        )
+    )
+    worst_family = max(gap_y, key=gap_y.get)
+    assert f"worst gap {gap_y[worst_family]:.2f}% ({worst_family})" in title
+    assert veh_y["C1"] == veh_y["C2"]
+    assert f"+{veh_y['C1']:.0f} vehicle in clustered families" in title
+    assert f"up to +{max(veh_y['R2'], veh_y['RC2']):.1f} in R2/RC2" in title
+
+    pareto = json.loads((figures / "pareto_gap_runtime.json").read_text())
+    title = pareto["layout"]["title"]["text"]
+    near = {
+        t["name"]
+        for t in pareto["data"]
+        if 3.0 <= _decode(t["y"])[0] <= 5.0 and 0.5 <= _decode(t["x"])[0] <= 2.0
+    }
+    assert near == {"alns", "alns_fleet"}
+    assert "The ALNS arms are the only solvers near a 4% gap at about 1 s" in title
+
+    eda = json.loads((figures / "eda_instance_map.json").read_text())
+    title = eda["layout"]["title"]["text"]
+    customers = next(t for t in eda["data"] if t["name"] == "customers")
+    widths = _decode(customers["marker"]["color"])
+    span = f"vary {min(widths):.0f}\u2013{max(widths):.0f} units across {len(widths)} customers"
+    assert span in title

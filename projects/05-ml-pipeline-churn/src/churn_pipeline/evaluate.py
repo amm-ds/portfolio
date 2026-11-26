@@ -205,18 +205,28 @@ def fairness_slices_figure(report: dict[str, dict[str, Any]], threshold: float) 
         row=1,
         col=1,
     )
+    two_year = report.get("contract=two-year")
+    gender_recalls = [report[k]["recall"] for k in ("gender=Female", "gender=Male") if k in report]
+    if (
+        two_year is not None
+        and two_year["recall"] == 0.0
+        and len(gender_recalls) == 2
+        and abs(gender_recalls[0] - gender_recalls[1]) < 0.02
+    ):
+        title = (
+            f"Raw model misses all {two_year['n_pos']} two-year-contract churners; "
+            "gender slices are level"
+        )
+    else:
+        title = "Fairness slices — recall, precision, F1 and cost"
     fig.update_layout(
-        title="Fairness slices — recall, precision, F1 and cost",
+        title=title,
         barmode="group",
         yaxis_title="metric value",
         yaxis2_title="cost (FP·1 + FN·5)",
     )
     style_runs(fig)
-    add_takeaway(
-        fig,
-        f"holdout at t={threshold:.3f} — per-slice metrics (left) and cost (right); "
-        f"dashed = overall F1 {overall['f1']:.3f}",
-    )
+    add_takeaway(fig, f"raw model at t = {threshold:.3f}, not the served policy")
     return apply_theme(fig)
 
 
@@ -314,8 +324,15 @@ def bootstrap_ci_figure(delta: dict[str, Any], name_a: str, name_b: str) -> go.F
         ay=-35,
         font={"size": 13, "color": "#fbbf24"},
     )
+    if delta["hi"] < 0:
+        title = (
+            f"The saving excludes zero: \u2212${abs(delta['lo']):.0f} to "
+            f"\u2212${abs(delta['hi']):.0f} over {delta['n_boot']:,} resamples"
+        )
+    else:
+        title = "Paired-bootstrap cost deltas"
     fig.update_layout(
-        title="Paired-bootstrap cost deltas",
+        title=title,
         xaxis_title=f"cost delta, {label} (negative = saves money)",
         yaxis_title="resamples",
         barmode="overlay",
@@ -414,17 +431,25 @@ def calibration_figure(
         name="perfect calibration",
         line={"dash": "dash", "color": "#64748b"},
     )
+    eces: dict[str, float] = {}
     for name, proba in proba_map.items():
         frac_pos, mean_pred = calibration_curve(y_true, proba, n_bins=cfg.calibration_bins)
         ece = expected_calibration_error(y_true, proba, cfg.calibration_bins)
+        eces[name] = ece
         fig.add_scatter(
             x=mean_pred,
             y=frac_pos,
             mode="lines+markers",
             name=f"{name} (ece={ece:.3f})",
         )
+    raw_ece = eces.get("selected model (raw)")
+    isotonic_ece = eces.get("selected model isotonic")
+    if raw_ece is not None and isotonic_ece is not None:
+        title = f"Isotonic calibration cuts ECE from {raw_ece:.3f} to {isotonic_ece:.3f}"
+    else:
+        title = "Reliability diagram — raw vs isotonic-calibrated"
     fig.update_layout(
-        title="Reliability diagram — raw vs isotonic-calibrated",
+        title=title,
         xaxis_title="Mean predicted probability",
         yaxis_title="Observed churn frequency",
     )
@@ -456,12 +481,27 @@ def importance_figure(
         error_x={"type": "data", "array": result.importances_std[order]},
         marker={"color": "#38bdf8"},
     )
+    mean = result.importances_mean
+    top = order[::-1]
+    first, second = names[top[0]], names[top[1]]
+    total = float(mean.sum())
+    share = float(mean[top[0]] + mean[top[1]]) / total
+    zeros = sorted(n for n, v in zip(names, mean, strict=True) if v < 0.005)
     fig.update_layout(
-        title="Permutation importance (holdout F1, 5 repeats)",
+        title=(
+            f"{first.replace('_', ' ').capitalize()} and {second.replace('_', ' ')} "
+            "carry most of the holdout F1"
+        ),
         xaxis_title="Mean F1 decrease",
         # horizontal bars: automargin sizes the left margin to the longest
         # feature name ("tenure_months"), which the standard 70 px trims
         yaxis={"title": "", "automargin": True},
+    )
+    add_takeaway(
+        fig,
+        f"mean holdout-F1 drop over 5 repeats: {first} {mean[top[0]]:.3f} + "
+        f"{second} {mean[top[1]]:.3f} = {share:.0%} of the {total:.3f} total; "
+        f"{' and '.join(zeros)} ≈ 0",
     )
     return apply_theme(fig)
 
@@ -481,11 +521,17 @@ def precision_recall_figure(
         name="naive majority (base rate)",
         line={"dash": "dash", "color": "#64748b"},
     )
+    aps: dict[str, float] = {}
     for name, proba in proba_map.items():
         prec, rec, _ = precision_recall_curve(y_true, proba)
+        aps[name] = float(skm.average_precision_score(y_true, proba))
         fig.add_scatter(x=rec, y=prec, mode="lines", name=name)
+    best = max(aps, key=lambda k: aps[k])
     fig.update_layout(
-        title="Precision-recall curves — holdout",
+        title=(
+            f"{best[0].upper() + best[1:]} ranks churners best (AP {aps[best]:.3f}) "
+            f"against the {base_rate:.1%} base rate"
+        ),
         xaxis_title="Recall",
         yaxis_title="Precision",
     )

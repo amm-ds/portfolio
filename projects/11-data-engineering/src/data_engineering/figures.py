@@ -161,15 +161,28 @@ def speedup_overview(metrics: dict[str, Any]) -> go.Figure:
             )
         fig.add_vline(x=1, line={"color": "#64748b", "dash": "dash"}, row=1, col=col)
     apply_theme(fig)
+    geo = metrics["summary"]["by_engine"]
+    geomeans = {
+        e: geo[e]["geomean_speedup_vs_pandas"]
+        for e in ("polars", "duckdb", "sqlite")
+        if e in geo and geo[e]["geomean_speedup_vs_pandas"] is not None
+    }
+    if len(geomeans) == 3 and geomeans["sqlite"] < 1:
+        headline = (
+            f"Polars (\u00d7{geomeans['polars']:.1f}) and "
+            f"DuckDB (\u00d7{geomeans['duckdb']:.1f}) beat pandas; "
+            f"sqlite is about {1 / geomeans['sqlite']:.0f}\u00d7 slower"
+        )
+    else:  # partial (engine-restricted) metrics: keep the neutral headline
+        headline = "Speedup vs the classical baselines (median wall time, log scale)"
     fig.update_layout(
-        title="Speedup vs the classical baselines (median wall time, log scale)",
+        title=headline,
         xaxis_title="x faster than baseline",
         height=640,
         margin={"l": 150, "r": 140, "t": 110, "b": 70},
     )
     fig.update_xaxes(type="log")
     _task_axis(fig, tasks)
-    geo = metrics["summary"]["by_engine"]
     note = "; ".join(
         f"{ENGINE_LABELS[e]} geomean x{geo[e]['geomean_speedup_vs_pandas']}"
         for e in ENGINE_ORDER
@@ -229,8 +242,23 @@ def scalability_lines(metrics: dict[str, Any]) -> go.Figure:
             )
     fig.add_vline(x=1, line={"color": "#64748b", "dash": "dash"}, row=1, col=1)
     apply_theme(fig, height=540)
+    slopes = scale["tasks"][detail_task]["engines"]
+    polars_slope = slopes.get("polars", {}).get("loglog_slope")
+    duckdb_slope = slopes.get("duckdb", {}).get("loglog_slope")
+    sublinear = (
+        polars_slope is not None
+        and duckdb_slope is not None
+        and max(polars_slope, duckdb_slope) < 1
+    )
+    if sublinear:
+        headline = (
+            "Polars and DuckDB grow sub-linearly with rows (slopes "
+            f"{polars_slope:.2f}, {duckdb_slope:.2f}); pandas grows linearly"
+        )
+    else:  # partial (engine-restricted) metrics: keep the neutral headline
+        headline = "Scalability — growth slopes and representative group-by detail"
     fig.update_layout(
-        title="Scalability — growth slopes and representative group-by detail",
+        title=headline,
         margin={"l": 100, "r": 120, "t": 105, "b": 70},
     )
     fig.update_xaxes(title_text="log-log slope (1 = linear)", range=[0.0, 1.25], row=1, col=1)
@@ -244,7 +272,6 @@ def scalability_lines(metrics: dict[str, Any]) -> go.Figure:
         col=2,
     )
     fig.update_yaxes(type="log", title_text="median wall time (s)", row=1, col=2)
-    slopes = scale["tasks"][detail_task]["engines"]
     note = "; ".join(
         f"{ENGINE_LABELS[e]} slope {slopes[e]['loglog_slope']:.2f}"
         for e in ENGINE_ORDER
@@ -261,6 +288,7 @@ def memory_lollipop(metrics: dict[str, Any]) -> go.Figure:
     """Fresh-process peak RSS per task x engine — lollipop chart."""
     tasks = _task_names(metrics)
     fig = go.Figure()
+    peaks: dict[str, float] = {}
     for engine in ENGINE_ORDER:
         if all(engine not in metrics["tasks"][t]["engines"] for t in tasks):
             continue
@@ -295,9 +323,19 @@ def memory_lollipop(metrics: dict[str, Any]) -> go.Figure:
             legendgroup=engine,
             marker={"color": ENGINE_COLORS[engine], "size": 11},
         )
+        if ys:
+            peaks[engine] = max(ys)
     apply_theme(fig)
+    sqlite_peak = peaks.get("sqlite")
+    if sqlite_peak is not None and sqlite_peak == max(peaks.values()):
+        headline = (
+            f"sqlite peaks highest (to {sqlite_peak:,.0f} MB) because it holds "
+            "frame and database together"
+        )
+    else:  # no RSS probes in this metrics build: keep the neutral headline
+        headline = "Peak RSS by task — fresh-process probe (lollipop)"
     fig.update_layout(
-        title="Peak RSS by task — fresh-process probe (lollipop)",
+        title=headline,
         yaxis_title="peak RSS (MB)",
         height=600,
     )

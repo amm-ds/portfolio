@@ -308,8 +308,17 @@ def fig_hour_borough_heatmap(demand: pl.DataFrame) -> go.Figure:
             hovertemplate="%{y} %{x}: %{z:.2f} pickups/zone-hour<extra></extra>",
         )
     )
+    title = "Mean pickups by hour of day x borough"
+    if "Manhattan" in boroughs and "Bronx" in boroughs:
+        manhattan = z[boroughs.index("Manhattan")]
+        bronx = z[boroughs.index("Bronx")]
+        peak_hour = max(range(len(hours)), key=lambda h: manhattan[h])
+        title = (
+            f"Manhattan peaks at {manhattan[peak_hour]:.1f} pickups/zone-hour "
+            f"at {peak_hour:02d}:00; the Bronx tops out at {max(bronx):.2f}"
+        )
     fig.update_layout(
-        title="Mean pickups by hour of day x borough",
+        title=title,
         xaxis_title="hour of day",
         yaxis_title="borough",
     )
@@ -454,6 +463,7 @@ def fig_borough_mae(preds: pl.DataFrame) -> go.Figure:
         )
         fig.add_bar(name=name, x=mae["borough"].to_list(), y=mae["abs_err"].to_list())
     takeaway = "persistence (naive_lag24) is the grey reference across boroughs"
+    title = "Test MAE by borough and run"
     if "y_naive" in preds.columns and "y_gbm" in preds.columns:
         bronx = preds.filter(pl.col("borough") == "Bronx").select(
             [
@@ -470,9 +480,13 @@ def fig_borough_mae(preds: pl.DataFrame) -> go.Figure:
                     else ("the GBM", row["gbm_mae"], row["naive_mae"])
                 )
                 takeaway = f"naive_lag24 in grey; Bronx — {winner} {w_mae:.2f} vs {l_mae:.2f} MAE"
+                if winner == "persistence":
+                    title = (
+                        f"Persistence beats the GBM in the Bronx ({w_mae:.2f} vs {l_mae:.2f} MAE)"
+                    )
     fig.update_layout(
         barmode="group",
-        title="Test MAE by borough and run",
+        title=title,
         yaxis_title="MAE (pickups/hour)",
     )
     return add_takeaway(apply_theme(fig), takeaway)
@@ -517,11 +531,21 @@ def fig_weather_elasticity(by_borough: pl.DataFrame) -> go.Figure:
         )
     )
     fig.add_hline(y=1.0, line_dash="dash", line_color="#f472b6")
+    obs = by_borough.drop_nulls("rain_vs_dry_ratio")
+    title = "Rain vs dry demand ratio by borough"
+    below = obs.filter(pl.col("rain_vs_dry_ratio") < 1.0)
+    if {"Manhattan", "Queens", "Staten Island"} <= set(below["borough"].to_list()):
+        drops = (1.0 - below["rain_vs_dry_ratio"]) * 100.0
+        lo = math.floor(cast(float, drops.min()))
+        hi = math.ceil(cast(float, drops.max()))
+        title = (
+            f"Rainy hours average {lo}\u2013{hi}% fewer pickups "
+            "in Manhattan, Queens and Staten Island"
+        )
     fig.update_layout(
-        title="Rain vs dry demand ratio by borough",
+        title=title,
         yaxis_title="rain / dry ratio",
     )
-    obs = by_borough.drop_nulls("rain_vs_dry_ratio")
     if obs.height > 0:
         takeaway = (
             "mean pickup ratio, rain (≥1 mm) vs dry hours; directional — hour-of-week unnormalised"
@@ -812,8 +836,20 @@ def fig_gbm_vs_nn(runs: list[RunResult]) -> go.Figure:
         showarrow=False,
         font={"size": 12, "color": "#fbbf24"},
     )
+    title = "Run ladder: MAE + MASE (left), MAPE (right)"
+    leader = min(runs, key=lambda r: _value(r, "mae"))
+    learned = [r for r in runs if "naive" not in r.name]
+    if (
+        "gbm" in leader.name
+        and "tuned" in leader.name
+        and learned
+        and all(_value(r, "mase") < 1.0 for r in learned)
+    ):
+        title = (
+            "The tuned GBM leads the run ladder; every learned model beats persistence (MASE < 1)"
+        )
     fig.update_layout(
-        title="Run ladder: MAE + MASE (left), MAPE (right)",
+        title=title,
         yaxis_title="MAE (pickups)",
         yaxis2_title="MASE",
         yaxis3_title="MAPE (%)",

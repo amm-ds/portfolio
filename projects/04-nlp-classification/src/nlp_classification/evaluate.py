@@ -213,8 +213,16 @@ def per_class_f1_comparison_figure(
     )
     fig.add_bar(x=labels, y=list(f1_sel), name="selected", row=1, col=1)
     fig.add_bar(x=labels, y=list(f1_base), name="tf-idf baseline", row=1, col=2)
+    low = np.argsort(f1_sel)[:2]
+    if bool(np.all(f1_sel > f1_base)) and set(low) == set(np.argsort(f1_base)[:2]):
+        title = (
+            f"The transformer beats TF-IDF on every topic; "
+            f"{labels[low[0]]} and {labels[low[1]]} stay lowest"
+        )
+    else:
+        title = "Per-class F1 — selected model vs TF-IDF baseline"
     fig.update_layout(
-        title="Per-class F1 — selected model vs TF-IDF baseline",
+        title=title,
         yaxis_title="F1",
         yaxis_range=[0, 1],
         showlegend=False,
@@ -331,7 +339,14 @@ def training_curve_figure(
     fig.update_xaxes(title="epoch", dtick=1)
     fig.update_yaxes(title="loss")
     fig.update_yaxes(title="val macro-F1", secondary_y=True)
-    fig.update_layout(title="Training histories — headline run and four-epoch probe")
+    headline_best = max(e.val_f1_macro for e in history.epochs)
+    probe_best = max(e.val_f1_macro for e in probe_history.epochs)
+    fig.update_layout(
+        title=(
+            f"Extra epochs add {probe_best - headline_best:+.4f} val macro-F1: "
+            f"{probe_best:.4f} probe peak vs {headline_best:.4f} headline"
+        )
+    )
     add_takeaway(
         fig,
         f"solid = headline; dotted = probe; star = headline endpoint at val "
@@ -446,13 +461,21 @@ def eda_class_balance_figure(
         cols=2,
         subplot_titles=("Class distribution (bounded subsample)", "Train text length (words)"),
     )
+    counts = []
     for split_name, ds in (("train", train_ds), ("val", val_ds), ("test", test_ds)):
         y = [int(ds[LABEL_COLUMN].count(i)) for i in range(len(labels))]
+        counts.append(y)
         fig.add_bar(x=labels, y=y, name=split_name, row=1, col=1)
     word_counts = [len(t.split()) for t in train_ds[TEXT_COLUMN]]
     fig.add_histogram(x=word_counts, name="train", row=1, col=2)
+    n_topics = {2: "Two", 3: "Three", 4: "Four"}.get(len(labels), str(len(labels)))
+    under = int(np.ceil(np.percentile(word_counts, 90) / 10.0) * 10)
+    if all(len(set(c)) == 1 for c in counts):
+        title = f"{n_topics} topics, equal class sizes; most items under {under} words"
+    else:
+        title = "Class balance and text length"
     fig.update_layout(
-        title="Class balance and text length",
+        title=title,
         barmode="group",
         xaxis_title="class",
         yaxis_title="rows",
@@ -624,13 +647,19 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     probe_history = (
         TrainingHistory.from_json(probe_history_path) if probe_history_path.exists() else None
     )
+    analysis = error_analysis(y_true, y_pred_selected, texts, labels)
+    support = y_true.count(labels.index(analysis["true_class"]))
+    cm_title = (
+        f"{analysis['true_class']} read as {analysis['predicted_class']} is the largest "
+        f"error ({analysis['n_confusions']} of {support})"
+    )
     figures = {
         "eda_class_balance": eda_class_balance_figure(train_ds, val_ds, test_ds, labels),
         "confusion_matrix_selected": confusion_matrix_figure(
             y_true,
             y_pred_selected,
             labels,
-            "Confusion matrix — selected model",
+            cm_title,
             "counts on the bounded 1,000-row test split; true on y, predicted on x",
         ),
         "per_class_f1_comparison": per_class_f1_comparison_figure(
@@ -646,7 +675,6 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     if len(ladder_rows) > 1:  # the lone CPU row alone is not a ladder
         figures["scale_ladder"] = scale_ladder_figure(ladder_rows)
 
-    analysis = error_analysis(y_true, y_pred_selected, texts, labels)
     (Path(cfg.reports_dir) / "error_analysis.md").write_text(error_analysis_markdown(analysis))
 
     # calibration of the selected model: temperature fitted on val, ECE on test

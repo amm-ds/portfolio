@@ -209,8 +209,19 @@ def pr_figure(
         fig.add_scatter(
             x=recall, y=precision, mode="lines", name=f"{run.name} (AP={metric.value:.3f})"
         )
+
+    def _ap(run: RunResult) -> float:
+        metric = run.get("pr_auc")
+        return metric.value if metric is not None else -1.0
+
+    best_run = max(runs, key=_ap)
+    best_ap = best_run.get("pr_auc")
+    assert best_ap is not None  # noqa: S101 - run metrics always recorded
     fig.update_layout(
-        title="Precision-recall curves — test window",
+        title=(
+            f"{best_run.name} has the highest AP ({best_ap.value:.3f}) "
+            f"against a {baseline:.2%} prevalence floor"
+        ),
         xaxis_title="recall",
         yaxis_title="precision",
     )
@@ -221,12 +232,32 @@ def pr_figure(
     return apply_theme(fig)
 
 
+def _decimate_minmax(
+    x: np.ndarray, y: np.ndarray, bucket: int = 5
+) -> tuple[np.ndarray, np.ndarray]:
+    """Min-max bucket decimation for the committed telemetry payload.
+
+    Keeps each bucket's extremes (in x order) so single-sample spikes survive
+    in the committed figure while the JSON stays under the size budget.
+    """
+    n = len(x)
+    if n <= bucket:
+        return x, y
+    keep: set[int] = set()
+    for start in range(0, n, bucket):
+        seg = y[start : start + bucket]
+        keep.add(start + int(np.argmin(seg)))
+        keep.add(start + int(np.argmax(seg)))
+    idx = np.array(sorted(keep))
+    return x[idx], y[idx]
+
+
 def telemetry_figure(config: AnomalyConfig, scores: np.ndarray) -> go.Figure:
     """Test-window telemetry with the best model's flags marked per signal panel.
 
     Each signal gets its own y-axis scale so low-magnitude channels are never
-    flattened by latency spikes. Ground-truth anomalies and champion flags are
-    overlaid on every signal panel.
+    flattened by latency spikes. Ground-truth anomalies and served-model flags
+    are overlaid on every signal panel.
     """
     df = load_features(config)
     _, test = split_train_test(df, config.train_frac)
@@ -246,9 +277,10 @@ def telemetry_figure(config: AnomalyConfig, scores: np.ndarray) -> go.Figure:
     )
     for row_idx, sig in enumerate(SIGNALS, start=1):
         vals = test[sig].to_numpy()
+        line_ts, line_vals = _decimate_minmax(ts, vals)
         fig.add_scatter(
-            x=ts,
-            y=vals,
+            x=line_ts,
+            y=line_vals,
             mode="lines",
             name=sig,
             line={"color": sig_colors[(row_idx - 1) % len(sig_colors)], "width": 1.6},
@@ -259,7 +291,7 @@ def telemetry_figure(config: AnomalyConfig, scores: np.ndarray) -> go.Figure:
             x=ts[flagged],
             y=vals[flagged],
             mode="markers",
-            name="flagged (best model)",
+            name="flagged (served model)",
             legendgroup="flagged",
             showlegend=row_idx == 1,
             marker={"color": "#f472b6", "size": 7, "symbol": "x"},
@@ -279,11 +311,17 @@ def telemetry_figure(config: AnomalyConfig, scores: np.ndarray) -> go.Figure:
         )
         fig.update_yaxes(title_text=sig, row=row_idx, col=1)
     fig.update_xaxes(title_text="time", row=len(SIGNALS), col=1)
-    fig.update_layout(title="Champion flags on the test window (independent channel scales)")
+    n_hits = int(np.sum(flagged & truth))
+    fig.update_layout(
+        title=(
+            f"Served-model flags on the test window: {n_hits} of {int(flagged.sum())} "
+            "hit injected anomalies"
+        )
+    )
     add_takeaway(
         fig,
         "test window at the fixed 2% alert budget — each channel on its own scale; "
-        "pink crosses = champion flags, amber rings = ground truth",
+        "pink crosses = served-model flags, amber rings = ground truth",
     )
     return apply_theme(fig, height=760)
 

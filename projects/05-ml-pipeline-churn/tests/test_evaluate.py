@@ -1,6 +1,8 @@
 """End-to-end evaluation on a small config, plus cost/calibration unit tests."""
 
+import base64
 import json
+import struct
 from pathlib import Path
 from typing import Any
 
@@ -331,3 +333,118 @@ def test_threshold_selection_ignores_holdout(small_cfg: ChurnConfig) -> None:
         "y_train",
         "proba_map",
     }
+
+
+def _decode(arr: Any) -> Any:
+    """Plotly 6 binary arrays ({"bdata": ..., "dtype": ...}) back to lists."""
+    if isinstance(arr, dict) and "bdata" in arr:
+        raw = base64.b64decode(arr["bdata"])
+        fmt = {
+            "f8": "d",
+            "f4": "f",
+            "i8": "q",
+            "i4": "i",
+            "u8": "Q",
+            "u4": "I",
+            "i2": "h",
+            "u2": "H",
+            "i1": "b",
+            "u1": "B",
+        }[arr.get("dtype", "f8")]
+        return list(struct.unpack(f"<{len(raw) // struct.calcsize(fmt)}{fmt}", raw))
+    return arr
+
+
+def test_committed_figure_titles_state_their_own_data() -> None:
+    """Committed figure payloads (patched without a full re-run) must agree
+    with the numbers in their own traces and committed report JSONs."""
+    reports = Path(__file__).parents[1] / "reports"
+    figures = reports / "figures"
+
+    imp = json.loads((figures / "permutation_importance.json").read_text())
+    title = imp["layout"]["title"]["text"]
+    trace = imp["data"][0]
+    values = dict(zip(trace["y"], _decode(trace["x"]), strict=True))
+    top = sorted(values, key=lambda k: values[k], reverse=True)
+    total = sum(values.values())
+    share = (values[top[0]] + values[top[1]]) / total
+    first, second = (n.replace("_", " ") for n in top[:2])
+    assert f"{first[0].upper() + first[1:]} and {second} carry most" in title
+    assert f"{top[0]} {values[top[0]]:.3f} + {top[1]} {values[top[1]]:.3f}" in title
+    assert f"{share:.0%} of the {total:.3f} total" in title
+
+    fair = json.loads((figures / "fairness_slices.json").read_text())
+    title = fair["layout"]["title"]["text"]
+    slices = {
+        t["name"]: dict(zip(t["x"], _decode(t["y"]), strict=True))
+        for t in fair["data"]
+        if t.get("name") in ("recall", "precision", "business_cost")
+    }
+    two_year = "contract=two-year"
+    assert slices["recall"][two_year] == 0.0  # "misses all" is literal
+
+    def n_pos(recall: float, precision: float, cost: float) -> float:
+        # cost = fp·1 + fn·5 with tp = recall·n and fp = tp·(1-precision)/precision
+        return cost / (recall * (1 - precision) / precision + 5 * (1 - recall))
+
+    demo = json.loads((reports / "demo_payload.json").read_text())
+    n_pos_total = demo["overall"][0]["tp"] + demo["overall"][0]["fn"]
+    n_m2m = n_pos(
+        slices["recall"]["contract=month-to-month"],
+        slices["precision"]["contract=month-to-month"],
+        slices["business_cost"]["contract=month-to-month"],
+    )
+    n_one = n_pos(
+        slices["recall"]["contract=one-year"],
+        slices["precision"]["contract=one-year"],
+        slices["business_cost"]["contract=one-year"],
+    )
+    n_two = n_pos_total - round(n_m2m) - round(n_one)
+    assert f"misses all {n_two} two-year-contract churners" in title
+    gender_gap = abs(slices["recall"]["gender=Female"] - slices["recall"]["gender=Male"])
+    assert gender_gap < 0.02 and "gender slices are level" in title
+    sens = json.loads((reports / "sensitivity.json").read_text())
+    opt = sens["variants"]["fn5"]["selected_opt"]
+    assert f"raw model at t = {opt:.3f}, not the served policy" in title
+
+    cal = json.loads((figures / "calibration_curve.json").read_text())
+    title = cal["layout"]["title"]["text"]
+    eces = {
+        t["name"].split(" (ece=")[0]: t["name"].split("(ece=")[1].rstrip(")")
+        for t in cal["data"]
+        if "(ece=" in t.get("name", "")
+    }
+    raw_ece = eces["selected model (raw)"]
+    iso_ece = eces["selected model isotonic"]
+    assert f"cuts ECE from {raw_ece} to {iso_ece}" in title
+
+    pr = json.loads((figures / "precision_recall_curve.json").read_text())
+    title = pr["layout"]["title"]["text"]
+    naive = next(t for t in pr["data"] if "base rate" in t["name"])
+    aps = {}
+    for t in pr["data"]:
+        if "base rate" in t.get("name", ""):
+            continue
+        recall = np.array(_decode(t["x"]), dtype=float)
+        precision = np.array(_decode(t["y"]), dtype=float)
+        # sklearn's average_precision_score on the curve's own points
+        aps[t["name"]] = -float(np.sum(np.diff(recall) * precision[:-1]))
+    best = max(aps, key=lambda k: aps[k])
+    base_rate = _decode(naive["y"])[0]
+    assert title.startswith(f"{best[0].upper() + best[1:]} ranks churners best")
+    assert f"(AP {aps[best]:.3f})" in title
+    assert f"against the {base_rate:.1%} base rate" in title
+
+    boot = json.loads((figures / "bootstrap_ci.json").read_text())
+    title = boot["layout"]["title"]["text"]
+    deltas = next(t for t in boot["data"] if t["name"] == "bootstrap deltas")
+    point = next(t for t in boot["data"] if t["name"] == "point delta")
+    sens = json.loads((reports / "sensitivity.json").read_text())
+    ci = sens["variants"]["fn5"]["cost_delta_ci"]
+    assert int(sum(_decode(deltas["y"]))) == ci["n_boot"]
+    assert _decode(point["x"])[0] == ci["point"]
+    assert ci["hi"] < 0  # the saving excludes zero
+    expected = (
+        f"\u2212${abs(ci['lo']):.0f} to \u2212${abs(ci['hi']):.0f} over {ci['n_boot']:,} resamples"
+    )
+    assert expected in title

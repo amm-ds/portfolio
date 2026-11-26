@@ -213,3 +213,31 @@ def test_run_evaluation_writes_artifacts(small_config: AnomalyConfig, tmp_path: 
     ):
         assert (config.figures_dir / f"{name}.html").exists()
         assert (config.figures_dir / f"{name}.json").exists()
+
+
+def test_committed_figure_titles_state_their_own_data() -> None:
+    """Committed figure payloads (patched without a full re-run) must agree
+    with the numbers in their own traces, and with the generator strings."""
+    figures = Path(__file__).parents[1] / "reports" / "figures"
+
+    telemetry = json.loads((figures / "telemetry_flags.json").read_text())
+    title = telemetry["layout"]["title"]["text"]
+    flagged = next(t for t in telemetry["data"] if t["name"] == "flagged (served model)")
+    truth = next(t for t in telemetry["data"] if t["name"] == "ground truth anomaly")
+    hits = len(set(flagged["x"]) & set(truth["x"]))
+    assert f"{hits} of {len(flagged['x'])} hit injected anomalies" in title
+
+    range_pr = json.loads((figures / "range_pr.json").read_text())
+    names = [t.get("name") for t in range_pr["data"]]
+    assert "IsolationForest (mean over series)" in names
+    assert "champion (mean over series)" not in names
+    assert "IsolationForest" in range_pr["layout"]["title"]["text"]
+
+    pr = json.loads((figures / "pr_curves.json").read_text())
+    aps = {
+        t["name"].split(" (AP=")[0]: float(t["name"].split("(AP=")[1].rstrip(")"))
+        for t in pr["data"]
+        if "(AP=" in t.get("name", "")
+    }
+    best = max(aps, key=lambda k: aps[k])
+    assert pr["layout"]["title"]["text"].startswith(f"{best} has the highest AP ({aps[best]:.3f})")

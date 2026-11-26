@@ -53,7 +53,7 @@ def eda_segment_profile_figure(df: pl.DataFrame) -> go.Figure:
     style_runs(fig)
     fig.update_layout(
         barmode="group",
-        title="Three arms: sizes, outcome rates, prior spend",
+        title="Three balanced arms of about 21k; Mens mail lifts visits most",
     )
     add_takeaway(
         fig,

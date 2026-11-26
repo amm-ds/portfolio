@@ -49,8 +49,19 @@ def fig_latency_concurrency(run: BenchRun, cfg: BenchConfig) -> go.Figure:
             name=next((_label(c) for c in subset), model),
             error_y=error_y,
         )
+    # Headline states the finding: the MoE's p95 endpoints, from the cells.
+    moe = [c for c in cells if "a3b" in c.model]
+    if moe and moe[0].p95_latency_s is not None and moe[-1].p95_latency_s is not None:
+        lo, hi = moe[0], moe[-1]
+        title = (
+            f"MoE p95 rises near-linearly from {lo.p95_latency_s:.2f} s "
+            f"({lo.concurrency} request{'s' if lo.concurrency > 1 else ''}) to "
+            f"{hi.p95_latency_s:.2f} s ({hi.concurrency} requests)"
+        )
+    else:
+        title = "p95 latency vs concurrency by model"
     fig.update_layout(
-        title="p95 latency vs concurrency by model",
+        title=title,
         xaxis_title="concurrency (semaphore)",
         yaxis_title="p95 latency (s)",
         xaxis={"dtick": 1},
@@ -100,7 +111,18 @@ def fig_toks_per_s(run: BenchRun, cfg: BenchConfig) -> go.Figure:
             col=2,
         )
     apply_theme(fig, height=560)
-    fig.update_layout(title="Time to first token and throughput under load")
+    # Headline states the finding: one model tops aggregate tok/s at every
+    # concurrency level. The a3b (active-3B MoE, q4_K_M = 4-bit) does so here.
+    by_conc: dict[int, list[CellResult]] = {}
+    for c in cells:
+        by_conc.setdefault(c.concurrency, []).append(c)
+    leaders = {max(cs, key=lambda c: c.agg_tok_per_s or 0.0).model for cs in by_conc.values()}
+    moe = next((m for m in models if "a3b" in m), None)
+    if moe is not None and leaders == {moe}:
+        title = "The 4-bit MoE leads throughput at every concurrency level"
+    else:
+        title = "Time to first token and throughput under load"
+    fig.update_layout(title=title)
     fig.update_xaxes(title_text="concurrency (clients)", dtick=1)
     fig.update_yaxes(title_text="mean TTFT (s)", row=1, col=1)
     fig.update_yaxes(title_text="output tokens/s", row=1, col=2)
@@ -172,8 +194,19 @@ def fig_engine_panel(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     fig.add_bar(x=labels, y=[c.p95_latency_s for c in cells], row=1, col=1)
     fig.add_bar(x=labels, y=[c.agg_tok_per_s for c in cells], row=1, col=2)
     hw = "Apple Silicon" if "arm64" in run.platform else run.platform
+    # Headline states the finding: MLX-vs-Q8_0 throughput ratio, from the cells.
+    mlx = next((c for c in cells if c.engine == "mlx"), None)
+    q8 = next((c for c in cells if "q8_0" in c.model), None)
+    if mlx is not None and q8 is not None and mlx.agg_tok_per_s and q8.agg_tok_per_s:
+        ratio = mlx.agg_tok_per_s / q8.agg_tok_per_s
+        title = (
+            f"The MLX build delivers {ratio:.1f}\u00d7 the tokens/s of Q8_0 llama.cpp; "
+            "quantization differs"
+        )
+    else:
+        title = "Engine panel: p95 latency & tok/s (gemma4:31b)"
     fig.update_layout(
-        title="Engine panel: p95 latency & tok/s (gemma4:31b)",
+        title=title,
         barmode="group",
         showlegend=False,
     )

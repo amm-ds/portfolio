@@ -151,8 +151,20 @@ def _fig_suite_summary(
         bargap=0.3,
     )
     apply_theme(fig)
+    # Headline states the finding: every answer task passes; the refusal
+    # probes are the one failing grade (counts from the entries above).
+    answers_ok = all(p == t for _, row, p, t in entries if row == "answers")
+    probes = [(p, t) for _, row, p, t in entries if row == "graceful refusals"]
+    if answers_ok and probes:
+        passed, total = probes[0]
+        title = (
+            f"Every answer task passes; {total - passed} of {total} refusal probes "
+            "failed in the first recorded run"
+        )
+    else:
+        title = "Graded outcomes by split and grader"
     fig.update_layout(
-        title="Graded outcomes by split and grader (legacy recorded run)",
+        title=title,
         # Margin exception (house standard l=70): the row labels ("graceful
         # refusals", "exact tool set", ...) need the deeper left margin.
         margin={"l": 135},
@@ -219,13 +231,18 @@ def _fig_tool_usage_matrix(cases: list[Any]) -> go.Figure:
         )
         for tool in SUITE_TOOLS
     }
+    clean = sum(extra_totals.values()) == 0
     fig.update_layout(
-        title="Tool calls per task x tool (legacy recorded run)",
+        title=(
+            "Every tool call was in the plan: zero out-of-set calls"
+            if clean
+            else "Tool calls per task x tool"
+        ),
         # Margin exception (house standard l=70): tool names ("search_handbook")
         # on the y-axis need the deeper left margin.
         margin={"l": 135},
     )
-    if sum(extra_totals.values()) == 0:
+    if clean:
         add_takeaway(
             fig,
             "calls per task (columns) x tool (rows); zero out-of-set calls this run",
@@ -337,14 +354,26 @@ def _fig_node_waterfall(cases: list[Any]) -> go.Figure:
         annotations=[budget_annotation],
     )
     apply_theme(fig)
-    fig.update_layout(
-        title="Per-task node visits stacked by latency (legacy recorded run)",
-    )
     widest: tuple[str, str, float] | None = None
+    node_totals: dict[str, float] = {}
     for label, per_task in segments.items():
+        node = label.split(" ")[0]
+        node_totals[node] = node_totals.get(node, 0.0) + sum(v[0] for v in per_task.values())
         for task_name, (latency, _, _) in per_task.items():
             if widest is None or latency > widest[2]:
                 widest = (task_name, label, latency)
+    # Headline states the finding: the dominant node by total visit time and
+    # the single widest visit, both from the segments above.
+    if widest is not None and node_totals:
+        task_name, label, latency = widest
+        dominant = max(node_totals, key=lambda n: node_totals[n])
+        title = (
+            f"{dominant.capitalize()} dominates task time; the slowest single visit is "
+            f"{task_name} {label.capitalize()} at {latency:.0f} s"
+        )
+    else:
+        title = "Per-task node visits stacked by latency"
+    fig.update_layout(title=title)
     if widest is not None:
         task_name, label, latency = widest
         add_takeaway(
@@ -428,8 +457,17 @@ def _fig_cost_latency_bars(cases: list[Any], config: EvalConfig | None) -> go.Fi
     # TeX math (escapes do not help), which rendered the amounts as an italic
     # "0.12cloud-equivalent" mess. Single-$ strings (title, bar labels) are
     # safe; multi-amount prose uses "USD".
+    # Headline states the finding: every task under the latency budget, and
+    # the whole-suite cloud-equivalent cost, both from the bars above.
+    if all(d <= b for d, b in zip(durations, budgets, strict=True)):
+        title = (
+            f"All {len(cases)} practice tasks finish under the {budget:.0f} s deadline "
+            f"at about ${sum(costs):.2f} per suite"
+        )
+    else:
+        title = "Tokens, cloud-equivalent cost, latency per task"
     fig.update_layout(
-        title="Tokens, cloud-equivalent cost, latency per task (legacy run)",
+        title=title,
         margin={"b": 110},
     )
     add_takeaway(

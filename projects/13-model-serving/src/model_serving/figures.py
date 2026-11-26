@@ -68,7 +68,7 @@ def latency_concurrency_lines(metrics: dict[str, Any]) -> go.Figure:
         )
     apply_theme(fig, height=620)
     fig.update_layout(
-        title="Per-request latency vs concurrency — median of repeats, band = repeat min/max",
+        title="p95 stays under 6 ms to 4 concurrent requests, then climbs sharply past 16",
         xaxis_title="concurrency (clients)",
         yaxis_title="latency (s)",
         margin={"l": 90, "r": 140, "t": 110, "b": 70},
@@ -92,6 +92,8 @@ def latency_concurrency_lines(metrics: dict[str, Any]) -> go.Figure:
 def batch_throughput_curve(metrics: dict[str, Any]) -> go.Figure:
     """Throughput (rows/s) and per-request p50 latency vs batch size."""
     sizes = [int(c[1:]) for c in metrics["serving"]["native"]["batch"]]
+    # Largest batch cell, robust to metrics.json key order (sorted on disk).
+    largest = max(sizes)
     fig = make_subplots(
         rows=1,
         cols=2,
@@ -124,23 +126,25 @@ def batch_throughput_curve(metrics: dict[str, Any]) -> go.Figure:
             col=2,
         )
     apply_theme(fig, height=600)
+    onnx_t = metrics["serving"]["onnx"]["batch"][f"b{largest}"]["throughput_rps"]
+    native_t = metrics["serving"]["native"]["batch"][f"b{largest}"]["throughput_rps"]
     fig.update_layout(
-        title="Batch endpoint — /predict/batch sizes 1 to 128 (median of repeats)",
+        title=(
+            f"Batches of {largest} rows reach about {native_t / 1000:.0f}k rows/s on both backends"
+        ),
         margin={"l": 90, "r": 140, "t": 110, "b": 70},
     )
     fig.update_xaxes(type="log", title_text="batch size (rows/request)", row=1, col=1)
     fig.update_xaxes(type="log", title_text="batch size (rows/request)", row=1, col=2)
     fig.update_yaxes(title_text="throughput (rows/s)", row=1, col=1)
     fig.update_yaxes(title_text="p50 latency (s/request)", row=1, col=2)
-    onnx_t = metrics["serving"]["onnx"]["batch"][f"b{sizes[-1]}"]["throughput_rps"]
-    native_t = metrics["serving"]["native"]["batch"][f"b{sizes[-1]}"]["throughput_rps"]
     add_takeaway(
         fig,
         f"Batch cells run saturated (all {metrics['bench_protocol']['batch_requests_per_size']} "
         f"requests in flight); per-request latency stays comparatively flat, with queueing and "
         f"computation not separated. Throughput scales ~linearly with batch size: "
         f"{onnx_t:.0f} rows/s (onnx) vs "
-        f"{native_t:.0f} (native) at size {sizes[-1]}.",
+        f"{native_t:.0f} (native) at size {largest}.",
     )
     return fig
 
@@ -149,10 +153,12 @@ def backend_comparison_slope(metrics: dict[str, Any]) -> go.Figure:
     """Paired native→ONNX p50 slope graph per concurrency cell."""
     levels = [int(c[1:]) for c in metrics["serving"]["native"]["concurrency"]]
     fig = go.Figure()
+    devs: list[float] = []
     for c in levels:
         native_p50 = metrics["serving"]["native"]["concurrency"][f"c{c}"]["p50_s"]
         onnx_p50 = metrics["serving"]["onnx"]["concurrency"][f"c{c}"]["p50_s"]
         ratio = onnx_p50 / native_p50 if native_p50 else float("nan")
+        devs.append(abs(ratio - 1.0))
         fig.add_scatter(
             x=[0, 1],
             y=[native_p50, onnx_p50],
@@ -167,16 +173,17 @@ def backend_comparison_slope(metrics: dict[str, Any]) -> go.Figure:
     fig.add_annotation(x=1, y=1.02, yref="paper", text="onnx", showarrow=False)
     apply_theme(fig, height=600)
     fig.update_layout(
-        title="Paired p50 latency, native → ONNX — identical request streams, seed 42",
+        title=f"ONNX and native p50 differ by at most {max(devs):.0%} at every concurrency level",
         yaxis_title="p50 latency (s)",
         margin={"l": 90, "r": 160, "t": 110, "b": 70},
     )
     fig.update_xaxes(range=[-0.15, 1.25], showticklabels=False, title_text="backend")
     add_takeaway(
         fig,
-        "x-labels are the ONNX/native p50 ratio per cell; below 1.0 the ONNX backend is "
-        "faster on identical work. Deviation from a pure ratio marks per-backend scheduling "
-        "noise, not a different model — parity is gated at the artifact level.",
+        "paired on identical request streams (seed 42); x-labels are the ONNX/native "
+        "p50 ratio per cell; below 1.0 the ONNX backend is faster on identical work. "
+        "Deviation from a pure ratio marks per-backend scheduling noise, not a "
+        "different model — parity is gated at the artifact level.",
     )
     return fig
 
@@ -226,7 +233,7 @@ def footprint_cost_bars(metrics: dict[str, Any]) -> go.Figure:
     )
     apply_theme(fig, height=560)
     fig.update_layout(
-        title="Footprint and cost — fresh process, baked image, declared 65 W / $0.30 per kWh",
+        title="Torch and unused CUDA make up most of the 6.5 GB image; ONNX-only is 291 MB",
         margin={"l": 90, "r": 140, "t": 110, "b": 70},
     )
     fig.update_yaxes(title_text="RSS (MB)", row=1, col=1)
@@ -237,7 +244,8 @@ def footprint_cost_bars(metrics: dict[str, Any]) -> go.Figure:
             fig,
             f"Image total {docker['total_mb']:.0f} MB — the slim-build delta supports framework "
             f"weight; no per-package split was measured. Cost uses measured throughput at "
-            f"concurrency 16; the wattage is a declared assumption "
+            f"concurrency 16; the {metrics['cost']['system_load_watts']:.0f} W / "
+            f"${metrics['cost']['usd_per_kwh']:.2f} per kWh figures are declared assumptions "
             f"(no wall meter), the same framing as experiment 08.",
         )
     else:

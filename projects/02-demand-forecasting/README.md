@@ -182,7 +182,7 @@ The full track writes `reports_m5_full/metrics.json` (per-candidate × origin:
 official WRMSSE, bottom WAPE, bias, stability, zero-day accuracy, per-level
 WRMSSE + the ensemble screen/members/weights), `evaluation_metadata.json`
 (protocol, checksums, seeds, package pins, runtime), `report.html`
-(self-contained interactive report), `figures/` (per-level, sample-series, and
+(self-contained interactive report), `figures/` (per-level, pooling-panel, and
 ranked-candidate charts), and the catalog pair
 (`catalog_forecasts.parquet` + `catalog_meta.json`: every candidate re-fit at
 the test origin for a deterministic 48-series curated catalog, feeding the

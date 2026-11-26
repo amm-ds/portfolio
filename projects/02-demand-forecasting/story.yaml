@@ -54,7 +54,7 @@ sections:
 
     An origin is a cutoff between training history and the next `28` forecast days. Nine weekly origins from 2016-03-20 through 2016-05-15 select ensemble members and weights. The origin on 2016-05-22 starts the final competition window used for the champion's headline score. This dated separation prevents random splits from mixing future information into training.
 
-    Next, we audit intermittent demand and the sample series that make the quiet-day risk concrete ([EDA →](#sec-eda)).
+    Next, we audit intermittent demand and the quiet-day risk it creates ([EDA →](#sec-eda)).
 
     **In plain terms:** All 30,490 Walmart product series follow one timeline: nine past cutoffs choose the blend, and the final 28 days measure its headline result.
   figures: []
@@ -71,23 +71,21 @@ sections:
     Only `2,754` are dense, meaning they sell regularly. Across the panel, `59.5%`
     of days have zero demand.
 
-    The sample-series figure makes these panel-wide patterns concrete. Look at
-    all three panels:
+    The panel-wide patterns are concrete at the series level: the top-units
+    series has a strong weekly shape that a model can learn, the hardest
+    intermittent series stays at zero for weeks, and the mid-volume example is
+    smooth with no zero days.
 
-    - The top-units series has a strong weekly shape that a model can learn.
-    - The hardest intermittent series stays at zero for weeks.
-    - The mid-volume series is smooth and has no zero days.
-
-    Those visible quiet stretches explain why zero-day accuracy needs a separate
+    Those quiet stretches explain why zero-day accuracy needs a separate
     check. On days with zero actual sales, zero-day accuracy is `66.6%` for the
-    floor against `57.2%` for the ensemble. That caveat is not visible in the
-    three ensemble forecast curves, so it must sit beside the headline result.
+    floor against `57.2%` for the ensemble. That caveat is not visible in
+    aggregate error metrics, so it must sit beside the headline result.
 
     The quiet-stretch caveat frames the candidate design. The eight
     candidates and the stability screen come next ([Training →](#sec-training)).
 
     **In plain terms:** 91% of products sell only sporadically and nearly 60% of all days have zero sales—making quiet days hard to beat with complex models.
-  figures: [m5_full_sample_series]
+  figures: []
 - id: training
   text_md: |
     **Eight candidates share one selection rule.** They do not share one forecasting strategy. Five candidates use `LightGBM`. The others are the seasonal floor, `AutoETS`, and the convex ensemble.
@@ -238,7 +236,6 @@ roadmap:
   title: Gate a new erratic challenger
   detail: 'Gate: beat 0.7409 on origin 1 with no zero-day accuracy loss.'
 figure_captions:
-  m5_full_sample_series: 'Three catalog series at the test origin. The curve is the earlier demo blend (0.6161, weights 0.60/0.10/0.30), not the scored 0.6211 blend; the two differ in selection origins (2 vs 9).'
   m5_full_candidate_ranking: All 8 candidates ranked by official hierarchical WRMSSE on the competition window across 42,840 revenue-weighted nodes. Lower bars are better. The convex ensemble leads at 0.6211, the best single pooled fit scores 0.6219, and the seasonal-naive floor scores 0.8929.
   m5_full_per_level_wrmsse: 'Official WRMSSE by hierarchy level for the convex ensemble, seasonal-naive floor, and best single fit. Each level receives equal total weight. Total has the largest relative cut against the floor (43.9%); item-store has the largest absolute gap (about 0.341).'
   m5_full_pooling_panel: 'All eight candidates on the full M5 test panel. Left: signed bias as a percentage of mean actual sales; positive means over-forecasting. Right: accuracy on zero-actual days, where a forecast below 0.5 is correct. The floor leads at 66.6% versus 57.2% for the blend.'

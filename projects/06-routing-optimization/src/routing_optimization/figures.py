@@ -9,7 +9,7 @@ pipeline.
 """
 
 import math
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 import plotly.express as px
 import plotly.graph_objects as go
@@ -27,8 +27,21 @@ from routing_optimization.schemas import Problem
 def gap_figure(rows: pl.DataFrame) -> go.Figure:
     """Distribution of distance gap to best-known (%) for each solver."""
     alns = rows.filter(pl.col("solver") == "alns")
-    n_under = alns.filter(pl.col("gap_pct") < 0).height
+    # -0.005% tie threshold: rounding-level "undercuts" (e.g. -0.0004%) are
+    # ties with the best-known reference, not genuine improvements.
+    n_under = alns.filter(pl.col("gap_pct") < -0.005).height
     n_inst = rows["instance"].n_unique()
+    title = "Distance-gap distribution by solver"
+    if alns.height:
+        iqr = rows.group_by("solver").agg(
+            (pl.col("gap_pct").quantile(0.75) - pl.col("gap_pct").quantile(0.25)).alias("iqr")
+        )
+        alns_iqr = iqr.filter(pl.col("solver") == "alns")["iqr"][0]
+        if alns_iqr <= iqr["iqr"].min():
+            title = (
+                "ALNS has the tightest gap distribution; "
+                f"{n_under} runs undercut best-known distance"
+            )
     fig = px.box(
         rows,
         x="solver",
@@ -36,7 +49,7 @@ def gap_figure(rows: pl.DataFrame) -> go.Figure:
         color="solver",
         points="outliers",
         hover_data=["instance"],
-        title="Distance-gap distribution by solver",
+        title=title,
         labels={"gap_pct": "gap to best-known (%)", "solver": "solver"},
     )
     fig.add_hline(y=0.0, line_color="#94a3b8", line_width=1)
@@ -154,8 +167,12 @@ def eda_instance_map_figure(problem: Problem) -> go.Figure:
             marker_colorbar={"title": "window width<br>(due - ready)"},
         )
     )
+    w_min, w_max = min(tightness), max(tightness)
     fig.update_layout(
-        title="C101 customers colored by time-window width",
+        title=(
+            f"{problem.name}: window widths vary {w_min:.0f}\u2013{w_max:.0f} units "
+            f"across {len(tightness)} customers"
+        ),
         showlegend=True,
     )
     add_takeaway(
@@ -237,6 +254,23 @@ def solver_profile_figure(rows: pl.DataFrame) -> go.Figure:
     Baselines are visually demoted (grey) and ALNS promoted. Boxes summarize
     the 56 instances without drawing an unreadable bar for every run.
     """
+    title = "Route-distance distribution by solver"
+    if "alns" in rows["solver"].unique().to_list():
+        best = rows.group_by("instance").agg(pl.col("distance").min().alias("best"))
+        alns = rows.filter(pl.col("solver") == "alns").join(best, on="instance")
+        n_inst = alns.height
+        n_best = alns.filter(pl.col("distance") == pl.col("best")).height
+        missed = alns.filter(pl.col("distance") > pl.col("best")).select("instance")
+        winners = (
+            rows.join(missed, on="instance")
+            .join(best, on="instance")
+            .filter(pl.col("distance") == pl.col("best"))["solver"]
+            .unique()
+            .to_list()
+        )
+        title = f"ALNS gives the shortest routes on {n_best} of {n_inst} instances"
+        if n_best < n_inst and len(winners) == 1:
+            title += f" ({winners[0]} takes the other {n_inst - n_best})"
     fig = px.box(
         rows,
         x="solver",
@@ -245,7 +279,7 @@ def solver_profile_figure(rows: pl.DataFrame) -> go.Figure:
         points="outliers",
         hover_data=["instance"],
         log_y=True,
-        title="Route-distance distribution by solver",
+        title=title,
         labels={"distance": "total distance (log scale)", "solver": "solver"},
     )
     _style_runs_safe(fig, best="alns")
@@ -256,6 +290,23 @@ def solver_profile_figure(rows: pl.DataFrame) -> go.Figure:
         "grey = baselines, accent = ALNS",
     )
     return apply_theme(fig)
+
+
+def _family_gap_title(rows: pl.DataFrame) -> str:
+    """Finding title from the family means when the ALNS pattern holds."""
+    generic = "Distance gap and vehicle delta by Solomon family"
+    alns = rows.filter(pl.col("solver") == "alns")
+    clustered = alns.filter(pl.col("family").is_in(["C1", "C2"]))["veh_delta"].drop_nulls()
+    wide = alns.filter(pl.col("family").is_in(["R2", "RC2"]))["veh_delta"].drop_nulls()
+    if alns.height == 0 or clustered.len() < 2 or wide.len() < 2:
+        return generic
+    worst = alns.sort("gap_pct", descending=True).row(0, named=True)
+    n_clustered = cast(float, clustered.mean())
+    n_wide = cast(float, wide.max())
+    return (
+        f"ALNS needs +{n_clustered:.0f} vehicle in clustered families, up to "
+        f"+{n_wide:.1f} in R2/RC2; worst gap {worst['gap_pct']:.2f}% ({worst['family']})"
+    )
 
 
 def family_gap_figure(rows: pl.DataFrame) -> go.Figure:
@@ -320,7 +371,7 @@ def family_gap_figure(rows: pl.DataFrame) -> go.Figure:
         )
     fig.update_layout(
         barmode="group",
-        title="Distance gap and vehicle delta by Solomon family",
+        title=_family_gap_title(rows),
         xaxis2_title="family",
     )
     add_takeaway(
@@ -338,13 +389,19 @@ def pareto_figure(rows: pl.DataFrame) -> go.Figure:
     marked distinct from the hand-written ladder, and the vehicle-count delta
     is annotated so the two benchmark criteria stay visible on one chart.
     """
+    near = rows.filter(
+        pl.col("mean_gap_pct").is_between(3.0, 5.0) & pl.col("mean_runtime_s").is_between(0.5, 2.0)
+    )["solver"].to_list()
+    title = "Mean runtime vs mean distance gap by solver"
+    if set(near) == {"alns", "alns_fleet"}:
+        title = "The ALNS arms are the only solvers near a 4% gap at about 1 s"
     fig = px.scatter(
         rows,
         x="mean_runtime_s",
         y="mean_gap_pct",
         color="solver",
         log_x=True,
-        title="Mean runtime vs mean distance gap by solver",
+        title=title,
         labels={
             "mean_runtime_s": "mean runtime (s, log)",
             "mean_gap_pct": "mean gap to best-known (%)",

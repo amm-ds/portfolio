@@ -251,7 +251,10 @@ def hpo_history_figure(study: optuna.Study) -> go.Figure:
         name="best so far",
     )
     fig.update_layout(
-        title="HPO optimization history",
+        title=(
+            f"{len(trials)} trials; best validation macro-F1 {running:.4f}, "
+            "not separated from seed noise"
+        ),
         xaxis_title="trial",
         yaxis_title="val macro-F1",
     )
