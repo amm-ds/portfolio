@@ -23,7 +23,7 @@ from model_serving.figures import build_figures
 
 log = get_logger(__name__)
 
-REPORT_TITLE = "13 — Model API Serving & Docker Deployment (champion MLP, UCI Bike Sharing)"
+REPORT_TITLE = "13 — Model API Serving & Docker Deployment (served MLP, UCI Bike Sharing)"
 
 LIMITS = [
     "Single laptop, no GPU, one uvicorn worker, one model: absolute numbers, "
@@ -245,7 +245,7 @@ def report_core(cfg: ServingConfig) -> Path:
     parity = metrics["parity"]
     report = EvalReport(title=REPORT_TITLE)
     report.add_html(
-        "Champion re-derivation (experiment 12's recipe, seed 42)",
+        "Served-model re-derivation (experiment 12's recipe, seed 42)",
         "<p>Test MAE <b>{:.4f}</b> against experiment 12's committed <b>{:.4f}</b> — "
         "reproduction |Δ| = {:.6g} (tolerance {:.3g}). Validation MAE {:.4f}; best epoch "
         "{}/{}. Feature contract re-derived: {} selected; pruned {}.</p>".format(
@@ -307,7 +307,7 @@ def report_core(cfg: ServingConfig) -> Path:
     (cfg.reports_dir / "results.md").write_text(
         f"# {REPORT_TITLE}\n\n"
         f"## Protocol\n\n{metadata['protocol']}\n\n"
-        f"## Champion + gates\n\n"
+        f"## Served model + gates\n\n"
         f"- Reproduction: derived test MAE {champion['test_mae']:.4f} vs committed "
         f"{reproduction['expected_test_mae']:.4f} (|Δ| = {reproduction['abs_diff']:.6g}).\n"
         f"- Parity: max-abs {parity['max_abs_scaled']:.3g} on {parity['n_probe']} probe rows "

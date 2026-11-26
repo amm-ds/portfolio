@@ -112,7 +112,7 @@ sections:
         return np.mean([_ranks(member(x)) for member in members], axis=0)
     ```
 
-    Excerpt from [nab_sweep.py](https://github.com/amm-ds/portfolio/blob/main/projects/03-anomaly-detection/src/anomaly_detection/nab_sweep.py). Below, `telemetry_flags`, `hpo_importance`, and `nab_tune_surface` show the channel flags, HPO weight, and cooldown sweep; next, we split minute rank from event rank ([Evaluation →](#sec-evaluation)).
+    Excerpt from [nab_sweep.py](https://github.com/amm-ds/portfolio/blob/main/projects/03-anomaly-detection/src/anomaly_detection/nab_sweep.py). Below, `telemetry_flags`, `hpo_importance`, and `nab_tune_surface` show the channel flags, HPO weight, and cooldown sweep. The next section splits minute rank from event rank ([Evaluation →](#sec-evaluation)).
 
     **In plain terms:** Blending three detectors and capping alerts cuts pages from 66 to 35 without extra tuning. Tuning one detector can cut pages further, but it catches fewer incidents.
   figures: [telemetry_flags, hpo_importance, nab_tune_surface]

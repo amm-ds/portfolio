@@ -1,7 +1,7 @@
 # 13 · Model API Serving & Docker Deployment
 
 **Domain:** model serving & deployment ·
-**Data:** champion MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly, sha256-pinned) ·
+**Data:** served MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly, sha256-pinned) ·
 **Status:** working showcase —
 [Project README](https://github.com/amm-ds/portfolio/tree/main/projects/13-model-serving) ·
 [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/13-model-serving/DESIGN.md) ·
@@ -11,11 +11,11 @@
 > FastAPI schema serves both backends. Paired tests: 1.6 ms p50, ~950 req/s knee, ~56k rows/s batched; image
 > 6.5 GB, or 291 MB ONNX-only.
 
-**TL;DR:** teams asking what serving a champion tabular model actually
+**TL;DR:** teams asking what serving a selected tabular model actually
 looks like — latency percentiles, a throughput knee, batch curves, memory,
 image size, and a cost line with its assumptions written down. Three gates
 stand before any benchmark number is trusted: the served artifact must be
-the champion (re-derived from the committed recipe, bit for bit), the
+the selected model (re-derived from the committed recipe, bit for bit), the
 export must compute the same function as the native model (parity gate),
 and the measurement must be paired, warmed, and seeded. The reusable asset
 is the protocol; absolute numbers, curve shapes, and paired deltas are all

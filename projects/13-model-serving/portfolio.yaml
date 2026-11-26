@@ -10,6 +10,6 @@ techniques:
 - fresh-process RSS probes
 - multi-stage Docker build (uv lockfile, non-root, healthcheck)
 - electricity cost framing (declared assumptions)
-data: Champion MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly)
+data: Served MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly)
 status: working
 order: 13

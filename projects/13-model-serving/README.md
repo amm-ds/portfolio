@@ -1,13 +1,13 @@
 # Model API Serving & Docker Deployment
 
 **Working showcase.** The portfolio's model-serving case study: experiment 12's
-champion tabular MLP (PyTorch, 25.4316 test MAE on UCI Bike Sharing hourly)
+served tabular MLP (PyTorch, 25.4316 test MAE on UCI Bike Sharing hourly)
 re-derived bit-for-bit from its committed recipe, exported to ONNX under a hard
 parity gate, served behind a small FastAPI service with interchangeable
 native/ONNX backends, load-tested by a hand-written async harness, and baked
 into a measured multi-stage Docker image.
 
-- Problem: what does serving a champion tabular model actually look like —
+- Problem: what does serving a selected tabular model actually look like —
   latency percentiles, throughput, batch curves, memory, image size, cost?
 - Design: [DESIGN.md](DESIGN.md)
 - Story: [story.yaml](story.yaml) (served at `/projects/13-model-serving/story`)
@@ -15,7 +15,7 @@ into a measured multi-stage Docker image.
 ## Pipeline
 
 ```bash
-uv run python -m model_serving.cli train       # re-derive champion + ONNX export + gates
+uv run python -m model_serving.cli train       # re-derive served model + ONNX export + gates
 uv run python -m model_serving.cli benchmark   # paired load-test, both backends
 uv run python -m model_serving.cli docker      # image build, size, compose smoke
 uv run python -m model_serving.cli report      # metrics.json + figures + report.html

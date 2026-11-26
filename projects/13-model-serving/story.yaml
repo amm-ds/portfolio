@@ -1,9 +1,9 @@
 project_id: 13-model-serving
-headline: 'The champion tabular MLP from experiment 12 ships as a small FastAPI service: native torch vs ONNX Runtime measured
+headline: 'The served tabular MLP from experiment 12 ships as a small FastAPI service: native torch vs ONNX Runtime measured
   under the same seeded load — 1.6 ms p50 single-request (native/ONNX p95 2.0/1.9 ms, p99 2.2 ms; n = 300 requests/cell), a ~950 req/s throughput
   knee, a measured 6.5 GB image whose slim-build delta implicates torch and unused CUDA libraries, and about $0.000012 electricity per
   1k predictions on a laptop.'
-data_note: Champion MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly, sha256-pinned) — the identical
+data_note: Served MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly, sha256-pinned) — the identical
   frame hash reproduces the committed 25.4316 test MAE to the last digit before serving begins.
 limits: 'Single laptop, no GPU, one uvicorn worker, one model: absolute numbers, paired native-vs-ONNX deltas, and curve shapes
   are host-specific observations, not demonstrated transfer; localhost latency has no network term; the wattage behind the
@@ -17,7 +17,7 @@ sections:
 - id: background
   text_md: |
     **What does it take to turn a trained model into software other systems can call?**
-    This study ships the champion hourly bike-rental `MLP` from project `12` behind a `FastAPI` service, comparing `PyTorch` and ONNX Runtime under a warmed, paired benchmark (`300` requests per cell).
+    This study ships the selected hourly bike-rental `MLP` from project `12` behind a `FastAPI` service, comparing `PyTorch` and ONNX Runtime under a warmed, paired benchmark (`300` requests per cell).
 
     ```diagram 13-serving-pipeline
     ```
@@ -50,14 +50,14 @@ sections:
     - Paired benchmarking: both backends receive identical request bytes. Warm-up is excluded, and each cell reports the median of `3` repeats.
     - Container evidence: measure image size, fresh-process memory, and electricity cost with declared assumptions.
 
-    The identical recipe and feature contract show how the rebuilt champion
+    The identical recipe and feature contract show how the rebuilt served model
     clears the first gate ([Data →](#sec-data)).
 
     **In plain terms:** We first check that the portable model matches the original, then give both versions the same requests so their speed, memory, and cost comparisons are fair.
   figures: []
 - id: data
   text_md: |
-    **The same recipe rebuilds the champion.** Experiment 12 selected the
+    **The same recipe rebuilds the served model.** Experiment 12 selected the
     tabular `MLP` by validation `MAE` on the UCI Machine Learning Repository's
     Bike Sharing hourly dataset
     ([dataset card](https://amm-ds.github.io/portfolio/data-registry/bike-sharing/)).
@@ -113,7 +113,7 @@ sections:
   figures: []
 - id: training
   text_md: |
-    **Training produces a guarded service.** Fitting the champion takes `2.4 s`
+    **Training produces a guarded service.** Fitting the model takes `2.4 s`
     in the committed run. Training saves the `PyTorch` weights and architecture
     metadata. The `ONNX` export uses opset `17` and a dynamic batch axis so one
     graph accepts different batch sizes. The pipeline stops unless reproduction
@@ -261,7 +261,7 @@ sections:
     ## Results summary
 
     The summary diagram below connects each deployment stage to its result.
-    Experiment 12's champion `MLP` reproduces exactly, `ONNX` parity is gated at
+    Experiment 12's served `MLP` reproduces exactly, `ONNX` parity is gated at
     7.2e-07 max-abs, and single-request `p50` is 1.6 ms. The load curve reaches
     a ~950 req/s knee, while batching reaches ~56k rows/s. The measured full
     image is 6.5 GB. Electricity costs `~$0.000012` per 1k predictions under
@@ -356,7 +356,7 @@ sections:
   figures: []
 roadmap:
 - status: shipped
-  title: Reproduce the champion; gate the export
+  title: Reproduce the served model; gate the export
   detail: Parity max-abs 7.2e-07 on 512 probes vs a 1e-4 gate.
 - status: shipped
   title: Pass both backends through load testing
@@ -371,7 +371,7 @@ roadmap:
   title: Re-measure on the target deployment host
   detail: 'Gate: paired harness rerun on the target host before capacity quotes.'
 key_concepts:
-- '**Reproduction gate:** The same pinned data, recipe, and seed must reproduce the champion''s committed test MAE exactly
+- '**Reproduction gate:** The same pinned data, recipe, and seed must reproduce the served model''s committed test MAE exactly
   before export.'
 - '**Parity gate:** The export must match native predictions on a fixed probe grid within an absolute plus relative float32
   tolerance.'

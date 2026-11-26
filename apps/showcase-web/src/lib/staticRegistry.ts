@@ -257,7 +257,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
     "topic": "ML Systems & Decisioning"
   },
   {
-    "data": "Champion MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly)",
+    "data": "Served MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly)",
     "domain": "Model serving & deployment",
     "has_report": true,
     "id": "13-model-serving",

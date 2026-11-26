@@ -5,7 +5,7 @@ Decisions behind experiment 13, in the order the pipeline makes them.
 ## 1. Vendor the recipe; never import the sibling
 
 Workspace members are siblings, not dependencies: `13-model-serving` must not
-`import tabular_ml_lifecycle`. The champion path (data → features → selection
+`import tabular_ml_lifecycle`. The served-model path (data → features → selection
 → MLP loop) is re-implemented inside this package from experiment 12's
 committed params and feature contract, same seed. The payoff is a hard
 reproduction gate rather than a hope: same pinned zip (sha256), same recipe,
@@ -20,7 +20,7 @@ and the prepared-frame checksum matches 12's committed dataset contract.
   grid, max-abs on the raw network output. The tolerance is absolute (1e-4)
   **plus a relative float32 term** (1e-5 × output scale): kernel-order noise
   scales with output magnitude, so a purely absolute gate misfires on
-  ill-scaled models and is needlessly tight on healthy ones. On the champion
+  ill-scaled models and is needlessly tight on healthy ones. On the served model
   (outputs O(1)) the absolute term dominates; measured deviation 7.2e-07.
   End-to-end deviations scale by `y_std` exactly (both predictions are the
   same linear function of the raw output).
