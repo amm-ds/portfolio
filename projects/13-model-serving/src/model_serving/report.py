@@ -104,7 +104,10 @@ def assemble_metrics(cfg: ServingConfig) -> dict[str, Any]:
             ),
             "bench_runtime_s": bench["bench_runtime_s"],
         },
-        "_meta": {
+        # Run-level analysis blocks live under ``analysis``; ``_meta`` is
+        # reserved for the provenance stamp (scripts/stamp_metrics_meta.py
+        # replaces it wholesale) — same convention as experiment 12 (D0).
+        "analysis": {
             "limits": LIMITS,
             "stages": {
                 "train_runtime_s": train["train_runtime_s"],
