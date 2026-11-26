@@ -1,5 +1,13 @@
 {
-  "protocol": "m5_full_v1",
+  "_meta": {
+    "created_at": "2026-11-24T15:32:17+01:00",
+    "data_contract_sha256": null,
+    "git_sha": "2beafb93519a79fc5eda36d4aae5601af861301b",
+    "params_sha256": null,
+    "schema_version": 1,
+    "seed": null,
+    "uv_lock_sha256": "cfaed5eee2d80ad00be3ed47a3c1380280704fa96e3062541a1b2926765f750a"
+  },
   "candidates": [
     "seasonal_naive",
     "lgbm",
@@ -10,103 +18,27 @@
     "auto_ets",
     "convex_ensemble"
   ],
-  "pooled_strategy": "direct",
-  "series_universe": {
-    "n_series": 30490,
-    "ladder_cap": null,
-    "ladder_rule": null
-  },
-  "origins": {
-    "dates": [
-      "2016-03-20",
-      "2016-03-27",
-      "2016-04-03",
-      "2016-04-10",
-      "2016-04-17",
-      "2016-04-24",
-      "2016-05-01",
-      "2016-05-08",
-      "2016-05-15",
-      "2016-05-22"
-    ],
-    "indices": [
-      1877,
-      1884,
-      1891,
-      1898,
-      1905,
-      1912,
-      1919,
-      1926,
-      1933,
-      1940
-    ],
-    "selection": [
-      "2016-03-20",
-      "2016-03-27",
-      "2016-04-03",
-      "2016-04-10",
-      "2016-04-17",
-      "2016-04-24",
-      "2016-05-01",
-      "2016-05-08",
-      "2016-05-15"
-    ],
-    "test": [
-      "2016-05-22"
-    ],
-    "horizon_days": 28,
-    "min_train_days": 1096,
-    "spacing_days": 7
-  },
-  "hierarchy": {
-    "levels": [
-      "total",
-      "state",
-      "store",
-      "cat",
-      "dept",
-      "state_cat",
-      "state_dept",
-      "store_cat",
-      "store_dept",
-      "item",
-      "state_item",
-      "item_store"
-    ],
-    "n_nodes_total": 42840,
-    "level_node_counts": {
-      "total": 1,
-      "state": 3,
-      "store": 10,
-      "cat": 3,
-      "dept": 7,
-      "state_cat": 9,
-      "state_dept": 21,
-      "store_cat": 30,
-      "store_dept": 70,
-      "item": 3049,
-      "state_item": 9147,
-      "item_store": 30490
-    },
-    "wrmsse": "official M5 hierarchical WRMSSE: bottom forecasts aggregate bottom-up through all 12 levels (42,840 nodes on the real panel); per-node RMSSE = sqrt(mean squared error over the 28 scored days / mean squared first difference of the node's TRAIN window); node weight = revenue (units x sell_price) over the 28 days preceding the scored window, aggregated bottom-up and normalized across all nodes (equal total per level \u2014 the official scheme); zero-denominator nodes excluded with renormalization (counted)"
-  },
   "classes": {
-    "method": "Syntetos-Boylan ADI/CV2 on each series' REAL history up to the last SELECTION origin",
-    "thresholds": {
-      "adi": 1.32,
-      "cv2": 0.49
+    "counts": {
+      "dense": 2754,
+      "intermittent": 27736
     },
     "dense_quadrants": [
       "smooth",
       "erratic"
     ],
-    "counts": {
-      "dense": 2754,
-      "intermittent": 27736
+    "method": "Syntetos-Boylan ADI/CV2 on each series' REAL history up to the last SELECTION origin",
+    "thresholds": {
+      "adi": 1.32,
+      "cv2": 0.49
     }
   },
   "ensemble": {
+    "members": [
+      "lgbm_pool_storecat",
+      "lgbm_pool_store",
+      "lgbm_pool_dept"
+    ],
     "pool": [
       "lgbm",
       "lgbm_tweedie",
@@ -115,65 +47,70 @@
       "lgbm_pool_dept",
       "auto_ets"
     ],
+    "rule": "wave-30 screen on the official WRMSSE: best three of the pool by mean + 1.0 x population std of the per-origin official WRMSSE over the selection origins; simplex-grid weights (step 0.05, ties -> first grid point) minimising the same screen of the blend's per-origin WRMSSE, computed exactly from the forecast-level convex combination re-aggregated through the hierarchy",
     "selection_screen": {
+      "auto_ets": {
+        "mean": 0.7516852600032515,
+        "score": 0.804176221356886,
+        "std": 0.052490961353634555
+      },
       "lgbm": {
         "mean": 0.6939821281982138,
-        "std": 0.034739408224563145,
-        "score": 0.7287215364227769
-      },
-      "lgbm_tweedie": {
-        "mean": 0.704767308442286,
-        "std": 0.05548533418945554,
-        "score": 0.7602526426317415
-      },
-      "lgbm_pool_store": {
-        "mean": 0.652385767586982,
-        "std": 0.054933813997979135,
-        "score": 0.7073195815849611
-      },
-      "lgbm_pool_storecat": {
-        "mean": 0.6399508391509454,
-        "std": 0.053957607151780676,
-        "score": 0.6939084463027261
+        "score": 0.7287215364227769,
+        "std": 0.034739408224563145
       },
       "lgbm_pool_dept": {
         "mean": 0.6807914278503571,
-        "std": 0.047024292373921826,
-        "score": 0.7278157202242789
+        "score": 0.7278157202242789,
+        "std": 0.047024292373921826
       },
-      "auto_ets": {
-        "mean": 0.7516852600032515,
-        "std": 0.052490961353634555,
-        "score": 0.804176221356886
+      "lgbm_pool_store": {
+        "mean": 0.652385767586982,
+        "score": 0.7073195815849611,
+        "std": 0.054933813997979135
+      },
+      "lgbm_pool_storecat": {
+        "mean": 0.6399508391509454,
+        "score": 0.6939084463027261,
+        "std": 0.053957607151780676
+      },
+      "lgbm_tweedie": {
+        "mean": 0.704767308442286,
+        "score": 0.7602526426317415,
+        "std": 0.05548533418945554
       }
     },
-    "members": [
-      "lgbm_pool_storecat",
-      "lgbm_pool_store",
-      "lgbm_pool_dept"
-    ],
     "weights": [
       0.95,
       0.0,
       0.050000000000000044
-    ],
-    "rule": "wave-30 screen on the official WRMSSE: best three of the pool by mean + 1.0 x population std of the per-origin official WRMSSE over the selection origins; simplex-grid weights (step 0.05, ties -> first grid point) minimising the same screen of the blend's per-origin WRMSSE, computed exactly from the forecast-level convex combination re-aggregated through the hierarchy"
+    ]
   },
   "erratic_refinement": {
-    "goal": "improve forecast quality on highly erratic dense series (ADI < 1.32, CV2 >= 0.49) \u2014 better spike amplitude capture \u2014 without regressing the pooled official test WRMSSE; a rejected verdict keeps the committed champion (measured-and-rejected)",
-    "peak_candidate": "lgbm_pool_storecat_peak",
-    "routed_candidate": "erratic_routed",
-    "n_erratic_series": 2288,
-    "peak_weight_choice": {
-      "weights": [
-        2.0,
-        3.0
-      ],
-      "chosen": 3.0,
-      "selection_screen": {
-        "2.0": 0.6844242788922609,
-        "3.0": 0.679159478492344
+    "adoption_gate": {
+      "adopted": false,
+      "checks": {
+        "erratic_win_rate_vs_floor": {
+          "champion": 0.826048951048951,
+          "ok": false,
+          "reason": "routed 0.8247 vs champion 0.8260 -> does not improve",
+          "routed": 0.8247377622377622
+        },
+        "official_wrmsse_delta_routed_minus_champion": {
+          "delta": 0.0024879001837145864,
+          "noise_tol": 0.0006438463082705585,
+          "ok": false,
+          "reason": "delta +0.002488 vs noise band 0.000644 -> regresses beyond noise"
+        }
       },
+      "rule": "adopt iff the erratic-class win-rate vs the seasonal-naive floor improves over the champion AND routed WRMSSE - champion WRMSSE <= the paired bootstrap noise band (no regression beyond noise); a rejected verdict keeps the committed champion (measured-and-rejected)"
+    },
+    "goal": "improve forecast quality on highly erratic dense series (ADI < 1.32, CV2 >= 0.49) — better spike amplitude capture — without regressing the pooled official test WRMSSE; a rejected verdict keeps the committed champion (measured-and-rejected)",
+    "n_erratic_series": 2288,
+    "peak_candidate": "lgbm_pool_storecat_peak",
+    "peak_weight_choice": {
+      "chosen": 3.0,
+      "definition": "wave-30 screen (mean + 1.0 x population std of the per-origin official WRMSSE over the selection origins) of each weight variant; ties -> lighter weight; the winner is applied to every origin including test",
       "selection_per_origin_wrmsse": {
         "2.0": [
           0.7314839650885495,
@@ -198,11 +135,19 @@
           0.6107518760639138
         ]
       },
-      "definition": "wave-30 screen (mean + 1.0 x population std of the per-origin official WRMSSE over the selection origins) of each weight variant; ties -> lighter weight; the winner is applied to every origin including test"
+      "selection_screen": {
+        "2.0": 0.6844242788922609,
+        "3.0": 0.679159478492344
+      },
+      "weights": [
+        2.0,
+        3.0
+      ]
     },
+    "routed_candidate": "erratic_routed",
     "routing": {
-      "rule": "erratic-class series swap the screened blend for the peak arm when the peak arm's summed |error| over the selection origins' scored cells is strictly lower; chosen on selection origins only",
       "n_routed_to_peak": 674,
+      "rule": "erratic-class series swap the screened blend for the peak arm when the peak arm's summed |error| over the selection origins' scored cells is strictly lower; chosen on selection origins only",
       "selection_only": true
     },
     "selection_per_origin_official_wrmsse": {
@@ -217,17 +162,6 @@
         0.6410437348633421,
         0.6022281553395499
       ],
-      "lgbm_pool_storecat_peak": [
-        0.7255606649731087,
-        0.6254691401866458,
-        0.5375841717405224,
-        0.594915124208024,
-        0.6573141030957915,
-        0.6638916702505179,
-        0.634913593869467,
-        0.6248493164174242,
-        0.6107518760639138
-      ],
       "erratic_routed": [
         0.7394576891708716,
         0.6220264621953424,
@@ -238,179 +172,145 @@
         0.6453197353669371,
         0.6394385058992629,
         0.6021926092096564
+      ],
+      "lgbm_pool_storecat_peak": [
+        0.7255606649731087,
+        0.6254691401866458,
+        0.5375841717405224,
+        0.594915124208024,
+        0.6573141030957915,
+        0.6638916702505179,
+        0.634913593869467,
+        0.6248493164174242,
+        0.6107518760639138
       ]
     },
     "test": {
-      "official_wrmsse": {
-        "convex_ensemble": 0.6210518262820993,
-        "lgbm_pool_storecat_peak": 0.6510596999047158,
-        "erratic_routed": 0.6235397264658139
-      },
       "erratic_win_rate_vs_floor": {
         "convex_ensemble": {
-          "win_rate": 0.826048951048951,
           "beats_floor": 1890,
-          "n_series": 2288
-        },
-        "lgbm_pool_storecat_peak": {
-          "win_rate": 0.8203671328671329,
-          "beats_floor": 1877,
-          "n_series": 2288
+          "n_series": 2288,
+          "win_rate": 0.826048951048951
         },
         "erratic_routed": {
-          "win_rate": 0.8247377622377622,
           "beats_floor": 1887,
-          "n_series": 2288
+          "n_series": 2288,
+          "win_rate": 0.8247377622377622
+        },
+        "lgbm_pool_storecat_peak": {
+          "beats_floor": 1877,
+          "n_series": 2288,
+          "win_rate": 0.8203671328671329
         }
+      },
+      "official_wrmsse": {
+        "convex_ensemble": 0.6210518262820993,
+        "erratic_routed": 0.6235397264658139,
+        "lgbm_pool_storecat_peak": 0.6510596999047158
       }
     },
     "wrmsse_delta_bootstrap_routed_vs_champion": {
-      "method": "paired node-level bootstrap of the official WRMSSE difference (valid nodes resampled with replacement, weights renormalized per draw)",
-      "n_valid_nodes": 41957,
-      "n_boot": 2000,
-      "seed": 3343,
-      "delta_point": 0.0024879004802953924,
       "ci95": [
         0.0017825329853713523,
         0.0030702256019124693
       ],
-      "noise_tol": 0.0006438463082705585
-    },
-    "adoption_gate": {
-      "adopted": false,
-      "rule": "adopt iff the erratic-class win-rate vs the seasonal-naive floor improves over the champion AND routed WRMSSE - champion WRMSSE <= the paired bootstrap noise band (no regression beyond noise); a rejected verdict keeps the committed champion (measured-and-rejected)",
-      "checks": {
-        "erratic_win_rate_vs_floor": {
-          "champion": 0.826048951048951,
-          "routed": 0.8247377622377622,
-          "ok": false,
-          "reason": "routed 0.8247 vs champion 0.8260 -> does not improve"
-        },
-        "official_wrmsse_delta_routed_minus_champion": {
-          "delta": 0.0024879001837145864,
-          "noise_tol": 0.0006438463082705585,
-          "ok": false,
-          "reason": "delta +0.002488 vs noise band 0.000644 -> regresses beyond noise"
-        }
-      }
+      "delta_point": 0.0024879004802953924,
+      "method": "paired node-level bootstrap of the official WRMSSE difference (valid nodes resampled with replacement, weights renormalized per draw)",
+      "n_boot": 2000,
+      "n_valid_nodes": 41957,
+      "noise_tol": 0.0006438463082705585,
+      "seed": 3343
     }
   },
+  "hierarchy": {
+    "level_node_counts": {
+      "cat": 3,
+      "dept": 7,
+      "item": 3049,
+      "item_store": 30490,
+      "state": 3,
+      "state_cat": 9,
+      "state_dept": 21,
+      "state_item": 9147,
+      "store": 10,
+      "store_cat": 30,
+      "store_dept": 70,
+      "total": 1
+    },
+    "levels": [
+      "total",
+      "state",
+      "store",
+      "cat",
+      "dept",
+      "state_cat",
+      "state_dept",
+      "store_cat",
+      "store_dept",
+      "item",
+      "state_item",
+      "item_store"
+    ],
+    "n_nodes_total": 42840,
+    "wrmsse": "official M5 hierarchical WRMSSE: bottom forecasts aggregate bottom-up through all 12 levels (42,840 nodes on the real panel); per-node RMSSE = sqrt(mean squared error over the 28 scored days / mean squared first difference of the node's TRAIN window); node weight = revenue (units x sell_price) over the 28 days preceding the scored window, aggregated bottom-up and normalized across all nodes (equal total per level — the official scheme); zero-denominator nodes excluded with renormalization (counted)"
+  },
+  "metric_definitions": {
+    "bias": "mean(forecast - actual) / mean(actual) over the bottom scored cells (positive = over-forecast); NaN when the scored volume is 0",
+    "bottom_wape": "pooled WAPE over the 30,490 bottom series' scored cells: sum |err| / sum actual",
+    "ensemble_screen": "mean + 1.0 x population std of the per-origin official WRMSSE across the selection origins, computed exactly from the forecast-level convex blend re-aggregated through the hierarchy",
+    "official_wrmsse": "official M5 hierarchical WRMSSE: bottom forecasts aggregate bottom-up through all 12 levels (42,840 nodes on the real panel); per-node RMSSE = sqrt(mean squared error over the 28 scored days / mean squared first difference of the node's TRAIN window); node weight = revenue (units x sell_price) over the 28 days preceding the scored window, aggregated bottom-up and normalized across all nodes (equal total per level — the official scheme); zero-denominator nodes excluded with renormalization (counted)",
+    "stability": "population std (ddof=0) of the per-origin official WRMSSE across the selection origins",
+    "zero_day_accuracy": "share of bottom scored points with actual == 0 whose forecast is < 0.5 — pooled and for the intermittent ADI/CV² class; NaN when the block has no zero-actual points"
+  },
+  "origins": {
+    "dates": [
+      "2016-03-20",
+      "2016-03-27",
+      "2016-04-03",
+      "2016-04-10",
+      "2016-04-17",
+      "2016-04-24",
+      "2016-05-01",
+      "2016-05-08",
+      "2016-05-15",
+      "2016-05-22"
+    ],
+    "horizon_days": 28,
+    "indices": [
+      1877,
+      1884,
+      1891,
+      1898,
+      1905,
+      1912,
+      1919,
+      1926,
+      1933,
+      1940
+    ],
+    "min_train_days": 1096,
+    "selection": [
+      "2016-03-20",
+      "2016-03-27",
+      "2016-04-03",
+      "2016-04-10",
+      "2016-04-17",
+      "2016-04-24",
+      "2016-05-01",
+      "2016-05-08",
+      "2016-05-15"
+    ],
+    "spacing_days": 7,
+    "test": [
+      "2016-05-22"
+    ]
+  },
+  "pooled_strategy": "direct",
+  "protocol": "m5_full_v1",
   "selection": {
-    "seasonal_naive": {
-      "official_wrmsse_mean": 0.961854902202648,
-      "official_wrmsse_per_origin": [
-        1.018565465553976,
-        0.9686968226075007,
-        0.9157211841363537,
-        0.8981613952869967,
-        0.8928404323095751,
-        0.9127522834423908,
-        0.964286088589031,
-        1.053639910350413,
-        1.0320305375475964
-      ],
-      "stability": 0.05771304978947387,
-      "bottom_wape_mean": 0.8924126696775638,
-      "bias_mean": -0.010841248209140507,
-      "zero_day_accuracy_mean": 0.6987886234995929,
-      "zero_day_accuracy_intermittent_mean": 0.7070816901331075
-    },
-    "lgbm": {
-      "official_wrmsse_mean": 0.6939821281982138,
-      "official_wrmsse_per_origin": [
-        0.6872816145589787,
-        0.7289302756387718,
-        0.6369503291150513,
-        0.6461958741934645,
-        0.7200280827471913,
-        0.7400569311841307,
-        0.7111582531094163,
-        0.7086157578756997,
-        0.6666220353612198
-      ],
-      "stability": 0.034739408224563145,
-      "bottom_wape_mean": 0.7394445771305587,
-      "bias_mean": -0.009848634655012865,
-      "zero_day_accuracy_mean": 0.6138770710781206,
-      "zero_day_accuracy_intermittent_mean": 0.6278370376189958
-    },
-    "lgbm_tweedie": {
-      "official_wrmsse_mean": 0.704767308442286,
-      "official_wrmsse_per_origin": [
-        0.7181413260539834,
-        0.8212667248103288,
-        0.6498317032634104,
-        0.6619085356611041,
-        0.7590717942032504,
-        0.7325486335048548,
-        0.6740169787796481,
-        0.6849286570043049,
-        0.6411914226996895
-      ],
-      "stability": 0.05548533418945554,
-      "bottom_wape_mean": 0.742483688594133,
-      "bias_mean": -0.002532772819947229,
-      "zero_day_accuracy_mean": 0.5996204033263014,
-      "zero_day_accuracy_intermittent_mean": 0.6131395304063404
-    },
-    "lgbm_pool_store": {
-      "official_wrmsse_mean": 0.652385767586982,
-      "official_wrmsse_per_origin": [
-        0.751656046654111,
-        0.6238428162782218,
-        0.571249900271652,
-        0.5974260243212567,
-        0.7016169391815609,
-        0.7036850320301833,
-        0.6598154771832752,
-        0.6519353129137875,
-        0.6102443594487897
-      ],
-      "stability": 0.054933813997979135,
-      "bottom_wape_mean": 0.7280971461532386,
-      "bias_mean": -0.024621917698490727,
-      "zero_day_accuracy_mean": 0.6199920303546177,
-      "zero_day_accuracy_intermittent_mean": 0.633516725793156
-    },
-    "lgbm_pool_storecat": {
-      "official_wrmsse_mean": 0.6399508391509454,
-      "official_wrmsse_per_origin": [
-        0.7428451313474066,
-        0.6217976844828972,
-        0.5545758410523435,
-        0.585861619583658,
-        0.6817949987656091,
-        0.6835421472826293,
-        0.6462074921821334,
-        0.6401460863963987,
-        0.602786551265432
-      ],
-      "stability": 0.053957607151780676,
-      "bottom_wape_mean": 0.7288518362608717,
-      "bias_mean": -0.020564135054045928,
-      "zero_day_accuracy_mean": 0.6164905965138353,
-      "zero_day_accuracy_intermittent_mean": 0.6299342083230146
-    },
-    "lgbm_pool_dept": {
-      "official_wrmsse_mean": 0.6807914278503571,
-      "official_wrmsse_per_origin": [
-        0.7373878182008771,
-        0.6789349412395184,
-        0.6034870353020443,
-        0.6218984906432343,
-        0.7238517576478745,
-        0.7348098368997572,
-        0.6918865711533879,
-        0.6990436752496552,
-        0.6358227243168652
-      ],
-      "stability": 0.047024292373921826,
-      "bottom_wape_mean": 0.7298969177484083,
-      "bias_mean": -0.024431807384644476,
-      "zero_day_accuracy_mean": 0.6158357084147786,
-      "zero_day_accuracy_intermittent_mean": 0.6292768440365407
-    },
     "auto_ets": {
+      "bias_mean": -0.011951030897766104,
+      "bottom_wape_mean": 0.7435880965830386,
       "official_wrmsse_mean": 0.7516852600032515,
       "official_wrmsse_per_origin": [
         0.7719639359972135,
@@ -424,12 +324,12 @@
         0.80251766967121
       ],
       "stability": 0.052490961353634555,
-      "bottom_wape_mean": 0.7435880965830386,
-      "bias_mean": -0.011951030897766104,
-      "zero_day_accuracy_mean": 0.6472672467114888,
-      "zero_day_accuracy_intermittent_mean": 0.6585202319272114
+      "zero_day_accuracy_intermittent_mean": 0.6585202319272114,
+      "zero_day_accuracy_mean": 0.6472672467114888
     },
     "convex_ensemble": {
+      "bias_mean": -0.020757518670575858,
+      "bottom_wape_mean": 0.7285760901597405,
       "official_wrmsse_mean": 0.63995667079197,
       "official_wrmsse_per_origin": [
         0.7409214520166044,
@@ -443,196 +343,305 @@
         0.6022281553395499
       ],
       "stability": 0.053795977231703006,
-      "bottom_wape_mean": 0.7285760901597405,
-      "bias_mean": -0.020757518670575858,
-      "zero_day_accuracy_mean": 0.6163783913954483,
-      "zero_day_accuracy_intermittent_mean": 0.6298397914926261
-    }
-  },
-  "test": {
-    "seasonal_naive": {
-      "official_wrmsse": 0.8928984140422355,
-      "excluded_zero_scale_nodes": 0,
-      "per_level_wrmsse": {
-        "total": 0.560047227636942,
-        "state": 0.6730505344282269,
-        "store": 0.7176054576949724,
-        "cat": 0.6229742205317619,
-        "dept": 0.7081550655851998,
-        "state_cat": 0.7599910640888395,
-        "state_dept": 0.829187356544471,
-        "store_cat": 0.8008352687770176,
-        "store_dept": 0.8881258017987453,
-        "item": 1.391831295426511,
-        "state_item": 1.3799400715803407,
-        "item_store": 1.3830483712327606
-      },
-      "bottom_wape": 0.9158941765882217,
-      "bias": -0.011974206397633403,
-      "zero_day_accuracy": 0.6662583136575007,
-      "zero_day_accuracy_intermittent": 0.6781960651082161
+      "zero_day_accuracy_intermittent_mean": 0.6298397914926261,
+      "zero_day_accuracy_mean": 0.6163783913954483
     },
     "lgbm": {
-      "official_wrmsse": 0.6601174988521152,
-      "excluded_zero_scale_nodes": 0,
-      "per_level_wrmsse": {
-        "total": 0.30008784047551734,
-        "state": 0.44211063020300817,
-        "store": 0.5872721863640623,
-        "cat": 0.3676438378912884,
-        "dept": 0.481368199725658,
-        "state_cat": 0.5195201802615517,
-        "state_dept": 0.6101413682151983,
-        "store_cat": 0.648379598629004,
-        "store_dept": 0.7263995110456924,
-        "item": 1.1197700955275027,
-        "state_item": 1.0744651253371984,
-        "item_store": 1.0442630490965756
-      },
-      "bottom_wape": 0.7626483956846157,
-      "bias": 0.004126631378071286,
-      "zero_day_accuracy": 0.5807966698741454,
-      "zero_day_accuracy_intermittent": 0.596634391320066
-    },
-    "lgbm_tweedie": {
-      "official_wrmsse": 0.6473290830197734,
-      "excluded_zero_scale_nodes": 0,
-      "per_level_wrmsse": {
-        "total": 0.29623545056952283,
-        "state": 0.4364297040983949,
-        "store": 0.5843647904418997,
-        "cat": 0.34538253329414864,
-        "dept": 0.43799938021112766,
-        "state_cat": 0.5045469313117932,
-        "state_dept": 0.5829624396264342,
-        "store_cat": 0.63972293154055,
-        "store_dept": 0.7101620043502336,
-        "item": 1.112823383885989,
-        "state_item": 1.073253416001548,
-        "item_store": 1.044077389399975
-      },
-      "bottom_wape": 0.7641988239689675,
-      "bias": 0.012189720114648032,
-      "zero_day_accuracy": 0.5658628188226716,
-      "zero_day_accuracy_intermittent": 0.5811892659427581
-    },
-    "lgbm_pool_store": {
-      "official_wrmsse": 0.621917276827625,
-      "excluded_zero_scale_nodes": 0,
-      "per_level_wrmsse": {
-        "total": 0.2977491417238315,
-        "state": 0.39572973091670194,
-        "store": 0.4563226654569347,
-        "cat": 0.36527143784864097,
-        "dept": 0.4749506445361242,
-        "state_cat": 0.48363327357187,
-        "state_dept": 0.5771714961178498,
-        "store_cat": 0.5415987636710878,
-        "store_dept": 0.6429862230943972,
-        "item": 1.1148040687581016,
-        "state_item": 1.0714371424307871,
-        "item_store": 1.0413631180201488
-      },
-      "bottom_wape": 0.7617482476153696,
-      "bias": 0.017717969099228313,
-      "zero_day_accuracy": 0.5777764118911266,
-      "zero_day_accuracy_intermittent": 0.5933611223632
-    },
-    "lgbm_pool_storecat": {
-      "official_wrmsse": 0.6225244256467695,
-      "excluded_zero_scale_nodes": 0,
-      "per_level_wrmsse": {
-        "total": 0.3163536776626943,
-        "state": 0.4072033641875332,
-        "store": 0.46216857563794694,
-        "cat": 0.3673129804152734,
-        "dept": 0.46453258666020814,
-        "state_cat": 0.4826538812602758,
-        "state_dept": 0.5676820342614942,
-        "store_cat": 0.5421858961391229,
-        "store_dept": 0.6373420676573069,
-        "item": 1.110106792020594,
-        "state_item": 1.0706419482943692,
-        "item_store": 1.0421191331136572
-      },
-      "bottom_wape": 0.7626212308771227,
-      "bias": 0.0228021248707567,
-      "zero_day_accuracy": 0.5723971734624238,
-      "zero_day_accuracy_intermittent": 0.587801138566208
+      "bias_mean": -0.009848634655012865,
+      "bottom_wape_mean": 0.7394445771305587,
+      "official_wrmsse_mean": 0.6939821281982138,
+      "official_wrmsse_per_origin": [
+        0.6872816145589787,
+        0.7289302756387718,
+        0.6369503291150513,
+        0.6461958741934645,
+        0.7200280827471913,
+        0.7400569311841307,
+        0.7111582531094163,
+        0.7086157578756997,
+        0.6666220353612198
+      ],
+      "stability": 0.034739408224563145,
+      "zero_day_accuracy_intermittent_mean": 0.6278370376189958,
+      "zero_day_accuracy_mean": 0.6138770710781206
     },
     "lgbm_pool_dept": {
-      "official_wrmsse": 0.6458598274148597,
-      "excluded_zero_scale_nodes": 0,
-      "per_level_wrmsse": {
-        "total": 0.2855071646001772,
-        "state": 0.43977629781741795,
-        "store": 0.5824375659588864,
-        "cat": 0.3437256728093427,
-        "dept": 0.4168777833186688,
-        "state_cat": 0.5227232774577438,
-        "state_dept": 0.5831085005843358,
-        "store_cat": 0.6461094287033153,
-        "store_dept": 0.7067118906899615,
-        "item": 1.107967191822539,
-        "state_item": 1.0719404847627174,
-        "item_store": 1.04344425980055
-      },
-      "bottom_wape": 0.7615221619648493,
-      "bias": 0.011633871127801955,
-      "zero_day_accuracy": 0.5744827410801714,
-      "zero_day_accuracy_intermittent": 0.5899528283395837
+      "bias_mean": -0.024431807384644476,
+      "bottom_wape_mean": 0.7298969177484083,
+      "official_wrmsse_mean": 0.6807914278503571,
+      "official_wrmsse_per_origin": [
+        0.7373878182008771,
+        0.6789349412395184,
+        0.6034870353020443,
+        0.6218984906432343,
+        0.7238517576478745,
+        0.7348098368997572,
+        0.6918865711533879,
+        0.6990436752496552,
+        0.6358227243168652
+      ],
+      "stability": 0.047024292373921826,
+      "zero_day_accuracy_intermittent_mean": 0.6292768440365407,
+      "zero_day_accuracy_mean": 0.6158357084147786
     },
+    "lgbm_pool_store": {
+      "bias_mean": -0.024621917698490727,
+      "bottom_wape_mean": 0.7280971461532386,
+      "official_wrmsse_mean": 0.652385767586982,
+      "official_wrmsse_per_origin": [
+        0.751656046654111,
+        0.6238428162782218,
+        0.571249900271652,
+        0.5974260243212567,
+        0.7016169391815609,
+        0.7036850320301833,
+        0.6598154771832752,
+        0.6519353129137875,
+        0.6102443594487897
+      ],
+      "stability": 0.054933813997979135,
+      "zero_day_accuracy_intermittent_mean": 0.633516725793156,
+      "zero_day_accuracy_mean": 0.6199920303546177
+    },
+    "lgbm_pool_storecat": {
+      "bias_mean": -0.020564135054045928,
+      "bottom_wape_mean": 0.7288518362608717,
+      "official_wrmsse_mean": 0.6399508391509454,
+      "official_wrmsse_per_origin": [
+        0.7428451313474066,
+        0.6217976844828972,
+        0.5545758410523435,
+        0.585861619583658,
+        0.6817949987656091,
+        0.6835421472826293,
+        0.6462074921821334,
+        0.6401460863963987,
+        0.602786551265432
+      ],
+      "stability": 0.053957607151780676,
+      "zero_day_accuracy_intermittent_mean": 0.6299342083230146,
+      "zero_day_accuracy_mean": 0.6164905965138353
+    },
+    "lgbm_tweedie": {
+      "bias_mean": -0.002532772819947229,
+      "bottom_wape_mean": 0.742483688594133,
+      "official_wrmsse_mean": 0.704767308442286,
+      "official_wrmsse_per_origin": [
+        0.7181413260539834,
+        0.8212667248103288,
+        0.6498317032634104,
+        0.6619085356611041,
+        0.7590717942032504,
+        0.7325486335048548,
+        0.6740169787796481,
+        0.6849286570043049,
+        0.6411914226996895
+      ],
+      "stability": 0.05548533418945554,
+      "zero_day_accuracy_intermittent_mean": 0.6131395304063404,
+      "zero_day_accuracy_mean": 0.5996204033263014
+    },
+    "seasonal_naive": {
+      "bias_mean": -0.010841248209140507,
+      "bottom_wape_mean": 0.8924126696775638,
+      "official_wrmsse_mean": 0.961854902202648,
+      "official_wrmsse_per_origin": [
+        1.018565465553976,
+        0.9686968226075007,
+        0.9157211841363537,
+        0.8981613952869967,
+        0.8928404323095751,
+        0.9127522834423908,
+        0.964286088589031,
+        1.053639910350413,
+        1.0320305375475964
+      ],
+      "stability": 0.05771304978947387,
+      "zero_day_accuracy_intermittent_mean": 0.7070816901331075,
+      "zero_day_accuracy_mean": 0.6987886234995929
+    }
+  },
+  "series_universe": {
+    "ladder_cap": null,
+    "ladder_rule": null,
+    "n_series": 30490
+  },
+  "test": {
     "auto_ets": {
-      "official_wrmsse": 0.7092913111219425,
+      "bias": -0.0062785723427676,
+      "bottom_wape": 0.77099022717608,
       "excluded_zero_scale_nodes": 0,
+      "official_wrmsse": 0.7092913111219425,
       "per_level_wrmsse": {
-        "total": 0.43079845361967906,
-        "state": 0.5165692442545445,
-        "store": 0.5809693489745128,
         "cat": 0.4824337954961764,
         "dept": 0.5599725071663636,
+        "item": 1.150251477640918,
+        "item_store": 1.0737864470829817,
+        "state": 0.5165692442545445,
         "state_cat": 0.5802025084362372,
         "state_dept": 0.6555232758555198,
+        "state_item": 1.108915037700804,
+        "store": 0.5809693489745128,
         "store_cat": 0.643953839734095,
         "store_dept": 0.7281288604009483,
-        "item": 1.150251477640918,
-        "state_item": 1.108915037700804,
-        "item_store": 1.0737864470829817
+        "total": 0.43079845361967906
       },
-      "bottom_wape": 0.77099022717608,
-      "bias": -0.0062785723427676,
       "zero_day_accuracy": 0.6094647467010305,
       "zero_day_accuracy_intermittent": 0.6241599045242109
     },
     "convex_ensemble": {
-      "official_wrmsse": 0.6210518262820993,
+      "bias": 0.022243712183609023,
+      "bottom_wape": 0.762270036780871,
       "excluded_zero_scale_nodes": 0,
+      "official_wrmsse": 0.6210518262820993,
       "per_level_wrmsse": {
-        "total": 0.3142809466659282,
-        "state": 0.4061166209813378,
-        "store": 0.4609093003090397,
         "cat": 0.3655784967809115,
         "dept": 0.46083782177303945,
+        "item": 1.10952181133983,
+        "item_store": 1.0416440434878487,
+        "state": 0.4061166209813378,
         "state_cat": 0.4817656677359102,
         "state_dept": 0.5653284088429439,
+        "state_item": 1.070164817607758,
+        "store": 0.4609093003090397,
         "store_cat": 0.5409497280208888,
         "store_dept": 0.6355340936302439,
-        "item": 1.10952181133983,
-        "state_item": 1.070164817607758,
-        "item_store": 1.0416440434878487
+        "total": 0.3142809466659282
       },
-      "bottom_wape": 0.762270036780871,
-      "bias": 0.022243712183609023,
       "zero_day_accuracy": 0.5724395630481504,
       "zero_day_accuracy_intermittent": 0.5878490506866678
+    },
+    "lgbm": {
+      "bias": 0.004126631378071286,
+      "bottom_wape": 0.7626483956846157,
+      "excluded_zero_scale_nodes": 0,
+      "official_wrmsse": 0.6601174988521152,
+      "per_level_wrmsse": {
+        "cat": 0.3676438378912884,
+        "dept": 0.481368199725658,
+        "item": 1.1197700955275027,
+        "item_store": 1.0442630490965756,
+        "state": 0.44211063020300817,
+        "state_cat": 0.5195201802615517,
+        "state_dept": 0.6101413682151983,
+        "state_item": 1.0744651253371984,
+        "store": 0.5872721863640623,
+        "store_cat": 0.648379598629004,
+        "store_dept": 0.7263995110456924,
+        "total": 0.30008784047551734
+      },
+      "zero_day_accuracy": 0.5807966698741454,
+      "zero_day_accuracy_intermittent": 0.596634391320066
+    },
+    "lgbm_pool_dept": {
+      "bias": 0.011633871127801955,
+      "bottom_wape": 0.7615221619648493,
+      "excluded_zero_scale_nodes": 0,
+      "official_wrmsse": 0.6458598274148597,
+      "per_level_wrmsse": {
+        "cat": 0.3437256728093427,
+        "dept": 0.4168777833186688,
+        "item": 1.107967191822539,
+        "item_store": 1.04344425980055,
+        "state": 0.43977629781741795,
+        "state_cat": 0.5227232774577438,
+        "state_dept": 0.5831085005843358,
+        "state_item": 1.0719404847627174,
+        "store": 0.5824375659588864,
+        "store_cat": 0.6461094287033153,
+        "store_dept": 0.7067118906899615,
+        "total": 0.2855071646001772
+      },
+      "zero_day_accuracy": 0.5744827410801714,
+      "zero_day_accuracy_intermittent": 0.5899528283395837
+    },
+    "lgbm_pool_store": {
+      "bias": 0.017717969099228313,
+      "bottom_wape": 0.7617482476153696,
+      "excluded_zero_scale_nodes": 0,
+      "official_wrmsse": 0.621917276827625,
+      "per_level_wrmsse": {
+        "cat": 0.36527143784864097,
+        "dept": 0.4749506445361242,
+        "item": 1.1148040687581016,
+        "item_store": 1.0413631180201488,
+        "state": 0.39572973091670194,
+        "state_cat": 0.48363327357187,
+        "state_dept": 0.5771714961178498,
+        "state_item": 1.0714371424307871,
+        "store": 0.4563226654569347,
+        "store_cat": 0.5415987636710878,
+        "store_dept": 0.6429862230943972,
+        "total": 0.2977491417238315
+      },
+      "zero_day_accuracy": 0.5777764118911266,
+      "zero_day_accuracy_intermittent": 0.5933611223632
+    },
+    "lgbm_pool_storecat": {
+      "bias": 0.0228021248707567,
+      "bottom_wape": 0.7626212308771227,
+      "excluded_zero_scale_nodes": 0,
+      "official_wrmsse": 0.6225244256467695,
+      "per_level_wrmsse": {
+        "cat": 0.3673129804152734,
+        "dept": 0.46453258666020814,
+        "item": 1.110106792020594,
+        "item_store": 1.0421191331136572,
+        "state": 0.4072033641875332,
+        "state_cat": 0.4826538812602758,
+        "state_dept": 0.5676820342614942,
+        "state_item": 1.0706419482943692,
+        "store": 0.46216857563794694,
+        "store_cat": 0.5421858961391229,
+        "store_dept": 0.6373420676573069,
+        "total": 0.3163536776626943
+      },
+      "zero_day_accuracy": 0.5723971734624238,
+      "zero_day_accuracy_intermittent": 0.587801138566208
+    },
+    "lgbm_tweedie": {
+      "bias": 0.012189720114648032,
+      "bottom_wape": 0.7641988239689675,
+      "excluded_zero_scale_nodes": 0,
+      "official_wrmsse": 0.6473290830197734,
+      "per_level_wrmsse": {
+        "cat": 0.34538253329414864,
+        "dept": 0.43799938021112766,
+        "item": 1.112823383885989,
+        "item_store": 1.044077389399975,
+        "state": 0.4364297040983949,
+        "state_cat": 0.5045469313117932,
+        "state_dept": 0.5829624396264342,
+        "state_item": 1.073253416001548,
+        "store": 0.5843647904418997,
+        "store_cat": 0.63972293154055,
+        "store_dept": 0.7101620043502336,
+        "total": 0.29623545056952283
+      },
+      "zero_day_accuracy": 0.5658628188226716,
+      "zero_day_accuracy_intermittent": 0.5811892659427581
+    },
+    "seasonal_naive": {
+      "bias": -0.011974206397633403,
+      "bottom_wape": 0.9158941765882217,
+      "excluded_zero_scale_nodes": 0,
+      "official_wrmsse": 0.8928984140422355,
+      "per_level_wrmsse": {
+        "cat": 0.6229742205317619,
+        "dept": 0.7081550655851998,
+        "item": 1.391831295426511,
+        "item_store": 1.3830483712327606,
+        "state": 0.6730505344282269,
+        "state_cat": 0.7599910640888395,
+        "state_dept": 0.829187356544471,
+        "state_item": 1.3799400715803407,
+        "store": 0.7176054576949724,
+        "store_cat": 0.8008352687770176,
+        "store_dept": 0.8881258017987453,
+        "total": 0.560047227636942
+      },
+      "zero_day_accuracy": 0.6662583136575007,
+      "zero_day_accuracy_intermittent": 0.6781960651082161
     }
-  },
-  "metric_definitions": {
-    "official_wrmsse": "official M5 hierarchical WRMSSE: bottom forecasts aggregate bottom-up through all 12 levels (42,840 nodes on the real panel); per-node RMSSE = sqrt(mean squared error over the 28 scored days / mean squared first difference of the node's TRAIN window); node weight = revenue (units x sell_price) over the 28 days preceding the scored window, aggregated bottom-up and normalized across all nodes (equal total per level \u2014 the official scheme); zero-denominator nodes excluded with renormalization (counted)",
-    "bottom_wape": "pooled WAPE over the 30,490 bottom series' scored cells: sum |err| / sum actual",
-    "bias": "mean(forecast - actual) / mean(actual) over the bottom scored cells (positive = over-forecast); NaN when the scored volume is 0",
-    "stability": "population std (ddof=0) of the per-origin official WRMSSE across the selection origins",
-    "zero_day_accuracy": "share of bottom scored points with actual == 0 whose forecast is < 0.5 \u2014 pooled and for the intermittent ADI/CV\u00b2 class; NaN when the block has no zero-actual points",
-    "ensemble_screen": "mean + 1.0 x population std of the per-origin official WRMSSE across the selection origins, computed exactly from the forecast-level convex blend re-aggregated through the hierarchy"
   }
 }

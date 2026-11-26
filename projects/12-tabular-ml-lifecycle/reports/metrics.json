@@ -1,12 +1,12 @@
 {
   "_meta": {
-    "created_at": "2026-11-18T12:58:57+01:00",
+    "created_at": "2026-11-26T17:57:36+01:00",
     "data_contract_sha256": null,
-    "git_sha": "a5036433fbc12cf8245b2e8908d7ea4c2937d8c8",
+    "git_sha": "2beafb93519a79fc5eda36d4aae5601af861301b",
     "params_sha256": "32ea9bcdf45c23012e2a34d2287029a2464487165df43a74bafb1f8e29603f0e",
     "schema_version": 1,
     "seed": 42,
-    "uv_lock_sha256": "a735e76464d1cc9b6d9a0484ad91cc3bba276dceba8ae99c55b315f98a180aed"
+    "uv_lock_sha256": "cfaed5eee2d80ad00be3ed47a3c1380280704fa96e3062541a1b2926765f750a"
   },
   "lightgbm_hpo": {
     "mae": 25.37318492658977,
