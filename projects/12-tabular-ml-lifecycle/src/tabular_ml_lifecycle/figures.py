@@ -396,3 +396,71 @@ def bootstrap_ci_figure(
         "window, not independent confirmations.",
     )
     return fig
+
+
+def sensitivity_pruning_lags_figure(payload: dict[str, Any]) -> go.Figure:
+    """Per-model test-MAE delta (corrected variant minus committed run) with
+    paired 24-hour block-bootstrap CI whiskers, from sensitivity_pruning_lags.json.
+
+    Negative deltas favor the corrected variant (keeps atemp, timestamp-joined
+    lags). The frozen test window and the committed headline are unchanged; this
+    is a disclosed sensitivity arm, not a re-selection.
+    """
+    deltas = payload["delta_variant_minus_committed"]["day_block"]
+    order = [m for m in MODEL_LABELS if m in deltas]
+    fig = go.Figure()
+    for i, name in enumerate(order):
+        d = deltas[name]
+        fig.add_scatter(
+            x=[d["point"]],
+            y=[i],
+            mode="markers",
+            name=MODEL_LABELS[name],
+            error_x={
+                "type": "data",
+                "symmetric": False,
+                "array": [d["hi"] - d["point"]],
+                "arrayminus": [d["point"] - d["lo"]],
+                "color": "#64748b",
+                "thickness": 1.5,
+            },
+            marker={"color": "#64748b" if name == "seasonal_naive" else "#2dd4bf", "size": 11},
+        )
+    fig.add_vline(x=0, line={"color": "#64748b", "dash": "dash", "width": 1.5})
+    apply_theme(fig, height=540)
+    mlp = deltas["mlp"]
+    fig.update_layout(
+        title=(
+            "Fixing pruning and lag alignment moves MLP test MAE by "
+            f"{mlp['point']:+.2f} (CI {mlp['lo']:+.2f} to {mlp['hi']:+.2f})"
+        ),
+        xaxis_title="test MAE delta, variant - committed (rentals per hour)",
+        showlegend=False,
+        margin={"l": 220, "r": 140, "t": 110, "b": 70},
+    )
+    fig.update_yaxes(
+        tickvals=list(range(len(order))),
+        ticktext=[MODEL_LABELS[m] for m in order],
+        autorange="reversed",
+    )
+    note = payload["honest_note"]
+    if note["triggered"]:
+        takeaway = (
+            "Whiskers: paired 24-hour block-bootstrap 95% CIs; left of zero favors the "
+            f"variant. The MLP interval excludes zero — the committed headline carries "
+            f"a known defect worth {-mlp['point']:.2f} MAE."
+        )
+    elif mlp["lo"] > 0.0:
+        takeaway = (
+            "Whiskers: paired 24-hour block-bootstrap 95% CIs; left of zero favors the "
+            "variant. The MLP interval lies right of zero — the variant is worse, so "
+            "the committed headline stands."
+        )
+    else:
+        takeaway = (
+            "Whiskers: paired 24-hour block-bootstrap 95% CIs; left of zero favors the "
+            "variant. The MLP interval spans zero, so the committed headline stands "
+            "within resampling noise."
+        )
+    add_takeaway(fig, takeaway)
+    return fig

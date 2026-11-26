@@ -78,6 +78,14 @@ morning peaks under-forecast — and the limits sit next to the numbers: one
 city over two years and four seasons, positional lags around the missing
 hours, transfer plausible but not measured.
 
+The two disclosed feature defects are priced, not hidden: a corrected variant
+(keeps `atemp`, joins lags by timestamp) scores MAE 27.2 [CI +0.6–+2.8 vs
+committed] for the served MLP — worse, not better — so the headline keeps the
+committed run and project 13 serves the committed model. The same fixes
+improve LightGBM to 23.8 (delta −1.6 [CI −3.0–−0.4]) and the date-aware floor
+to 73.0; per-candidate deltas with paired block-bootstrap CIs live in
+`reports/sensitivity_pruning_lags.json`.
+
 ![Three histograms of 2,000 paired resamples each: hourly rows, 24-hour blocks, and 168-hour blocks. All three 95% intervals exclude zero; the wider block intervals show serial-dependence sensitivity on the same test window.](../assets/projects/12-tabular-ml-lifecycle/bootstrap_ci.png){ width="100%" }
 
 The full protocol (time-based split, judging rules, 2,000 paired bootstrap

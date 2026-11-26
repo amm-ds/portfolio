@@ -53,6 +53,8 @@ The paired cost delta is −434 with 95% CI [−508, −353] against contact-eve
 and −90 with 95% CI [−159, −26] against logistic-at-0.5. Each uses 2,000 paired
 holdout resamples at fixed thresholds. The intervals estimate customer-row
 sampling variation only, not model-search or threshold-selection instability.
+Across 20 repeated splits with the threshold re-selected each time, the delta's
+median is −392 with 95% range [−439, −340] (`reports/repeated_splits.json`).
 
 ![Two thousand paired holdout resamples of the exact served policy minus contact-everyone; the 95% cost-delta interval is −508 to −353](../assets/projects/05-ml-pipeline-churn/bootstrap_ci.png){ width="100%" }
 
@@ -90,7 +92,9 @@ exercises missing values and extreme charges in CI.
 ## Limits
 
 - Final metrics come from one random snapshot split. Bootstrap intervals omit
-  selection instability, and no time axis supports drift or seasonality claims.
+  selection instability; the 20-split rerun bounds it (median −392, 95% range
+  [−439, −340]), and the committed split sits inside that range on its
+  favorable side. No time axis supports drift or seasonality claims.
 - Cost units encode an assumed 1-versus-5 mistake price; they are not revenue,
   savings realized in production, or ROI.
 - Fairness numbers describe the raw model, not the served calibrated policy.

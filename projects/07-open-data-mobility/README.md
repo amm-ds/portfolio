@@ -80,13 +80,16 @@ their OpenMP runtime conflicts with torch on macOS. MAPE is secondary because
 zero and low-demand zone-hours make percentage errors unstable.
 
 Predeclared post-freeze intervals use 2,000 paired resamples, seed 42, circular
-seven-day blocks, and whole-zone clusters. Deltas are challenger minus naive MAE
-in pickups/hour; negative values favor the challenger and do not affect serving.
+seven-day blocks, and whole-zone clusters. Deltas are challenger minus baseline
+MAE in pickups/hour; negative values favor the challenger and do not affect
+serving.
 
 | comparison | point ΔMAE | seven-day block 95% CI | zone-cluster 95% CI |
 |---|---:|---:|---:|
+| served gbm_tuned versus naive | −1.841 | [−2.338, −1.258] | [−2.464, −1.266] |
 | XGBoost versus naive | −2.031 | [−2.503, −1.495] | [−2.691, −1.421] |
 | LightGBM versus naive | −1.935 | [−2.433, −1.350] | [−2.606, −1.340] |
+| XGBoost versus served gbm_tuned | −0.190 | [−0.265, −0.115] | [−0.240, −0.143] |
 
 Split conformal raises second-half coverage from 90.7% to 91.5%; mean band
 height above the point forecast rises from 7.032 to 7.124 pickups, a +0.091

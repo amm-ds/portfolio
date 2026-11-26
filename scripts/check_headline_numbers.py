@@ -89,6 +89,16 @@ def _m03() -> list[str]:
     ]
 
 
+def _m03_nab_official() -> list[str]:
+    """Official NAB score (vendored scorer), three profiles, 2 decimals."""
+    m = _load("projects/03-anomaly-detection/reports/nab_official_score.json")
+    return [
+        _fmt(m["profiles"]["standard"]["score"], 2),
+        _fmt(m["profiles"]["reward_low_FP_rate"]["score"], 2),
+        _fmt(m["profiles"]["reward_low_FN_rate"]["score"], 2),
+    ]
+
+
 def _m04() -> list[str]:
     c = _load("projects/04-nlp-classification/reports/llm_cascade.json")
     fresh = c["fresh holdout"]
@@ -107,6 +117,14 @@ def _m05() -> list[str]:
     ]
 
 
+def _m05_repeated() -> list[str]:
+    """Repeated-splits cost-delta median + 2.5/97.5 magnitudes (E3)."""
+    s = _load("projects/05-ml-pipeline-churn/reports/repeated_splits.json")["summary"]["cost_delta"]
+    # Surfaces print magnitudes with their own minus conventions (story uses
+    # U+2212, README ASCII), so claim the digits.
+    return [_thousands(abs(s["median"])), _thousands(abs(s["p2_5"])), _thousands(abs(s["p97_5"]))]
+
+
 def _m06() -> list[str]:
     m = _load("projects/06-routing-optimization/reports/metrics.json")
     iv = m["intervals"]["mean_gap_pct"]
@@ -119,6 +137,32 @@ def _m07() -> list[str]:
     gbm = m["gbm_tuned"]["mae"]
     red = (naive - gbm) / naive * 100
     return [_fmt(gbm, 3), _fmt(naive, 3), f"{red:.1f}"]
+
+
+def _u(x: float, digits: int) -> str:
+    """Signed fixed-point using the copy's U+2212 minus (escape keeps RUF001 quiet)."""
+    return ("\u2212" if x < 0 else "") + f"{abs(x):.{digits}f}"
+
+
+def _m07_paired() -> list[str]:
+    """Served-model and xGB-vs-served paired CIs + p90 coverage (E2)."""
+    m = _load("projects/07-open-data-mobility/reports/metrics.json")
+    served = m["paired_intervals"]["comparisons"]["gbm_tuned_vs_naive_lag24"]
+    xgb = m["paired_intervals"]["comparisons"]["gbm_xgb_tuned_vs_gbm_tuned"]
+    values = [
+        _u(served["day_block"]["point_mae_delta"], 3),
+        _u(served["day_block"]["ci95"][0], 3),
+        _u(served["day_block"]["ci95"][1], 3),
+        _u(served["zone_cluster"]["ci95"][0], 3),
+        _u(served["zone_cluster"]["ci95"][1], 3),
+        _u(xgb["day_block"]["point_mae_delta"], 3),
+        _u(xgb["day_block"]["ci95"][0], 3),
+        _u(xgb["day_block"]["ci95"][1], 3),
+        _u(xgb["zone_cluster"]["ci95"][0], 3),
+        _u(xgb["zone_cluster"]["ci95"][1], 3),
+    ]
+    values.append(_fmt(m["analysis"]["p90_coverage"] * 100, 1))
+    return values
 
 
 def _m08() -> list[str]:
@@ -151,9 +195,9 @@ def _m10() -> list[str]:
     m = _load("projects/10-uplift-experimentation/reports/metrics.json")
     delta = m["t_learner"]["profit_delta_vs_random"]
     contract = _load("projects/10-uplift-experimentation/data/dataset_contract.json")
-    # The paired T-learner-minus-baseline intervals are persisted in the
-    # committed report.html only (the metrics `_meta.ci` block was replaced by
-    # the provenance stamp), so the gate reads them from the report.
+    # The paired T-learner-minus-baseline intervals are persisted in
+    # metrics.json `analysis.ci` and rendered in report.html; this claim reads
+    # the report source, `_m10_metrics_ci` gates the metrics.json source.
     report = (ROOT / "projects/10-uplift-experimentation/reports/report.html").read_text(
         encoding="utf-8"
     )
@@ -163,6 +207,22 @@ def _m10() -> list[str]:
     values = [_thousands(delta), f"{contract['n_rows']:,}"]
     for arm in ("random", "mail-everyone"):
         values += [_signed_money(intervals[arm]["lo"]), _signed_money(intervals[arm]["hi"])]
+    return values
+
+
+def _copy_money(v: float) -> str:
+    """Copy form of a signed dollar value: ``+$718`` / ``-$13,125`` with U+2212."""
+    sign = "+" if v >= 0 else "\u2212"
+    return f"{sign}${abs(v):,.0f}"
+
+
+def _m10_metrics_ci() -> list[str]:
+    """Paired baseline intervals from metrics.json ``analysis.ci`` (post-D0 home)."""
+    ci = _load("projects/10-uplift-experimentation/reports/metrics.json")["analysis"]["ci"]
+    values: list[str] = []
+    for block in ("t_learner_vs_random", "t_learner_vs_mail_everyone"):
+        lo, hi = ci[block]["profit_at_budget_diff_ci"]
+        values += [_copy_money(lo), _copy_money(hi)]
     return values
 
 
@@ -183,6 +243,17 @@ def _m12() -> list[str]:
     point = m["validation_tie_interval"]["point"]
     minus = chr(0x2212) if point < 0 else ""
     return [_fmt(m["mlp"]["mae"], 1), f"{minus}{abs(point):.2f}"]
+
+
+def _m12_sensitivity() -> list[str]:
+    """Sensitivity variant MAE + delta CI vs committed (E4, secondary claim)."""
+    s = _load("projects/12-tabular-ml-lifecycle/reports/sensitivity_pruning_lags.json")
+    d = s["delta_variant_minus_committed"]["day_block"]["mlp"]
+    return [
+        _fmt(s["variant"]["test_mae"]["mlp"], 1),
+        f"+{_fmt(d['lo'], 1)}",
+        f"+{_fmt(d['hi'], 1)}",
+    ]
 
 
 def _m13() -> list[str]:
@@ -237,6 +308,12 @@ CLAIMS: list[dict[str, Any]] = [
         "surfaces": ["README.md", "story.yaml"],
     },
     {
+        "project": "03-anomaly-detection",
+        "label": "official NAB score (standard + low-FP + low-FN profiles)",
+        "values": _m03_nab_official,
+        "surfaces": ["README.md", "story.yaml"],
+    },
+    {
         "project": "04-nlp-classification",
         "label": "fresh macro-F1 baseline -> cascade + cascade cost",
         "values": _m04,
@@ -249,6 +326,12 @@ CLAIMS: list[dict[str, Any]] = [
         "surfaces": ["README.md", "story.yaml"],
     },
     {
+        "project": "05-ml-pipeline-churn",
+        "label": "repeated-splits cost-delta median + 2.5/97.5 magnitudes",
+        "values": _m05_repeated,
+        "surfaces": ["README.md", "story.yaml"],
+    },
+    {
         "project": "06-routing-optimization",
         "label": "mean gap + bootstrap CI",
         "values": _m06,
@@ -258,6 +341,12 @@ CLAIMS: list[dict[str, Any]] = [
         "project": "07-open-data-mobility",
         "label": "served/naive MAE + reduction",
         "values": _m07,
+        "surfaces": ["README.md", "story.yaml"],
+    },
+    {
+        "project": "07-open-data-mobility",
+        "label": "served + xGB-vs-served paired CIs + p90 coverage",
+        "values": _m07_paired,
         "surfaces": ["README.md", "story.yaml"],
     },
     {
@@ -279,6 +368,12 @@ CLAIMS: list[dict[str, Any]] = [
         "surfaces": ["README.md", "story.yaml"],
     },
     {
+        "project": "10-uplift-experimentation",
+        "label": "paired baseline CIs (metrics.json analysis.ci)",
+        "values": _m10_metrics_ci,
+        "surfaces": ["README.md", "story.yaml"],
+    },
+    {
         "project": "11-data-engineering",
         "label": "geomean speedups",
         "values": _m11,
@@ -288,6 +383,12 @@ CLAIMS: list[dict[str, Any]] = [
         "project": "12-tabular-ml-lifecycle",
         "label": "served MAE + tie point",
         "values": _m12,
+        "surfaces": ["README.md", "story.yaml"],
+    },
+    {
+        "project": "12-tabular-ml-lifecycle",
+        "label": "sensitivity variant MAE + delta CI (secondary claim)",
+        "values": _m12_sensitivity,
         "surfaces": ["README.md", "story.yaml"],
     },
     {

@@ -445,7 +445,6 @@ def test_committed_figure_titles_state_their_own_data() -> None:
     assert int(sum(_decode(deltas["y"]))) == ci["n_boot"]
     assert _decode(point["x"])[0] == ci["point"]
     assert ci["hi"] < 0  # the saving excludes zero
-    expected = (
-        f"\u2212${abs(ci['lo']):.0f} to \u2212${abs(ci['hi']):.0f} over {ci['n_boot']:,} resamples"
-    )
+    lo, hi, n = abs(ci["lo"]), abs(ci["hi"]), ci["n_boot"]
+    expected = f"\u2212{lo:.0f} to \u2212{hi:.0f} USD over {n:,} resamples"
     assert expected in title

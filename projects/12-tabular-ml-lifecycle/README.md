@@ -84,6 +84,12 @@ Key findings:
   three lags first (MI 0.89 / 0.76 / 0.71 nats), then the cyclical hour pair;
   the committed correlated-pair record dropped `atemp` (r = 0.987 with `temp`)
   despite `atemp`'s slightly higher MI; correcting that mismatch needs a fresh run.
+- **The two defects are priced, not hidden:** a corrected variant (keeps
+  `atemp`, joins lags by timestamp) scores MAE 27.2 [CI +0.6–+2.8 vs committed]
+  for the served MLP — worse, not better — so the headline keeps the committed
+  run and project 13 serves the committed model. The same fixes improve
+  LightGBM to 23.8 (delta −1.6 [CI −3.0–−0.4]) and the date-aware floor to
+  73.0; per-candidate deltas live in `reports/sensitivity_pruning_lags.json`.
 - **Read the ablation at face value:** the 2x2x2 grid is on `ablation_dotplot`.
   Early stopping is the load-bearing control (every off-row is worse on
   validation); the validation argmin is a dropout-off row about 2 rentals below

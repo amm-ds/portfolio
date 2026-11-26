@@ -18,6 +18,7 @@ uv run python -m anomaly_detection.cli nab          # NAB headline track
 uv run python -m anomaly_detection.cli nab-sweep    # detector × feature sweep + alert budgets
 uv run python -m anomaly_detection.cli nab-tune     # train-side operating-point selection
 uv run python -m anomaly_detection.cli nab-refine   # detector-layer refinement ablation
+uv run python -m anomaly_detection.cli nab-official # official NAB score (vendored scorer, 3 profiles)
 
 # synthetic pipeline, stage by stage
 uv run python -m anomaly_detection.cli prepare
@@ -87,9 +88,15 @@ scores deduplicated with a 24-hour cap):
 | range-F1 | harmonic mean of range precision and range recall, macro-averaged over series | raw (0.157) and budgeted (0.315) IF cells |
 | range-PR area | area under the range precision–recall sweep vs the 16-seed random band | champion mean curve, `range_pr` figure |
 
-The **NAB official score is not reported**: it requires the official scorer
-with application profiles (a new dependency or vendored code), and the project
-scores range metrics under its own window semantics instead.
+The **official NAB score is 51.45 on the standard profile** (null 0,
+perfect 100), with 49.81 on `reward_low_FP_rate` and 62.46 on
+`reward_low_FN_rate`. It is computed with the official scorer vendored at a
+pinned upstream commit (MIT, [`src/anomaly_detection/vendor/`](src/anomaly_detection/vendor/))
+over the same nine post-training spans, with per-profile thresholds optimized
+by the scorer itself. Thresholds, per-series counts, and the sanity baselines
+are committed at [`reports/nab_official_score.json`](reports/nab_official_score.json);
+the score inputs are re-verifiable from
+[`reports/nab_official_scores.json`](reports/nab_official_scores.json).
 
 The current rank-average ensemble uses rolling features and the frozen 2%
 budget with a 24-hour cap. Its like-for-like comparison is IsolationForest with

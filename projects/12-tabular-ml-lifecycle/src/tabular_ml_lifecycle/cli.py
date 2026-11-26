@@ -109,6 +109,21 @@ def report(
     build_report(cfg.reports_dir, Path(__file__).resolve().parents[3])
 
 
+@app.command()
+def sensitivity(
+    params_file: OptParams = Path("params.yaml"),
+    variant_params_file: Annotated[
+        Path, typer.Option(help="YAML with the corrected-variant config.")
+    ] = Path("params_variant.yaml"),
+) -> None:
+    """E4 sensitivity arm: reproduce the committed run (STOP gate), score the
+    corrected pruning/lag variant, and write reports/sensitivity_pruning_lags.json.
+    Never touches the committed metrics.json."""
+    from tabular_ml_lifecycle.sensitivity import run_sensitivity
+
+    run_sensitivity(load_config(params_file), load_config(variant_params_file))
+
+
 @app.command("all")
 def run_all(
     data_source: OptSource = None,

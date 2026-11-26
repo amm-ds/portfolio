@@ -126,7 +126,11 @@ Key findings:
 Thresholds are frozen before holdout scoring, but all final metrics still come
 from one random snapshot split. The bootstrap estimates row-sampling variation
 at fixed thresholds; it does not measure model or threshold-selection
-instability. The snapshot has no time axis; fresh, time-stamped data is required
+instability. Across 20 repeated stratified splits of the frozen config, with
+the threshold re-selected from each split's own OOF predictions, the cost delta
+has median -392 and 95% range [-439, -340] (`reports/repeated_splits.json`);
+the committed split (-434) sits inside that range, on its favorable side. The
+snapshot has no time axis; fresh, time-stamped data is required
 for temporal validation, served-policy fairness, drift, and seasonality. Wider
 boosting searches require a defined compute budget.
 
@@ -148,6 +152,8 @@ uv run dvc repro
 uv run dvc metrics show   # run ladder from the lockfile
 # cost-model sensitivity experiments (see DESIGN.md "Experiment versioning"):
 uv run python -m churn_pipeline.cli sensitivity            # FN=3/5/8 -> reports/sensitivity.json
+# split-to-split uncertainty (reproduction gate, then 20 seeded splits):
+uv run python -m churn_pipeline.cli repeated-splits        # -> reports/repeated_splits.json + bootstrap_ci strip
 # canonical tracking is queued DVC experiments (needs a working libomp for the
 # experiment venv): uv run dvc exp run --queue --set-param fn_cost=3 -n fn3  # etc.
 ```

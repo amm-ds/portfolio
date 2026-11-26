@@ -50,14 +50,16 @@ promoted on test performance. MASE normalises by in-sample lag-24 error
 
 ![The served tuned GBM removes 28.3% of forecast error vs same-hour-yesterday persistence while the xGB challenger that won the Q4 test window loses on embargoed validation.](../assets/projects/07-open-data-mobility/gbm_vs_nn.png){ width="100%" }
 
-Two predeclared post-freeze comparisons quantify uncertainty without changing
-serving selection. For challenger-minus-naive MAE, negative values favor the
+Four predeclared post-freeze comparisons quantify uncertainty without changing
+serving selection. For challenger-minus-baseline MAE, negative values favor the
 challenger; 2,000 resamples use circular seven-day blocks or whole-zone clusters.
 
 | Comparison | Point ΔMAE | Seven-day block 95% CI | Zone-cluster 95% CI |
 |---|---:|---:|---:|
+| served GBM tuned versus naive | −1.841 | [−2.338, −1.258] | [−2.464, −1.266] |
 | xGB versus naive | −2.031 | [−2.503, −1.495] | [−2.691, −1.421] |
 | LightGBM versus naive | −1.935 | [−2.433, −1.350] | [−2.606, −1.340] |
+| xGB versus served GBM tuned | −0.190 | [−0.265, −0.115] | [−0.240, −0.143] |
 
 The p90 band covers **90.8%** of outcomes overall against a 90% target. The
 N/A **no-borough** bucket under-covers at 84.7% and is flagged separately from

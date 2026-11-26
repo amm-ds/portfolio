@@ -4,7 +4,7 @@
 Benchmark (12 series; seeded synthetic telemetry as the labelled CI fast path;
 NSL-KDD transfer probe) · **Status:** working showcase
 
-> On 9 NAB series, IsolationForest touches 16 of 17 incidents but fires 1,609 alerts. Merging bursts and capping one page per series per day cuts that to 80 pages. Averaging three detectors halves 66 pages to 35 at the same recall (0.604). No official NAB score yet.
+> On 9 NAB series, IsolationForest touches 16 of 17 incidents but fires 1,609 alerts. Merging bursts and a per-series daily page cap cut it to 80 pages. Averaging three detectors halves 66 pages to 35 at equal recall (0.604). NAB standard-profile score 51.45 (null 0, perfect 100).
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/03-anomaly-detection)
 
@@ -36,6 +36,11 @@ The range-PR sweep gives area 0.804 against a 16-seed no-skill band of 0.228
 [0.081, 0.401]. At a 2% stream budget it reports precision 0.527 and recall
 0.944 over evaluable windows; these threshold-sweep values are not the raw
 headline's range precision 0.107 or twelve-series range recall 0.729.
+
+The official NAB score (vendored scorer, pinned upstream commit) is **51.45 on
+the standard profile** (null 0, perfect 100), 49.81 on `reward_low_FP_rate`,
+and 62.46 on `reward_low_FN_rate`, scored on the same nine post-training spans
+(`reports/nab_official_score.json`).
 
 ## Alert budgeting and the recommended detector
 
@@ -78,7 +83,7 @@ Six validation windows cannot certify OCSVM's fragile peak.
 
 ## Artifacts
 
-- NAB metrics: `reports/nab_metrics.json` · NAB sweep + alert budgets: `reports/nab_sweep.json` · train-side operating-point tuning: `reports/nab_tune.json` · synthetic ladder: `reports/metrics.json` (7 runs)
+- NAB metrics: `reports/nab_metrics.json` · NAB sweep + alert budgets: `reports/nab_sweep.json` · train-side operating-point tuning: `reports/nab_tune.json` · official NAB score (vendored scorer): `reports/nab_official_score.json` · synthetic ladder: `reports/metrics.json` (7 runs)
 - Probes: `reports/detect.json` (adaptive stream), `reports/residual_probe.json`,
   `reports/nsl_probe.json`
 - Evaluation report: `reports/report.html`

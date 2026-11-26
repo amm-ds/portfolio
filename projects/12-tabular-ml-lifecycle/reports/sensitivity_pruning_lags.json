@@ -1,0 +1,164 @@
+{
+  "artifact": "sensitivity_pruning_lags",
+  "generated_by": "uv run python -m tabular_ml_lifecycle.cli sensitivity --params-file params.yaml --variant-params-file params_variant.yaml",
+  "question": "What do the committed pruning defect (drops atemp, the higher-MI member of the temp/atemp pair) and the positional-lag defect (lags drift across the 165 missing hours) cost the frozen test scores?",
+  "seed": 42,
+  "n_boot": 2000,
+  "test_window_rows": 1344,
+  "reproduction": {
+    "expected_test_mae": 25.43163249606178,
+    "derived_test_mae": 25.43163249606178,
+    "abs_diff": 0.0,
+    "tolerance": 0.0001,
+    "passed": true,
+    "pattern": "projects/13-model-serving train-stage reproduction gate"
+  },
+  "committed": {
+    "source": "reports/metrics.json (re-derived in memory for the paired delta)",
+    "test_mae": {
+      "seasonal_naive": 83.19940476190476,
+      "ridge": 51.09094969058817,
+      "random_forest": 26.31669750330688,
+      "lightgbm_hpo": 25.37318492658977,
+      "mlp": 25.43163249606178
+    },
+    "rederived_test_mae": {
+      "seasonal_naive": 83.19940476190476,
+      "ridge": 51.09094969058817,
+      "random_forest": 26.31669750330688,
+      "lightgbm_hpo": 25.37318492658977,
+      "mlp": 25.43163249606178
+    },
+    "rederived_max_abs_diff": 0.0
+  },
+  "variant": {
+    "params_file": "params_variant.yaml",
+    "changes": [
+      "correlated-pair pruning keeps the higher-MI member of a pair (pruning_rule: keep_higher_mi)",
+      "lags join on timestamp minus h with NaN for missing hours (lag_mode: timestamp), instead of positional shifts"
+    ],
+    "selected_features": [
+      "atemp",
+      "hum",
+      "windspeed",
+      "weathersit",
+      "hour_sin",
+      "hour_cos",
+      "weekday_sin",
+      "weekday_cos",
+      "month_sin",
+      "month_cos",
+      "holiday",
+      "workingday",
+      "cnt_lag_1h",
+      "cnt_lag_24h",
+      "cnt_lag_168h"
+    ],
+    "pruned_pairs": [
+      {
+        "dropped": "temp",
+        "kept": "atemp",
+        "r": 0.987
+      }
+    ],
+    "nan_handling": {
+      "train_rows_dropped": 250,
+      "val_rows_dropped": 43,
+      "test_lag_cells_median_imputed": 28,
+      "floor_test_points_median_imputed": 20,
+      "rule": "NaN-lag rows are dropped from train/validation (complete-case); the frozen 1,344-row test window is kept, and NaN lag cells are median-imputed from the training window so every model \u2014 and the paired delta \u2014 sees identical test hours."
+    },
+    "val_mae": {
+      "seasonal_naive": 62.35818601076095,
+      "ridge": 56.625753522805475,
+      "random_forest": 36.23319153154472,
+      "lightgbm_hpo": 31.939110725912627,
+      "mlp": 35.13113859559278
+    },
+    "test_mae": {
+      "seasonal_naive": 72.97619047619048,
+      "ridge": 48.68153816676309,
+      "random_forest": 26.13282986111111,
+      "lightgbm_hpo": 23.76360139335002,
+      "mlp": 27.161182233265468
+    }
+  },
+  "delta_variant_minus_committed": {
+    "metric": "MAE(variant) - MAE(committed), paired on the same test hours",
+    "negative_favors": "variant",
+    "day_block": {
+      "seasonal_naive": {
+        "block_hours": 24,
+        "seed": 46,
+        "point": -10.223214285714278,
+        "lo": -17.451729910714292,
+        "hi": -4.0431175595238065,
+        "n_boot": 2000,
+        "significant_95": false
+      },
+      "ridge": {
+        "block_hours": 24,
+        "seed": 46,
+        "point": -2.409411523825078,
+        "lo": -6.04270940234005,
+        "hi": 1.1690775349899452,
+        "n_boot": 2000,
+        "significant_95": false
+      },
+      "random_forest": {
+        "block_hours": 24,
+        "seed": 46,
+        "point": -0.18386764219577145,
+        "lo": -2.3888751281415406,
+        "hi": 2.105840273644178,
+        "n_boot": 2000,
+        "significant_95": false
+      },
+      "lightgbm_hpo": {
+        "block_hours": 24,
+        "seed": 46,
+        "point": -1.60958353323975,
+        "lo": -2.9757167279018315,
+        "hi": -0.38342282458934496,
+        "n_boot": 2000,
+        "significant_95": false
+      },
+      "mlp": {
+        "block_hours": 24,
+        "seed": 46,
+        "point": 1.729549737203687,
+        "lo": 0.6401505068654088,
+        "hi": 2.7664609953051515,
+        "n_boot": 2000,
+        "significant_95": true
+      }
+    },
+    "mlp_sensitivity": {
+      "hourly": {
+        "seed": 47,
+        "point": 1.729549737203687,
+        "lo": 0.9574029168912335,
+        "hi": 2.530171645822982,
+        "n_boot": 2000,
+        "significant_95": true
+      },
+      "week": {
+        "block_hours": 168,
+        "seed": 48,
+        "point": 1.729549737203687,
+        "lo": 0.581894583503407,
+        "hi": 2.9119774216697323,
+        "n_boot": 2000,
+        "significant_95": true
+      }
+    }
+  },
+  "honest_note": {
+    "condition": "the variant beats the committed served model by more than its CI: the day-block CI of MAE(variant) - MAE(committed MLP) lies entirely below zero",
+    "triggered": false,
+    "outcome": "variant_worse",
+    "defect_worth_mae": null,
+    "required_wording": null
+  },
+  "runtime_s": 55.209
+}

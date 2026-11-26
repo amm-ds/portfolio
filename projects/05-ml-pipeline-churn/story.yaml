@@ -244,7 +244,10 @@ sections:
     cost. The measured cost is `$601` versus `$1,035` on the frozen 1,409-row
     holdout, a `41.9%` cut. The observed cost delta is `−$434`. Its `95%` confidence interval
     (`CI`) is [−$508, −$353]. This interval estimates a range
-    for the saving from repeated customer resamples. Contacting nobody would
+    for the saving from repeated customer resamples. Across `20` repeated
+    splits with the threshold re-selected each time, the delta's median is
+    `−$392` and its `95%` range is [`−$439`, `−$340`]; the committed split
+    sits inside that range, on its favorable side. Contacting nobody would
     cost `$1,870` on the same holdout (`374` churners at `$5` each).
 
     The pipeline diagram shows numeric and categorical preprocessing branches
@@ -261,7 +264,10 @@ sections:
     ## Limits
 
     - Final metrics come from one random snapshot split. Bootstrap resamples
-      do not capture model-search or threshold-selection instability.
+      do not capture model-search or threshold-selection instability. Across
+      `20` repeated splits with the threshold re-selected each time, the cost
+      delta ranges `−$439` to `−$340` (`reports/repeated_splits.json`); the
+      headline keeps the committed split.
     - Neither visual has a time axis. They support no drift, seasonality,
       or causal claim. Temporal validation waits for a time-stamped feed
       from the data owner.

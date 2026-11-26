@@ -286,6 +286,13 @@ sections:
       `LightGBM`'s `MAE` is `0.06` rentals lower, while the `MLP` has better `RMSE` at
       39.3 versus 40.2. The `MLP` remains the deliverable because its training
       loop and controls are visible and measured.
+    - A corrected variant (keeps `atemp`, joins lags by timestamp) scores MAE
+      `27.2` [CI `+0.6`–`+2.8` vs committed] on the same frozen window — worse,
+      not better, for the served `MLP`. The same fixes help `LightGBM` (`23.8`,
+      delta `−1.6` [CI `−3.0`–`−0.4`]) and the date-aware floor (`73.0` vs
+      `83.2`), recorded per candidate in `reports/sensitivity_pruning_lags.json`
+      and priced in `sensitivity_pruning_lags`. The headline keeps the committed
+      run; project 13 serves the committed model.
     - Neither the table nor the ablation figure measures transfer. The study
       covers one city over two years and four seasons, with holidays reduced
       to binary flags, meaning simple yes/no indicators. Use on another fleet
@@ -298,7 +305,7 @@ sections:
     are kept in the conclusions ([Conclusions →](#sec-conclusions)).
 
     **In plain terms:** The served neural network achieves 25.4 bikes/hour test error versus 83.2 for repeating last week, with rush-hour peaks leaving the clearest room for future improvement.
-  figures: [ablation_dotplot]
+  figures: [ablation_dotplot, sensitivity_pruning_lags]
 - id: conclusions
   text_md: |
     ## What the experiment taught
@@ -344,6 +351,11 @@ sections:
     - Lags are positional. For about a week after the 36-hour October 2012 gap,
       `lag_168` and the seasonal-naive floor can read a value about 36 hours off;
       `lag_24` is shifted for about a day and a half. This affects validation.
+    - A corrected variant (keeps `atemp`, joins lags by timestamp) scores MAE
+      `27.2` [CI `+0.6`–`+2.8` vs committed]: fixing the two disclosed defects
+      does not improve the served `MLP` on this window — the delta is worse, not
+      better. The headline keeps the committed run; project 13 serves the
+      committed model.
     - `MAPE` denominators are floored at 1 rental. Near-zero hours keep `MAPE`
       high for every candidate, so read `MAE` first.
     - One city over two years/four seasons, and holiday effects as binary flags,
@@ -462,3 +474,6 @@ figure_captions:
   bootstrap_ci: Three histograms of 2,000 paired resamples each — hourly rows, 24-hour blocks, and 168-hour blocks — for the
     served-model vs floor MAE gain on the frozen test window. The 95% CIs are [52.5, 63.1], [44.2, 71.8], and [38.8, 73.4].
     Wider block intervals show serial-dependence sensitivity, not model-selection variance.
+  sensitivity_pruning_lags: Test-MAE delta of the corrected variant (keeps atemp, joins lags by timestamp) minus the committed
+    run per candidate, with paired 24-hour block-bootstrap 95% CIs. Left of zero favors the variant. LightGBM gains 1.6 while
+    the served MLP worsens by 1.7 [CI +0.6 to +2.8], so the committed headline stands; project 13 serves the committed model.

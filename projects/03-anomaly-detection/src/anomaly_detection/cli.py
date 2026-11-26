@@ -222,6 +222,21 @@ def nab_refine() -> None:
     typer.echo(f"adoption: {result['adoption']['verdict']} (baseline: {BASELINE})")
 
 
+@app.command("nab-official")
+def nab_official() -> None:
+    """Official NAB score (vendored scorer) on the 9 evaluable series, 3 profiles."""
+    config = get_config()
+    from anomaly_detection.nab_official import run_nab_official
+
+    result = run_nab_official(config)
+    for name, profile in result["profiles"].items():
+        typer.echo(
+            f"NAB official {name}: score {profile['score']:.2f} "
+            f"(null {result['sanity']['null'][name]:.1f}, "
+            f"perfect {result['sanity']['perfect'][name]:.1f})"
+        )
+
+
 @app.command()
 def nsl() -> None:
     """NSL-KDD production track: fetch, map, and run the transfer probe."""

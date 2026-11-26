@@ -97,9 +97,10 @@ policy-value interval below, not interchangeable evidence.
 
 - Figures: one `.html` + `.json` per figure id in `reports/figures/` (served
   to the showcase app; ids referenced from `story.yaml`)
-- Metrics: `reports/metrics.json` (policy ladder, `multi_arm` block with its
+- Metrics: `reports/metrics.json` (policy ladder, `analysis.ci` with the
+  two-arm paired bootstrap intervals, `multi_arm` block with its
   own `ci`; `_meta` is the provenance stamp)
-  · Report: `reports/report.html` (the two-arm paired bootstrap intervals,
+  · Report: `reports/report.html` (renders the two-arm paired bootstrap intervals,
   including the headline CI [+$718, +$4,767], CUPED, power and the cost
   sweep) · Segments: `reports/segment_summary.json`
 - Dataset identity: `data/dataset_contract.json` ·

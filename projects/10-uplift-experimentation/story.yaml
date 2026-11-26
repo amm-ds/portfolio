@@ -330,8 +330,8 @@ sections:
     | treat-everyone | 0.0 | full-mail $16,103 | — |
 
     Paired differences (the same resample across policies). These two-arm
-    intervals are persisted in `reports/report.html`; `reports/metrics.json`
-    holds the point estimates.
+    intervals are persisted in `reports/metrics.json` (`analysis.ci`) and
+    rendered in `reports/report.html`.
 
     | comparison | 95% CI | spans zero? |
     |---|---|---|

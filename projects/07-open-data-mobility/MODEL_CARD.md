@@ -56,13 +56,15 @@ Staten Island 0.2 pickups/hour. p90 band coverage 90.8% overall (target 90%).
 Split conformal moves second-half coverage from 90.7% to 91.5%, with mean band
 height rising from 7.032 to 7.124 pickups (+0.091).
 
-Predeclared paired 95% intervals for challenger-minus-naive MAE (2,000 frozen-
+Predeclared paired 95% intervals for challenger-minus-baseline MAE (2,000 frozen-
 prediction resamples, seed 42) are:
 
 | comparison | point ΔMAE | seven-day block CI | zone-cluster CI |
 |---|---:|---:|---:|
+| served gbm_tuned versus naive | −1.841 | [−2.338, −1.258] | [−2.464, −1.266] |
 | XGBoost versus naive | −2.031 | [−2.503, −1.495] | [−2.691, −1.421] |
 | LightGBM versus naive | −1.935 | [−2.433, −1.350] | [−2.606, −1.340] |
+| XGBoost versus served gbm_tuned | −0.190 | [−0.265, −0.115] | [−0.240, −0.143] |
 
 ## Limits
 

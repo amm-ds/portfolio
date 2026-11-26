@@ -29,6 +29,7 @@ from tabular_ml_lifecycle.data import (
     BINARY_COLS,
     NUMERIC_COLS,
     TARGET_COL,
+    TIMESTAMP_COL,
     SplitWindows,
 )
 
@@ -96,16 +97,30 @@ class FeatureSelection:
         }
 
 
-def build_features(df: pd.DataFrame, lag_hours: list[int]) -> pd.DataFrame:
-    """Cyclical hour/weekday/month encodings, calendar binaries, past-only lags."""
+def build_features(
+    df: pd.DataFrame, lag_hours: list[int], lag_mode: str = "positional"
+) -> pd.DataFrame:
+    """Cyclical hour/weekday/month encodings, calendar binaries, past-only lags.
+
+    ``lag_mode="positional"`` (committed run) shifts over the observed
+    sequence, so a lag can drift across missing hours. ``lag_mode="timestamp"``
+    (corrected variant) joins on ``timestamp - h``: the lag reads the count at
+    that exact wall-clock hour and is NaN when that hour is missing.
+    """
     out = df.copy()
     for col, period in (("hour", 24), ("weekday", 7), ("month", 12)):
         angle = 2 * np.pi * out[col].astype(float) / period
         out[f"{col}_sin"] = np.sin(angle)
         out[f"{col}_cos"] = np.cos(angle)
-    for lag in lag_hours:
-        # shift(k) aligns the count from k steps EARLIER with row t — past only.
-        out[f"cnt_lag_{lag}h"] = out[TARGET_COL].shift(lag)
+    if lag_mode == "timestamp":
+        by_ts = out.set_index(TIMESTAMP_COL)[TARGET_COL]  # unique per the DQ gate
+        for lag in lag_hours:
+            wanted = out[TIMESTAMP_COL] - pd.to_timedelta(lag, unit="h")
+            out[f"cnt_lag_{lag}h"] = wanted.map(by_ts)  # NaN for missing hours
+    else:
+        for lag in lag_hours:
+            # shift(k) aligns the count from k steps EARLIER with row t — past only.
+            out[f"cnt_lag_{lag}h"] = out[TARGET_COL].shift(lag)
     return out
 
 
@@ -149,8 +164,10 @@ def select_features(
     cfg: LifecycleConfig, train: pd.DataFrame, val: pd.DataFrame, windows: SplitWindows
 ) -> FeatureSelection:
     """MI ranking (train) + permutation importance (ridge on validation) +
-    correlated-pair pruning. Compatibility note: this committed run drops the
-    higher-MI member, so atemp is dropped; changing it requires new artifacts."""
+    correlated-pair pruning. Compatibility note: the committed default
+    (``pruning_rule="drop_higher_mi"``) drops the higher-MI member, so atemp is
+    dropped; the corrected variant (``"keep_higher_mi"``) is scored by the
+    sensitivity arm as a separate artifact."""
     X_train, y_train = _xy(train, CANDIDATE_FEATURES)
     X_val, y_val = _xy(val, CANDIDATE_FEATURES)
 
@@ -172,14 +189,18 @@ def select_features(
         for i, a in enumerate(CANDIDATE_FEATURES)
         for b in CANDIDATE_FEATURES[i + 1 :]
     ]
-    # FIXME: the current comparison drops the higher-MI member, contrary to the
-    # intended lower-MI policy. Preserve behavior until a rerun refreshes all artifacts.
+    # FIXME: the committed comparison drops the higher-MI member, contrary to the
+    # intended lower-MI policy. It stays the default until a rerun refreshes all
+    # artifacts; the sensitivity variant flips it via ``pruning_rule``.
     pruned_pairs: list[dict[str, Any]] = []
     pruned: set[str] = set()
     for r, a, b in sorted(pairs, key=lambda p: p[0], reverse=True):
         if r <= cfg.corr_threshold or a in pruned or b in pruned:
             continue
-        drop, keep = (a, b) if mi_scores[a] >= mi_scores[b] else (b, a)
+        if cfg.pruning_rule == "keep_higher_mi":
+            drop, keep = (b, a) if mi_scores[a] >= mi_scores[b] else (a, b)
+        else:
+            drop, keep = (a, b) if mi_scores[a] >= mi_scores[b] else (b, a)
         pruned.add(drop)
         pruned_pairs.append({"dropped": drop, "kept": keep, "r": round(r, 4)})
     selected = [c for c in CANDIDATE_FEATURES if c not in pruned]

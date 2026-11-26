@@ -112,8 +112,9 @@ The evaluate stage additionally reports **p90 band calibration** (empirical
 coverage per borough + overall vs the 90% target), split-conformal coverage and
 mean band height on the held-out second half, and **permutation importance** of
 the tuned GBM on a bounded test slice (`hpo.perm_importance_rows`, chronological
-head). A post-freeze uncertainty protocol predeclares xGB-versus-naive and
-LightGBM-versus-naive paired MAE deltas: 2,000 resamples, seed 42, circular
+head). A post-freeze uncertainty protocol predeclares served-versus-naive,
+xGB-versus-naive, LightGBM-versus-naive, and xGB-versus-served paired MAE
+deltas: 2,000 resamples, seed 42, circular
 seven-day blocks, and whole-zone clusters. These intervals never participate in
 selection or tuning.
 

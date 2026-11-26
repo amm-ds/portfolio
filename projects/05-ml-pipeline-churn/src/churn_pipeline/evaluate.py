@@ -8,6 +8,7 @@ training-side out-of-fold predictions before this module scores the holdout.
 """
 
 import itertools
+import json
 from pathlib import Path
 from typing import Any
 
@@ -270,12 +271,34 @@ def paired_bootstrap_cost_delta(
     }
 
 
-def bootstrap_ci_figure(delta: dict[str, Any], name_a: str, name_b: str) -> go.Figure:
+def load_repeated_split_deltas(reports_dir: Path) -> list[float] | None:
+    """Per-split cost deltas from ``repeated_splits.json`` when it exists.
+
+    The committed repeated-splits artifact feeds the strip on the bootstrap
+    figure; when it is absent (fresh checkout before the side analysis ran)
+    the figure renders without the strip.
+    """
+    path = reports_dir / "repeated_splits.json"
+    if not path.exists():
+        return None
+    data = json.loads(path.read_text())
+    return [float(split["cost_delta"]) for split in data["splits"]]
+
+
+def bootstrap_ci_figure(
+    delta: dict[str, Any],
+    name_a: str,
+    name_b: str,
+    split_deltas: list[float] | None = None,
+) -> go.Figure:
     """Histogram of the paired-bootstrap cost deltas (A minus B).
 
     A single interval line is information-free; the resample distribution
     shows how far from zero the saving sits. The 95% CI region is shaded,
-    zero is a bold reference line, and the point estimate is starred.
+    zero is a bold reference line, and the point estimate is starred. When
+    ``split_deltas`` (repeated stratified splits, threshold re-selected per
+    split) is given, a strip of those deltas is appended under the baseline
+    as a separate trace; the bootstrap traces are not altered.
     """
     deltas = np.asarray(delta["deltas"], dtype=float)
     label = f"{name_a} - {name_b}"
@@ -324,10 +347,25 @@ def bootstrap_ci_figure(delta: dict[str, Any], name_a: str, name_b: str) -> go.F
         ay=-35,
         font={"size": 13, "color": "#fbbf24"},
     )
+    if split_deltas:
+        # strip of per-split deltas under the baseline; appended as a new
+        # trace so the committed bootstrap traces above stay untouched
+        jitter = np.random.default_rng(0).uniform(-1.0, 1.0, size=len(split_deltas))
+        strip_y = -float(counts.max()) * 0.06 + jitter * float(counts.max()) * 0.02
+        fig.add_scatter(
+            x=[float(v) for v in split_deltas],
+            y=strip_y.tolist(),
+            mode="markers",
+            name=f"{len(split_deltas)} repeated splits (threshold re-selected)",
+            marker={"size": 9, "symbol": "diamond", "color": "#a78bfa"},
+        )
     if delta["hi"] < 0:
+        # No "$" pairs in this title: plotly parses $...$ pairs as TeX math in
+        # static exports (see agentic_workflows/figures.py). Multi-amount
+        # prose uses "USD".
         title = (
-            f"The saving excludes zero: \u2212${abs(delta['lo']):.0f} to "
-            f"\u2212${abs(delta['hi']):.0f} over {delta['n_boot']:,} resamples"
+            f"The saving excludes zero: \u2212{abs(delta['lo']):.0f} to "
+            f"\u2212{abs(delta['hi']):.0f} USD over {delta['n_boot']:,} resamples"
         )
     else:
         title = "Paired-bootstrap cost deltas"
@@ -635,8 +673,14 @@ def evaluate_holdout(
     y_test: pd.Series,
     train_base_rate: float,
     thresholds: dict[str, float],
+    split_deltas: list[float] | None = None,
 ) -> tuple[list[RunResult], dict[str, go.Figure], dict[str, Any]]:
-    """Score the frozen policies once; never select thresholds on the holdout."""
+    """Score the frozen policies once; never select thresholds on the holdout.
+
+    ``split_deltas`` (per-split cost deltas from the repeated-splits side
+    analysis) only decorates the bootstrap figure with a strip; it changes no
+    metric.
+    """
     required = {"logreg", "selected", "selected_calibrated"}
     missing = required - thresholds.keys()
     if missing:
@@ -764,7 +808,10 @@ def evaluate_holdout(
             takeaway,
         ),
         "bootstrap_ci": bootstrap_ci_figure(
-            summary["cost_delta_ci"], "calibrated model", "contact everyone"
+            summary["cost_delta_ci"],
+            "calibrated model",
+            "contact everyone",
+            split_deltas=split_deltas,
         ),
         "fairness_slices": fairness_slices_figure(summary["slices"], selected_opt),
     }

@@ -1,9 +1,9 @@
 """Typer CLI: prepare → train → evaluate (``all`` chains those in-process).
 
-``sensitivity`` is a side analysis; ``build-serving`` / ``demo-payload`` emit
-the showcase artifacts (also dvc stages). Each command is a thin wrapper
-around a core function so ``all`` can chain them in-process (fast, single
-interpreter for the full pipeline).
+``sensitivity`` and ``repeated-splits`` are side analyses; ``build-serving`` /
+``demo-payload`` emit the showcase artifacts (also dvc stages). Each command
+is a thin wrapper around a core function so ``all`` can chain them in-process
+(fast, single interpreter for the full pipeline).
 """
 
 import json
@@ -30,7 +30,12 @@ from sklearn.model_selection import StratifiedKFold, cross_val_predict, train_te
 from churn_pipeline.config import ChurnConfig, pd, threadpool_limits, yaml
 from churn_pipeline.demo_payload import write_demo_payload
 from churn_pipeline.eda import eda_churn_profile_figure
-from churn_pipeline.evaluate import artifact_paths, evaluate_holdout, select_oof_thresholds
+from churn_pipeline.evaluate import (
+    artifact_paths,
+    evaluate_holdout,
+    load_repeated_split_deltas,
+    select_oof_thresholds,
+)
 from churn_pipeline.hpo import ModelSelection, build_estimator, run_study
 from churn_pipeline.model import (
     TARGET_COL,
@@ -39,6 +44,7 @@ from churn_pipeline.model import (
     split_holdout,
     train_model,
 )
+from churn_pipeline.repeated_splits import ReproductionMismatchError, repeated_splits_core
 from churn_pipeline.serving import build_serving_artifact
 
 OptN = Annotated[int | None, typer.Option(help="Override n_samples from params.yaml.")]
@@ -390,6 +396,7 @@ def evaluate_core(cfg: ChurnConfig) -> Path:
         y_test,
         train_base_rate=float(meta["train_churn_rate"]),
         thresholds={k: float(v) for k, v in policy["thresholds"].items()},
+        split_deltas=load_repeated_split_deltas(cfg.reports_dir),
     )
 
     builder = ReportBuilder(
@@ -607,6 +614,52 @@ def sensitivity(
             f"{v['cost_delta_ci']['hi']:.0f}] matches_baseline={v['matches_baseline']}"
         )
     typer.echo(f"sensitivity written to {out_path}")
+
+
+@app.command("repeated-splits")
+def repeated_splits(
+    n_splits: Annotated[int, typer.Option(help="Number of fresh stratified splits to price.")] = 20,
+    base_seed: Annotated[
+        int,
+        typer.Option(help="First split seed; split i uses base_seed + i (42 stays the headline)."),
+    ] = 1000,
+    n: OptN = None,
+    seed: OptSeed = None,
+    params_file: OptParams = Path("params.yaml"),
+) -> None:
+    """Repeated stratified splits of the frozen config (split-to-split uncertainty).
+
+    Side analysis: re-runs the committed seed-42 split first (aborts when it
+    does not reproduce metrics.json/operating_policy.json), then prices N
+    fresh splits with the threshold re-selected per split. Writes only
+    reports/repeated_splits.json and re-renders the bootstrap_ci strip.
+    """
+    cfg = load_config(params_file, n, seed)
+    try:
+        out_path = repeated_splits_core(
+            cfg, n_splits=n_splits, base_seed=base_seed, params_file=params_file
+        )
+    except ReproductionMismatchError as exc:
+        typer.echo(f"reproduction gate FAILED: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    data = json.loads(out_path.read_text())
+    repro = data["reproduction"]
+    typer.echo(
+        f"reproduction seed {repro['seed']}: reproduced {repro['reproduced']} "
+        f"(committed {repro['committed']}) matches={repro['matches_committed']}"
+    )
+    delta = data["summary"]["cost_delta"]
+    opt = data["summary"]["calibrated_opt"]
+    rule = data["summary"]["month_to_month_rule_cost"]
+    typer.echo(
+        f"{data['n_splits']} splits: cost delta median {delta['median']:.0f} "
+        f"[{delta['p2_5']:.0f}, {delta['p97_5']:.0f}] "
+        f"(min {delta['min']:.0f}, max {delta['max']:.0f}); "
+        f"thresholds {opt['min']:.3f} to {opt['max']:.3f} (median {opt['median']:.3f}); "
+        f"month-to-month rule cost median {rule['median']:.0f} "
+        f"[{rule['p2_5']:.0f}, {rule['p97_5']:.0f}]"
+    )
+    typer.echo(f"repeated splits written to {out_path}")
 
 
 @app.command("build-serving")

@@ -604,6 +604,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "rentals_by_hour_season",
       "residual_heatmap",
       "residual_vs_fitted",
+      "sensitivity_pruning_lags",
       "temp_vs_rentals"
     ],
     "has_roadmap": true,

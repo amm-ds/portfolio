@@ -126,6 +126,22 @@ def test_m10_reads_paired_baseline_intervals_from_committed_report() -> None:
     ]
 
 
+def test_m10_metrics_ci_matches_the_report_source() -> None:
+    """The paired intervals are persisted in metrics.json analysis.ci too."""
+    assert headline._m10_metrics_ci() == ["+$718", "+$4,767", "\u2212$13,125", "\u2212$5,808"]
+    assert headline._m10_metrics_ci() == headline._m10()[2:]
+
+
+def test_m10_metrics_ci_claim_verifies_against_real_repo() -> None:
+    """README and article carry the intervals gated from metrics.json."""
+    claim = next(
+        c
+        for c in headline.CLAIMS
+        if c["project"] == "10-uplift-experimentation" and c["values"] is headline._m10_metrics_ci
+    )
+    assert headline.check_claim(claim) == []
+
+
 def test_m10_claim_verifies_against_real_repo() -> None:
     """README and article both carry the delta and both paired intervals."""
     claim = next(c for c in headline.CLAIMS if c["project"] == "10-uplift-experimentation")

@@ -1,0 +1,417 @@
+{
+  "schema_version": 1,
+  "note": "Repeated stratified splits of the frozen production config (params.yaml): each split re-fits the selected model with isotonic calibration on its own training rows and re-selects the decision threshold from its own stratified 3-fold OOF predictions before one holdout scoring, so the cost-delta spread includes threshold-selection uncertainty (the committed paired bootstrap holds thresholds fixed and does not). The reproduction block re-runs the committed seed-42 split first and must match reports/metrics.json and data/operating_policy.json before any new split is priced. Side analysis only: metrics.json and the served artifacts are untouched.",
+  "created_at": "2026-11-26T19:31:10+01:00",
+  "git_sha": "3b27961bdadd4f55260ccb9031dfd35a86568415",
+  "config": {
+    "params_file": "params.yaml",
+    "params_sha256": "1e79bd01a1c773fd2bf65712e23400934b7f8324e3a1a3aa9a855502648d01ad",
+    "data_source": "telco",
+    "model_family": "xgboost",
+    "model_params": {
+      "learning_rate": 0.030921572415730004,
+      "max_depth": 3.0,
+      "n_estimators": 211.0,
+      "subsample": 0.5186934422187627
+    },
+    "test_frac": 0.2,
+    "calib_frac": 0.2,
+    "cv_folds": 3,
+    "fp_cost": 1.0,
+    "fn_cost": 5.0,
+    "threshold_grid_points": 41,
+    "n_rows": 7043
+  },
+  "reproduction": {
+    "seed": 42,
+    "committed": {
+      "calibrated_cost": 601.0,
+      "naive_cost": 1035.0,
+      "calibrated_opt": 0.175
+    },
+    "reproduced": {
+      "calibrated_cost": 601.0,
+      "naive_cost": 1035.0,
+      "calibrated_opt": 0.175
+    },
+    "cost_tolerance": 0.5,
+    "threshold_match": "exact",
+    "matches_committed": true
+  },
+  "n_splits": 20,
+  "seeds": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007,
+    1008,
+    1009,
+    1010,
+    1011,
+    1012,
+    1013,
+    1014,
+    1015,
+    1016,
+    1017,
+    1018,
+    1019
+  ],
+  "splits": [
+    {
+      "seed": 1000,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.225,
+      "calibrated_cost": 617.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -418.0,
+      "month_to_month_rule": {
+        "cost": 647.0,
+        "n_contacted": 811,
+        "contacted_churners": 339,
+        "delta_vs_contact_everyone": -388.0
+      }
+    },
+    {
+      "seed": 1001,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.175,
+      "calibrated_cost": 615.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -420.0,
+      "month_to_month_rule": {
+        "cost": 668.0,
+        "n_contacted": 784,
+        "contacted_churners": 331,
+        "delta_vs_contact_everyone": -367.0
+      }
+    },
+    {
+      "seed": 1002,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.15,
+      "calibrated_cost": 599.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -436.0,
+      "month_to_month_rule": {
+        "cost": 635.0,
+        "n_contacted": 763,
+        "contacted_churners": 333,
+        "delta_vs_contact_everyone": -400.0
+      }
+    },
+    {
+      "seed": 1003,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.175,
+      "calibrated_cost": 617.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -418.0,
+      "month_to_month_rule": {
+        "cost": 682.0,
+        "n_contacted": 786,
+        "contacted_churners": 329,
+        "delta_vs_contact_everyone": -353.0
+      }
+    },
+    {
+      "seed": 1004,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.175,
+      "calibrated_cost": 679.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -356.0,
+      "month_to_month_rule": {
+        "cost": 651.0,
+        "n_contacted": 785,
+        "contacted_churners": 334,
+        "delta_vs_contact_everyone": -384.0
+      }
+    },
+    {
+      "seed": 1005,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.2,
+      "calibrated_cost": 623.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -412.0,
+      "month_to_month_rule": {
+        "cost": 628.0,
+        "n_contacted": 744,
+        "contacted_churners": 331,
+        "delta_vs_contact_everyone": -407.0
+      }
+    },
+    {
+      "seed": 1006,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.175,
+      "calibrated_cost": 643.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -392.0,
+      "month_to_month_rule": {
+        "cost": 667.0,
+        "n_contacted": 777,
+        "contacted_churners": 330,
+        "delta_vs_contact_everyone": -368.0
+      }
+    },
+    {
+      "seed": 1007,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.2,
+      "calibrated_cost": 607.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -428.0,
+      "month_to_month_rule": {
+        "cost": 636.0,
+        "n_contacted": 794,
+        "contacted_churners": 338,
+        "delta_vs_contact_everyone": -399.0
+      }
+    },
+    {
+      "seed": 1008,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.175,
+      "calibrated_cost": 692.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -343.0,
+      "month_to_month_rule": {
+        "cost": 679.0,
+        "n_contacted": 753,
+        "contacted_churners": 324,
+        "delta_vs_contact_everyone": -356.0
+      }
+    },
+    {
+      "seed": 1009,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.15,
+      "calibrated_cost": 656.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -379.0,
+      "month_to_month_rule": {
+        "cost": 672.0,
+        "n_contacted": 770,
+        "contacted_churners": 328,
+        "delta_vs_contact_everyone": -363.0
+      }
+    },
+    {
+      "seed": 1010,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.225,
+      "calibrated_cost": 663.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -372.0,
+      "month_to_month_rule": {
+        "cost": 652.0,
+        "n_contacted": 756,
+        "contacted_churners": 329,
+        "delta_vs_contact_everyone": -383.0
+      }
+    },
+    {
+      "seed": 1011,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.2,
+      "calibrated_cost": 651.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -384.0,
+      "month_to_month_rule": {
+        "cost": 673.0,
+        "n_contacted": 789,
+        "contacted_churners": 331,
+        "delta_vs_contact_everyone": -362.0
+      }
+    },
+    {
+      "seed": 1012,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.175,
+      "calibrated_cost": 644.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -391.0,
+      "month_to_month_rule": {
+        "cost": 697.0,
+        "n_contacted": 777,
+        "contacted_churners": 325,
+        "delta_vs_contact_everyone": -338.0
+      }
+    },
+    {
+      "seed": 1013,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.2,
+      "calibrated_cost": 600.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -435.0,
+      "month_to_month_rule": {
+        "cost": 631.0,
+        "n_contacted": 777,
+        "contacted_churners": 336,
+        "delta_vs_contact_everyone": -404.0
+      }
+    },
+    {
+      "seed": 1014,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.175,
+      "calibrated_cost": 697.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -338.0,
+      "month_to_month_rule": {
+        "cost": 694.0,
+        "n_contacted": 768,
+        "contacted_churners": 324,
+        "delta_vs_contact_everyone": -341.0
+      }
+    },
+    {
+      "seed": 1015,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.175,
+      "calibrated_cost": 594.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -441.0,
+      "month_to_month_rule": {
+        "cost": 628.0,
+        "n_contacted": 768,
+        "contacted_churners": 335,
+        "delta_vs_contact_everyone": -407.0
+      }
+    },
+    {
+      "seed": 1016,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.175,
+      "calibrated_cost": 683.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -352.0,
+      "month_to_month_rule": {
+        "cost": 695.0,
+        "n_contacted": 787,
+        "contacted_churners": 327,
+        "delta_vs_contact_everyone": -340.0
+      }
+    },
+    {
+      "seed": 1017,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.2,
+      "calibrated_cost": 648.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -387.0,
+      "month_to_month_rule": {
+        "cost": 658.0,
+        "n_contacted": 786,
+        "contacted_churners": 333,
+        "delta_vs_contact_everyone": -377.0
+      }
+    },
+    {
+      "seed": 1018,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.15,
+      "calibrated_cost": 626.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -409.0,
+      "month_to_month_rule": {
+        "cost": 693.0,
+        "n_contacted": 755,
+        "contacted_churners": 322,
+        "delta_vs_contact_everyone": -342.0
+      }
+    },
+    {
+      "seed": 1019,
+      "n_train": 5634,
+      "n_holdout": 1409,
+      "holdout_churners": 374,
+      "calibrated_opt": 0.175,
+      "calibrated_cost": 678.0,
+      "naive_cost": 1035.0,
+      "cost_delta": -357.0,
+      "month_to_month_rule": {
+        "cost": 679.0,
+        "n_contacted": 789,
+        "contacted_churners": 330,
+        "delta_vs_contact_everyone": -356.0
+      }
+    }
+  ],
+  "summary": {
+    "cost_delta": {
+      "median": -391.5,
+      "p2_5": -438.625,
+      "p97_5": -340.375,
+      "min": -441.0,
+      "max": -338.0,
+      "all_below_zero": true
+    },
+    "calibrated_opt": {
+      "median": 0.175,
+      "min": 0.15,
+      "max": 0.225,
+      "n_distinct": 4
+    },
+    "month_to_month_rule_cost": {
+      "median": 667.5,
+      "p2_5": 628.0,
+      "p97_5": 696.05,
+      "min": 628.0,
+      "max": 697.0
+    },
+    "month_to_month_rule_delta_vs_contact_everyone": {
+      "median": -367.5,
+      "p2_5": -407.0,
+      "p97_5": -338.95,
+      "min": -407.0,
+      "max": -338.0
+    },
+    "percentile_method": "numpy.percentile (linear) over the per-split values"
+  }
+}

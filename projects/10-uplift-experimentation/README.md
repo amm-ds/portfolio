@@ -184,14 +184,15 @@ is noisy, and the X-learner's second stage adds variance without signal here
   `profit_frontier`, `cost_sensitivity`, `cuped_variance`, plus the multi-arm
   set: `qini_per_arm`, `profit_frontier_multi_arm`,
   `recommended_arm_distribution`
-- Metrics: `reports/metrics.json` (two-arm policy ladder; `multi_arm.ci` holds
+- Metrics: `reports/metrics.json` (two-arm policy ladder; `analysis.ci` holds
+  the two-arm paired bootstrap intervals, `multi_arm.ci` holds
   the multi-arm intervals, `multi_arm.policy_value` holds observed DR/IPW and
   `multi_arm.policies` holds model-estimated planning; unavailable values are
   null; `_meta` is the provenance stamp)
-- Report: `reports/report.html` holds the two-arm paired bootstrap intervals
+- Report: `reports/report.html` renders the two-arm paired bootstrap intervals
   (including the headline CI [+$718, +$4,767]), CUPED, power, deciles and the
-  cost sweep; `scripts/check_headline_numbers.py` reads the headline intervals
-  from it · Segment summary: `reports/segment_summary.json`
+  cost sweep; `scripts/check_headline_numbers.py` gates the headline intervals
+  from both files · Segment summary: `reports/segment_summary.json`
 - Scores: `data/scores.parquet` (two-arm + per-arm uplift columns) ·
   `data/scores_multi.parquet` (three-arm scores + out-of-fold outcome nuisances)
 - Demo: `reports/demo_payload.json` (planning grids + observed DR/IPW scalars)

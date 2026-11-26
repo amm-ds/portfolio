@@ -280,7 +280,10 @@ describe("plotlyToECharts over the committed churn figures", () => {
     expect(option.xAxis[0].min).toBeGreaterThan(-640);
     expect(option.xAxis[0].max).toBeGreaterThan(0);
     expect(option.xAxis[0].max).toBeLessThan(80);
-    expect(option.yAxis[0].min).toBe(0); // positive-only bar counts
+    // the 20-splits rug strip sits below the zero baseline (E3), so the
+    // value axis tracks the data extent below zero instead of pinning at 0
+    expect(option.yAxis[0].min).toBeLessThan(0);
+    expect(option.yAxis[0].min).toBeGreaterThan(-30);
     // numeric-x bars get a px width from the data-unit widths
     const bars = option.series.filter((s) => s.type === "bar");
     for (const b of bars) {

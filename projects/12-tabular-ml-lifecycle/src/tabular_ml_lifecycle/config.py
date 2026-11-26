@@ -79,6 +79,28 @@ class LifecycleConfig(PortfolioBaseModel):
         description="|r| threshold for correlated-pair pruning; see committed selection record.",
     )
 
+    # Sensitivity-arm behavior switches (pass-3 P1.2). The defaults reproduce
+    # the committed run byte-for-byte; params_variant.yaml flips both to score
+    # the corrected variant as a separate artifact (metrics.json is untouched).
+    lag_mode: str = Field(
+        default="positional",
+        pattern="^(positional|timestamp)$",
+        description=(
+            "'positional' = committed run: lags are shifts over the observed sequence; "
+            "'timestamp' = corrected variant: lags join on timestamp minus h, with NaN "
+            "for hours missing from the series."
+        ),
+    )
+    pruning_rule: str = Field(
+        default="drop_higher_mi",
+        pattern="^(drop_higher_mi|keep_higher_mi)$",
+        description=(
+            "'drop_higher_mi' = committed run (drops the higher-MI member of a "
+            "correlated pair — the known pruning defect); 'keep_higher_mi' = "
+            "corrected variant (keeps it, e.g. atemp over temp)."
+        ),
+    )
+
     # Models
     ridge_alpha: float = Field(default=1.0, gt=0.0)
     rf_n_estimators: int = Field(default=300, ge=10)

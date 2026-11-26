@@ -45,10 +45,13 @@ TUNED_PAIRS = [
     ("gbm_lgbm_tuned", "gbm_tuned"),
     ("temporal_net_tuned", "temporal_net"),
 ]
-#: Frozen uncertainty protocol: compare only the two challengers with persistence.
+#: Frozen uncertainty protocol: the served model and both challengers against
+#: persistence, plus the xGB challenger against the served model.
 PAIRED_INTERVAL_COMPARISONS = (
+    ("gbm_tuned", "naive_lag24"),
     ("gbm_xgb_tuned", "naive_lag24"),
     ("gbm_lgbm_tuned", "naive_lag24"),
+    ("gbm_xgb_tuned", "gbm_tuned"),
 )
 PAIRED_BOOTSTRAP_RESAMPLES = 2_000
 PAIRED_BOOTSTRAP_SEED = 42
@@ -158,7 +161,7 @@ def paired_mae_intervals(
     day_block_length: int = PAIRED_DAY_BLOCK_LENGTH,
     seed: int = PAIRED_BOOTSTRAP_SEED,
 ) -> dict[str, Any]:
-    """Paired challenger-minus-naive MAE intervals from frozen predictions.
+    """Paired challenger-minus-baseline MAE intervals from frozen predictions.
 
     The protocol is fixed independently of the observed intervals: 2,000
     percentile-bootstrap resamples, circular seven-day moving blocks for
@@ -223,7 +226,7 @@ def paired_mae_intervals(
         comparisons[f"{challenger}_vs_{baseline}"] = result
 
     return {
-        "method": "paired percentile bootstrap of challenger-minus-naive MAE deltas; "
+        "method": "paired percentile bootstrap of challenger-minus-baseline MAE deltas; "
         "circular moving day blocks and whole-zone clusters on frozen test predictions",
         "confidence_level": confidence_level,
         "n_resamples": n_resamples,
@@ -992,7 +995,7 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
                     }
                 )
         report.add_markdown_table(
-            "Paired MAE deltas (challenger minus naive; negative favors challenger)",
+            "Paired MAE deltas (challenger minus baseline; negative favors challenger)",
             _markdown(pl.DataFrame(paired_rows), floatfmt="{:.3f}"),
         )
     report.add_markdown_table("Per-borough test MAE (gbm_mean)", _markdown(borough_mae))

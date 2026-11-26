@@ -188,9 +188,10 @@ sections:
     zero and low-demand zone-hours make percentage errors unstable.
 
     For uncertainty rather than selection, the post-freeze protocol
-    predeclares two comparisons, xGB versus naive and `LightGBM` versus naive.
+    predeclares four comparisons: the served `gbm_tuned` versus naive, xGB
+    versus naive, `LightGBM` versus naive, and xGB versus the served model.
     It uses `2,000` paired resamples with seed 42, circular seven-day blocks,
-    and whole-zone clusters. Each interval describes the challenger-minus-naive
+    and whole-zone clusters. Each interval describes the challenger-minus-baseline
     `MAE` delta in pickups/hour; negative values favor the challenger. The frozen
     predictions supply every score, and no interval feeds model selection.
 
@@ -372,18 +373,22 @@ sections:
     incumbent, `3.173` for the `LightGBM` challenger, and `3.182` for the xGB
     challenger. The serving rule keeps `gbm_tuned` even though both
     challengers beat it on test. xGB has `4.1%` lower relative test `MAE` than
-    `gbm_tuned`; no direct xGB-versus-`gbm_tuned` interval is committed. The tuned
-    GBM is `0.2%` worse than the default (`4.676` versus `4.667`); no direct
-    interval for this pair is committed.
+    `gbm_tuned`, a paired delta of `−0.190` with a seven-day block CI of
+    [−0.265, −0.115] and a zone-cluster CI of [−0.240, −0.143], both
+    excluding zero. The tuned GBM is `0.2%` worse than the default (`4.676`
+    versus `4.667`); no interval was predeclared for that pair.
 
-    Paired holdout intervals use challenger-minus-naive `MAE` deltas, so
-    negative values favor the challenger. Both protocols exclude zero for
-    both predeclared comparisons; neither interval changes serving selection.
+    Paired holdout intervals use challenger-minus-baseline `MAE` deltas, so
+    negative values favor the challenger. The served model's own delta
+    against naive is `−1.841` pickups/hour, and all four comparisons exclude
+    zero under both protocols. No interval changes serving selection.
 
     | comparison | point ΔMAE | seven-day block 95% CI | zone-cluster 95% CI |
     |---|---:|---:|---:|
+    | served `gbm_tuned` versus naive | −1.841 | [−2.338, −1.258] | [−2.464, −1.266] |
     | xGB versus naive | −2.031 | [−2.503, −1.495] | [−2.691, −1.421] |
     | LightGBM versus naive | −1.935 | [−2.433, −1.350] | [−2.606, −1.340] |
+    | xGB versus served `gbm_tuned` | −0.190 | [−0.265, −0.115] | [−0.240, −0.143] |
 
     These records explain the dense-zone and no-borough paths. `p90` coverage
     is `90.8%` overall against a `90%` target. Manhattan is `91.4%`, Queens `89.6%`,
@@ -434,8 +439,9 @@ sections:
       embargoed, expanding, train-side validation window. It uses 30
       boosting trials, 10 neural-net trials, and challenger arms. The test
       window is never visible to tuning.
-    - Paired intervals: predeclared xGB-versus-naive and LightGBM-versus-naive
-      `MAE` deltas use `2,000` frozen-prediction resamples, seed 42, circular
+    - Paired intervals: predeclared served-versus-naive, xGB-versus-naive,
+      LightGBM-versus-naive, and xGB-versus-served `MAE` deltas use `2,000`
+      frozen-prediction resamples, seed 42, circular
       seven-day blocks, and 265 whole-zone clusters. The percentile intervals
       are `95%` and do not participate in selection or tuning.
     - Band: a quantile-0.9 `GBM` twin is fit with the served recipe and judged

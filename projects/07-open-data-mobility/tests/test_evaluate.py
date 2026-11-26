@@ -124,6 +124,7 @@ def test_paired_mae_intervals_use_frozen_paired_errors() -> None:
     preds = demand.select(["zone_id", "ts"]).with_columns(
         y_true=pl.lit(10.0),
         y_naive=pl.lit(12.0),
+        y_gbm_tuned=pl.lit(10.25),
         y_gbm_xgb_tuned=pl.lit(10.5),
         y_gbm_lgbm_tuned=pl.lit(10.75),
     )
@@ -132,12 +133,22 @@ def test_paired_mae_intervals_use_frozen_paired_errors() -> None:
     assert block["seed"] == 42
     assert block["day_block_length"] == 7
     assert set(block["comparisons"]) == {
+        "gbm_tuned_vs_naive_lag24",
         "gbm_xgb_tuned_vs_naive_lag24",
         "gbm_lgbm_tuned_vs_naive_lag24",
+        "gbm_xgb_tuned_vs_gbm_tuned",
     }
     xgb = block["comparisons"]["gbm_xgb_tuned_vs_naive_lag24"]
     lgbm = block["comparisons"]["gbm_lgbm_tuned_vs_naive_lag24"]
-    for comparison, expected in ((xgb, -1.5), (lgbm, -1.25)):
+    tuned = block["comparisons"]["gbm_tuned_vs_naive_lag24"]
+    xgb_vs_tuned = block["comparisons"]["gbm_xgb_tuned_vs_gbm_tuned"]
+    expected_deltas = (
+        (xgb, -1.5),
+        (lgbm, -1.25),
+        (tuned, -1.75),
+        (xgb_vs_tuned, 0.25),  # positive: the xGB challenger is worse than the served model
+    )
+    for comparison, expected in expected_deltas:
         for protocol in ("day_block", "zone_cluster"):
             assert comparison[protocol]["point_mae_delta"] == expected
             assert comparison[protocol]["ci95"] == [expected, expected]

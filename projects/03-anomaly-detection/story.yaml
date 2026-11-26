@@ -1,5 +1,5 @@
 project_id: 03-anomaly-detection
-short_version: On 9 NAB series, IsolationForest touches 16 of 17 incidents but fires 1,609 alerts. Merging bursts and capping one page per series per day cuts that to 80 pages. Averaging three detectors halves 66 pages to 35 at the same recall (0.604). No official NAB score yet.
+short_version: On 9 NAB series, IsolationForest touches 16 of 17 incidents but fires 1,609 alerts. Merging bursts and a per-series daily page cap cut it to 80 pages. Averaging three detectors halves 66 pages to 35 at equal recall (0.604). NAB standard-profile score 51.45 (null 0, perfect 100).
 sections:
 - id: background
   text_md: |
@@ -161,7 +161,7 @@ sections:
     - **Report the tuning trade-off.** Tuned `IsolationForest` moves from `66` to `33` rolling pages while recall falls `0.604` to `0.500`; rolling+residual moves `80` to `46` while recall falls `0.562` to `0.479`. The ensemble's `+0.010` validation change does not justify a new default.
     - **Keep synthetic evidence in its lane.** Residual-feature gains do not transfer to `NAB`; they support pipeline mechanics only.
     - **Name the failed gate.** Calibration fails precision and `range-F1`. Both fusions pass precision but fail the `16/17` coverage requirement, at `14/17` and `15/17`.
-    - **Keep precision in the decision.** Averaged per series, range precision at the `2%` budget (point-adjusted, `k = 2`) is `0.527`, `95%` `CI` `[0.230, 0.811]` over `9` series (`2,000` resamples, seed `42`). This is a different metric from the minute-level `PR-AUC` (also `0.527` by coincidence). The interval sits above the no-skill band `[0.063, 0.105]` but is wide. It supports an alert-budget dial, not unattended paging. The official `NAB` score is not reported: it requires the official scorer and an application profile. These tables use the project's window semantics instead.
+    - **Keep precision in the decision.** Averaged per series, range precision at the `2%` budget (point-adjusted, `k = 2`) is `0.527`, `95%` `CI` `[0.230, 0.811]` over `9` series (`2,000` resamples, seed `42`). This is a different metric from the minute-level `PR-AUC` (also `0.527` by coincidence). The interval sits above the no-skill band `[0.063, 0.105]` but is wide. It supports an alert-budget dial, not unattended paging. The official `NAB` score, computed with the vendored scorer at a pinned upstream commit on the same nine scored spans, is `51.45` on the standard profile (null `0`, perfect `100`), `49.81` on `reward_low_FP_rate`, and `62.46` on `reward_low_FN_rate`.
 
     ## Limits
 
