@@ -1,6 +1,6 @@
 # Model API serving & Docker deployment — experiment 13.
-# The champion is the tabular MLP re-derived from experiment 12's committed
-# recipe (same features, same architecture + hyperparameters, same seed 42).
+# The served model is the LightGBM re-derived from experiment 12's committed
+# v2 recipe (timestamp lags, keep-higher-MI pruning, seeded HPO, seed 42).
 seed: 42
 data_source: uci
 uci_source: https://archive.ics.uci.edu/static/public/275/bike+sharing+dataset.zip
@@ -13,24 +13,23 @@ lag_hours:
 - 168
 corr_threshold: 0.9
 ridge_alpha: 1.0
-# Experiment 12's committed test MAE for the champion MLP (reports/metrics.json,
-# scored once). The train stage re-derives the recipe and must land within
-# reproduction_tolerance — the reproduction check is part of the artifact.
-champion_expected_test_mae: 25.43163249606178
+# Experiment 12's committed v2 recipe (its params.yaml).
+lag_mode: timestamp
+pruning_rule: keep_higher_mi
+# Experiment 12's committed v2 test MAE for the served LightGBM
+# (reports/metrics.json, scored once). The train stage re-derives the recipe
+# and must land within reproduction_tolerance — the reproduction check is
+# part of the artifact. The v2 MLP (12's validation runner-up) is the cited
+# comparison; it is not re-trained here.
+champion_expected_test_mae: 23.76360139335002
+comparison_mlp_test_mae: 27.161182233265468
 reproduction_tolerance: 0.05
-mlp:
-  hidden_dims:
-  - 64
-  - 32
-  embed_dim: 8
-  dropout: 0.2
-  weight_decay: 0.0001
-  learning_rate: 0.001
-  batch_size: 256
-  max_epochs: 150
-  patience: 10
-  huber_delta: 1.0
-onnx_opset: 17
+lgbm:
+  n_estimators: 1500
+  early_stopping: 50
+  hpo_trials: 50
+  hpo_time_budget_s: 240
+onnx_opset: 15
 parity_tolerance: 0.0001
 probe_grid_n: 512
 serve:

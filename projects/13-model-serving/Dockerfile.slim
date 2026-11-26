@@ -1,12 +1,11 @@
 # syntax=docker/dockerfile:1
 # ONNX-only serving image — the slim counterpart of ./Dockerfile.
 #
-# Ships without torch: the native backend exists for the train stage and the
-# parity benchmark, serving does not need it. The export-time parity gate
-# (max-abs 7.2e-07 on 512 seeded probe rows, tolerance 1e-4) guarantees the
-# ONNX graph is behaviorally identical to the native model, so the runtime
-# loses nothing but several gigabytes. External audit pass 4: ship the
-# before/after instead of describing it.
+# Ships without lightgbm and without torch: the native backend exists for the
+# train stage and the parity benchmark, serving does not need it. The
+# export-time parity gate (max-abs on the raw prediction, tolerance 1e-4 plus
+# a float32 relative term) guarantees the ONNX graph is behaviorally identical
+# to the native model, so the runtime loses nothing but the training deps.
 #
 # Pinned to the versions in the committed uv.lock; the package is copied as
 # source on PYTHONPATH (not pip-installed) so no project dependency beyond
@@ -46,8 +45,8 @@ RUN useradd --system --uid 10001 --create-home appuser
 # new layer and double the image.
 COPY --from=build --chown=appuser:appuser /app/.venv /app/.venv
 COPY --from=build --chown=appuser:appuser /app/model_serving /app/model_serving
-# Staged by `python -m model_serving.cli docker` from data/models/ (mlp.pt,
-# model.onnx, mlp_arch.json, mlp_meta.json, feature_contract.json).
+# Staged by `python -m model_serving.cli docker` from data/models/ (lightgbm.pkl,
+# model.onnx, lgbm_meta.json, feature_contract.json).
 COPY --chown=appuser:appuser projects/13-model-serving/image/serving /app/models
 ENV PATH="/app/.venv/bin:$PATH" \
     MODELS_DIR=/app/models \

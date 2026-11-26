@@ -1,10 +1,11 @@
 {
-  "protocol": "Served-MLP re-derivation: experiment 12's committed recipe (same sha256-pinned UCI hour.csv, same feature contract, same MLP architecture + hyperparameters, seed 42), scored once on the frozen 8-week test window; reproduction gate |\u0394MAE| \u2264 params reproduction_tolerance. Serving: native torch vs ONNX Runtime behind one FastAPI service, warmed at startup; parity gate on a seeded probe grid (max-abs, standardized-y space) before any serving stage may run. Benchmark: real subprocess service per backend, warm-up excluded, ~300 requests per concurrency cell (1/4/16/64), median of 3 repeats, batch sizes 1/8/32/128, fresh-process RSS probes, byte-identical seeded payload streams. Docker: multi-stage build from the repo-root context, model baked in, image size + layer breakdown measured with the daemon, compose smoke against /health /ready /predict.",
+  "protocol": "Served-model re-derivation: experiment 12's committed v2 recipe (same sha256-pinned UCI hour.csv, same v2 feature contract \u2014 timestamp lags, keep-higher-MI pruning \u2014, same seeded LightGBM HPO + final fit, seed 42), scored once on the frozen 8-week test window; reproduction gate |\u0394MAE| \u2264 params reproduction_tolerance. Serving: native LightGBM vs ONNX Runtime behind one FastAPI service, warmed at startup; parity gate on a seeded probe grid (max-abs on the raw prediction, plus a float32 relative term) before any serving stage may run. Benchmark: real subprocess service per backend, warm-up excluded, ~300 requests per concurrency cell (1/4/16/64), median of 3 repeats, batch sizes 1/8/32/128, fresh-process RSS probes, byte-identical seeded payload streams. Docker: multi-stage build from the repo-root context, model baked in, image size + layer breakdown measured with the daemon, compose smoke against /health /ready /predict.",
   "seed": 42,
   "versions": {
     "python": "3.12.9",
     "model_serving": "0.1.0",
-    "torch": "2.14.1",
+    "lightgbm": "4.7.0",
+    "optuna": "5.0.0",
     "onnx": "1.23.2",
     "onnxruntime": "1.31.1",
     "fastapi": "0.143.0",

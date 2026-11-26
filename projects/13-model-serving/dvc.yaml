@@ -14,9 +14,12 @@ stages:
       - lag_hours
       - corr_threshold
       - ridge_alpha
+      - lag_mode
+      - pruning_rule
       - champion_expected_test_mae
+      - comparison_mlp_test_mae
       - reproduction_tolerance
-      - mlp
+      - lgbm
       - onnx_opset
       - parity_tolerance
       - probe_grid_n

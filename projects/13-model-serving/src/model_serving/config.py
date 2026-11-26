@@ -2,9 +2,10 @@
 
 Playbook convention (ADR-0002): tunable numbers live in pydantic config
 models, not as module-level constants. ``ServingConfig`` is the single source
-of truth for the champion re-derivation (experiment 12's committed recipe),
-the ONNX export + parity gate, the serving app, the benchmark harness, the
-Docker stage and the cost framing.
+of truth for the served-model re-derivation (experiment 12's committed v2
+recipe: LightGBM under timestamp lags and keep-higher-MI pruning), the ONNX
+export + parity gate, the serving app, the benchmark harness, the Docker
+stage and the cost framing.
 """
 
 from pathlib import Path
@@ -14,21 +15,20 @@ import yaml  # type: ignore[import-untyped]  # re-exported (no stubs in repo)
 from portfolio_core.schemas import PortfolioBaseModel
 from pydantic import Field, field_validator
 
-__all__ = ["BenchConfig", "CostConfig", "MLPConfig", "ServeConfig", "ServingConfig", "yaml"]
+__all__ = ["BenchConfig", "CostConfig", "LGBMConfig", "ServeConfig", "ServingConfig", "yaml"]
 
 
-class MLPConfig(PortfolioBaseModel):
-    """Tabular MLP hyperparameters — identical to experiment 12's committed params."""
+class LGBMConfig(PortfolioBaseModel):
+    """LightGBM training knobs — identical to experiment 12's committed v2 params."""
 
-    hidden_dims: list[int] = Field(default=[64, 32], min_length=1)
-    embed_dim: int = Field(default=8, ge=2)
-    dropout: float = Field(default=0.2, ge=0.0, lt=1.0)
-    weight_decay: float = Field(default=1e-4, ge=0.0)
-    learning_rate: float = Field(default=1e-3, gt=0.0)
-    batch_size: int = Field(default=256, ge=16)
-    max_epochs: int = Field(default=150, ge=1)
-    patience: int = Field(default=10, ge=1)
-    huber_delta: float = Field(default=1.0, gt=0.0)
+    n_estimators: int = Field(
+        default=1500, ge=10, description="Round cap; early stopping picks the rest."
+    )
+    early_stopping: int = Field(default=50, ge=5)
+    hpo_trials: int = Field(default=50, ge=5, description="Optuna trial cap for the seeded study.")
+    hpo_time_budget_s: int = Field(
+        default=240, ge=10, description="Optuna study timeout (seconds) — the binding budget."
+    )
 
 
 class ServeConfig(PortfolioBaseModel):
@@ -88,14 +88,27 @@ class ServingConfig(PortfolioBaseModel):
     lag_hours: list[int] = Field(default=[1, 24, 168], min_length=1)
     corr_threshold: float = Field(default=0.9, gt=0.0, lt=1.0)
     ridge_alpha: float = Field(default=1.0, gt=0.0)
+    # Experiment 12's committed v2 recipe (params.yaml): date-aware timestamp
+    # lags and keep-higher-MI pruning. The v1 behavior (positional lags,
+    # drop-higher-MI) is preserved in 12's params_v1.yaml and previous_runs.v1.
+    lag_mode: str = Field(default="timestamp", pattern="^(positional|timestamp)$")
+    pruning_rule: str = Field(default="keep_higher_mi", pattern="^(drop_higher_mi|keep_higher_mi)$")
     champion_expected_test_mae: float = Field(
-        default=25.43163249606178,
+        default=23.76360139335002,
         gt=0.0,
-        description="Experiment 12's committed champion test MAE (scored once).",
+        description="Experiment 12's committed v2 LightGBM test MAE (scored once).",
+    )
+    comparison_mlp_test_mae: float = Field(
+        default=27.161182233265468,
+        gt=0.0,
+        description=(
+            "Experiment 12's committed v2 MLP test MAE — the served model's "
+            "validation runner-up, cited as the comparison (not re-trained here)."
+        ),
     )
     reproduction_tolerance: float = Field(default=0.05, gt=0.0)
-    mlp: MLPConfig = Field(default_factory=MLPConfig)
-    onnx_opset: int = Field(default=17, ge=15, le=22)
+    lgbm: LGBMConfig = Field(default_factory=LGBMConfig)
+    onnx_opset: int = Field(default=15, ge=15, le=22)
     parity_tolerance: float = Field(default=1e-4, gt=0.0)
     probe_grid_n: int = Field(default=512, ge=16)
     serve: ServeConfig = Field(default_factory=ServeConfig)

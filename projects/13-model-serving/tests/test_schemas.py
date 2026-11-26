@@ -5,8 +5,7 @@ from model_serving.service.app import create_app
 from starlette.testclient import TestClient
 
 VALID_ROW = {
-    "hour": 8,
-    "temp": 0.5,
+    "atemp": 0.5,
     "hum": 0.6,
     "windspeed": 0.1,
     "weathersit": 1,
@@ -40,20 +39,20 @@ def test_valid_row_returns_prediction(client: TestClient) -> None:
     assert body["request_id"]
 
 
-def test_hour_out_of_range_is_422(client: TestClient) -> None:
-    bad = dict(VALID_ROW, hour=25)
+def test_atemp_out_of_range_is_422(client: TestClient) -> None:
+    bad = dict(VALID_ROW, atemp=1.5)
     r = client.post("/predict", json={"row": bad})
     assert r.status_code == 422
     assert "detail" in r.json()
 
 
 def test_missing_field_is_422(client: TestClient) -> None:
-    r = client.post("/predict", json={"row": {"hour": 3}})
+    r = client.post("/predict", json={"row": {"atemp": 0.5}})
     assert r.status_code == 422
 
 
 def test_wrong_type_is_422(client: TestClient) -> None:
-    bad = dict(VALID_ROW, temp="hot")
+    bad = dict(VALID_ROW, atemp="hot")
     r = client.post("/predict", json={"row": bad})
     assert r.status_code == 422
 

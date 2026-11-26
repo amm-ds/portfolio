@@ -15,7 +15,7 @@ from model_serving.config import load_config
 from model_serving.service.model import BackendName
 
 app = typer.Typer(
-    help="Model API serving & Docker deployment for the champion tabular MLP (exp. 12 recipe).",
+    help="Model API serving & Docker deployment for the served LightGBM (exp. 12 v2 recipe).",
     add_completion=False,
 )
 log = get_logger(__name__)
@@ -54,8 +54,9 @@ def docker(params_file: OptParams = Path("params.yaml")) -> None:
 def docker_slim_cmd(params_file: OptParams = Path("params.yaml")) -> None:
     """ONNX-only slim image: build, measure against the full image, smoke.
 
-    The audit's confession-to-headline before/after — ships without torch
-    (parity-gated export), records reports/docker_slim.json.
+    Ships without lightgbm (and without torch, which the v2 served model never
+    needed) — the parity-gated export serves alone; records
+    reports/docker_slim.json.
     """
     from model_serving.dockerbuild import docker_slim
 

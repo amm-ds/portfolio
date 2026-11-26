@@ -14,8 +14,7 @@ import urllib.request
 from urllib.response import addinfourl
 
 SMOKE_ROW: dict[str, object] = {
-    "hour": 0,
-    "temp": 0.5,
+    "atemp": 0.5,
     "hum": 0.5,
     "windspeed": 0.1,
     "weathersit": 1,

@@ -19,7 +19,7 @@ from plotly.subplots import make_subplots
 from portfolio_core.plotting import add_takeaway, apply_theme
 
 BACKEND_COLORS = {"native": "#38bdf8", "onnx": "#2dd4bf"}
-BACKEND_LABELS = {"native": "native (torch)", "onnx": "ONNX Runtime"}
+BACKEND_LABELS = {"native": "native (lightgbm)", "onnx": "ONNX Runtime"}
 #: Repeat-min/max band fills, keyed by backend (matching line colors at 12%).
 _BAND_RGBA = {"native": "rgba(56, 189, 248, 0.12)", "onnx": "rgba(45, 212, 191, 0.12)"}
 
@@ -67,8 +67,13 @@ def latency_concurrency_lines(metrics: dict[str, Any]) -> go.Figure:
             showlegend=False,
         )
     apply_theme(fig, height=620)
+    c4_p95 = max(metrics["serving"][b]["concurrency"]["c4"]["p95_s"] for b in ("native", "onnx"))
+    c16_p95 = max(metrics["serving"][b]["concurrency"]["c16"]["p95_s"] for b in ("native", "onnx"))
     fig.update_layout(
-        title="p95 stays under 6 ms to 4 concurrent requests, then climbs sharply past 16",
+        title=(
+            f"p95 stays under {c4_p95 * 1000:.0f} ms to 4 concurrent requests, "
+            f"then climbs past 16 (to {c16_p95 * 1000:.0f} ms)"
+        ),
         xaxis_title="concurrency (clients)",
         yaxis_title="latency (s)",
         margin={"l": 90, "r": 140, "t": 110, "b": 70},
@@ -130,7 +135,8 @@ def batch_throughput_curve(metrics: dict[str, Any]) -> go.Figure:
     native_t = metrics["serving"]["native"]["batch"][f"b{largest}"]["throughput_rps"]
     fig.update_layout(
         title=(
-            f"Batches of {largest} rows reach about {native_t / 1000:.0f}k rows/s on both backends"
+            f"Batches of {largest} rows reach {native_t / 1000:.0f}k rows/s native, "
+            f"{onnx_t / 1000:.0f}k ONNX"
         ),
         margin={"l": 90, "r": 140, "t": 110, "b": 70},
     )
@@ -192,7 +198,7 @@ def footprint_cost_bars(metrics: dict[str, Any]) -> go.Figure:
     """Three panels: RSS, image size breakdown, electricity cost per 1k preds."""
     # H8: short bar labels in this dense 1x3 — the full BACKEND_LABELS strings
     # rotated into the neighbouring panel at narrow widths.
-    short_backend = {"native": "torch", "onnx": "ONNX"}
+    short_backend = {"native": "lgbm", "onnx": "ONNX"}
     fig = make_subplots(
         rows=1,
         cols=3,
@@ -232,8 +238,15 @@ def footprint_cost_bars(metrics: dict[str, Any]) -> go.Figure:
         col=3,
     )
     apply_theme(fig, height=560)
+    if docker.get("measured"):
+        fp_title = (
+            f"Measured image {docker['total_mb']:.0f} MB: the venv is the weight "
+            f"({docker['venv_mb']:.0f} MB); the model adds {docker['models_mb']:.1f} MB"
+        )
+    else:
+        fp_title = "Image size not measured (daemon unavailable); RSS and cost measured"
     fig.update_layout(
-        title="Torch and unused CUDA make up most of the 6.5 GB image; ONNX-only is 291 MB",
+        title=fp_title,
         margin={"l": 90, "r": 140, "t": 110, "b": 70},
     )
     fig.update_yaxes(title_text="RSS (MB)", row=1, col=1)

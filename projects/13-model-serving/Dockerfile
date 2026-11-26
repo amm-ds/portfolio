@@ -31,8 +31,8 @@ RUN useradd --system --uid 10001 --create-home appuser
 # --chown at COPY: a later `chown -R` would duplicate the whole venv into a
 # new layer and double the image.
 COPY --from=build --chown=appuser:appuser /app/.venv /app/.venv
-# Staged by `python -m model_serving.cli docker` from data/models/ (mlp.pt,
-# model.onnx, mlp_arch.json, mlp_meta.json, feature_contract.json).
+# Staged by `python -m model_serving.cli docker` from data/models/ (lightgbm.pkl,
+# model.onnx, lgbm_meta.json, feature_contract.json).
 COPY --chown=appuser:appuser projects/13-model-serving/image/serving /app/models
 ENV PATH="/app/.venv/bin:$PATH" \
     MODELS_DIR=/app/models \

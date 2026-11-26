@@ -55,7 +55,7 @@ def stage_artifacts(cfg: ServingConfig) -> Path:
         raise FileNotFoundError(f"{src}/model.onnx missing — run the train stage first")
     dst = project_root() / STAGING_DIR
     dst.mkdir(parents=True, exist_ok=True)
-    for name in ("mlp.pt", "mlp_arch.json", "mlp_meta.json", "feature_contract.json", "model.onnx"):
+    for name in ("lightgbm.pkl", "lgbm_meta.json", "feature_contract.json", "model.onnx"):
         shutil.copy2(src / name, dst / name)
     return dst
 
@@ -216,8 +216,7 @@ def slim_smoke(cfg: ServingConfig, timeout_s: float = 90.0) -> dict[str, Any]:
         payload = json.dumps(
             {
                 "row": {
-                    "hour": 9,
-                    "temp": 0.5,
+                    "atemp": 0.5,
                     "hum": 0.6,
                     "windspeed": 0.2,
                     "weathersit": 1,

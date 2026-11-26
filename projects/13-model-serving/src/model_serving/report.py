@@ -23,7 +23,7 @@ from model_serving.figures import build_figures
 
 log = get_logger(__name__)
 
-REPORT_TITLE = "13 — Model API Serving & Docker Deployment (served MLP, UCI Bike Sharing)"
+REPORT_TITLE = "13 — Model API Serving & Docker Deployment (served LightGBM, UCI Bike Sharing)"
 
 LIMITS = [
     "Single laptop, no GPU, one uvicorn worker, one model: absolute numbers, "
@@ -120,18 +120,20 @@ def assemble_metrics(cfg: ServingConfig) -> dict[str, Any]:
 
 def _versions() -> dict[str, str]:
     import fastapi
+    import lightgbm
     import onnx
     import onnxruntime  # type: ignore[import-untyped]  # onnxruntime ships no stubs
+    import optuna
     import pandas
     import plotly
     import sklearn
-    import torch
     import uvicorn
 
     return {
         "python": platform.python_version(),
         "model_serving": model_serving.__version__,
-        "torch": torch.__version__,
+        "lightgbm": lightgbm.__version__,
+        "optuna": optuna.__version__,
         "onnx": onnx.__version__,
         "onnxruntime": onnxruntime.__version__,
         "fastapi": fastapi.__version__,
@@ -147,12 +149,13 @@ def build_evaluation_metadata(cfg: ServingConfig, metrics: dict[str, Any]) -> di
     """The evaluation_metadata.json record (protocol, versions, hardware)."""
     return {
         "protocol": (
-            "Served-MLP re-derivation: experiment 12's committed recipe (same sha256-pinned "
-            "UCI hour.csv, same feature contract, same MLP architecture + hyperparameters, "
-            "seed 42), scored once on the frozen 8-week test window; reproduction gate "
-            "|ΔMAE| ≤ params reproduction_tolerance. Serving: native torch vs ONNX Runtime "
-            "behind one FastAPI service, warmed at startup; parity gate on a seeded probe "
-            "grid (max-abs, standardized-y space) before any serving stage may run. "
+            "Served-model re-derivation: experiment 12's committed v2 recipe (same sha256-pinned "
+            "UCI hour.csv, same v2 feature contract — timestamp lags, keep-higher-MI pruning —, "
+            "same seeded LightGBM HPO + final fit, seed 42), scored once on the frozen 8-week "
+            "test window; reproduction gate |ΔMAE| ≤ params reproduction_tolerance. Serving: "
+            "native LightGBM vs ONNX Runtime behind one FastAPI service, warmed at startup; "
+            "parity gate on a seeded probe grid (max-abs on the raw prediction, plus a float32 "
+            "relative term) before any serving stage may run. "
             "Benchmark: real subprocess service per backend, warm-up excluded, ~300 "
             "requests per concurrency cell (1/4/16/64), median of 3 repeats, batch sizes "
             "1/8/32/128, fresh-process RSS probes, byte-identical seeded payload streams. "
@@ -248,31 +251,33 @@ def report_core(cfg: ServingConfig) -> Path:
     parity = metrics["parity"]
     report = EvalReport(title=REPORT_TITLE)
     report.add_html(
-        "Served-model re-derivation (experiment 12's recipe, seed 42)",
+        "Served-model re-derivation (experiment 12's v2 recipe, seed 42)",
         "<p>Test MAE <b>{:.4f}</b> against experiment 12's committed <b>{:.4f}</b> — "
-        "reproduction |Δ| = {:.6g} (tolerance {:.3g}). Validation MAE {:.4f}; best epoch "
-        "{}/{}. Feature contract re-derived: {} selected; pruned {}.</p>".format(
+        "reproduction |Δ| = {:.6g} (tolerance {:.3g}). Validation MAE {:.4f}; best iteration "
+        "{} ({} HPO trials). Feature contract re-derived: {} selected; pruned {}.</p>".format(
             champion["test_mae"],
             reproduction["expected_test_mae"],
             reproduction["abs_diff"],
             reproduction["tolerance"],
             champion["val_mae"],
-            champion["best_epoch"],
-            champion["epochs_run"],
+            champion["best_iteration"],
+            champion["hpo_n_trials"],
             ", ".join(metrics["selection"]["selected"]),
             metrics["selection"]["pruned_pairs"],
         ),
     )
     report.add_html(
         "ONNX parity gate",
-        "<p>Max-abs deviation of the raw network output on the seeded {}-row probe grid: "
-        "<b>{:.3g}</b> (tolerance {:.3g}, opset {}) — end-to-end that is {:.4g} rentals. "
-        "Gate enforced in the train stage; serving stages never run on a failed gate.</p>".format(
+        "<p>Max-abs deviation of the raw prediction on the seeded {}-row probe grid: "
+        "<b>{:.3g}</b> rentals (tolerance {:.3g} + float32 relative term, limit {:.3g}, "
+        "opset {}) — the exported tree ensemble is behaviorally identical to the native "
+        "model at useful rental precision. Gate enforced in the train stage; serving "
+        "stages never run on a failed gate.</p>".format(
             parity["n_probe"],
-            parity["max_abs_scaled"],
-            parity["tolerance"],
-            parity["opset"],
             parity["max_abs_rentals"],
+            parity["tolerance"],
+            parity["limit"],
+            parity["opset"],
         ),
     )
     report.add_markdown_table(
@@ -313,8 +318,9 @@ def report_core(cfg: ServingConfig) -> Path:
         f"## Served model + gates\n\n"
         f"- Reproduction: derived test MAE {champion['test_mae']:.4f} vs committed "
         f"{reproduction['expected_test_mae']:.4f} (|Δ| = {reproduction['abs_diff']:.6g}).\n"
-        f"- Parity: max-abs {parity['max_abs_scaled']:.3g} on {parity['n_probe']} probe rows "
-        f"(tolerance {parity['tolerance']:.3g}, opset {parity['opset']}).\n\n"
+        f"- Parity: max-abs {parity['max_abs_rentals']:.3g} rentals on "
+        f"{parity['n_probe']} probe rows (tolerance {parity['tolerance']:.3g} + rel term, "
+        f"limit {parity['limit']:.3g}, opset {parity['opset']}).\n\n"
         f"## Concurrency sweep\n\n{_latency_table(metrics)}\n\n"
         f"## Batch curve\n\n{_batch_table(metrics)}\n\n"
         f"## Footprint + cost\n\n{_footprint_table(metrics)}\n\n"

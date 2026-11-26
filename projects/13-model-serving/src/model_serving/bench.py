@@ -133,28 +133,10 @@ def payloads_from_grid(grid: Any, n: int, seed: int) -> list[dict[str, Any]]:
     rng = random.Random(seed)  # noqa: S311 - seeded bench shuffle RNG, not crypto
     rows: list[dict[str, Any]] = []
     cols = list(grid.columns)
+    int_cols = {"weathersit", "holiday", "workingday"}
     for i in range(n):
         raw = {c: grid.iloc[i % len(grid)][c] for c in cols}
-        rows.append(
-            {
-                "hour": int(raw["hour"]),
-                "temp": float(raw["temp"]),
-                "hum": float(raw["hum"]),
-                "windspeed": float(raw["windspeed"]),
-                "weathersit": int(raw["weathersit"]),
-                "hour_sin": float(raw["hour_sin"]),
-                "hour_cos": float(raw["hour_cos"]),
-                "weekday_sin": float(raw["weekday_sin"]),
-                "weekday_cos": float(raw["weekday_cos"]),
-                "month_sin": float(raw["month_sin"]),
-                "month_cos": float(raw["month_cos"]),
-                "holiday": int(raw["holiday"]),
-                "workingday": int(raw["workingday"]),
-                "cnt_lag_1h": float(raw["cnt_lag_1h"]),
-                "cnt_lag_24h": float(raw["cnt_lag_24h"]),
-                "cnt_lag_168h": float(raw["cnt_lag_168h"]),
-            }
-        )
+        rows.append({c: (int(raw[c]) if c in int_cols else float(raw[c])) for c in cols})
     rng.shuffle(rows)
     return rows
 
@@ -322,7 +304,7 @@ def probe_row_zero() -> dict[str, Any]:
     """A fixed in-contract warm-up row (all zeros is a legal feature vector)."""
     from model_serving.service.schemas import NUMERIC_FIELDS
 
-    row: dict[str, Any] = {"hour": 0}
+    row: dict[str, Any] = {}
     for name in NUMERIC_FIELDS:
         if name == "weathersit":
             row[name] = 1
