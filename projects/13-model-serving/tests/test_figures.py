@@ -61,7 +61,9 @@ def test_committed_figure_titles_state_their_own_data() -> None:
     largest = max(int(c[1:]) for c in metrics["serving"]["native"]["batch"])
     native_t = metrics["serving"]["native"]["batch"][f"b{largest}"]["throughput_rps"]
     onnx_t = metrics["serving"]["onnx"]["batch"][f"b{largest}"]["throughput_rps"]
-    assert btitle.startswith(f"Batches of {largest} rows reach {native_t / 1000:.0f}k rows/s native")
+    assert btitle.startswith(
+        f"Batches of {largest} rows reach {native_t / 1000:.0f}k rows/s native"
+    )
     assert f"{onnx_t / 1000:.0f}k ONNX" in btitle
     throughput = [t for t in batch["data"] if max(t["y"]) > 1000]
     assert len(throughput) == 2
