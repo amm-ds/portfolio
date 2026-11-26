@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- Focusable table regions allow keyboard scrolling. */
 import { useState } from "react";
 import { asRecord } from "../lib/records";
 import { EChartsFigure } from "./EChartsFigure";
@@ -305,7 +306,12 @@ export function FigureCard({
           <summary>view data table</summary>
           {data.state === "ok" && table && table.rows.length > 0 ? (
             <>
-              <div className="table-scroll">
+              <div
+                className="table-scroll"
+                role="region"
+                aria-label={`Data table for ${name}`}
+                tabIndex={0}
+              >
                 <table className="data-table">
                   <caption>
                     {xTitle !== null && <>x: {xTitle}</>}

@@ -387,7 +387,7 @@ def bootstrap_ci_figure(
         showlegend=False,
     )
     fig.update_xaxes(
-        title_text="MAE(floor) - MAE(champion), rentals per hour", row=len(methods), col=1
+        title_text="MAE(floor) - MAE(served MLP), rentals per hour", row=len(methods), col=1
     )
     add_takeaway(
         fig,

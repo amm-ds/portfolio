@@ -40,7 +40,7 @@ export const LIFECYCLE_PIPELINE_SPEC = {
       kind: "model",
       facts: [
         "Seasonal naive → ridge → random forest → LightGBM (50 Optuna trials) → PyTorch MLP.",
-        "Champion MLP: 25.4 test MAE / 39.3 RMSE, chosen by validation MAE (34.2).",
+        "Served MLP: 25.4 test MAE / 39.3 RMSE; validation MAE 34.2, tied with LightGBM.",
       ],
     },
     {
@@ -57,7 +57,7 @@ export const LIFECYCLE_PIPELINE_SPEC = {
       label: "Bootstrap CI",
       kind: "output",
       facts: [
-        "Champion beats the 83.2 floor by 57.8 rentals/hour on average.",
+        "The served MLP beats the 83.2 floor by 57.8 rentals/hour on average.",
         "95% paired CI [52.5, 63.1] over 2,000 resamples — excludes zero.",
       ],
     },
@@ -66,7 +66,7 @@ export const LIFECYCLE_PIPELINE_SPEC = {
     { id: "ingest-split", source: "ingest", target: "split", kind: "task", label: "DQ pass" },
     { id: "split-features", source: "split", target: "features", kind: "task", label: "train rows" },
     { id: "features-ladder", source: "features", target: "ladder", kind: "task", label: "fit + select" },
-    { id: "ladder-test", source: "ladder", target: "test", kind: "result", label: "champion" },
+    { id: "ladder-test", source: "ladder", target: "test", kind: "result", label: "served MLP" },
     { id: "test-ci", source: "test", target: "ci", kind: "result", label: "paired resamples" },
   ],
 } as const satisfies DiagramSpec;

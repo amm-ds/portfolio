@@ -205,6 +205,11 @@ export function splitTableCells(line: string): string[] {
   return cells.length > 0 && cells[cells.length - 1] === "" ? cells.slice(0, -1) : cells;
 }
 
+/** Plain text of an inline-markdown cell, for accessible names. */
+function stripInlineMarkdown(cell: string): string {
+  return cell.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/[*_`]/g, "");
+}
+
 function renderTable(
   headerLine: string,
   rowLines: string[],
@@ -213,8 +218,9 @@ function renderTable(
 ): ReactNode {
   const header = splitTableCells(headerLine);
   const rows = rowLines.map(splitTableCells);
+  const label = `Table: ${header.map(stripInlineMarkdown).join(", ")}`.slice(0, 80);
   return (
-    <div className="table-scroll" key={keyPrefix}>
+    <div className="table-scroll" key={keyPrefix} role="region" aria-label={label} tabIndex={0}>
       <table className="data-table">
         <thead>
           <tr>

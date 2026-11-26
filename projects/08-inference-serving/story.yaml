@@ -4,14 +4,14 @@ short_version: One laptop, five LLM serving setups, 760 requests, zero failures.
 figure_captions:
   quality_quant: 'A compact pass/fail table for the bounded quality guardrail at concurrency 1 — a saturated smoke check:
     every arm ties at 1.00, so it does not establish quality. PASS means all 40 responses in that cell follow the Answer schema
-    or contain the required keywords, respectively. The 4-bit, QAT-int4, and Q8_0 arms pass both checks with zero failures.'
+    or contain the required keywords, respectively. The MLX, QAT-int4, and Q8_0 arms pass both checks with zero failures.'
   latency_concurrency: Latency is the time a request takes. The points show p95, the time within which 95% of responses finish,
     at concurrency 1/2/4/8. Error bars span the committed p50–p99 values, from the median to the 99th percentile. Qwen3.6
     rises from 0.81 s at c=1 to 7.80 s at c=8. This near-linear pattern describes this machine and run only.
   toks_per_s: Mean time to first token (TTFT) and aggregate output throughput across concurrency 1/2/4/8. TTFT is the wait
     before the first text arrives; aggregate tok/s is total output tokens divided by cell wall time. The 3B-active mixture-of-experts
     model serves about 7× the tok/s of dense qwen3:32b on this machine, while TTFT rises under load.
-  engine_panel: MLX and llama.cpp are runners, the software that serves a model. For Gemma4:31b at c=1, MLX 4-bit reaches
+  engine_panel: MLX and llama.cpp are runners, the software that serves a model. For Gemma4:31b at c=1, MLX (unrecorded quantization) reaches
     18.8 tok/s and 2.47 s p95 versus llama.cpp Q8_0 at 6.4 tok/s and 7.12 s. Quantization and packaging differ together, so
     this compares combinations, not engines in isolation.
 roadmap:
@@ -257,7 +257,7 @@ sections:
   text_md: |
     The engine panel shows one comparison within the committed run. For
     Gemma4:31b at concurrency 1, read the throughput bars first and the `p95`
-    latency bars second. MLX 4-bit reaches 18.8 tok/s and `2.47` s, while
+    latency bars second. MLX with unrecorded quantization reaches 18.8 tok/s and `2.47` s, while
     llama.cpp Q8_0 reaches 6.4 tok/s and `7.12` s. The panel therefore shows
     about `2.9×` the throughput for the MLX-packaged combination.
 
@@ -293,8 +293,8 @@ sections:
 
     ## What the evidence shows
 
-    - **Packaging matters:** the raw-to-aggregate path gives the MLX 4-bit
-      build about `2.9×` the tok/s of llama.cpp Q8_0. This is a combination
+    - **Packaging matters:** the raw-to-aggregate path gives the MLX build
+      (unrecorded quantization) about `2.9×` the tok/s of llama.cpp Q8_0. This is a combination
       effect, not an isolated engine result.
     - **The active `MoE` leads this run:** it produces `7×` the dense 32B's tokens
       per second at `0.81` s p95.
@@ -305,6 +305,24 @@ sections:
     - **The harness transfers:** record every request, recalculate aggregates
       offline, and re-measure on the machine that will ship. The absolute
       values do not transfer.
+
+    ## Limits
+
+    - **Portability:** one machine, one `Ollama` build, and one author run support
+      only these absolute values. An uncommitted repeat observation under co-tenant
+      load is excluded from every numeric and causal claim.
+    - **Cost completeness:** the $0.12-per-1M estimate is electricity only at
+      declared assumptions. Wall power was not measured because a meter was
+      unavailable. Hardware amortization, the purchase cost spread over its
+      useful life, is excluded. This is not total cost of ownership.
+    - **Engine causality:** packaging and quantization confound engine
+      differences. No same-quant cross-runner pair exists for these models; the
+      missing MLX tag and failed conversion attempt were recorded rather than forced.
+    - **Quality generality:** perfect bounded-task scores do not show that
+      quantization never affects model quality.
+    - **Unproven repeats:** re-measurement on quiet, dedicated hardware waits
+      for access. Quantization-matched engine isolation waits for suitable
+      builds.
 
     ## Exact numbers
 
@@ -368,24 +386,6 @@ sections:
       hypothetical. The bounded default (3 models × 3 rungs) targets under 45
       minutes; `--full` adds qwen3:32b, concurrency 2, and the quant/engine
       cells.
-
-    ## Limits
-
-    - **Portability:** one machine, one `Ollama` build, and one author run support
-      only these absolute values. An uncommitted repeat observation under co-tenant
-      load is excluded from every numeric and causal claim.
-    - **Cost completeness:** the $0.12-per-1M estimate is electricity only at
-      declared assumptions. Wall power was not measured because a meter was
-      unavailable. Hardware amortization, the purchase cost spread over its
-      useful life, is excluded. This is not total cost of ownership.
-    - **Engine causality:** packaging and quantization confound engine
-      differences. No same-quant cross-runner pair exists for these models; the
-      missing MLX tag and failed conversion attempt were recorded rather than forced.
-    - **Quality generality:** perfect bounded-task scores do not show that
-      quantization never affects model quality.
-    - **Unproven repeats:** re-measurement on quiet, dedicated hardware waits
-      for access. Quantization-matched engine isolation waits for suitable
-      builds.
 
     **In plain terms:** Across 760 local requests with zero errors, the compact 4-bit model is the fastest option on this laptop with a tie on the saturated format-and-keyword check—wait times still grow under concurrency, and broader accuracy is unmeasured.
   figures: []

@@ -17,7 +17,7 @@ export function StoryMetricsTable({ metrics, metricsKeys }: { metrics: Metrics; 
   if (callouts.length === 0) return null;
   const hasDelta = callouts.some((c) => c.deltaPct !== null);
   return (
-    <DataTable className="story-metrics-table">
+    <DataTable className="story-metrics-table" ariaLabel="Headline metrics">
       <thead>
         <tr>
           <th scope="col">run</th>

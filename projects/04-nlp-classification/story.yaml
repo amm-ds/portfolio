@@ -330,6 +330,25 @@ sections:
     - Temperature scaling cut test `ECE` from `0.0360` to `0.0227` without
       changing a single prediction.
 
+    ## Limits
+
+    The diagram's selected score does not remove these limits:
+
+    - Validation selects the bounded model, but its paired `CI` crosses zero.
+      The fresh candidate comparison is also inconclusive and never reselects.
+    - The reading is per-item, English-only, on four clean topics. Multi-label
+      Business/Sci-Tech routing needs a different label and metric contract.
+    - The cascade deltas (`+0.0001` validation, `+0.0030` bounded test,
+      `+0.001` fresh) lack paired intervals and are bounded to these fixed splits. They do not justify sending every item to an `LLM` or
+      establish production breadth or superiority.
+    - All serving speeds come from one machine at batch size 1.
+    - HPO's paired interval crosses zero at this scale. A larger budget might
+      separate candidates, but this project neither proves nor disproves that
+      possibility.
+
+    ```diagram auto-04-nlp-classification-4
+    ```
+
     ## Exact numbers
 
     `DistilBERT` and `RoBERTa` are transformer model designs. The run ids below
@@ -447,25 +466,6 @@ sections:
       batches of eight, then score test and fresh once. Fresh is disjoint from
       bounded test. No test/fresh labels or examples enter tuning or prompts.
       Prompts are the text instructions sent to the LLM.
-
-    ## Limits
-
-    The diagram's selected score does not remove these limits:
-
-    - Validation selects the bounded model, but its paired `CI` crosses zero.
-      The fresh candidate comparison is also inconclusive and never reselects.
-    - The reading is per-item, English-only, on four clean topics. Multi-label
-      Business/Sci-Tech routing needs a different label and metric contract.
-    - The cascade deltas (`+0.0001` validation, `+0.0030` bounded test,
-      `+0.001` fresh) lack paired intervals and are bounded to these fixed splits. They do not justify sending every item to an `LLM` or
-      establish production breadth or superiority.
-    - All serving speeds come from one machine at batch size 1.
-    - HPO's paired interval crosses zero at this scale. A larger budget might
-      separate candidates, but this project neither proves nor disproves that
-      possibility.
-
-    ```diagram auto-04-nlp-classification-4
-    ```
 
     **In plain terms:** Use the keyword model for speed and zero token cost; use the local neural model for its 95.3% fresh score, knowing that reviewing 22 uncertain cases adds no proven advantage.
   figures: []

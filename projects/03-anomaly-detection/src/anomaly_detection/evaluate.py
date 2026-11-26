@@ -374,7 +374,7 @@ def threshold_sweep_figure(
     add_takeaway(
         fig,
         f"{name}; dashed = fixed 2% operating point — {op_tp}/{op_tp + op_fp} "
-        "flags hit real incidents",
+        "flags hit injected anomalies",
     )
     return apply_theme(fig)
 

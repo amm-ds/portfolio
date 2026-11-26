@@ -19,7 +19,7 @@ sections:
 
     The hero shows the `IsolationForest` alert problem. The recommended path averages `IsolationForest`, `LOF`, and `OCSVM` ranks before the same page budget.
 
-    Next, the four rules that keep the test fair ([Objectives →](#sec-objectives)).
+    Next, four rules keep the test fair ([Objectives →](#sec-objectives)).
 
     **In plain terms:** Combining three detectors cuts on-call pages nearly in half (from 66 to 35) while catching the same share of real incidents, though almost half of alerts are still false alarms.
   figures: []

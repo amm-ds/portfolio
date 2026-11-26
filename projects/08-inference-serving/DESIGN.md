@@ -58,7 +58,7 @@ parts without adding measurement value, and would diverge from ADR-0004.
 
 Engine comparison is done **within Ollama's own runner selection**: same model
 family pulled as GGUF (llama.cpp) vs MLX safetensors, at concurrency 1, with
-the quant difference (Q8_0 vs 4-bit) explicitly labelled as a confound —
+the quant difference (Q8_0 vs unrecorded MLX quantization) explicitly labelled as a confound —
 the registry offers no same-quant cross-runner pair for these models.
 
 ## Cost accounting (declared assumptions)

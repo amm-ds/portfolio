@@ -16,7 +16,7 @@ export const AUTO_12_TABULAR_ML_LIFECYCLE_3_SPEC = {
     },
     {
       id: "test-b",
-      label: "2,000 paired resamples: · MAE(floor) − MAE(champion)",
+      label: "2,000 paired resamples: · MAE(floor) − MAE(served MLP)",
       kind: "task",
       facts: [],
     },

@@ -477,9 +477,9 @@ def evaluate_core(cfg: LifecycleConfig) -> Path:
                 "seed": cfg.seed + 3,
                 "interpretation": (
                     "Negative favors the MLP. The interval prices paired "
-                    "validation-hour noise; per owner decision 8 the two "
+                    "validation-hour noise; per the stated protocol the two "
                     "top candidates are reported as tied on validation and "
-                    "the MLP is the served artifact, not a proven champion."
+                    "the MLP is the served artifact, not a proven winner."
                 ),
             },
             "_meta": {
@@ -507,7 +507,7 @@ def evaluate_core(cfg: LifecycleConfig) -> Path:
             "LightGBM HPO, MLP early stopping and shipped ablation configuration); "
             "everything earlier is training. Each candidate receives one test score. "
             "Ablation variants are also test-scored only after freezing and are labeled "
-            "post-freeze diagnostics. The champion-vs-floor MAE gap uses paired hourly "
+            "post-freeze diagnostics. The served-model-vs-floor MAE gap uses paired hourly "
             "bootstrap resampling, with paired non-overlapping 24-hour and 168-hour "
             "block bootstraps as serial-dependence sensitivity analyses."
         ),

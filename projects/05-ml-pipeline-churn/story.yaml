@@ -253,6 +253,19 @@ sections:
 
     [full evaluation report](https://amm-ds.github.io/portfolio/projects/05-ml-pipeline-churn/) · [try the live demo](https://amm-ds.github.io/portfolio/demos/churn-sandbox/)
 
+    ## Limits
+
+    - Final metrics come from one random snapshot split. Bootstrap resamples
+      do not capture model-search or threshold-selection instability.
+    - Neither visual has a time axis. They support no drift, seasonality,
+      or causal claim. Temporal validation waits for a time-stamped feed
+      from the data owner.
+    - The pipeline diagram shows shared preprocessing before raw or calibrated
+      scoring. Fairness numbers describe the raw model at its OOF-frozen
+      threshold, not the served calibrated policy.
+    - The source covers one operator and 21 columns; the pipeline uses 4
+      model features. Transfer to other customer bases is plausible, not measured.
+
     ## Exact numbers
 
     Cost model. FP means false positive, a customer contacted who would
@@ -336,19 +349,6 @@ sections:
       instability.
     - **Synthetic twin:** `8.8%` churn, planted nulls, and one `9,999` outlier
       charge provide `CI` evidence only.
-
-    ## Limits
-
-    - Final metrics come from one random snapshot split. Bootstrap resamples
-      do not capture model-search or threshold-selection instability.
-    - Neither visual has a time axis. They support no drift, seasonality,
-      or causal claim. Temporal validation waits for a time-stamped feed
-      from the data owner.
-    - The pipeline diagram shows shared preprocessing before raw or calibrated
-      scoring. Fairness numbers describe the raw model at its OOF-frozen
-      threshold, not the served calibrated policy.
-    - The source covers one operator and 21 columns; the pipeline uses 4
-      model features. Transfer to other customer bases is plausible, not measured.
 
     **In plain terms:** Targeting high-risk customers cuts retention cost from $1,035 to $601 (42% savings) on this snapshot, though fresh-month testing and fairness checks are required before live rollout.
   figures: [bootstrap_ci]

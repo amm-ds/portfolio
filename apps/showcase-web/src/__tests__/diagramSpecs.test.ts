@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
@@ -79,6 +79,25 @@ describe("diagram spec registry and schema", () => {
   });
 });
 
+describe("article diagram fences resolve to registered specs", () => {
+  it("registers every ```diagram id referenced by a project story", () => {
+    const projectsDir = path.resolve(process.cwd(), "../../projects");
+    const unresolved: string[] = [];
+    let fences = 0;
+    for (const project of readdirSync(projectsDir)) {
+      const storyPath = path.join(projectsDir, project, "story.yaml");
+      if (!existsSync(storyPath)) continue;
+      const story = readFileSync(storyPath, "utf8");
+      for (const match of story.matchAll(/^[ \t]*```diagram[ \t]+([A-Za-z0-9_-]+)[ \t]*$/gm)) {
+        fences++;
+        if (!getDiagramSpec(match[1])) unresolved.push(`${project}: ${match[1]}`);
+      }
+    }
+    expect(fences).toBeGreaterThan(0);
+    expect(unresolved).toEqual([]);
+  });
+});
+
 describe("case-study diagram placement and orientation", () => {
   const projectsBySpec: Record<string, string> = {
     "01-rag-pipeline": "01-rag-agent",
@@ -93,6 +112,7 @@ describe("case-study diagram placement and orientation", () => {
     "11-engine-benchmark": "11-data-engineering",
     "12-lifecycle-pipeline": "12-tabular-ml-lifecycle",
     "13-serving-pipeline": "13-model-serving",
+    "15-pricing-pipeline": "15-dynamic-pricing-rl",
   };
 
   it("places every React Flow architecture diagram in Background", () => {
@@ -186,6 +206,7 @@ const SPEC_PROJECT = {
   "11-engine-benchmark": "11-data-engineering",
   "12-lifecycle-pipeline": "12-tabular-ml-lifecycle",
   "13-serving-pipeline": "13-model-serving",
+  "15-pricing-pipeline": "15-dynamic-pricing-rl",
 } as const;
 
 /** Numbers printed in fact strings, with the decimals they were printed at so

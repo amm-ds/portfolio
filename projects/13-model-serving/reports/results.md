@@ -2,7 +2,7 @@
 
 ## Protocol
 
-Champion re-derivation: experiment 12's committed recipe (same sha256-pinned UCI hour.csv, same feature contract, same MLP architecture + hyperparameters, seed 42), scored once on the frozen 8-week test window; reproduction gate |ΔMAE| ≤ params reproduction_tolerance. Serving: native torch vs ONNX Runtime behind one FastAPI service, warmed at startup; parity gate on a seeded probe grid (max-abs, standardized-y space) before any serving stage may run. Benchmark: real subprocess service per backend, warm-up excluded, ~300 requests per concurrency cell (1/4/16/64), median of 3 repeats, batch sizes 1/8/32/128, fresh-process RSS probes, byte-identical seeded payload streams. Docker: multi-stage build from the repo-root context, model baked in, image size + layer breakdown measured with the daemon, compose smoke against /health /ready /predict.
+Served-MLP re-derivation: experiment 12's committed recipe (same sha256-pinned UCI hour.csv, same feature contract, same MLP architecture + hyperparameters, seed 42), scored once on the frozen 8-week test window; reproduction gate |ΔMAE| ≤ params reproduction_tolerance. Serving: native torch vs ONNX Runtime behind one FastAPI service, warmed at startup; parity gate on a seeded probe grid (max-abs, standardized-y space) before any serving stage may run. Benchmark: real subprocess service per backend, warm-up excluded, ~300 requests per concurrency cell (1/4/16/64), median of 3 repeats, batch sizes 1/8/32/128, fresh-process RSS probes, byte-identical seeded payload streams. Docker: multi-stage build from the repo-root context, model baked in, image size + layer breakdown measured with the daemon, compose smoke against /health /ready /predict.
 
 ## Served model + gates
 

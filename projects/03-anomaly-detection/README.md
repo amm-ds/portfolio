@@ -89,8 +89,7 @@ scores deduplicated with a 24-hour cap):
 
 The **NAB official score is not reported**: it requires the official scorer
 with application profiles (a new dependency or vendored code), and the project
-scores range metrics under its own window semantics instead (owner decision,
-2026-11-18).
+scores range metrics under its own window semantics instead.
 
 The current rank-average ensemble uses rolling features and the frozen 2%
 budget with a 24-hour cap. Its like-for-like comparison is IsolationForest with

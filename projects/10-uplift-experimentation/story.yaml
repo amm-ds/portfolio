@@ -286,6 +286,31 @@ sections:
     - `CUPED` left `ATE` unchanged (`+0.68 pp`) and cut only `0.08%` of conversion variance — a measured null result.
     - The predicted uplift spread is about `2×` too wide, so the ranking sorts a mailing list but cannot promise per-customer effects.
 
+    ## Limits
+
+    - The diagram ends at this snapshot, and the tables do not remove these
+      limits.
+    - Revenue minus send cost excludes `COGS`, margin, and
+      contact fatigue.
+    - One March 2008 campaign cannot guarantee future results. The next
+      spend needs a fresh randomized no-email holdout, meaning a group still
+      assigned by chance not to receive email.
+    - Per-arm `AUUC` and response-versus-T intervals span zero. Best-arm versus
+      single-arm Mens is also inconclusive under `DR` and IPW. Those intervals
+      omit model-refit uncertainty. Planning money is model-estimated, and
+      the predicted spread is about `2×` too wide.
+    - The `X-learner`'s weak result is specific to strong overlap and
+      near-constant propensity, not a general ranking of learners.
+    - Prospective validation means testing the policy in a new live
+      campaign. That validation, measured margin and fatigue costs,
+      randomized multi-arm evaluation, and stronger `CUPED` covariates need a
+      new live campaign, per-order margin, contact-fatigue data, randomized
+      arm assignment, and richer pre-treatment covariates. The 2008 snapshot
+      does not carry them.
+
+    ```diagram auto-10-uplift-experimentation-4
+    ```
+
     ## Exact numbers
 
     A seed is a number that makes random splitting repeatable. Seed 42 anchors
@@ -302,7 +327,9 @@ sections:
     | random | 0.0 | $4,026 | — |
     | treat-everyone | 0.0 | full-mail $16,103 | — |
 
-    Paired differences (the same resample across policies):
+    Paired differences (the same resample across policies). These two-arm
+    intervals are persisted in `reports/report.html`; `reports/metrics.json`
+    holds the point estimates.
 
     | comparison | 95% CI | spans zero? |
     |---|---|---|
@@ -374,31 +401,6 @@ sections:
     - **`CUPED`:** variance reduction with log prior-year spend. The
       multivariate version, meaning several covariates together, adds
       recency.
-
-    ## Limits
-
-    - The diagram ends at this snapshot, and the tables do not remove these
-      limits.
-    - Revenue minus send cost excludes `COGS`, margin, and
-      contact fatigue.
-    - One March 2008 campaign cannot guarantee future results. The next
-      spend needs a fresh randomized no-email holdout, meaning a group still
-      assigned by chance not to receive email.
-    - Per-arm `AUUC` and response-versus-T intervals span zero. Best-arm versus
-      single-arm Mens is also inconclusive under `DR` and IPW. Those intervals
-      omit model-refit uncertainty. Planning money is model-estimated, and
-      the predicted spread is about `2×` too wide.
-    - The `X-learner`'s weak result is specific to strong overlap and
-      near-constant propensity, not a general ranking of learners.
-    - Prospective validation means testing the policy in a new live
-      campaign. That validation, measured margin and fatigue costs,
-      randomized multi-arm evaluation, and stronger `CUPED` covariates need a
-      new live campaign, per-order margin, contact-fatigue data, randomized
-      arm assignment, and richer pre-treatment covariates. The 2008 snapshot
-      does not carry them.
-
-    ```diagram auto-10-uplift-experimentation-4
-    ```
 
     **In plain terms:** Target only the top customers when your budget is capped or emails are expensive (+$2,812, or +70% over random at a 25% budget); when sending costs just 1 cent per email, mailing everyone still earned the most ($16,103).
   figures: []

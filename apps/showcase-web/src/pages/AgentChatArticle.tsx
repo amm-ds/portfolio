@@ -393,7 +393,7 @@ export function AgentChatArticle() {
                 kimi-k3.1-pro 24/33 — provider snapshots, not comparable to the repeated suite.
                 Summary by case kind, generated from the committed report:
               </p>
-              <DataTable>
+              <DataTable ariaLabel="Eval summary by case kind">
                   <thead>
                     <tr>
                       <th scope="col">case kind</th>

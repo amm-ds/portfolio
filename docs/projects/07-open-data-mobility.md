@@ -99,7 +99,7 @@ three** metrics (MAE 0.180 vs 0.212, RMSE 0.688 vs 1.100, MAPE 66.4% vs
 81.8%): the gap is a service-distribution difference with a measured fix, so
 budget a per-service retraining run before extending to a new vehicle class.
 
-Per-service retraining is productionized (wave 15): the green model is fit on
+Per-service retraining is productionized: the green model is fit on
 all **534,240** curated green zone-hours with the measured control recipe
 (default GBM family on the service's own history + quantile-0.9 p90 twin) and
 persisted as `gbm_green_served` under `reports/models/serving/green/` in the

@@ -34,7 +34,7 @@ export const AUTO_12_TABULAR_ML_LIFECYCLE_2_SPEC = {
     },
     {
       id: "va",
-      label: "validation: HPO, early · stopping, champion pick",
+      label: "validation: HPO, early · stopping, model pick",
       kind: "task",
       facts: [],
     },

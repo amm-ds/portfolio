@@ -2,7 +2,7 @@
 
 ## Protocol
 
-Time-based split: the final 8 weeks of the 2011-2012 hourly series are the test window; the 8 weeks before it are validation (model selection, LightGBM HPO, MLP early stopping and shipped ablation configuration); everything earlier is training. Each candidate receives one test score. Ablation variants are also test-scored only after freezing and are labeled post-freeze diagnostics. The champion-vs-floor MAE gap uses paired hourly bootstrap resampling, with paired non-overlapping 24-hour and 168-hour block bootstraps as serial-dependence sensitivity analyses.
+Time-based split: the final 8 weeks of the 2011-2012 hourly series are the test window; the 8 weeks before it are validation (model selection, LightGBM HPO, MLP early stopping and shipped ablation configuration); everything earlier is training. Each candidate receives one test score. Ablation variants are also test-scored only after freezing and are labeled post-freeze diagnostics. The served-model-vs-floor MAE gap uses paired hourly bootstrap resampling, with paired non-overlapping 24-hour and 168-hour block bootstraps as serial-dependence sensitivity analyses.
 
 ## Frozen test window
 

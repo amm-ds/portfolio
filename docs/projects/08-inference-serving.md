@@ -18,8 +18,7 @@ the standard platform
 
 Every project in this portfolio serves LLMs through one local Ollama
 endpoint (ADR-0004 — no redundant gateway, see the project's DESIGN.md), and
-this benchmark is where that stack gets measured — both external audits' #1
-recommendation. An async load driver exercises models, quantizations,
+this benchmark is where that stack gets measured. An async load driver exercises models, quantizations,
 runners, and concurrency levels on a fixed structured-output task with
 validated schemas, so the numbers describe real traffic, not a lab proxy.
 
@@ -48,7 +47,7 @@ concurrency — this is a cross-model grid, not a run ladder, so no Δ column.
 
 ![p95 latency grows roughly linearly with concurrency while aggregate tok/s stays flat or declines in this run; the chart does not isolate the cause or prove throughput is invariant.](../assets/projects/08-inference-serving/latency_concurrency.png){ width="100%" }
 
-Engine panel (gemma4:31b family, concurrency 1): **MLX 4-bit beats GGUF Q8_0
+Engine panel (gemma4:31b family, concurrency 1): **MLX (unrecorded quantization) beats GGUF Q8_0
 on llama.cpp 2.9x on tok/s** (18.8 vs 6.4) with p95 2.47 s vs 7.12 s — but
 quant is confounded (the registry has no same-quant cross-runner pair), so
 this reads as engine+packaging, not a pure runner race. In plain words: the
@@ -56,7 +55,7 @@ two engines were tested on differently compressed model files, so the
 number bundles the engine with the file format — it identifies the best
 combination, not which engine is intrinsically faster.
 
-![MLX 4-bit beats GGUF Q8_0 on llama.cpp by 2.9x on tok/s (18.8 vs 6.4) with p95 2.47 s vs 7.12 s at concurrency 1.](../assets/projects/08-inference-serving/engine_panel.png){ width="100%" }
+![MLX (unrecorded quantization) beats GGUF Q8_0 on llama.cpp by 2.9x on tok/s (18.8 vs 6.4) with p95 2.47 s vs 7.12 s at concurrency 1.](../assets/projects/08-inference-serving/engine_panel.png){ width="100%" }
 
 Quality-vs-quant (same llama.cpp runner, concurrency 1): **QAT-int4 holds
 1.00 schema-valid and 1.00 keyword quality while running 53% faster than

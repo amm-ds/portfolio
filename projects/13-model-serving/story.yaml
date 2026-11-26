@@ -288,6 +288,26 @@ sections:
       CUDA libraries it never loads, and a `chown` after `COPY` doubled the
       venv layer until measurement revealed it.
 
+    ## Limits
+
+    These limits apply to every result in the table and summary diagram.
+
+    - Single laptop, no GPU, one worker, shared CPU: absolute numbers, paired
+      deltas, curve shapes, the concurrency-4 knee, and batch amortization
+      are host-specific observations, not demonstrated transfer. Committed
+      concurrency-4 medians span 933–970 req/s across the two backends.
+      High-concurrency cells likely include contention, so they do not isolate pure service capacity.
+      Re-measure with the paired harness on the target deployment.
+    - No TLS, auth, multi-worker or GPU path. The paired harness needs both
+      backends; a CPU-only torch native image remains a separate variant.
+    - The NVIDIA/CUDA stack inside the full image is never loaded by
+      this CPU service. The ONNX-only slim image (`Dockerfile.slim`, `291 MB`,
+      smoke-passed) is the built answer. Stripping the stack from the
+      *native* image remains a separate variant.
+    - Cost is electricity-only at a declared 65 W and `$0.30` per kWh. There is
+      no wall meter or amortized hardware. Re-derive the number on your
+      hardware before quoting it.
+
     ## Exact numbers
 
     The table gives the expert reference values behind the summary diagram.
@@ -331,26 +351,6 @@ sections:
       healthcheck-gated readiness, compose smoke on /health /ready /predict.
       The lockfile fixes package versions, and the service runs without
       administrator rights.
-
-    ## Limits
-
-    These limits apply to every result in the table and summary diagram.
-
-    - Single laptop, no GPU, one worker, shared CPU: absolute numbers, paired
-      deltas, curve shapes, the concurrency-4 knee, and batch amortization
-      are host-specific observations, not demonstrated transfer. Committed
-      concurrency-4 medians span 933–970 req/s across the two backends.
-      High-concurrency cells likely include contention, so they do not isolate pure service capacity.
-      Re-measure with the paired harness on the target deployment.
-    - No TLS, auth, multi-worker or GPU path. The paired harness needs both
-      backends; a CPU-only torch native image remains a separate variant.
-    - The NVIDIA/CUDA stack inside the full image is never loaded by
-      this CPU service. The ONNX-only slim image (`Dockerfile.slim`, `291 MB`,
-      smoke-passed) is the built answer. Stripping the stack from the
-      *native* image remains a separate variant.
-    - Cost is electricity-only at a declared 65 W and `$0.30` per kWh. There is
-      no wall meter or amortized hardware. Re-derive the number on your
-      hardware before quoting it.
 
     **In plain terms:** Check that the portable model matches the original, warm up the server before accepting traffic, and use the 291 MB runtime when a small container matters more than the measured backend differences.
   figures: []

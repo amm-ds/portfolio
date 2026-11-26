@@ -27,8 +27,9 @@
 These are **legacy recorded measurements**, regenerated offline without new
 model calls. The new terminal-outcome/no-evidence/deadline contracts have
 deterministic tests. A 2026-11-19 all-hosted live rerun confirmed 13/13
-answers, 6/6 graceful refusals, and 19/19 step and latency budgets; it remains
-one confirmation run, not repeated efficacy evidence.
+answers, 6/6 graceful refusals, and 19/19 step and latency budgets
+([`reports/live_confirmation_20261119/`](reports/live_confirmation_20261119/));
+it remains one confirmation run, not repeated efficacy evidence.
 
 All **15 tuning-suite tasks** ran end-to-end on the hosted Kimi coding
 endpoint (`kimi-for-coding`) via plain `run-all` with per-call tool capture

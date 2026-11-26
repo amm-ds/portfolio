@@ -156,7 +156,7 @@ def fig_quality_quant(run: BenchRun, cfg: BenchConfig) -> go.Figure:
 
 
 def fig_engine_panel(run: BenchRun, cfg: BenchConfig) -> go.Figure:
-    """llama.cpp vs MLX on the same model family (gemma4:31b weights)."""
+    """llama.cpp vs MLX on the same model family (gemma4:31b; quantization differs)."""
     from plotly.subplots import make_subplots
 
     wanted = [m.name for m in cfg.engine_models]
@@ -186,7 +186,7 @@ def fig_engine_panel(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     fig.update_annotations(font_size=15)
     add_takeaway(
         fig,
-        f"same gemma4:31b weights on {hw} at c=1 — 18.8 vs 6.4 tok/s, p95 2.47 vs 7.12 s",
+        f"same model family on {hw} at c=1 — 18.8 vs 6.4 tok/s, p95 2.47 vs 7.12 s",
     )
     return fig
 

@@ -116,6 +116,11 @@ jobs:
         # blocks on ERROR-level findings, reports warnings). Makefile: lint-story.
         if: needs.changes.outputs.python == 'true'
         run: uv run python scripts/lint_story_language.py
+      - name: Diagram fence resolution
+        # Every ```diagram id in projects/*/story.yaml must resolve in
+        # apps/showcase-web/src/diagrams/{index,auto/index}.ts.
+        if: needs.changes.outputs.python == 'true' || needs.changes.outputs.web == 'true'
+        run: uv run python scripts/check_diagram_fences.py
       - name: Short-copy freshness
         # Project cards, README rows, docs openings, and project SEO text all
         # derive from each story's short_version; fail if any surface drifts.

@@ -75,10 +75,19 @@ def test_broken_source_reports_instead_of_tracing(
     assert "could not derive" in failures[0]
 
 
-def test_known_drift_filter() -> None:
-    assert headline._is_known("04-nlp-classification: anything")
+def test_known_drift_filter(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(headline, "KNOWN_DRIFT", {"uncovered:99-fixture"})
+    assert headline._is_known("99-fixture: anything")
     assert not headline._is_known("01-rag-agent: drift")
     assert not headline._is_known("02-demand-forecasting: drift")
+
+
+def test_m04_is_covered_by_its_committed_cascade_record() -> None:
+    """04 is no longer registered as uncovered; its claim verifies."""
+    assert set() == headline.KNOWN_DRIFT
+    assert headline._m04() == ["0.9529", "0.9539", "0.023671"]
+    claim = next(c for c in headline.CLAIMS if c["project"] == "04-nlp-classification")
+    assert headline.check_claim(claim) == []
 
 
 def test_m01_derives_final_v3_headline_from_committed_reports() -> None:
@@ -102,4 +111,22 @@ def test_m15_claim_verifies_against_real_repo() -> None:
     """README and article both preserve the sealed RL result and P1 lift."""
     claim = next(c for c in headline.CLAIMS if c["project"] == "15-dynamic-pricing-rl")
     assert claim["label"] == "sealed RL mean + relative lift versus B1"
+    assert headline.check_claim(claim) == []
+
+
+def test_m10_reads_paired_baseline_intervals_from_committed_report() -> None:
+    """The 10 headline CI is gated, read from the committed report.html."""
+    assert headline._m10() == [
+        "2,812",
+        "42,613",
+        "+$718",
+        "+$4,767",
+        "\u2212$13,125",
+        "\u2212$5,808",
+    ]
+
+
+def test_m10_claim_verifies_against_real_repo() -> None:
+    """README and article both carry the delta and both paired intervals."""
+    claim = next(c for c in headline.CLAIMS if c["project"] == "10-uplift-experimentation")
     assert headline.check_claim(claim) == []

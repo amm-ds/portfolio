@@ -10,7 +10,7 @@ export const AUTO_13_MODEL_SERVING_1_SPEC = {
   nodes: [
     {
       id: "a",
-      label: "gate 1: rebuild champion · from committed recipe",
+      label: "gate 1: rebuild served MLP · from committed recipe",
       kind: "gate",
       facts: [],
     },

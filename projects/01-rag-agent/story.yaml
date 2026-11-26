@@ -151,7 +151,7 @@ sections:
     - Search scores anchor on seeded random (`0.031` recall@5) and word-match baselines (`0.677` on tuning). Measuring above chance floors shows real gain over basic rules.
     - Before an LLM judge runs, deterministic code checks verify quoted substrings, numbers, dates, months, and negation words. They logged zero false rejections on the final pass.
     - Our first judge failed openly on the 194-claim tuning set (`Q3a`), missing `86 of 194` claims (`39.7%` hosted miss rate, `kappa 0.605`; `44.3%` local miss rate, `kappa 0.546`). We rebuilt calibration (`judge_v2`) with 72 subtle one-detail swaps out of 147 claims.
-    - The owner then hand-checked 30 claims blind to model tags (11 supported, 19 unsupported). Seven items were reconciled against passage text with the reviewer audit, hitting `30/30` (`Wilson 95% [0.8865, 1.0]`, well over `0.85`).
+    - The owner then hand-checked 30 claims blind to model tags (11 supported, 19 unsupported). Seven items were re-checked against the cited passage text and corrected, hitting `30/30` (`Wilson 95% [0.8865, 1.0]`, well over `0.85`).
     - Hard loop rails (12 requests, 16 tool calls, 200k input tokens, plus an in-tool ceiling) block runaway searches. Verification abstained twice and skipped 33 claim-free outputs such as refusals.
 
     **How clean are the test set and judge?** The `30`-claim blind owner audit is complete (`30/30`), yet full end-to-end independence is still open. One model (`kimi-for-coding`) drafted, verified, and graded the `120`-question run, and `final_v3` was read four times (`R0`, `S3` gate, held-out check, and final run). Treat these scores as an upper estimate until a second model family grades a fresh `final_v4` split ([Results →](#sec-results)).

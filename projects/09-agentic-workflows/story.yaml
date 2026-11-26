@@ -201,7 +201,7 @@ sections:
     - All `15` tuning tasks passed all four checks: answers, exact tool set, step budget, and latency budget. *Limit:* one suite, one hosted endpoint.
     - All `30` captured calls were planned: `100%` call precision and tool recall, with zero unplanned calls.
     - Median latency was `18.2 s` and `p95` was `31.1 s` against the `60 s` budget. Usage was `~85k` input and `~12k` output tokens (`~$0.13` of the `$2.00` cap, `~$0.0088` per task).
-    - Held out (legacy recorded run): `13/13` answers with exact tool sets, `22` planned calls, zero unplanned calls, and `5/6` refusals (`h19` hit a calculator-guard error without fabricating a number). A `2026-11-19` live run confirms `13/13` answers, `6/6` refusals under the live grader, and `19/19` budgets — see the [live confirmation](https://github.com/amm-ds/portfolio/blob/main/collaboration/reviews/20261118-live-confirmation/comparison.md).
+    - Held out (legacy recorded run): `13/13` answers with exact tool sets, `22` planned calls, zero unplanned calls, and `5/6` refusals (`h19` hit a calculator-guard error without fabricating a number). A `2026-11-19` live run confirms `13/13` answers, `6/6` refusals under the live grader, and `19/19` budgets — see the [live confirmation records](https://github.com/amm-ds/portfolio/tree/main/projects/09-agentic-workflows/reports/live_confirmation_20261119).
     - Latency depends on the provider: hosted held-out tasks ran `9.0–40.9 s`, while `7/9` local-model tasks exceeded `60 s` (`12/19` overall).
     - Scripted `tests/test_hitl.py` checks pause, reject-with-feedback, and re-plan; no live checkpoint run is recorded, and nothing here demonstrates unattended operation.
 
@@ -344,6 +344,27 @@ sections:
     - Two hosted repeat passes kept `15/15` answers and exact tool sets, but
       repeats varied in latency and step count.
 
+    ## Limits
+
+    - The terminal-outcome and deadline changes have deterministic offline
+      tests and one live confirmation (2026-11-19): `6/6` refusals under the
+      live grader, with h19 refused after its calculator guard tripped. Both runs are single
+      runs of 19 tasks, so all published rates remain single-run records.
+    - The held-out sample has 19 tasks. It checks overfitting and
+      confabulation, but does not guarantee generalization.
+    - Tasks are fixed research-operations procedures over two corpora.
+      Retrieval fuzziness, new domains, and broader refusal coverage are
+      untested.
+    - The `60 s` budget is hosted-tuned. The local model exceeded it on `7/9`
+      tasks, up to `1,430.9 s`, and produced the only step-budget miss: h17's
+      revision added a second Execute pass and reached 10 `steps_taken` entries
+      against the limit of 8. Local runs cost `$0` but are not
+      comparable on wall time, meaning elapsed real time.
+    - Hosted repeats varied in latency and step count, with one step-budget
+      miss each. Cross-provider repeatability is not established.
+    - A supervised pilot needs an external review team and production tasks.
+      Open-ended autonomy stays out of scope.
+
     ## Exact numbers
 
     The tool table defines the fixed capabilities behind those results. AST
@@ -400,27 +421,6 @@ sections:
       plus a refusal marker. A fabricated number, failure, deadline, or crash fails.
     - Spending caps are `$0.25` per task and `$2.00` per suite at the
       cloud-equivalent card. Local runs meter at `$0.00`.
-
-    ## Limits
-
-    - The terminal-outcome and deadline changes have deterministic offline
-      tests and one live confirmation (2026-11-19): `6/6` refusals under the
-      live grader, with h19 refused after its calculator guard tripped. Both runs are single
-      runs of 19 tasks, so all published rates remain single-run records.
-    - The held-out sample has 19 tasks. It checks overfitting and
-      confabulation, but does not guarantee generalization.
-    - Tasks are fixed research-operations procedures over two corpora.
-      Retrieval fuzziness, new domains, and broader refusal coverage are
-      untested.
-    - The `60 s` budget is hosted-tuned. The local model exceeded it on `7/9`
-      tasks, up to `1,430.9 s`, and produced the only step-budget miss: h17's
-      revision added a second Execute pass and reached 10 `steps_taken` entries
-      against the limit of 8. Local runs cost `$0` but are not
-      comparable on wall time, meaning elapsed real time.
-    - Hosted repeats varied in latency and step count, with one step-budget
-      miss each. Cross-provider repeatability is not established.
-    - A supervised pilot needs an external review team and production tasks.
-      Open-ended autonomy stays out of scope.
 
     **In plain terms:** The workflow passed all 15 practice tasks and all 13 unseen answer tasks with no unplanned answer-task tool calls, at about 13 cents for the 15 practice tasks—strong enough for a supervised pilot with human review, not unattended autonomy.
   figures: []

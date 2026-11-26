@@ -9,7 +9,7 @@ export const SERVING_PIPELINE_SPEC = {
   nodes: [
     {
       id: "rederive",
-      label: "Re-derive champion",
+      label: "Re-derive served MLP",
       kind: "tool",
       facts: [
         "Experiment 12's MLP re-derived bit-for-bit from the committed recipe + seed.",

@@ -12,16 +12,17 @@ Exit codes:
   1 — drift outside the KNOWN_DRIFT list (new drift: stop and triage,
       do not mass-edit copy).
 
-Coverage note: project 04 has no single committed scalar headline (its card
-leads with counts and deltas that are not cleanly derivable), so it is
-registered in KNOWN_DRIFT as "uncovered" and skipped. Project 01 is covered
-via its committed final_v3 F1 summary and the promoted S3 retrieval sweep.
+Coverage note: project 04 is covered via its committed fresh-holdout
+cascade record (baseline and cascade macro-F1 plus the cloud-equivalent
+cost); project 01 via its committed final_v3 F1 summary and the promoted S3
+retrieval sweep.
 
 Run: uv run python scripts/check_headline_numbers.py [--check]
 """
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -30,7 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # Entries here are drift the check KNOWS about and must not fail on.
 # "uncovered:<project>" marks projects without a clean scalar claim.
-KNOWN_DRIFT: set[str] = {"uncovered:04-nlp-classification"}
+KNOWN_DRIFT: set[str] = set()
 
 
 def _load(rel: str) -> Any:
@@ -74,6 +75,16 @@ def _m03() -> list[str]:
     ]
 
 
+def _m04() -> list[str]:
+    c = _load("projects/04-nlp-classification/reports/llm_cascade.json")
+    fresh = c["fresh holdout"]
+    return [
+        _fmt(fresh["baseline_f1_macro"], 4),
+        _fmt(fresh["cascade_f1_macro"], 4),
+        _fmt(c["ops"]["est_cost_usd"], 6),
+    ]
+
+
 def _m05() -> list[str]:
     m = _load("projects/05-ml-pipeline-churn/reports/metrics.json")
     return [
@@ -111,11 +122,34 @@ def _m09() -> list[str]:
     return [f"{t['passed']}/{t['n']}", f"{h['passed']}/{h['n']}"]
 
 
+_M10_PAIRED_CI = re.compile(
+    r"<li>vs <b>(?P<arm>random|mail-everyone)</b>[^<]*?paired profit difference CI "
+    r"\[(?P<lo>\u2212?\$[\d,]+), (?P<hi>\u2212?\$[\d,]+)\]"
+)
+
+
+def _signed_money(text: str) -> str:
+    """Report form ``$718`` / minus-sign ``$5,808`` -> copy form ``+$718`` / unchanged."""
+    return text if text.startswith("\u2212") else f"+{text}"
+
+
 def _m10() -> list[str]:
     m = _load("projects/10-uplift-experimentation/reports/metrics.json")
     delta = m["t_learner"]["profit_delta_vs_random"]
     contract = _load("projects/10-uplift-experimentation/data/dataset_contract.json")
-    return [_thousands(delta), f"{contract['n_rows']:,}"]
+    # The paired T-learner-minus-baseline intervals are persisted in the
+    # committed report.html only (the metrics `_meta.ci` block was replaced by
+    # the provenance stamp), so the gate reads them from the report.
+    report = (ROOT / "projects/10-uplift-experimentation/reports/report.html").read_text(
+        encoding="utf-8"
+    )
+    intervals = {match["arm"]: match for match in _M10_PAIRED_CI.finditer(report)}
+    if set(intervals) != {"random", "mail-everyone"}:
+        raise ValueError("report.html is missing a paired T-learner baseline interval")
+    values = [_thousands(delta), f"{contract['n_rows']:,}"]
+    for arm in ("random", "mail-everyone"):
+        values += [_signed_money(intervals[arm]["lo"]), _signed_money(intervals[arm]["hi"])]
+    return values
 
 
 def _m11() -> list[str]:
@@ -177,6 +211,12 @@ CLAIMS: list[dict[str, Any]] = [
         "surfaces": ["README.md", "story.yaml"],
     },
     {
+        "project": "04-nlp-classification",
+        "label": "fresh macro-F1 baseline -> cascade + cascade cost",
+        "values": _m04,
+        "surfaces": ["README.md", "story.yaml"],
+    },
+    {
         "project": "05-ml-pipeline-churn",
         "label": "served cost + contact-everyone cost",
         "values": _m05,
@@ -208,7 +248,7 @@ CLAIMS: list[dict[str, Any]] = [
     },
     {
         "project": "10-uplift-experimentation",
-        "label": "delta vs random + two-arm size",
+        "label": "delta vs random + two-arm size + paired baseline CIs (report.html)",
         "values": _m10,
         "surfaces": ["README.md", "story.yaml"],
     },

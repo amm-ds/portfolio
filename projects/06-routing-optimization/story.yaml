@@ -304,6 +304,25 @@ sections:
     ```diagram auto-06-routing-optimization-5
     ```
 
+    ## Limits
+
+    - Means over 56 instances hide per-instance spread (worst C203: `19.48%`) and
+      vehicle trade-offs.
+    - Best-known references are not proven optima; only two certified small
+      cases support an optimality statement.
+    - Euclidean textbook routes omit street networks, traffic and dynamic
+      re-optimization.
+    - Runtimes from one shared, load-sensitive machine are context, not stable
+      benchmarks.
+    - Evidence covers 100 customers. Larger Gehring–Homberger instances and
+      solver-as-a-service, a hosted route-solving interface, remain deferred
+      and unproven here.
+
+    **What to do with this:** ship the seeded `ALNS` plan when a one-second,
+    machine-checked answer is enough; commission the exact solver only to
+    certify small cases; re-check the fleet-first variant before committing
+    a truck count.
+
     ## Exact numbers
 
     These tables quantify the diagram's paths. A **time window** is the allowed
@@ -363,25 +382,6 @@ sections:
       uniform initial weights. Destroy size 10 and 120 iterations are fixed in
       `params.yaml`, not selected by HPO; the selected settings persist there.
 
-    ## Limits
-
-    - Means over 56 instances hide per-instance spread (worst C203: `19.48%`) and
-      vehicle trade-offs.
-    - Best-known references are not proven optima; only two certified small
-      cases support an optimality statement.
-    - Euclidean textbook routes omit street networks, traffic and dynamic
-      re-optimization.
-    - Runtimes from one shared, load-sensitive machine are context, not stable
-      benchmarks.
-    - Evidence covers 100 customers. Larger Gehring–Homberger instances and
-      solver-as-a-service, a hosted route-solving interface, remain deferred
-      and unproven here.
-
-    **What to do with this:** ship the seeded `ALNS` plan when a one-second,
-    machine-checked answer is enough; commission the exact solver only to
-    certify small cases; re-check the fleet-first variant before committing
-    a truck count.
-
     **In plain terms:** Our fast solver lands within 4.2% of the best published delivery distance in about 1 second per day (using ~3.7 extra trucks on average) and beats published references on 5 of 56 days.
   figures: []
   metrics_keys: []
@@ -400,7 +400,7 @@ roadmap:
   detail: Hinted ties ALNS at ~10× runtime; unhinted finds no plan at 10 s.
 - status: next
   title: Extend to larger Gehring-Homberger instances
-  detail: 'Gate: pin an owner-approved size, then re-run validity, gap, and runtime checks.'
+  detail: 'Gate: pin one instance size, then re-run validity, gap, and runtime checks.'
 key_concepts:
 - '**Optimality gap:** the percentage by which a plan''s distance exceeds the best-known published distance.'
 - '**Best-known solutions:** the shortest published plans. They are references, not proven optima.'

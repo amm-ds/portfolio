@@ -21,7 +21,7 @@ contract, a seeded five-model ladder, and a test window no choice touches.
 
 [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/12-tabular-ml-lifecycle)
 
-![The scored-once test window: one MAE per candidate against the seasonal-naive floor's dashed reference — the champion is the validation leader, never the test argmin.](../assets/projects/12-tabular-ml-lifecycle/model_comparison.png){ width="100%" }
+![The scored-once test window: one MAE per candidate against the seasonal-naive floor's dashed reference — the served MLP is the validation leader (tied with LightGBM), never the test argmin.](../assets/projects/12-tabular-ml-lifecycle/model_comparison.png){ width="100%" }
 
 Every stage follows one contract. The raw UCI zip passes a sha256 gate,
 then 26 DQ checks (nulls, ranges, grid gaps) before any model is fit. The
@@ -58,9 +58,9 @@ score:
 | ridge | 68.9 | 51.1 | 77.8 | 86.4 |
 | random forest | 39.5 | 26.3 | 45.7 | 25.7 |
 | LightGBM (Optuna HPO, 50 trials) | 34.4 | 25.4 | 40.2 | 27.4 |
-| tabular MLP (PyTorch) ← champion | 34.2 | 25.4 | 39.3 | 33.7 |
+| tabular MLP (PyTorch) ← served (validation tie) | 34.2 | 25.4 | 39.3 | 33.7 |
 
-Champion vs floor: +57.8 rentals/hour point estimate over 2,000 paired
+Served MLP vs floor: +57.8 rentals/hour point estimate over 2,000 paired
 bootstrap resamples. The hourly 95% CI is [52.5, 63.1]; day-block and
 week-block sensitivity intervals are [44.2, 71.8] and [38.8, 73.4]. All
 exclude zero, and the wider block intervals expose serial dependence rather

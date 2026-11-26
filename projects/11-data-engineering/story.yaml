@@ -120,8 +120,8 @@ sections:
     ```diagram auto-11-data-engineering-3
     ```
 
-    Next, the speedup figure compares engines; the parity catches follow in
-    [Evaluation →](#sec-evaluation).
+    Next, the speedup figure compares engines in
+    [Training →](#sec-training); the parity catches follow in Evaluation.
 
     **In plain terms:** The 2.96 million real trips span 35 recorded pickup dates, and the high-fare, long-distance filter returns 168,468 rows identically on every engine.
   figures: []
@@ -314,6 +314,21 @@ sections:
     `sqlite` when data already lives in a database. The from-files `sqlite` timing
     does not measure that steady-state database case.
 
+    ## Limits
+
+    - One month of one city's taxis: the map is shaped by this schema and
+      this machine; other shapes (deeper joins, wider rows) move the
+      numbers.
+    - Wall-clock medians on a shared laptop: ordering and magnitude are
+      stable, the third decimal is not.
+    - Cold reads do not drop the OS page cache (not portable without
+      root); "cold" means a fresh interpreter, not a cold disk.
+    - `sqlite`'s numbers are the from-files workflow (load, then query); a
+      long-lived `sqlite` database would pay the conversion once, not per
+      task; loading is not timed separately, and that steady state is a different benchmark.
+    - The scalability tracks are synthetic (seeded, same schema); they
+      measure growth shape, not real-trip behavior at 10M.
+
     ## Exact numbers
 
     Headline: geomean speedup vs `pandas` x19.2 (`Polars`), x14.9 (`DuckDB`);
@@ -372,21 +387,6 @@ sections:
       under `data/scalability/`, verified against the seeded checksum.
     - **Artifacts:** `reports/metrics.json`, `reports/evaluation_metadata.json`
       (versions + hardware), 5 figures, `report.html`.
-
-    ## Limits
-
-    - One month of one city's taxis: the map is shaped by this schema and
-      this machine; other shapes (deeper joins, wider rows) move the
-      numbers.
-    - Wall-clock medians on a shared laptop: ordering and magnitude are
-      stable, the third decimal is not.
-    - Cold reads do not drop the OS page cache (not portable without
-      root); "cold" means a fresh interpreter, not a cold disk.
-    - `sqlite`'s numbers are the from-files workflow (load, then query); a
-      long-lived `sqlite` database would pay the conversion once, not per
-      task; loading is not timed separately, and that steady state is a different benchmark.
-    - The scalability tracks are synthetic (seeded, same schema); they
-      measure growth shape, not real-trip behavior at 10M.
 
     **In plain terms:** Polars (19× faster) and DuckDB (15× faster) outperform pandas across every task and pull further ahead as files grow, while checking for matching results first caught 1,658 silently dropped trips.
   figures: []

@@ -52,7 +52,7 @@ re-aggregated with `report` without re-running hours of local inference.
 ## Results
 
 Author run, one laptop (Apple Silicon): 19 cells / 760 requests / 0 failures.
-**MLX ≈ 2.9× GGUF tok/s** on the same models; a 4-bit mixture-of-experts model
+**MLX ≈ 2.9× GGUF tok/s** on the same model family (MLX quantization unrecorded); a 4-bit mixture-of-experts model
 records 0.81 s p95 latency (0.63 s median) at about $0.12 per 1M output tokens
 (electricity only: measured 67.7 aggregate output tok/s on that cell, declared
 100 W system draw at $0.30/kWh — the

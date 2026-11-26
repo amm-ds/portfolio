@@ -124,6 +124,21 @@ describe("renderMarkdown", () => {
 describe("renderMarkdown tables", () => {
   const TABLE_MD = "| model | mae |\n|---|---|\n| naive_last | 100 |\n| tuned | 72 |";
 
+  it("makes every table scroll wrapper focusable and named", () => {
+    const md = `${TABLE_MD}\n\n| **arm** | [ci](https://example.org) |\n|---|---|\n| a | b |`;
+    const { container } = render(<MemoryRouter>{renderMarkdown(md)}</MemoryRouter>);
+    const wrappers = [...container.querySelectorAll(".table-scroll")];
+    expect(wrappers).toHaveLength(2);
+    for (const w of wrappers) {
+      expect(w.getAttribute("tabindex")).toBe("0");
+      expect(w.getAttribute("role")).toBe("region");
+    }
+    expect(wrappers.map((w) => w.getAttribute("aria-label"))).toEqual([
+      "Table: model, mae",
+      "Table: arm, ci",
+    ]);
+  });
+
   it("renders a pipe table with thead/th and tbody/td", () => {
     // MemoryRouter: the "mae" header now auto-links to the glossary.
     const { container } = render(<MemoryRouter>{renderMarkdown(TABLE_MD)}</MemoryRouter>);

@@ -36,7 +36,7 @@ export function MetricsTable({ metrics }: { metrics: Metrics }) {
     : [];
   return (
     <>
-      <DataTable className="metrics-table">
+      <DataTable className="metrics-table" ariaLabel="Run metrics">
         <thead>
           <tr>
             <th scope="col">run</th>

@@ -55,6 +55,10 @@ import { AUTO_13_MODEL_SERVING_2_SPEC } from "./13-model-serving-2";
 import { AUTO_13_MODEL_SERVING_3_SPEC } from "./13-model-serving-3";
 import { AUTO_13_MODEL_SERVING_4_SPEC } from "./13-model-serving-4";
 import { AUTO_13_MODEL_SERVING_5_SPEC } from "./13-model-serving-5";
+import { AUTO_15_DYNAMIC_PRICING_RL_1_SPEC } from "./15-dynamic-pricing-rl-1";
+import { AUTO_15_DYNAMIC_PRICING_RL_2_SPEC } from "./15-dynamic-pricing-rl-2";
+import { AUTO_15_DYNAMIC_PRICING_RL_3_SPEC } from "./15-dynamic-pricing-rl-3";
+import { AUTO_15_DYNAMIC_PRICING_RL_4_SPEC } from "./15-dynamic-pricing-rl-4";
 import { AUTO_APP_AGENT_CHAT_1_SPEC } from "./app-agent-chat-1";
 import { AUTO_APP_DOCUMENT_INTELLIGENCE_1_SPEC } from "./app-document-intelligence-1";
 
@@ -114,6 +118,10 @@ export const AUTO_DIAGRAM_SPECS = {
   "auto-13-model-serving-3": AUTO_13_MODEL_SERVING_3_SPEC,
   "auto-13-model-serving-4": AUTO_13_MODEL_SERVING_4_SPEC,
   "auto-13-model-serving-5": AUTO_13_MODEL_SERVING_5_SPEC,
+  "auto-15-dynamic-pricing-rl-1": AUTO_15_DYNAMIC_PRICING_RL_1_SPEC,
+  "auto-15-dynamic-pricing-rl-2": AUTO_15_DYNAMIC_PRICING_RL_2_SPEC,
+  "auto-15-dynamic-pricing-rl-3": AUTO_15_DYNAMIC_PRICING_RL_3_SPEC,
+  "auto-15-dynamic-pricing-rl-4": AUTO_15_DYNAMIC_PRICING_RL_4_SPEC,
   "auto-app-agent-chat-1": AUTO_APP_AGENT_CHAT_1_SPEC,
   "auto-app-document-intelligence-1": AUTO_APP_DOCUMENT_INTELLIGENCE_1_SPEC,
 } as const satisfies Record<string, DiagramSpec>;

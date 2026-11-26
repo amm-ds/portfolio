@@ -74,7 +74,7 @@ rates: the owner labelled a 30-claim sample blind to the model's labels
 (11 supported, 19 unsupported), and agreement with the
 `kimi-for-coding` labels is 30/30, Wilson 95% [0.8865, 1.0], clearing the
 0.85 gate (`reports/judge_calibration_v2/owner_sample_validated.json`).
-During the reviewer audit the owner also re-checked 7 claims against the
+The owner also re-checked 7 claims against the
 cited passage text and accepted the corrections. The
 earlier hosted calibration accepted 39.7% of unsupported claims (69/174) and
 stays in [DESIGN.md](DESIGN.md) as history. Provider selection, verification, and
@@ -172,7 +172,7 @@ unsupported-claim answers drafted at 0.74 first-check support vs 0.93 for
 correct ones. The pass meters 236 calls / $1.583466 cloud-equivalent
 (p50 25.351 s, p95 84.681 s).
 
-An independent stress set closes the loop the audits asked for: 30 questions
+An independent stress set tests the pipeline outside its tuning loop: 30 questions
 admitted at article level only, with no production-retriever answerability
 gate — negation, cross-article comparisons, temporal traps, and six
 questions built to tempt an answer from plausible-but-unjustified chunks.

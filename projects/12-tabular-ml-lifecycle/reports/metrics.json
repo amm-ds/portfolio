@@ -35,7 +35,7 @@
   },
   "validation_tie_interval": {
     "hi": 1.2133984619833675,
-    "interpretation": "Negative favors the MLP. The interval prices paired validation-hour noise; per owner decision 8 the two top candidates are reported as tied on validation and the MLP is the served artifact, not a proven champion.",
+    "interpretation": "Negative favors the MLP. The interval prices paired validation-hour noise; per the stated protocol the two top candidates are reported as tied on validation and the MLP is the served artifact, not a proven winner.",
     "lo": -1.7053502125022268,
     "metric": "val_mae_mlp_minus_lightgbm",
     "n_boot": 2000,

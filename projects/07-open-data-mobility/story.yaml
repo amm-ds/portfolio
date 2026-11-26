@@ -328,6 +328,29 @@ sections:
       adds `3.31` mean `MAE`, ahead of last week's hour (`2.58`) and yesterday's
       hour (`2.48`). Weather adds approximately zero to point accuracy.
 
+    ## Limits
+
+    - The input scope in the data path remains one city, one vehicle
+      class, one year, and one hour ahead. There is no claim for other
+      fleets, cities, or longer horizons.
+    - The weather evidence is association only. Ratios lack hour-of-week
+      normalization, and the band under-covers the no-borough bucket at
+      `84.7%`; that bucket is distinct from demand-sparse zones.
+    - The serving bundle stores the raw quantile `p90`; the conformal offsets
+      are an evaluation adjustment fit on the first test half, not selection
+      evidence. The adjusted band is therefore test-derived.
+    - The retraining path is required because trained weights are
+      per-service. Yellow models lose to persistence on green taxis until
+      retrained on that service's own history.
+    - The borough evidence shows that Manhattan volume dominates absolute
+      error. Persistence beats every `GBM` arm in the Bronx, EWR, and Staten Island.
+    - Causal weather claims and longer-horizon forecasts remain unproven.
+      They need a different study contract with a causal identification
+      strategy and a multi-hour forecasting setup.
+
+    ```diagram auto-07-open-data-mobility-3
+    ```
+
     ## Exact numbers
 
     `RMSE` means root-mean-square error and gives more weight to large
@@ -427,29 +450,6 @@ sections:
     - Drift: a scheduled observatory scores each published month against
       the persisted model at a ±`15%` tolerance. A regression opens the
       response runbook.
-
-    ## Limits
-
-    - The input scope in the data path remains one city, one vehicle
-      class, one year, and one hour ahead. There is no claim for other
-      fleets, cities, or longer horizons.
-    - The weather evidence is association only. Ratios lack hour-of-week
-      normalization, and the band under-covers the no-borough bucket at
-      `84.7%`; that bucket is distinct from demand-sparse zones.
-    - The serving bundle stores the raw quantile `p90`; the conformal offsets
-      are an evaluation adjustment fit on the first test half, not selection
-      evidence. The adjusted band is therefore test-derived.
-    - The retraining path is required because trained weights are
-      per-service. Yellow models lose to persistence on green taxis until
-      retrained on that service's own history.
-    - The borough evidence shows that Manhattan volume dominates absolute
-      error. Persistence beats every `GBM` arm in the Bronx, EWR, and Staten Island.
-    - Causal weather claims and longer-horizon forecasts remain unproven.
-      They need a different study contract with a causal identification
-      strategy and a multi-hour forecasting setup.
-
-    ```diagram auto-07-open-data-mobility-3
-    ```
 
     **In plain terms:** Use the tuned tree model for next-hour yellow-taxi demand—it misses 28% fewer pickups than repeating yesterday (4.68 vs 6.52 per zone-hour) and its raw 90% upper band covers 90.8% of city-wide zone-hours; the January drift check under-covers at 87.4%.
   figures: []

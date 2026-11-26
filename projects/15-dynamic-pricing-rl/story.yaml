@@ -81,7 +81,7 @@ sections:
 - id: evaluation
   text_md: |
     **One invocation consumed every sealed set; code computed both verdicts.**
-    The owner committed the frozen params, calibration, and splits before evaluation. `seal-read` then ran `B0`–`B3`, selected masked PPO seed `1`, and `UB` on `1,000` test specs and `2 × 500` stress specs. `reports/sealed_access.json` records exactly three ordered reads; a second invocation hard-fails.
+    The frozen params, calibration, and splits were committed before evaluation. `seal-read` then ran `B0`–`B3`, selected masked PPO seed `1`, and `UB` on `1,000` test specs and `2 × 500` stress specs. `reports/sealed_access.json` records exactly three ordered reads; a second invocation hard-fails.
 
     `profit_vs_baselines` compares test means with per-policy episode-bootstrap intervals. The primary interval is different: it resamples paired `RL - B1` episode differences `2,000` times with seed `42`. Its point estimate is `-0.009696` and its `95%` CI is `[-0.011437, -0.007998]`. Relative lift is `-1.86%`, below the required `+1.0%`, and the interval excludes zero in the wrong direction: **P1 fails**.
 
@@ -114,7 +114,7 @@ sections:
     | Executable-policy violations | **0; P2 pass** |
     | P3 stress and bound analysis | Context only |
 
-    The result supports disciplined comparison more than learned deployment; next, the limits and reusable lessons ([Conclusions →](#sec-conclusions)).
+    The result supports disciplined comparison more than learned deployment. Next come the limits and reusable lessons ([Conclusions →](#sec-conclusions)).
 
     **In plain terms:** The learner beat three other methods by up to 29%, but still lost to the simple fixed price. It stayed close to the theoretical ceiling and never broke a rule, including when shopper reactions changed.
   figures: [price_traces, bound_share_by_rho]
@@ -126,7 +126,11 @@ sections:
     ```diagram auto-15-dynamic-pricing-rl-4
     ```
 
-    The reusable assets are the calibrated environment, common-random-number pairing, action masks, fluid ceiling, baseline tournament, and one-read audit trail. Future work should test richer demand mechanisms or different training objectives on development splits, then create a fresh sealed protocol. This consumed test set must not become a tuning loop.
+    ## What the experiment taught
+
+    - **A tuned static rule is a hard comparator:** under the assumed elasticity prior, `B1` keeps a `0.009696` mean advantage that adaptive pricing does not recover.
+    - **Masks make safety measurable:** every executable policy finished the sealed test with `0` violations, and P2 is scored separately from reward.
+    - **The protocol is reusable:** the calibrated environment, common-random-number pairing, action masks, fluid ceiling, baseline tournament, and one-read audit trail carry over. Future work should test richer demand mechanisms or different training objectives on development splits, then create a fresh sealed protocol. This consumed test set must not become a tuning loop.
 
     ## Limits
 
@@ -134,6 +138,29 @@ sections:
     - Elasticity is an assumption anchored to Bijmolt et al. (`2005`), not causal M5 elasticity.
     - The simulator omits reference-price and substitution effects; shoppers neither remember earlier prices nor switch products.
     - `UB` is a relaxed known-elasticity ceiling, not an achievable service level.
+
+    ## Exact numbers
+
+    Sealed test, `1,000` episodes (`reports/metrics.json`):
+
+    | Quantity | Value |
+    |---|---:|
+    | RL / B1 / UB mean normalised profit | `0.5120` / `0.5217` / `0.5291` |
+    | RL − B1 paired difference | `-0.009696`, `95%` CI [`-0.011437`, `-0.007998`] |
+    | Relative lift versus B1 (P1 needs `+1.0%`) | `-1.86%` |
+    | Bound share, RL / B1 | `96.76%` / `98.60%` |
+    | RL bound share at `rho` `0.7` / `1.0` / `1.3` | `97.36%` / `96.90%` / `95.74%` |
+    | Stress mean `-1.5`, RL / B1 / B3 | `0.5450` / `0.5649` / `0.5356` |
+    | Stress mean `-3.5`, RL / B1 / B3 | `0.4817` / `0.4837` / `0.4753` |
+    | Violations, executable policies | `0` |
+
+    ## Protocol
+
+    - **Splits:** `item_id` split with seed `42`: `140` / `30` / `30` items, holding `267` / `57` / `58` series.
+    - **Selection:** seeds `0`, `1`, and `2` each request `3,000,000` steps; seed `1` wins on `300` validation episodes. `2,000` train episodes tune the rule baselines.
+    - **Gates:** P1 and P2 are fixed before the sealed read; P3 is context only and cannot rescue P1.
+    - **Sealed read:** one `seal-read` invocation scores `1,000` test and `2 × 500` stress specs; `reports/sealed_access.json` records three ordered reads.
+    - **Uncertainty:** the primary interval resamples paired `RL - B1` episode differences `2,000` times with seed `42`; per-policy mean intervals use an episode bootstrap.
 
     Full evidence lives in `reports/metrics.json`, `reports/test_episodes.json`, `reports/sealed_access.json`, and the [standalone report](reports/report.html). Rebuild the presentation without another policy evaluation ([Reproduce →](README.md#reproduce)).
 

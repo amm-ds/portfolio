@@ -98,7 +98,8 @@ revenue minus send cost, and the Qini ranking is stated with its interval
 rather than asserted.
 
 The recommendation is anchored against both non-model baselines on the same
-paired bootstrap (T-learner minus comparator): vs random targeting at the
+paired bootstrap (T-learner minus comparator; intervals from
+`reports/report.html`): vs random targeting at the
 25% budget **+$2,812, 95% CI [+$718, +$4,767]**, the concentration
 advantage is established; vs mail-everyone at $0.01/email **−$9,265, 95% CI
 [−$13,125, −$5,808]**, entirely below zero, consistent with the headline:
@@ -183,11 +184,14 @@ is noisy, and the X-learner's second stage adds variance without signal here
   `profit_frontier`, `cost_sensitivity`, `cuped_variance`, plus the multi-arm
   set: `qini_per_arm`, `profit_frontier_multi_arm`,
   `recommended_arm_distribution`
-- Metrics: `reports/metrics.json` (policy ladder + `_meta.cuped/power/deciles`
-  + `_meta.ci` bootstrap intervals and `_meta.cost_sensitivity` sweep +
-  `_meta.cuped_multivariate`; `multi_arm.policy_value` holds observed DR/IPW and
-  `multi_arm.policies` holds model-estimated planning; unavailable values are null)
-- Report: `reports/report.html` · Segment summary: `reports/segment_summary.json`
+- Metrics: `reports/metrics.json` (two-arm policy ladder; `multi_arm.ci` holds
+  the multi-arm intervals, `multi_arm.policy_value` holds observed DR/IPW and
+  `multi_arm.policies` holds model-estimated planning; unavailable values are
+  null; `_meta` is the provenance stamp)
+- Report: `reports/report.html` holds the two-arm paired bootstrap intervals
+  (including the headline CI [+$718, +$4,767]), CUPED, power, deciles and the
+  cost sweep; `scripts/check_headline_numbers.py` reads the headline intervals
+  from it · Segment summary: `reports/segment_summary.json`
 - Scores: `data/scores.parquet` (two-arm + per-arm uplift columns) ·
   `data/scores_multi.parquet` (three-arm scores + out-of-fold outcome nuisances)
 - Demo: `reports/demo_payload.json` (planning grids + observed DR/IPW scalars)

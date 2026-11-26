@@ -144,7 +144,7 @@ def build_evaluation_metadata(cfg: ServingConfig, metrics: dict[str, Any]) -> di
     """The evaluation_metadata.json record (protocol, versions, hardware)."""
     return {
         "protocol": (
-            "Champion re-derivation: experiment 12's committed recipe (same sha256-pinned "
+            "Served-MLP re-derivation: experiment 12's committed recipe (same sha256-pinned "
             "UCI hour.csv, same feature contract, same MLP architecture + hyperparameters, "
             "seed 42), scored once on the frozen 8-week test window; reproduction gate "
             "|ΔMAE| ≤ params reproduction_tolerance. Serving: native torch vs ONNX Runtime "

@@ -274,7 +274,7 @@ export function Services() {
         Every engagement includes structured revision rounds after delivery — feedback,
         re-evaluation and updated reports are part of the scope, not an extra.
       </p>
-      <DataTable className="engagement-table">
+      <DataTable className="engagement-table" ariaLabel="Engagement models">
         <thead>
           <tr>
             <th scope="col">model</th>

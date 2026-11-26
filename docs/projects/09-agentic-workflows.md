@@ -235,7 +235,7 @@ detail.heldout`.
   server rides the same branch.
 - **Evaluation**: `pydantic-evals` dataset + custom evaluators (code in
   `evals.py`, suite/grading; `figures.py` + `report.py` for figures and
-  report after the audit-P1 split). Run stage (live LLM) and evaluate stage
+  report). Run stage (live LLM) and evaluate stage
   (offline grading) are separate DVC stages. `metrics.json detail.tooling`
   decomposes the exact-set tool score offline; `detail.heldout` reports the
   held-out split (answer tasks vs should-fail probes) separately.
