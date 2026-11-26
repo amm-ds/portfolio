@@ -222,9 +222,10 @@ def run_dq_gates(df: pd.DataFrame, dataset: str = "bike_sharing_hourly") -> DQRe
 
 def _gap_check(ts: pd.Series) -> DQCheck:
     """Hourly-grid completeness within a budget: the UCI series has 165 missing
-    hours (the January 2011 outage pattern, ~1% of rows), so lags and the
-    seasonal-naive floor are positional over the observed sequence — the gate
-    bounds the missing fraction instead of demanding a perfect grid.
+    hours (the January 2011 outage pattern, ~1% of rows) — the gate bounds the
+    missing fraction instead of demanding a perfect grid. How lags treat the
+    gaps is declared in the feature contract (v2: timestamp joins with NaN for
+    missing hours; v1: positional shifts over the observed sequence).
     """
     diffs = ts.diff().dropna().dt.total_seconds()
     gaps = int((diffs != 3600).sum())
@@ -237,7 +238,7 @@ def _gap_check(ts: pd.Series) -> DQCheck:
         threshold=float(budget),
         detail=(
             f"{gaps} non-1h steps vs budget {budget} ({len(ts)} rows); "
-            "lags are positional over the observed sequence"
+            "lag treatment of gaps is declared in the feature contract"
         ),
     )
 

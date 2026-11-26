@@ -79,15 +79,16 @@ class LifecycleConfig(PortfolioBaseModel):
         description="|r| threshold for correlated-pair pruning; see committed selection record.",
     )
 
-    # Sensitivity-arm behavior switches (pass-3 P1.2). The defaults reproduce
-    # the committed run byte-for-byte; params_variant.yaml flips both to score
-    # the corrected variant as a separate artifact (metrics.json is untouched).
+    # Lag/pruning behavior switches (pass-3 P1.2, promoted to v2 in pass 5).
+    # The code defaults preserve the v1 run byte-for-byte (the E4 sensitivity
+    # arm's baseline, params_v1.yaml); the committed recipe (params.yaml) sets
+    # the corrected v2 behavior, and metrics.json keeps v1 under previous_runs.v1.
     lag_mode: str = Field(
         default="positional",
         pattern="^(positional|timestamp)$",
         description=(
-            "'positional' = committed run: lags are shifts over the observed sequence; "
-            "'timestamp' = corrected variant: lags join on timestamp minus h, with NaN "
+            "'positional' = v1 run: lags are shifts over the observed sequence; "
+            "'timestamp' = v2 (committed): lags join on timestamp minus h, with NaN "
             "for hours missing from the series."
         ),
     )
@@ -95,9 +96,9 @@ class LifecycleConfig(PortfolioBaseModel):
         default="drop_higher_mi",
         pattern="^(drop_higher_mi|keep_higher_mi)$",
         description=(
-            "'drop_higher_mi' = committed run (drops the higher-MI member of a "
-            "correlated pair — the known pruning defect); 'keep_higher_mi' = "
-            "corrected variant (keeps it, e.g. atemp over temp)."
+            "'drop_higher_mi' = v1 run (drops the higher-MI member of a correlated "
+            "pair — the disclosed pruning defect); 'keep_higher_mi' = v2 (committed): "
+            "keeps it, e.g. atemp over temp."
         ),
     )
 

@@ -8,13 +8,13 @@ Time-based split: the final 8 weeks of the 2011-2012 hourly series are the test 
 
 | candidate | test MAE | test RMSE | test MAPE % |
 |---|---|---|---|
-| seasonal naive (floor) | 83.2 | 134.0 | 153.2 |
-| ridge | 51.1 | 77.8 | 86.4 |
-| random forest | 26.3 | 45.7 | 25.7 |
-| LightGBM (Optuna HPO) | 25.4 | 40.2 | 27.4 |
-| tabular MLP (PyTorch) | 25.4 | 39.3 | 33.7 |
+| seasonal naive (floor) | 73.0 | 120.0 | 129.9 |
+| ridge | 48.7 | 72.2 | 101.1 |
+| random forest | 26.1 | 42.4 | 62.5 |
+| LightGBM (Optuna HPO) | 23.8 | 37.1 | 53.3 |
+| tabular MLP (PyTorch) | 27.2 | 40.4 | 47.7 |
 
-Validation-selected model: **mlp** — MAE improvement vs floor +57.8, hourly 95% CI [52.5, 63.1], significant_95=True. Serial-dependence sensitivity (95% CI): hourly: [52.5, 63.1]; day: [44.2, 71.8]; week: [38.8, 73.4].
+Validation-selected model: **lightgbm_hpo** — MAE improvement vs floor +49.2, hourly 95% CI [44.4, 54.0], significant_95=True. Serial-dependence sensitivity (95% CI): hourly: [44.4, 54.0]; day: [37.4, 61.2]; week: [33.0, 63.8].
 
 ## Post-freeze MLP regularization diagnostics (2x2x2)
 
@@ -22,14 +22,14 @@ Validation selected the shipped configuration before test scoring. These test sc
 
 | dropout | weight decay | early stopping | val MAE | post-freeze test MAE |
 |---|---|---|---|---|
-| on | on | on | 34.2 (shipped) | 25.4 |
-| on | on | off | 35.3 | 26.8 |
-| on | off | on | 34.3 | 25.4 |
-| on | off | off | 34.8 | 26.2 |
-| off | on | on | 32.1 | 25.0 |
-| off | on | off | 35.7 | 27.4 |
-| off | off | on | 32.2 | 25.0 |
-| off | off | off | 34.8 | 27.3 |
+| on | on | on | 35.1 (shipped) | 27.2 |
+| on | on | off | 32.8 | 24.7 |
+| on | off | on | 35.2 | 27.2 |
+| on | off | off | 33.4 | 24.8 |
+| off | on | on | 29.6 | 23.6 |
+| off | on | off | 32.6 | 25.4 |
+| off | off | on | 29.5 | 23.4 |
+| off | off | off | 33.1 | 26.1 |
 
 ## Limits
 

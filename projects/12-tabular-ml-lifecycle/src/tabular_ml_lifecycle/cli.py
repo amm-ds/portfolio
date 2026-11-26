@@ -111,14 +111,14 @@ def report(
 
 @app.command()
 def sensitivity(
-    params_file: OptParams = Path("params.yaml"),
+    params_file: OptParams = Path("params_v1.yaml"),
     variant_params_file: Annotated[
         Path, typer.Option(help="YAML with the corrected-variant config.")
     ] = Path("params_variant.yaml"),
 ) -> None:
-    """E4 sensitivity arm: reproduce the committed run (STOP gate), score the
-    corrected pruning/lag variant, and write reports/sensitivity_pruning_lags.json.
-    Never touches the committed metrics.json."""
+    """E4 sensitivity arm: reproduce the v1 run (STOP gate), score the
+    corrected pruning/lag variant (= the committed v2 recipe), and write
+    reports/sensitivity_pruning_lags.json. Never touches metrics.json."""
     from tabular_ml_lifecycle.sensitivity import run_sensitivity
 
     run_sensitivity(load_config(params_file), load_config(variant_params_file))

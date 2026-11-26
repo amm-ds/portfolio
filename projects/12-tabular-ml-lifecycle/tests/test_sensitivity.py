@@ -224,24 +224,34 @@ def test_variant_arm_keeps_frozen_test_window_on_gaps(tmp_path: Path) -> None:
 
 
 def test_committed_sensitivity_artifact_shape() -> None:
-    """The committed E4 artifact: gate passed, atemp kept, per-model deltas, and
-    the committed metrics.json still carries the original headline MAE."""
+    """The committed E4 artifact against the promoted v2 metrics.json: the gate
+    passed, atemp is kept, the E4 variant IS the committed v2 run, and v1 is
+    preserved under previous_runs.v1."""
     payload = json.loads((REPORTS_DIR / "sensitivity_pruning_lags.json").read_text())
     committed = json.loads((REPORTS_DIR / "metrics.json").read_text())
 
-    assert committed["mlp"]["mae"] == pytest.approx(25.43163249606178, abs=1e-12)
+    # v2 is the committed run; v1 lives under previous_runs.v1.
+    assert committed["mlp"]["mae"] == pytest.approx(27.161182233265468, abs=1e-12)
+    assert committed["lightgbm_hpo"]["mae"] == pytest.approx(23.76360139335002, abs=1e-12)
+    assert committed["analysis"]["champion"] == "lightgbm_hpo"
+    v1 = committed["previous_runs"]["v1"]
+    assert v1["mlp"]["mae"] == pytest.approx(25.43163249606178, abs=1e-12)
+    assert v1["lightgbm_hpo"]["mae"] == pytest.approx(25.37318492658977, abs=1e-12)
+    assert v1["champion"] == "mlp"
+
     repro = payload["reproduction"]
     assert repro["passed"] is True
-    assert repro["expected_test_mae"] == pytest.approx(committed["mlp"]["mae"], abs=1e-12)
+    assert repro["expected_test_mae"] == pytest.approx(v1["mlp"]["mae"], abs=1e-12)
     assert repro["abs_diff"] <= repro["tolerance"] == REPRODUCTION_TOLERANCE
 
     variant = payload["variant"]
     assert "atemp" in variant["selected_features"]
     assert "temp" not in variant["selected_features"]
     assert variant["nan_handling"]["test_lag_cells_median_imputed"] >= 0
-    assert payload["committed"]["test_mae"]["mlp"] == pytest.approx(
-        committed["mlp"]["mae"], abs=1e-12
-    )
+    # The E4 variant is the committed v2 run: every model's MAE matches the
+    # primary blocks bit-for-bit (same recipe, same seed, same host).
+    for name in ("seasonal_naive", "ridge", "random_forest", "lightgbm_hpo", "mlp"):
+        assert variant["test_mae"][name] == pytest.approx(committed[name]["mae"], abs=1e-9)
     deltas = payload["delta_variant_minus_committed"]["day_block"]
     assert set(deltas) == {"seasonal_naive", "ridge", "random_forest", "lightgbm_hpo", "mlp"}
     for row in deltas.values():

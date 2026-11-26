@@ -1,6 +1,6 @@
 {
   "dataset_contract": "data/dataset_contract.json",
-  "leakage_policy": "Lag features at time t read only rental counts strictly before t (pandas shift); validation and test lags read their own past, which is available at prediction time \u2014 never the future. The first max(lag_hours) training rows lose their NaN lag rows. Standardization is fitted on the training window inside the sklearn Pipeline (train statistics only). Lags are positional over the observed sequence: the UCI series has 165 missing hours, mostly early 2011 plus a 36-hour gap on 2012-10-29/30 inside validation. A positional 168-step lag and the seasonal-naive floor can drift up to 36 hours for about a week after that gap; a 24-step lag is shifted for about a day and a half.",
+  "leakage_policy": "Lag features at time t read only rental counts strictly before t; validation and test lags read their own past, which is available at prediction time \u2014 never the future. The first max(lag_hours) training rows lose their NaN lag rows. Standardization is fitted on the training window inside the sklearn Pipeline (train statistics only). Under the committed v2 recipe, lags join on timestamp minus h (date-aware): the lag reads the count at that exact wall-clock hour and is NaN when that hour is missing from the series (the UCI series has 165 missing hours, mostly early 2011 plus a 36-hour gap on 2012-10-29/30 inside validation). NaN-lag rows are dropped from train and validation (complete-case); the frozen test window keeps every row, its NaN lag cells median-imputed from the training window. The v1 run shifted lags positionally over the observed sequence; it is preserved under metrics.json previous_runs.v1.",
   "split": {
     "scheme": "time-based",
     "val_weeks": 8,
@@ -29,7 +29,7 @@
     "cnt_lag_168h"
   ],
   "selected": [
-    "temp",
+    "atemp",
     "hum",
     "windspeed",
     "weathersit",
@@ -46,46 +46,46 @@
     "cnt_lag_168h"
   ],
   "mi_scores": {
-    "temp": 0.1578242885973662,
-    "atemp": 0.1644816595425933,
-    "hum": 0.10473249114458305,
-    "windspeed": 0.01785929108740092,
-    "weathersit": 0.025684547211384245,
-    "hour_sin": 0.3301374489241793,
-    "hour_cos": 0.32818170253510015,
-    "weekday_sin": 0.02266679861895371,
-    "weekday_cos": 0.008367194300208158,
-    "month_sin": 0.027063834852562252,
-    "month_cos": 0.059455988291212236,
-    "holiday": 0.007724823080596632,
-    "workingday": 0.017258217552050148,
-    "cnt_lag_1h": 0.8875912976178686,
-    "cnt_lag_24h": 0.7633951423769023,
-    "cnt_lag_168h": 0.7117181462591562
+    "temp": 0.15297278101528367,
+    "atemp": 0.1607258136455192,
+    "hum": 0.10640722445493989,
+    "windspeed": 0.018024449990950764,
+    "weathersit": 0.024440827900370277,
+    "hour_sin": 0.32517269143839256,
+    "hour_cos": 0.33108759726453263,
+    "weekday_sin": 0.021417627227571234,
+    "weekday_cos": 0.011000956408453,
+    "month_sin": 0.02654552229487761,
+    "month_cos": 0.06086819932988963,
+    "holiday": 0.007531029184833837,
+    "workingday": 0.007610108908567614,
+    "cnt_lag_1h": 0.8783320897352365,
+    "cnt_lag_24h": 0.7836975369145085,
+    "cnt_lag_168h": 1.0017768843584127
   },
   "permutation_val_mae_increase": {
-    "temp": -1.8623441370022533,
-    "atemp": 0.12031331327139014,
-    "hum": -0.17199741704602617,
-    "windspeed": 0.03068414925310776,
-    "weathersit": -1.6199270548702516,
-    "hour_sin": -1.643633473337792,
-    "hour_cos": -3.182671125397698,
-    "weekday_sin": -0.009543369613771802,
-    "weekday_cos": 0.016857638926379082,
-    "month_sin": 0.05950906665209175,
-    "month_cos": -0.021016832633742412,
-    "holiday": 0.05084730189167885,
-    "workingday": -0.09394916862964635,
-    "cnt_lag_1h": -64.88360491926443,
-    "cnt_lag_24h": -35.061163788013076,
-    "cnt_lag_168h": -42.396457531481374
+    "temp": -2.752295899860266,
+    "atemp": 0.08018334659508071,
+    "hum": -0.18496143764831885,
+    "windspeed": -0.12264188999868253,
+    "weathersit": -2.4179758896514345,
+    "hour_sin": -2.788285264073582,
+    "hour_cos": -0.9081522597106343,
+    "weekday_sin": -0.01830217697091996,
+    "weekday_cos": 0.00982722081155316,
+    "month_sin": 0.09592910128361894,
+    "month_cos": -0.12384547034406097,
+    "holiday": 0.03965309226363019,
+    "workingday": -0.07182079311342307,
+    "cnt_lag_1h": -56.358142970442444,
+    "cnt_lag_24h": -24.204338589526355,
+    "cnt_lag_168h": -80.69559148738091
   },
   "pruned_pairs": [
     {
-      "dropped": "atemp",
-      "kept": "temp",
-      "r": 0.9873
+      "dropped": "temp",
+      "kept": "atemp",
+      "r": 0.987
     }
   ],
   "corr_threshold": 0.9,
@@ -109,5 +109,11 @@
     "holiday",
     "workingday"
   ],
-  "seed": 42
+  "seed": 42,
+  "nan_lag_policy": {
+    "train_rows_dropped": 250,
+    "val_rows_dropped": 43,
+    "test_lag_cells_median_imputed": 28,
+    "rule": "NaN-lag rows are dropped from train/validation (complete-case); the frozen test window keeps every row, its NaN lag cells median-imputed from the training window."
+  }
 }

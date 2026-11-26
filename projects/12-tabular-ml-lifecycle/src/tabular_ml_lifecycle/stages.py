@@ -33,10 +33,11 @@ from tabular_ml_lifecycle.data import (
     split_windows,
 )
 from tabular_ml_lifecycle.features import (
+    apply_nan_lag_policy,
     apply_split,
     build_features,
     mi_lollipop_figure,
-    seasonal_naive_predict,
+    seasonal_naive_predict_mode,
     select_features,
 )
 from tabular_ml_lifecycle.metrics import (
@@ -143,8 +144,11 @@ def features_core(cfg: LifecycleConfig) -> Path:
     """Build the feature frame, cut the time windows, run selection, write contract."""
     df = pd.read_parquet(cfg.data_dir / "hour.parquet")
     windows = split_windows(len(df), cfg.val_weeks, cfg.test_weeks)
-    featured = build_features(df, cfg.lag_hours)
+    featured = build_features(df, cfg.lag_hours, cfg.lag_mode)
     train, val, test = apply_split(featured, windows, cfg.max_lag)
+    train, val, test, nan_counts = apply_nan_lag_policy(
+        train, val, test, cfg.lag_hours, cfg.lag_mode
+    )
 
     keep_cols = list(featured.columns)
     for name, part in (("train", train), ("val", val), ("test", test)):
@@ -157,6 +161,15 @@ def features_core(cfg: LifecycleConfig) -> Path:
     series.to_parquet(cfg.data_dir / "series.parquet", index=False)
 
     selection = select_features(cfg, train, val, windows)
+    if cfg.lag_mode == "timestamp":
+        selection.extra["nan_lag_policy"] = {
+            **nan_counts,
+            "rule": (
+                "NaN-lag rows are dropped from train/validation (complete-case); "
+                "the frozen test window keeps every row, its NaN lag cells "
+                "median-imputed from the training window."
+            ),
+        }
     contract_path = cfg.data_dir / "feature_selection.json"
     _write_json(contract_path, selection.to_contract(cfg))
 
@@ -165,9 +178,9 @@ def features_core(cfg: LifecycleConfig) -> Path:
     save_json(fig, cfg.reports_dir / "figures" / "mi_lollipop.json")
     log.info(
         "features: train %d / val %d / test %d rows; %d/%d candidates selected; pruned %s",
-        windows.n_train - cfg.max_lag,
-        windows.n_val,
-        windows.n_test,
+        len(train),
+        len(val),
+        len(test),
         len(selection.selected),
         len(selection.candidates),
         selection.pruned_pairs,
@@ -189,7 +202,6 @@ def train_core(cfg: LifecycleConfig) -> Path:
     X_val, y_val = val_df[selected], val_df[TARGET_COL].astype(float)
 
     series = pd.read_parquet(cfg.data_dir / "series.parquet")
-    cnt = pd.Series(series[TARGET_COL].to_numpy(), index=series[TIMESTAMP_COL])
     models_dir = cfg.data_dir / "models"
     models_dir.mkdir(parents=True, exist_ok=True)
 
@@ -199,7 +211,9 @@ def train_core(cfg: LifecycleConfig) -> Path:
         return {"mae": mae(y, pred), "rmse": rmse(y, pred), "mape": mape(y, pred)}
 
     val_runs: dict[str, dict[str, float]] = {}
-    naive_val = seasonal_naive_predict(cnt, val_df[TIMESTAMP_COL])
+    naive_val, _ = seasonal_naive_predict_mode(
+        series, train_df, val_df[TIMESTAMP_COL], 168, cfg.lag_mode
+    )
     val_runs["seasonal_naive"] = {
         "mae": mae(y_val.to_numpy(), naive_val),
         "rmse": rmse(y_val.to_numpy(), naive_val),
@@ -335,12 +349,13 @@ def evaluate_core(cfg: LifecycleConfig) -> Path:
     X_test, y_test = test_df[selected], y_test_series.to_numpy()
 
     series = pd.read_parquet(cfg.data_dir / "series.parquet")
-    cnt = pd.Series(series[TARGET_COL].to_numpy(), index=series[TIMESTAMP_COL])
     models_dir = cfg.data_dir / "models"
 
-    preds: dict[str, np.ndarray] = {
-        "seasonal_naive": seasonal_naive_predict(cnt, test_df[TIMESTAMP_COL])
-    }
+    train_df = _load_split(cfg, "train")  # the floor's imputation median is a train statistic
+    floor_pred, _floor_imputed = seasonal_naive_predict_mode(
+        series, train_df, test_df[TIMESTAMP_COL], 168, cfg.lag_mode
+    )
+    preds: dict[str, np.ndarray] = {"seasonal_naive": floor_pred}
     for name, artifact in (
         ("ridge", "ridge.pkl"),
         ("random_forest", "random_forest.pkl"),
@@ -399,7 +414,7 @@ def evaluate_core(cfg: LifecycleConfig) -> Path:
 
     # The champion and shipped MLP configuration are frozen above. Refit the
     # deterministic variants solely to label their test scores as diagnostics.
-    train_df, val_df = _load_split(cfg, "train"), _load_split(cfg, "val")
+    val_df = _load_split(cfg, "val")
     mlp_cols = ["hour", *selected]
     diagnostic_rows = MLPRegressor(cfg, cfg.seed).ablation(
         train_df[mlp_cols],
@@ -476,10 +491,11 @@ def evaluate_core(cfg: LifecycleConfig) -> Path:
                 **val_tie_ci.to_dict(),
                 "seed": cfg.seed + 3,
                 "interpretation": (
-                    "Negative favors the MLP. The interval prices paired "
-                    "validation-hour noise; per the stated protocol the two "
-                    "top candidates are reported as tied on validation and "
-                    "the MLP is the served artifact, not a proven winner."
+                    "Positive favors LightGBM, negative favors the MLP. The "
+                    "interval prices paired validation-hour noise on the "
+                    "MLP-minus-LightGBM validation delta; per the stated "
+                    "protocol the validation leader is the served artifact "
+                    "(LightGBM under the committed v2 recipe — no tie)."
                 ),
             },
             # Run-level analysis blocks live under ``analysis``; ``_meta`` is

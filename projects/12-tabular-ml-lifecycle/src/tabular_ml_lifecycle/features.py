@@ -53,15 +53,19 @@ SCALED_NUMERIC = [*NUMERIC_COLS, "weathersit", "cnt_lag_1h", "cnt_lag_24h", "cnt
 PASSTHROUGH = [c for c in CANDIDATE_FEATURES if c not in SCALED_NUMERIC]
 
 LEAKAGE_POLICY = (
-    "Lag features at time t read only rental counts strictly before t (pandas "
-    "shift); validation and test lags read their own past, which is available "
-    "at prediction time — never the future. The first max(lag_hours) training "
+    "Lag features at time t read only rental counts strictly before t; "
+    "validation and test lags read their own past, which is available at "
+    "prediction time — never the future. The first max(lag_hours) training "
     "rows lose their NaN lag rows. Standardization is fitted on the training "
-    "window inside the sklearn Pipeline (train statistics only). Lags are "
-    "positional over the observed sequence: the UCI series has 165 missing "
-    "hours, mostly early 2011 plus a 36-hour gap on 2012-10-29/30 inside "
-    "validation. A positional 168-step lag and the seasonal floor can drift up "
-    "to 36 hours for about a week after that gap."
+    "window inside the sklearn Pipeline (train statistics only). Under the "
+    "committed v2 recipe, lags join on timestamp minus h (date-aware): the lag "
+    "reads the count at that exact wall-clock hour and is NaN when that hour "
+    "is missing from the series (the UCI series has 165 missing hours, mostly "
+    "early 2011 plus a 36-hour gap on 2012-10-29/30 inside validation). "
+    "NaN-lag rows are dropped from train and validation (complete-case); the "
+    "frozen test window keeps every row, its NaN lag cells median-imputed from "
+    "the training window. The v1 run shifted lags positionally over the "
+    "observed sequence; it is preserved under metrics.json previous_runs.v1."
 )
 
 
@@ -102,10 +106,10 @@ def build_features(
 ) -> pd.DataFrame:
     """Cyclical hour/weekday/month encodings, calendar binaries, past-only lags.
 
-    ``lag_mode="positional"`` (committed run) shifts over the observed
-    sequence, so a lag can drift across missing hours. ``lag_mode="timestamp"``
-    (corrected variant) joins on ``timestamp - h``: the lag reads the count at
-    that exact wall-clock hour and is NaN when that hour is missing.
+    ``lag_mode="positional"`` (v1) shifts over the observed sequence, so a lag
+    can drift across missing hours. ``lag_mode="timestamp"`` (committed v2)
+    joins on ``timestamp - h``: the lag reads the count at that exact
+    wall-clock hour and is NaN when that hour is missing.
     """
     out = df.copy()
     for col, period in (("hour", 24), ("weekday", 7), ("month", 12)):
@@ -132,6 +136,54 @@ def apply_split(
     val = featured.iloc[windows.val].reset_index(drop=True)
     test = featured.iloc[windows.test].reset_index(drop=True)
     return train, val, test
+
+
+def apply_nan_lag_policy(
+    train: pd.DataFrame, val: pd.DataFrame, test: pd.DataFrame, lag_hours: list[int], lag_mode: str
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, int]]:
+    """Complete-case train/validation + frozen-test median imputation (v2).
+
+    Timestamp lags are NaN where the reference hour is missing from the
+    series. Those rows leave the fitting windows (a row whose lag is genuinely
+    unknown carries no honest lag value); the frozen test window keeps every
+    row, its NaN lag cells median-imputed from the training window so every
+    model — and any paired delta — sees identical test hours. Positional mode
+    (v1) is a no-op: its only NaNs are the warm-up head ``apply_split`` cut.
+    """
+    counts = {"train_rows_dropped": 0, "val_rows_dropped": 0, "test_lag_cells_median_imputed": 0}
+    if lag_mode != "timestamp":
+        return train, val, test, counts
+    lag_cols = [f"cnt_lag_{k}h" for k in lag_hours]
+    counts["train_rows_dropped"] = int(train[lag_cols].isna().any(axis=1).sum())
+    train = train.dropna(subset=lag_cols).reset_index(drop=True)
+    counts["val_rows_dropped"] = int(val[lag_cols].isna().any(axis=1).sum())
+    val = val.dropna(subset=lag_cols).reset_index(drop=True)
+    medians = train[lag_cols].median()
+    counts["test_lag_cells_median_imputed"] = int(test[lag_cols].isna().sum().sum())
+    test = test.copy()
+    test[lag_cols] = test[lag_cols].fillna(medians)
+    return train, val, test, counts
+
+
+def seasonal_naive_predict_mode(
+    df: pd.DataFrame, train: pd.DataFrame, index: pd.Series, lag: int, lag_mode: str
+) -> tuple[np.ndarray, int]:
+    """Seasonal-naive floor under the run's lag semantics; returns (preds, n_imputed).
+
+    Positional (v1): ``shift(lag)`` over the observed sequence — the committed
+    v1 computation. Timestamp (v2): join on ``timestamp - lag hours``; rows
+    whose reference hour is missing get the training-window median of the same
+    join, mirroring the test-window imputation rule.
+    """
+    if lag_mode == "positional":
+        cnt = pd.Series(df[TARGET_COL].to_numpy(), index=df[TIMESTAMP_COL])
+        return seasonal_naive_predict(cnt, index, lag), 0
+    by_ts = df.set_index(TIMESTAMP_COL)[TARGET_COL]  # unique per the DQ gate
+    train_joined = (train[TIMESTAMP_COL] - pd.to_timedelta(lag, unit="h")).map(by_ts)
+    median = float(train_joined.median())
+    joined = (index - pd.to_timedelta(lag, unit="h")).map(by_ts)
+    n_imputed = int(joined.isna().sum())
+    return joined.fillna(median).to_numpy(dtype=float), n_imputed
 
 
 def _xy(split_df: pd.DataFrame, features: list[str]) -> tuple[pd.DataFrame, pd.Series]:
@@ -164,10 +216,9 @@ def select_features(
     cfg: LifecycleConfig, train: pd.DataFrame, val: pd.DataFrame, windows: SplitWindows
 ) -> FeatureSelection:
     """MI ranking (train) + permutation importance (ridge on validation) +
-    correlated-pair pruning. Compatibility note: the committed default
-    (``pruning_rule="drop_higher_mi"``) drops the higher-MI member, so atemp is
-    dropped; the corrected variant (``"keep_higher_mi"``) is scored by the
-    sensitivity arm as a separate artifact."""
+    correlated-pair pruning. The committed v2 recipe keeps the higher-MI member
+    of each pair (``pruning_rule="keep_higher_mi"``, so atemp stays); the v1
+    code default drops it, which is how the disclosed pruning defect arose."""
     X_train, y_train = _xy(train, CANDIDATE_FEATURES)
     X_val, y_val = _xy(val, CANDIDATE_FEATURES)
 
@@ -189,9 +240,10 @@ def select_features(
         for i, a in enumerate(CANDIDATE_FEATURES)
         for b in CANDIDATE_FEATURES[i + 1 :]
     ]
-    # FIXME: the committed comparison drops the higher-MI member, contrary to the
-    # intended lower-MI policy. It stays the default until a rerun refreshes all
-    # artifacts; the sensitivity variant flips it via ``pruning_rule``.
+    # The v1 run dropped the higher-MI member of each pair (the disclosed
+    # pruning defect); the committed v2 recipe keeps it via ``pruning_rule``.
+    # The code default stays ``drop_higher_mi`` so the E4 sensitivity arm's
+    # v1 baseline (params_v1.yaml) reproduces the v1 record.
     pruned_pairs: list[dict[str, Any]] = []
     pruned: set[str] = set()
     for r, a, b in sorted(pairs, key=lambda p: p[0], reverse=True):
@@ -268,10 +320,16 @@ def mi_lollipop_figure(selection: FeatureSelection) -> Any:
         ticktext=names,
         autorange="reversed",
     )
+    if "atemp" in pruned:
+        pruning_note = "This run drops atemp despite its slightly higher MI"
+    elif "temp" in pruned:
+        pruning_note = "This run keeps atemp, the higher-MI member of the pair, and drops temp"
+    else:
+        pruning_note = "No temperature field was pruned"
     add_takeaway(
         fig,
-        f"Grey stems mark pruned fields (|r| > {selection.corr_threshold}). This run "
-        f"drops atemp despite its slightly higher MI; past-count lags dominate.",
+        f"Grey stems mark pruned fields (|r| > {selection.corr_threshold}). "
+        f"{pruning_note}; past-count lags dominate.",
     )
     return fig
 

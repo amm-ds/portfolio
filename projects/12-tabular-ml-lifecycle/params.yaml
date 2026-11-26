@@ -10,6 +10,12 @@ lag_hours:
 - 24
 - 168
 corr_threshold: 0.9
+# v2 recipe (grade pass 5, option B): the two disclosed v1 defects are fixed —
+# pruning keeps the higher-MI member of a correlated pair (keeps atemp), and
+# lags join on timestamp minus h with NaN for missing hours. The v1 recipe is
+# preserved in params_v1.yaml and under metrics.json previous_runs.v1.
+pruning_rule: keep_higher_mi
+lag_mode: timestamp
 ridge_alpha: 1.0
 rf_n_estimators: 300
 rf_max_depth: 32

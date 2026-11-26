@@ -1,23 +1,27 @@
-"""Sensitivity arm for the committed pruning and lag defects (pass-3 P1.2 / E4).
+"""Sensitivity arm for the v1 pruning and lag defects (pass-3 P1.2 / E4).
 
-The committed run carries two known feature defects, disclosed in the article:
-correlated-pair pruning drops ``atemp`` (the higher-MI member of the
-``temp``/``atemp`` pair), and lags are positional shifts that drift across the
-series' 165 missing hours. This module prices both defects without touching
-any committed artifact:
+The v1 run carried two disclosed feature defects: correlated-pair pruning
+dropped ``atemp`` (the higher-MI member of the ``temp``/``atemp`` pair), and
+lags were positional shifts that drift across the series' 165 missing hours.
+Pass 5 promoted the corrected recipe to v2 (option B); v1 is preserved under
+``metrics.json previous_runs.v1`` and ``params_v1.yaml``, and this arm remains
+the reproducible record of the comparison. It prices both defects without
+touching any committed artifact:
 
-1. **Reproduction gate (STOP condition).** The committed recipe is re-derived
-   in memory and its MLP test MAE must match ``reports/metrics.json`` within
-   ``REPRODUCTION_TOLERANCE`` — the same gate pattern project 13's train stage
-   enforces before serving. A failure aborts the arm; nothing is written.
-2. **Corrected variant.** The same ladder runs with ``params_variant.yaml``:
-   pruning keeps the higher-MI member, and lags join on ``timestamp - h`` with
-   NaN for missing hours. NaN-lag rows are dropped from train/validation; the
-   frozen test window keeps all 1,344 rows, with NaN lag cells median-imputed
-   from the training window (counts disclosed in the artifact).
+1. **Reproduction gate (STOP condition).** The v1 recipe (``params_v1.yaml``)
+   is re-derived in memory and its MLP test MAE must match the v1 record
+   within ``REPRODUCTION_TOLERANCE`` — the same gate pattern project 13's
+   train stage enforces before serving. A failure aborts the arm; nothing is
+   written.
+2. **Corrected variant.** The same ladder runs with ``params_variant.yaml``
+   (= the committed v2 recipe): pruning keeps the higher-MI member, and lags
+   join on ``timestamp - h`` with NaN for missing hours. NaN-lag rows are
+   dropped from train/validation; the frozen test window keeps all 1,344 rows,
+   with NaN lag cells median-imputed from the training window (counts
+   disclosed in the artifact).
 3. **Delta pricing.** Per-model paired block-bootstrap CIs of
-   ``MAE(variant) - MAE(committed)`` on the same test hours (negative favors
-   the variant), plus hourly/week-block sensitivity rows for the served MLP.
+   ``MAE(variant) - MAE(committed v1)`` on the same test hours (negative
+   favors the variant), plus hourly/week-block sensitivity rows for the MLP.
 
 The only outputs are ``reports/sensitivity_pruning_lags.json`` and the
 ``sensitivity_pruning_lags`` figure — the committed ``metrics.json`` is never
@@ -39,9 +43,10 @@ from tabular_ml_lifecycle import figures
 from tabular_ml_lifecycle.config import LifecycleConfig
 from tabular_ml_lifecycle.data import TARGET_COL, TIMESTAMP_COL, split_windows
 from tabular_ml_lifecycle.features import (
+    apply_nan_lag_policy,
     apply_split,
     build_features,
-    seasonal_naive_predict,
+    seasonal_naive_predict_mode,
     select_features,
 )
 from tabular_ml_lifecycle.metrics import (
@@ -88,33 +93,13 @@ class ArmResult:
     nan_handling: dict[str, int] = field(default_factory=dict)
 
 
-def _seasonal_naive_test_preds(
-    df: pd.DataFrame, train: pd.DataFrame, test: pd.DataFrame, lag_mode: str
-) -> tuple[np.ndarray, int]:
-    """Floor predictions for one arm; returns (predictions, n_median_imputed).
-
-    Positional mode is the committed computation (``shift(168)`` over the
-    observed sequence). Timestamp mode joins on ``timestamp - 168h``; the few
-    test rows whose reference hour is missing get the training-window median
-    of the same join, mirroring the variant's feature imputation rule.
-    """
-    if lag_mode == "positional":
-        cnt = pd.Series(df[TARGET_COL].to_numpy(), index=df[TIMESTAMP_COL])
-        return seasonal_naive_predict(cnt, test[TIMESTAMP_COL]), 0
-    by_ts = df.set_index(TIMESTAMP_COL)[TARGET_COL]
-    train_joined = (train[TIMESTAMP_COL] - pd.to_timedelta(168, unit="h")).map(by_ts)
-    median = float(train_joined.median())
-    joined = (test[TIMESTAMP_COL] - pd.to_timedelta(168, unit="h")).map(by_ts)
-    n_imputed = int(joined.isna().sum())
-    return joined.fillna(median).to_numpy(dtype=float), n_imputed
-
-
 def run_ladder_arm(cfg: LifecycleConfig) -> ArmResult:
     """Run the full ladder in memory for one config; no artifacts are written.
 
     Mirrors ``features_core`` + the fitting half of ``train_core`` exactly
-    (same seeds, same selection, same estimators), minus figures, learning
-    curves and ablations, which do not feed the test scores.
+    (same seeds, same selection, same estimators, same NaN policy and floor
+    helpers), minus figures, learning curves and ablations, which do not feed
+    the test scores.
     """
     frame_path = cfg.data_dir / "hour.parquet"
     if not frame_path.exists():
@@ -126,27 +111,9 @@ def run_ladder_arm(cfg: LifecycleConfig) -> ArmResult:
     windows = split_windows(len(df), cfg.val_weeks, cfg.test_weeks)
     featured = build_features(df, cfg.lag_hours, cfg.lag_mode)
     train, val, test = apply_split(featured, windows, cfg.max_lag)
-
-    nan_handling = {
-        "train_rows_dropped": 0,
-        "val_rows_dropped": 0,
-        "test_lag_cells_median_imputed": 0,
-        "floor_test_points_median_imputed": 0,
-    }
-    if cfg.lag_mode == "timestamp":
-        # Complete-case train/validation: a row whose lag references a missing
-        # hour carries no honest lag value, so it leaves the fitting windows.
-        # The frozen test window keeps every row; NaN lag cells are imputed
-        # with the training median so all models see identical test features.
-        lag_cols = [f"cnt_lag_{k}h" for k in cfg.lag_hours]
-        nan_handling["train_rows_dropped"] = int(train[lag_cols].isna().any(axis=1).sum())
-        train = train.dropna(subset=lag_cols).reset_index(drop=True)
-        nan_handling["val_rows_dropped"] = int(val[lag_cols].isna().any(axis=1).sum())
-        val = val.dropna(subset=lag_cols).reset_index(drop=True)
-        medians = train[lag_cols].median()
-        nan_handling["test_lag_cells_median_imputed"] = int(test[lag_cols].isna().sum().sum())
-        test = test.copy()
-        test[lag_cols] = test[lag_cols].fillna(medians)
+    train, val, test, nan_handling = apply_nan_lag_policy(
+        train, val, test, cfg.lag_hours, cfg.lag_mode
+    )
 
     selection = select_features(cfg, train, val, windows)
     selected = selection.selected
@@ -154,12 +121,13 @@ def run_ladder_arm(cfg: LifecycleConfig) -> ArmResult:
     X_val, y_val = val[selected], val[TARGET_COL].astype(float)
     y_test = test[TARGET_COL].astype(float).to_numpy()
 
-    floor_pred, floor_imputed = _seasonal_naive_test_preds(df, train, test, cfg.lag_mode)
+    floor_pred, floor_imputed = seasonal_naive_predict_mode(
+        df, train, test[TIMESTAMP_COL], 168, cfg.lag_mode
+    )
     nan_handling["floor_test_points_median_imputed"] = floor_imputed
     test_preds: dict[str, np.ndarray] = {"seasonal_naive": floor_pred}
-    val_mae: dict[str, float] = {"seasonal_naive": np.nan}  # filled below from val window
-    val_floor, _ = _seasonal_naive_test_preds(df, train, val, cfg.lag_mode)
-    val_mae["seasonal_naive"] = mae(y_val.to_numpy(), val_floor)
+    val_floor, _ = seasonal_naive_predict_mode(df, train, val[TIMESTAMP_COL], 168, cfg.lag_mode)
+    val_mae: dict[str, float] = {"seasonal_naive": mae(y_val.to_numpy(), val_floor)}
 
     ridge = ridge_estimator(cfg, selected).fit(X_train, y_train)
     test_preds["ridge"] = np.asarray(ridge.predict(test[selected]), dtype=float)
@@ -209,21 +177,22 @@ def run_sensitivity(
     expected_mae: float | None = None,
     out_path: Path | None = None,
 ) -> Path:
-    """Reproduce the committed run, score the corrected variant, price the delta.
+    """Reproduce the committed v1 run, score the corrected variant, price the delta.
 
-    ``expected_mae`` defaults to the committed ``metrics.json`` MLP MAE; tests
-    pass it explicitly. Writes only ``reports/sensitivity_pruning_lags.json``
-    and the matching figure — committed artifacts are never modified.
+    ``expected_mae`` defaults to the v1 MLP MAE — read from
+    ``metrics.json previous_runs.v1`` when present (post-promotion), else from
+    the top-level ``mlp`` block; tests pass it explicitly. Writes only
+    ``reports/sensitivity_pruning_lags.json`` and the matching figure —
+    committed artifacts are never modified.
     """
     started = time.perf_counter()
     committed_metrics = json.loads((cfg.reports_dir / "metrics.json").read_text())
-    expected = (
-        float(expected_mae) if expected_mae is not None else float(committed_metrics["mlp"]["mae"])
-    )
+    # Post-promotion the committed metrics.json carries v2 at the top level and
+    # the v1 run under previous_runs.v1; the E4 arm's baseline is v1.
+    v1_metrics = committed_metrics.get("previous_runs", {}).get("v1", committed_metrics)
+    expected = float(expected_mae) if expected_mae is not None else float(v1_metrics["mlp"]["mae"])
     committed_test_mae = {
-        name: float(committed_metrics[name]["mae"])
-        for name in MODEL_ORDER
-        if name in committed_metrics
+        name: float(v1_metrics[name]["mae"]) for name in MODEL_ORDER if name in v1_metrics
     }
 
     # Gate 1 — reproduction of the committed run (STOP condition). Same
@@ -305,10 +274,10 @@ def run_sensitivity(
         "artifact": "sensitivity_pruning_lags",
         "generated_by": (
             "uv run python -m tabular_ml_lifecycle.cli sensitivity "
-            "--params-file params.yaml --variant-params-file params_variant.yaml"
+            "--params-file params_v1.yaml --variant-params-file params_variant.yaml"
         ),
         "question": (
-            "What do the committed pruning defect (drops atemp, the higher-MI member "
+            "What do the v1 pruning defect (drops atemp, the higher-MI member "
             "of the temp/atemp pair) and the positional-lag defect (lags drift across "
             "the 165 missing hours) cost the frozen test scores?"
         ),
@@ -317,7 +286,10 @@ def run_sensitivity(
         "test_window_rows": len(baseline.y_test),
         "reproduction": reproduction,
         "committed": {
-            "source": "reports/metrics.json (re-derived in memory for the paired delta)",
+            "source": (
+                "reports/metrics.json v1 blocks (previous_runs.v1 post-promotion; "
+                "re-derived in memory for the paired delta)"
+            ),
             "test_mae": committed_test_mae,
             "rederived_test_mae": baseline.test_mae,
             "rederived_max_abs_diff": max(

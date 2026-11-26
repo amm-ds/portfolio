@@ -149,8 +149,9 @@ def mlp_loss_curves_figure(
     )
     add_takeaway(
         fig,
-        "Training MAE falls early then plateaus near 20-21 while validation stalls; "
-        "the run executes 57 epochs and restores the best checkpoint at epoch 47.",
+        f"Training MAE falls early then plateaus while validation stalls; "
+        f"the run executes {len(train_loss)} epochs and restores the best "
+        f"checkpoint at epoch {best_epoch}.",
     )
     return fig
 
@@ -346,10 +347,15 @@ def residual_vs_fitted_figure(y_true: np.ndarray, y_pred: np.ndarray) -> go.Figu
         xaxis_title="fitted rentals",
         yaxis_title="residual (actual - fitted)",
     )
+    mean_all = float(np.mean(residuals))
+    band = (y_pred >= 300) & (y_pred <= 600)
+    mean_band = float(np.mean(residuals[band])) if band.any() else float("nan")
+    direction = "under-forecast" if mean_all > 0 else "over-forecast"
     add_takeaway(
         fig,
-        "Spread widens with the fitted level. Mean residual is +9.2 overall and "
-        "+28.6 for fitted 300-600 (actual - fitted), indicating under-forecast bias.",
+        "Spread widens with the fitted level. Mean residual is "
+        f"{mean_all:+.1f} overall and {mean_band:+.1f} for fitted 300-600 "
+        f"(actual - fitted), indicating {direction} bias.",
     )
     return fig
 
@@ -387,7 +393,7 @@ def bootstrap_ci_figure(
         showlegend=False,
     )
     fig.update_xaxes(
-        title_text="MAE(floor) - MAE(served MLP), rentals per hour", row=len(methods), col=1
+        title_text="MAE(floor) - MAE(served model), rentals per hour", row=len(methods), col=1
     )
     add_takeaway(
         fig,

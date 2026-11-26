@@ -19,8 +19,8 @@
     "torch_threads": 1
   },
   "runtime": {
-    "train_s": 44.377,
-    "evaluate_s": 13.306
+    "train_s": 61.198,
+    "evaluate_s": 18.48
   },
   "seed": 42,
   "limits": [
