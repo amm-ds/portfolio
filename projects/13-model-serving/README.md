@@ -1,7 +1,7 @@
 # Model API Serving & Docker Deployment
 
 **Working showcase.** The portfolio's model-serving case study: experiment 12's
-served tabular MLP (PyTorch, 25.4316 test MAE on UCI Bike Sharing hourly)
+served LightGBM (23.7636 test MAE on UCI Bike Sharing hourly, v2 recipe)
 re-derived bit-for-bit from its committed recipe, exported to ONNX under a hard
 parity gate, served behind a small FastAPI service with interchangeable
 native/ONNX backends, load-tested by a hand-written async harness, and baked
@@ -31,7 +31,7 @@ the real service as a subprocess per backend; `docker` needs the daemon
 ```bash
 uv run python -m model_serving.cli serve --backend onnx --port 8137
 curl -s -X POST http://127.0.0.1:8137/predict -H 'Content-Type: application/json' \
-  -d '{"row": {"hour": 8, "temp": 0.5, "hum": 0.6, "windspeed": 0.1, "weathersit": 1,
+  -d '{"row": {"atemp": 0.5, "hum": 0.6, "windspeed": 0.1, "weathersit": 1,
        "hour_sin": 0.5, "hour_cos": 0.5, "weekday_sin": 0.0, "weekday_cos": 1.0,
        "month_sin": 0.2, "month_cos": 0.9, "holiday": 0, "workingday": 1,
        "cnt_lag_1h": 120.0, "cnt_lag_24h": 150.0, "cnt_lag_168h": 140.0}}'
@@ -41,9 +41,10 @@ curl -s -X POST http://127.0.0.1:8137/predict -H 'Content-Type: application/json
 - `GET /health` (process alive), `GET /ready` (backend warmed; 503 before).
 - Every response carries a `request_id`; malformed payloads get the standard
   422 shape; unexpected failures get a structured error envelope.
-- The request schema mirrors experiment 12's feature contract exactly: raw
-  `hour` feeds the embedding, the 15 selected numerics feed the trunk,
-  `atemp` never appears (pruned at r = 0.987).
+- The request schema mirrors experiment 12's v2 feature contract exactly: the
+  15 selected numerics, with `atemp` present and `temp` pruned (the v2 rule
+  keeps the higher-MI member of the pair, r = 0.987). Raw hour is not a model
+  input — the cyclical encodings carry it.
 
 ## Docker
 
@@ -62,7 +63,7 @@ The build context is the repository root (uv workspace); the root
 from the context.
 
 The separate `docker-slim` command builds and smoke-tests the ONNX-only
-`Dockerfile.slim` image. Its committed measurement is 291 MB versus 6,466 MB
+`Dockerfile.slim` image. Its committed measurement is 292 MB versus 1,060 MB
 for the full two-backend image; the slim image fixes `SERVING_BACKEND=onnx`
 and records its readiness/prediction smoke in `reports/docker_slim.json`.
 
@@ -78,22 +79,27 @@ and records its readiness/prediction smoke in `reports/docker_slim.json`.
 ## Results
 
 Author run, one laptop (no GPU, one uvicorn worker): the reproduction gate is
-exact (**25.4316 vs 25.4316**) and the ONNX parity max-abs is **7.15e-07** on
-512 seeded probe rows (tolerance 1e-4). Single-request **p50 1.6 ms** (native/ONNX
-p95 **2.0/1.9 ms**, p99 **2.2 ms**; n = **300** requests per cell, nearest-rank) with a
-**~950 req/s** knee near concurrency 4 and zero errors in every measured
-cell; the explicit batch endpoint reaches **~56k rows/s** at size 128. The
-full image measures **6.47 GB**; the smoke-passed ONNX-only slim image is
-**291 MB**. Full record in `reports/metrics.json` and
+exact (**23.7636 vs 23.7636**, experiment 12's committed v2 LightGBM MAE) and
+the ONNX parity max-abs is **2.65e-4 rentals** on 512 seeded probe rows
+(tolerance 1e-4 plus a float32 relative term, limit 6.8e-3). Single-request
+**p50 2.0 ms native** (ONNX 2.4 ms; native p95 **2.9 ms**; n = **300** requests
+per cell, nearest-rank) with a **~1,012 req/s** native knee near concurrency 4
+and zero errors in every measured cell; the explicit batch endpoint reaches
+**28.2k rows/s native** and **40.9k rows/s ONNX** at size 128. The full image
+measures **1,060 MB** (torch is out of the serving path — the v1 MLP image was
+6.5 GB); the smoke-passed ONNX-only slim image is **292 MB**. The v1 study
+(served MLP, 25.4316) is kept under `previous_runs.v1` in
+`reports/metrics.json`. Full record in `reports/metrics.json` and
 `reports/docker_slim.json`.
 
 ## Limits
 
 Numbers, curve shapes, and paired deltas come from one machine with no GPU and
 a single worker — the paired harness is the reusable asset, not demonstrated
-transfer of those observations. The full image contains unused
-CUDA libraries a CPU service never loads; the per-prediction electricity cost
-is a declared-assumption estimate (65 W, $0.30/kWh), not a metered bill.
+transfer of those observations. The full image still carries the train-stage
+HPO stack because it doubles as the re-derivation environment; the per-prediction
+electricity cost is a declared-assumption estimate (65 W, $0.30/kWh), not a
+metered bill.
 
 ## Tests
 
@@ -129,4 +135,3 @@ as experiment 08.
 | batch throughput curve | [reports/figures/batch_throughput_curve.html](reports/figures/batch_throughput_curve.html) |
 | footprint cost bars | [reports/figures/footprint_cost_bars.html](reports/figures/footprint_cost_bars.html) |
 | latency concurrency lines | [reports/figures/latency_concurrency_lines.html](reports/figures/latency_concurrency_lines.html) |
-

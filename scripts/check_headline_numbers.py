@@ -275,19 +275,10 @@ def _m11() -> list[str]:
 
 def _m12() -> list[str]:
     m = _load("projects/12-tabular-ml-lifecycle/reports/metrics.json")
-    point = m["validation_tie_interval"]["point"]
-    minus = chr(0x2212) if point < 0 else ""
-    return [_fmt(m["mlp"]["mae"], 1), f"{minus}{abs(point):.2f}"]
-
-
-def _m12_sensitivity() -> list[str]:
-    """Sensitivity variant MAE + delta CI vs committed (E4, secondary claim)."""
-    s = _load("projects/12-tabular-ml-lifecycle/reports/sensitivity_pruning_lags.json")
-    d = s["delta_variant_minus_committed"]["day_block"]["mlp"]
     return [
-        _fmt(s["variant"]["test_mae"]["mlp"], 1),
-        f"+{_fmt(d['lo'], 1)}",
-        f"+{_fmt(d['hi'], 1)}",
+        _fmt(m["lightgbm_hpo"]["mae"], 1),
+        _fmt(m["analysis"]["mae_improvement_vs_floor_ci"]["point"], 1),
+        _fmt(m["previous_runs"]["v1"]["mlp"]["mae"], 2),
     ]
 
 
@@ -434,14 +425,8 @@ CLAIMS: list[dict[str, Any]] = [
     },
     {
         "project": "12-tabular-ml-lifecycle",
-        "label": "served MAE + tie point",
+        "label": "served LightGBM MAE + floor gain + v1 reference",
         "values": _m12,
-        "surfaces": ["README.md", "story.yaml"],
-    },
-    {
-        "project": "12-tabular-ml-lifecycle",
-        "label": "sensitivity variant MAE + delta CI (secondary claim)",
-        "values": _m12_sensitivity,
         "surfaces": ["README.md", "story.yaml"],
     },
     {

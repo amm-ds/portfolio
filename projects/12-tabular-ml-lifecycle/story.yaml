@@ -1,21 +1,25 @@
 project_id: 12-tabular-ml-lifecycle
-headline: The served tabular MLP (PyTorch) — validation-tied with LightGBM — cuts hourly rental forecasting error to 25.4
-  MAE from 83.2 for the seasonal-naive floor on the frozen 8-week test window (gain 57.8; hourly 95% bootstrap CI 52.5-63.1;
-  week-block sensitivity 38.8-73.4, both excluding zero).
+headline: The served LightGBM — validation-selected under the corrected v2 recipe (timestamp lags, `atemp`
+  kept) — cuts hourly rental forecasting error to 23.8 MAE from 73.0 for the seasonal-naive floor on the
+  frozen 8-week test window (gain 49.2; hourly 95% bootstrap CI 44.4-54.0; week-block sensitivity 33.0-63.8,
+  both excluding zero). v2 fixes two disclosed v1 defects; the v1 run (served MLP 25.43) is kept under
+  `previous_runs.v1`.
 data_note: Real UCI Bike Sharing hour.csv (17,379 hourly rows, Capital Bikeshare 2011-2012, sha256-pinned) plus a seeded synthetic
   CI twin; time-based split.
 limits: Validation made every modeling choice; ablation test scores are post-freeze diagnostics. Hourly errors are serially
-  dependent; positional lags drift up to 36 hours after the October 2012 validation gap; the correlation-pruning rule drops
-  `atemp`, the higher-information member of the `temp`/`atemp` pair; one city over two years/four seasons.
+  dependent. v2 fixed the two disclosed v1 defects — the v1 pruning rule dropped `atemp`, and v1 lags shifted
+  positionally across missing hours; the v1 run is preserved under `previous_runs.v1`. One city over two
+  years/four seasons.
 short_version: |
   Real UCI Capital Bikeshare hourly demand (17,379 rows): the validation-selected
-  PyTorch MLP reaches 25.4 test MAE vs 83.2 for the seasonal-naive floor. The
-  57.8/hour gain has hourly 95% CI 52.5-63.1 and week-block sensitivity 38.8-73.4.
+  LightGBM reaches 23.8 test MAE vs 73.0 for the seasonal-naive floor (v2 recipe:
+  timestamp lags, `atemp` kept). The 49.2/hour gain has hourly 95% CI 44.4-54.0
+  and week-block sensitivity 33.0-63.8.
 sections:
 - id: background
   text_md: |
     **Can a learned model beat last week's bike rentals on a protected `8`-week test window?**
-    We compare linear, tree, and neural models (`Ridge`, `RandomForest`, `LightGBM`, `MLP`) on real hourly `Capital Bikeshare` data against a `seasonal_naive` floor (`83.2` `MAE`).
+    We compare linear, tree, and neural models (`Ridge`, `RandomForest`, `LightGBM`, `MLP`) on real hourly `Capital Bikeshare` data against a `seasonal_naive` floor (`73.0` `MAE`).
 
     ```diagram 12-lifecycle-pipeline
     ```
@@ -23,12 +27,12 @@ sections:
     Follow the lifecycle in three steps:
 
     - **Clean split:** Strip answer-derived columns and lock the final `8`-week window out of training and tuning.
-    - **Compare fairly:** Tune each model family on past validation data and pick the model on validation before touching test; the MLP and LightGBM tie there (34.2 vs 34.4).
-    - **Outcome:** The served tabular `MLP` cuts test error from `83.2` to `25.4` rentals/hour (`−57.8` `MAE`), with block intervals as sensitivity analyses.
+    - **Compare fairly:** Tune each model family on past validation data and pick the model on validation before touching test; LightGBM wins there (`31.9` vs the `MLP`'s `35.1`).
+    - **Outcome:** The served LightGBM cuts test error from `73.0` to `23.8` rentals/hour (`−49.2` `MAE`), with block intervals as sensitivity analyses.
 
     Next, the three checks behind the verdict ([Objectives →](#sec-objectives)).
 
-    **In plain terms:** On real hourly bike-share data, a neural network cuts prediction error from 83 to 25 bikes per hour compared with repeating last week's numbers, even on a protected 8-week test window.
+    **In plain terms:** On real hourly bike-share data, a boosted-tree model cuts prediction error from 73 to 24 bikes per hour compared with repeating last week's numbers, even on a protected 8-week test window.
   figures: []
 - id: objectives
   text_md: |
@@ -89,15 +93,16 @@ sections:
     them would cause target leakage: giving the model answer-derived fields
     that would not be available for a real forecast. Second, `165` hours are
     missing, mostly in early 2011 plus a `36`-hour gap on `2012-10-29/30` inside
-    validation. Lag features shift positions in the observed sequence rather than
-    assume a perfect hourly grid, so they can drift up to `36` hours for about a
-    week after that gap; this affects validation lags and the seasonal-naive floor.
-    The data-quality gate allows at most `2%` missing rows.
+    validation. Under the committed v2 recipe, lag features join on the exact
+    wall-clock hour (`timestamp - h`) and are `NaN` when that hour is missing;
+    rows with unknown lags leave the training and validation windows, while the
+    frozen test window keeps every row with those few lag cells median-imputed
+    from training. The data-quality gate allows at most `2%` missing rows.
 
     The diagram ends with three time-ordered partitions. Training uses the
-    earliest `14,523` rows after the lag warm-up. Validation uses the next 8
-    weeks to choose models and settings. The final 8 weeks, or `1,344` rows,
-    remain the frozen test window.
+    earliest `14,273` rows after the lag warm-up and the complete-case drop.
+    Validation uses the next 8 weeks (`1,301` rows) to choose models and
+    settings. The final 8 weeks, or `1,344` rows, remain the frozen test window.
 
     The split protects the window. The three EDA figures and the
     judging rules are presented next ([EDA →](#sec-eda)).
@@ -144,11 +149,11 @@ sections:
     `mi_lollipop` figure then shows feature selection on the training window.
     Mutual information (MI) measures how much a feature reveals about the
     target, in units called nats. The three past-count lags rank first at
-    MI `0.89` / `0.76` / `0.71` nats, followed by the cyclical hour pair, two fields
+    MI `1.00` / `0.88` / `0.78` nats, followed by the cyclical hour pair, two fields
     that represent the repeating hour as a circle. Longer stems indicate
-    higher MI. Grey stems mark pruned fields. In the committed run, `atemp` drops and `temp`
-    stays even though `atemp` has slightly higher `MI`; the committed rule drops
-    the higher-`MI` member.
+    higher MI. Grey stems mark pruned fields. The committed v2 rule keeps the
+    higher-`MI` member of a correlated pair: `atemp` (`0.161` nats) stays and
+    `temp` (`0.153`) drops.
 
     A second check, permutation importance, measures the validation `MAE`
     increase after shuffling one feature. The probe is ridge, a linear model
@@ -161,32 +166,33 @@ sections:
     The forest uses one job, and the `MLP` uses one thread with seeded
     shuffling. These controls make the training diagnostics repeatable.
 
-    - **Seasonal-naive floor:** validation `MAE` is 88.7 rentals.
-    - **Ridge:** validation `MAE` reaches 68.9. A random forest, which averages
-      many decision trees, reaches 39.5. Their scores show substantial
+    - **Seasonal-naive floor:** validation `MAE` is 62.4 rentals.
+    - **Ridge:** validation `MAE` reaches 56.6. A random forest, which averages
+      many decision trees, reaches 36.2. Their scores show substantial
       learnable signal around the lags.
     - **`LightGBM`:** this boosted-tree library is tuned with `Optuna`, a
       hyperparameter search tool. Hyperparameters are settings chosen before
       training. The study runs `50` trials or `240 s`, whichever comes first,
-      using validation `MAE` and median pruning. It selects `LightGBM` at 34.4.
+      using validation `MAE` and median pruning. It selects `LightGBM` at 31.9.
     - **Hand-written `MLP`:** an 8-dimensional hour embedding feeds hidden
       layers `64→32`, beside standardized numeric features. AdamW uses learning
       rate `1e-3`; batches contain `256` rows. Dropout 0.2 randomly hides units,
       weight decay 1e-4 penalizes large weights, and Huber loss reduces the
       influence of very large errors in standardized-target space. Early stopping
-      uses patience `10`, an epoch cap of `150`, and best-state restore. The served
-      run executes `57` epochs and restores epoch `47`. It reaches 34.2.
+      uses patience `10`, an epoch cap of `150`, and best-state restore. The
+      candidate run executes `26` epochs and restores epoch `16`. It reaches 35.1.
 
-    Read `mlp_loss_curves` at the marked best epoch. Training loss falls early and then plateaus around `20–21`, while validation
+    Read `mlp_loss_curves` at the marked best epoch. Training loss falls early and then plateaus around `21`, while validation
     stalls; this gap motivates the regularization controls.
     In `learning_curves`, compare the tuned tree and `MLP` as the training
-    fraction grows. LightGBM is still descending at the full fraction and the `MLP` is non-monotone,
+    fraction grows. Both curves are non-monotone at the full fraction,
     so these curves do not establish a row-count ceiling or test early stopping.
 
     The regularization ablation, a controlled comparison with settings turned
     on or off, supports early stopping: every early-stopping-off row worsens
-    validation MAE. Dropping dropout improves validation `MAE` by about `2.1`; weight-decay changes
-    are smaller. These ablation comparisons are point estimates without intervals.
+    validation MAE. The dropout-off, weight-decay-off row improves validation `MAE`
+    to `29.5`, about `5.6` rentals below the shipped configuration; it becomes a
+    next-round candidate. These ablation comparisons are point estimates without intervals.
     The results section's dot plot shows that comparison.
 
     **Checkpoint on validation and restore the best state.** Patience stops
@@ -212,10 +218,10 @@ sections:
     The excerpt from [mlp.py](https://github.com/amm-ds/portfolio/blob/main/projects/12-tabular-ml-lifecycle/src/tabular_ml_lifecycle/mlp.py)
     shows the checkpoint rule behind the loss-curve interpretation.
 
-    Validation selects the `MLP`. The fixed measurement chain
+    Validation selects LightGBM. The fixed measurement chain
     behind the test scores is documented next ([Evaluation →](#sec-evaluation)).
 
-    **In plain terms:** Validation picks the neural network at 34.2 bikes/hour error versus 88.7 for repeating last week; the separate ablation shows that turning early stopping off hurts every paired variant.
+    **In plain terms:** Validation picks LightGBM at 31.9 bikes/hour error versus 62.4 for repeating last week; the separate ablation shows that turning early stopping off hurts every paired variant.
   figures: [mi_lollipop, mlp_loss_curves, learning_curves]
   metrics_keys: [seasonal_naive, ridge, random_forest, lightgbm_hpo, mlp]
 - id: evaluation
@@ -233,24 +239,25 @@ sections:
     ```
 
     In `model_comparison`, compare each `MAE` point with the dashed
-    seasonal-naive reference. The floor scores 83.2 and the served `MLP` 25.4.
-    The average gain is 57.8 rentals/hour. The hourly `95%` `CI` is [52.5, 63.1];
-    day-block and week-block sensitivity intervals are [44.2, 71.8] and
-    [38.8, 73.4]. All exclude zero. `MAPE` stays high for every candidate because
+    seasonal-naive reference. The floor scores 73.0 and the served LightGBM 23.8.
+    The average gain is 49.2 rentals/hour. The hourly `95%` `CI` is [44.4, 54.0];
+    day-block and week-block sensitivity intervals are [37.4, 61.2] and
+    [33.0, 63.8]. All exclude zero. `MAPE` stays high for every candidate because
     hourly counts approach zero at 4h. The denominator floor of 1 rental limits
     that effect, but `MAE` remains the primary measure.
 
     In `residual_heatmap`, read the hour-by-season panel beside the
     hour-by-weather panel. Late-December holiday-week hours (the UCI `spring` code)
-    are over-forecast by up to `59` rentals at `17h` and about `20–25` at `7–8h`.
-    UCI `winter` mornings (November to December 20) are under-forecast by up to `51`.
-    Clear-weather mornings (w1-w2 at `8h`) need roughly 40 more bikes than the
-    model predicts. These clusters locate error that a single average hides.
+    are over-forecast by up to `61` rentals at `17h`.
+    UCI `winter` mornings (November to December 20) are under-forecast by up to `32` at `7h`.
+    Bad-weather evenings (w3 at `19h`) are over-forecast by up to `45`, while clear
+    midday hours (w2 at `12h`) are under-forecast by up to `35`. These clusters
+    locate error that a single average hides.
 
     In `residual_vs_fitted`, compare vertical spread across the predicted
     demand level. The spread widens as fitted values rise, so high-demand
-    hours have larger absolute misses. Mean residual (actual minus fitted) is `+9.2` rentals and median is `+2.8`;
-    for fitted values `300–600`, the mean is `+28.6`. The model under-forecasts
+    hours have larger absolute misses. Mean residual (actual minus fitted) is `+4.3` rentals and median is `+1.4`;
+    for fitted values `300–600`, the mean is `+13.7`. The model under-forecasts
     on average, especially in that high-demand band.
 
     This protocol prevents test-driven selection. One test window confirms
@@ -261,38 +268,39 @@ sections:
     The chain is fixed. The ledger table and the ablation evidence
     follow ([Results →](#sec-results)).
 
-    **In plain terms:** On the protected 8-week test window, the neural network cuts error by 57.8 bikes per hour (with uncertainty ranges clearly above zero), and error maps pinpoint rush-hour and weather gaps.
+    **In plain terms:** On the protected 8-week test window, the boosted-tree model cuts error by 49.2 bikes per hour (with uncertainty ranges clearly above zero), and error maps pinpoint rush-hour and weather gaps.
   figures: [model_comparison, residual_heatmap, residual_vs_fitted]
 - id: results
   text_md: |
-    **The served MLP cuts error from 83.2 to 25.4 rentals/hour, but it does
-    not beat LightGBM, which is 0.06 lower on test.** Use the exact table for
+    **The served LightGBM cuts error from 73.0 to 23.8 rentals/hour on the
+    corrected v2 recipe; v1 remains for comparison.** Use the exact table for
     model scores and `ablation_dotplot` for validation effects of switching
     `MLP` controls on or off. The ablation figure does not establish the
     served-model-versus-floor margin.
 
-    - The table records the decision-relevant margin: **83.2 → 25.4 test `MAE`,
-      or 57.8 rentals/hour** against the seasonal-naive floor. Validation chose
+    - The table records the decision-relevant margin: **73.0 → 23.8 test `MAE`,
+      or 49.2 rentals/hour** against the seasonal-naive floor. Validation chose
       the served model before test confirmation.
+    - v2 fixes two disclosed v1 defects: pruning now keeps `atemp` (the
+      higher-information member of the `temp`/`atemp` pair), and lags join by
+      timestamp instead of drifting across missing hours. The corrected `MLP`
+      is worse than v1's (`27.16` vs `25.43`); the corrected LightGBM is better
+      (`23.76` vs `25.37`) and is now the served model. The v1 run is preserved
+      under `previous_runs.v1` in `reports/metrics.json`, and the paired v1→v2
+      comparison with intervals stays in `reports/sensitivity_pruning_lags.json`.
     - In `ablation_dotplot`, look for the lowest validation point and compare
-      it with the teal shipped configuration. A dropout-off row reaches 32.1,
-      about `2.1` rentals better; it becomes a next-round candidate. The configuration
-      fixed in `params.yaml` before the ablation still stands by protocol, not because
-      it won the ablation. All four early-stopping-off
-      rows worsen validation MAE. Variant test scores are recorded separately
-      as post-freeze diagnostics and never select a variant.
-    - The table also shows a statistical dead heat between `MLP` and LightGBM.
-      Validation selects the `MLP` at 34.2 versus 34.4. On the test pass,
-      `LightGBM`'s `MAE` is `0.06` rentals lower, while the `MLP` has better `RMSE` at
-      39.3 versus 40.2. The `MLP` remains the deliverable because its training
-      loop and controls are visible and measured.
-    - A corrected variant (keeps `atemp`, joins lags by timestamp) scores MAE
-      `27.2` [CI `+0.6`–`+2.8` vs committed] on the same frozen window — worse,
-      not better, for the served `MLP`. The same fixes help `LightGBM` (`23.8`,
-      delta `−1.6` [CI `−3.0`–`−0.4`]) and the date-aware floor (`73.0` vs
-      `83.2`), recorded per candidate in `reports/sensitivity_pruning_lags.json`
-      and priced in `sensitivity_pruning_lags`. The headline keeps the committed
-      run; project 13 serves the committed model.
+      it with the teal shipped configuration. The dropout-off, weight-decay-off
+      row reaches `29.5`, about `5.6` rentals better; it becomes a next-round
+      candidate. The configuration fixed in `params.yaml` before the ablation
+      still stands by protocol, not because it won the ablation. All four
+      early-stopping-off rows worsen validation MAE. Variant test scores are
+      recorded separately as post-freeze diagnostics and never select a variant.
+    - The table also shows LightGBM ahead of the `MLP` under v2. Validation
+      selects LightGBM at `31.9` versus `35.1`, and the paired validation
+      interval (`MLP` − LightGBM `+3.2` [CI `+1.8`, `+4.5`]) excludes zero — no
+      tie. On the test pass LightGBM leads on `MAE` (`23.8` vs `27.2`) and the
+      `MLP` holds the better `MAPE` (`47.7%` vs `53.3%`); LightGBM also has the
+      better `RMSE` (`37.1` vs `40.4`).
     - Neither the table nor the ablation figure measures transfer. The study
       covers one city over two years and four seasons, with holidays reduced
       to binary flags, meaning simple yes/no indicators. Use on another fleet
@@ -304,18 +312,18 @@ sections:
     The evidence is recorded. The exact tables and protocol
     are kept in the conclusions ([Conclusions →](#sec-conclusions)).
 
-    **In plain terms:** The served neural network achieves 25.4 bikes/hour test error versus 83.2 for repeating last week, with rush-hour peaks leaving the clearest room for future improvement.
+    **In plain terms:** The served LightGBM achieves 23.8 bikes/hour test error versus 73.0 for repeating last week, with rush-hour peaks leaving the clearest room for future improvement.
   figures: [ablation_dotplot, sensitivity_pruning_lags]
 - id: conclusions
   text_md: |
     ## What the experiment taught
 
     In `bootstrap_ci`, compare the hourly, day-block and week-block histograms
-    and interval bounds. The tabular `MLP` records 25.4 test `MAE` against 83.2
-    for the seasonal-naive floor. The gain is 57.8 rentals/hour with an hourly
-    `95%` `CI` of [52.5, 63.1], day-block [44.2, 71.8], and week-block [38.8, 73.4]
-    over the frozen 8-week window. All exclude zero. Validation `MAE` chose the
-    served `MLP` at 34.2 before its test score. The block panels quantify sensitivity
+    and interval bounds. The served LightGBM records 23.8 test `MAE` against 73.0
+    for the seasonal-naive floor. The gain is 49.2 rentals/hour with an hourly
+    `95%` `CI` of [44.4, 54.0], day-block [37.4, 61.2], and week-block [33.0, 63.8]
+    over the frozen 8-week window. All exclude zero. Validation `MAE` chose
+    LightGBM at 31.9 before its test score. The block panels quantify sensitivity
     to serial dependence on the same window; they do not measure selection
     variance, provide new confirmation data, or establish deployment transfer.
     [Full evaluation report](https://amm-ds.github.io/portfolio/projects/12-tabular-ml-lifecycle/).
@@ -323,21 +331,25 @@ sections:
     - The floor is the first model to build. The `bootstrap_ci` intervals on
       the gain, not the point estimate alone, are the ship/no-ship evidence.
     - Mutual information and the ridge permutation probe select the same lag set
-      but order two lags differently. The committed correlated-pair record drops
-      `atemp` and keeps `temp`, despite `atemp`'s slightly higher `MI`; correcting
-      that implementation requires a fresh run rather than a prose-only fix.
-    - On these tabular features, the tuned boosted tree and hand-written `MLP`
-      are effectively tied. The `MLP` remains the deliverable because its loop,
-      controls, and per-epoch evidence are explicit.
-    - Every early-stopping-off row worsens validation `MAE`. Dropout-off improves
-      it by about `2.1`, so dropout is a real next-round candidate; weight-decay
-      differences are smaller. Its test
-      scores are post-freeze diagnostics, not choices.
+      but order two lags differently. The v2 correlated-pair rule keeps `atemp`
+      and drops `temp`, matching `atemp`'s slightly higher `MI`; the v1 rule did
+      the opposite, and the paired v1→v2 record (`sensitivity_pruning_lags`)
+      prices both defects per candidate.
+    - On these tabular features under v2, the tuned boosted tree beats the
+      hand-written `MLP` on validation (`31.9` vs `35.1`, interval excludes
+      zero) and on test (`23.8` vs `27.2`). The `MLP` stays in the ladder as a
+      candidate with its loop, controls, and per-epoch evidence explicit.
+    - Every early-stopping-off row worsens validation `MAE`. The dropout-off,
+      weight-decay-off row reaches `29.5` validation — below the served
+      LightGBM's `31.9` — so it is a real next-round candidate, but it is a
+      post-freeze diagnostic: it was never a selection input, and its `23.4`
+      test score does not make it the served model.
     - Residuals depend on the regime: fitted values `300–600` under-forecast by
-      `+28.6` rentals on average, while the late-December holiday week is
+      `+13.7` rentals on average, while the late-December holiday week is
       over-forecast. This motivates calendar-event features.
-    - The October 2012 validation gap can shift positional lags and the seasonal
-      floor by up to `36` hours for about a week.
+    - Date-aware lags cost the `MLP` and the positional floor differently: the
+      corrected floor drops to `73.0` from `83.2`, so the v2 gain (`49.2`) is
+      smaller than v1's (`57.8`) even though the served model improved.
 
     ## Limits
 
@@ -348,21 +360,19 @@ sections:
     - Hourly errors are serially dependent. Day/week block intervals are wider
       than the hourly interval; they are sensitivity analyses, not independent
       confirmations.
-    - Lags are positional. For about a week after the 36-hour October 2012 gap,
-      `lag_168` and the seasonal-naive floor can read a value about 36 hours off;
-      `lag_24` is shifted for about a day and a half. This affects validation.
-    - A corrected variant (keeps `atemp`, joins lags by timestamp) scores MAE
-      `27.2` [CI `+0.6`–`+2.8` vs committed]: fixing the two disclosed defects
-      does not improve the served `MLP` on this window — the delta is worse, not
-      better. The headline keeps the committed run; project 13 serves the
-      committed model.
+    - v2 fixed the two disclosed v1 defects: the v1 pruning rule dropped
+      `atemp`, and v1 lags shifted positionally, drifting up to 36 hours after
+      the October 2012 gap. The v1 run is preserved under `previous_runs.v1`;
+      the corrected `MLP` is worse than v1's (`27.16` vs `25.43`), the
+      corrected LightGBM better (`23.76` vs `25.37`).
     - `MAPE` denominators are floored at 1 rental. Near-zero hours keep `MAPE`
       high for every candidate, so read `MAE` first.
     - One city over two years/four seasons, and holiday effects as binary flags,
-      limit the evidence. Mean residual is `+9.2`, so under-forecast bias and the
+      limit the evidence. Mean residual is `+4.3`, so under-forecast bias and the
       late-December holiday week remain open. Transfer is plausible, not measured.
-    - The `MLP` vs `LightGBM` test-MAE gap (`25.43` vs `25.37`) is negligible.
-      The served-model label comes from validation, not a neural-network victory.
+    - The best ablation row (dropout-off, weight-decay-off) beats the served
+      LightGBM on validation (`29.5` vs `31.9`) but was never a selection
+      candidate; promoting it requires its own frozen-protocol run.
 
     ## Exact numbers
 
@@ -371,26 +381,25 @@ sections:
 
     | candidate | val MAE | test MAE | test RMSE | test MAPE |
     |---|---|---|---|---|
-    | seasonal-naive floor | 88.7 | 83.2 | 134.0 | 153.2% |
-    | ridge | 68.9 | 51.1 | 77.8 | 86.4% |
-    | random forest | 39.5 | 26.3 | 45.7 | 25.7% |
-    | lightgbm_hpo | 34.40 | 25.37 | 40.21 | 27.4% |
-    | mlp (served; validation tie with lightgbm_hpo) | 34.22 | 25.43 | 39.32 | 33.7% |
+    | seasonal-naive floor | 62.4 | 73.0 | 120.0 | 129.9% |
+    | ridge | 56.6 | 48.7 | 72.2 | 101.1% |
+    | random forest | 36.2 | 26.1 | 42.4 | 62.5% |
+    | lightgbm_hpo (served) | 31.94 | 23.76 | 37.10 | 53.3% |
+    | mlp | 35.13 | 27.16 | 40.42 | 47.7% |
 
-    The MLP-LightGBM validation difference is a tie: paired bootstrap on
-    validation `MAE` (`MLP` − `LightGBM`) gives `−0.18` with `95%` `CI` [`−1.71`, `+1.21`]
+    The MLP-LightGBM validation difference is decisive, not a tie: paired bootstrap on
+    validation `MAE` (`MLP` − `LightGBM`) gives `+3.19` with `95%` `CI` [`+1.79`, `+4.54`]
     (`2,000` seeded resamples, `metrics.json:validation_tie_interval`) — the
-    interval spans zero, so the `MLP` stays the served artifact without a
-    champion label.
+    interval excludes zero in LightGBM's favor, so LightGBM is the served artifact.
 
-    Served-model-vs-floor `MAE` gap: `57.77` rentals/hour over `2,000` paired resamples
-    per method. Hourly `95%` `CI` [`52.49`, `63.07`]; 24-hour block [`44.21`, `71.83`];
-    168-hour block [`38.82`, `73.41`]. Every interval excludes zero. `LightGBM` HPO
+    Served-model-vs-floor `MAE` gap: `49.21` rentals/hour over `2,000` paired resamples
+    per method. Hourly `95%` `CI` [`44.43`, `53.99`]; 24-hour block [`37.37`, `61.16`];
+    168-hour block [`33.00`, `63.84`]. Every interval excludes zero. `LightGBM` HPO
     runs `50` `Optuna` trials or `240 s`, whichever comes first; `learning_curves`
-    records best validation `MAE` `34.397`. The `MLP` epoch cap is `150`; per-variant
+    records best validation `MAE` `31.939`. The `MLP` epoch cap is `150`; per-variant
     epoch counts are not committed. Every early-stopping-off ablation row worsens validation `MAE`. The best validation row is
-    dropout-off + early-stopping-on (`32.13` validation, `25.0` post-freeze test
-    diagnostic), about 2 validation rentals below the shipped configuration;
+    dropout-off + weight-decay-off + early-stopping-on (`29.52` validation, `23.4` post-freeze test
+    diagnostic), about 5.6 validation rentals below the shipped configuration;
     no test diagnostic selects a variant.
 
     ## Protocol
@@ -399,12 +408,14 @@ sections:
       The previous 8 weeks are validation for HPO, early stopping, and model
       selection; the shipped ablation configuration is fixed in `params.yaml`
       before the ablation. Training uses everything
-      earlier, `14,523` rows after the 168-row lag warm-up, and never reads test.
+      earlier, `14,273` rows after the 168-row lag warm-up and the complete-case
+      drop, and never reads test.
       Post-freeze evaluation refits deterministic ablation variants to record
-      test diagnostics. Lag features read only the past. The UCI zip is
+      test diagnostics. Lag features read only the past, joined on
+      `timestamp - h` under the v2 recipe. The UCI zip is
       SHA-256-gated, and the 165 real missing hours are bounded by a `2%` DQ gate.
       Most gaps are in early 2011; a 36-hour gap on 2012-10-29/30 lies inside
-      validation, where lags are positional.
+      validation, where `NaN`-lag rows leave the fitting windows.
     - **Judging:** `MAE` in rentals/hour is primary, `RMSE` secondary, and `MAPE`
       is floored at 1 rental. The seasonal-naive floor is the comparator.
     - **Uncertainty:** `2,000` paired hourly resamples produce the primary `CI`;
@@ -413,11 +424,11 @@ sections:
       window and do not measure selection variance.
     - **Synthetic twin:** the same-schema, seeded generator supports `CI`
       evidence only and never substitutes for real-data results.
-    - **Compute:** seed 42 throughout; train stage `44.4 s` plus evaluate `13.3 s`
+    - **Compute:** seed 42 throughout; train stage `61.2 s` plus evaluate `18.5 s`
       on a recorded 16-core arm64 host, with torch pinned to one thread. Evaluation
       includes the eight deterministic post-freeze ablation refits.
 
-    **In plain terms:** Keep the neural network—it beats repeating last week by 57.8 bikes per hour on the protected 8-week test window, and any future challenger must beat it under the exact same time-split rules.
+    **In plain terms:** Keep LightGBM—it beats repeating last week by 49.2 bikes per hour on the protected 8-week test window, and any future challenger must beat it under the exact same time-split rules.
 
   figures: [bootstrap_ci]
 roadmap:
@@ -425,26 +436,26 @@ roadmap:
   title: Build the leakage-safe training pipeline
   detail: Frozen test window; 26 DQ gates; sha256-pinned source; CI twin.
 - status: shipped
-  title: Serve the validation-tied MLP
-  detail: Served MLP records 25.4 test MAE versus the floor's 83.2.
+  title: Serve the validation-selected LightGBM
+  detail: Served LightGBM records 23.8 test MAE versus the floor's 73.0.
+- status: shipped
+  title: Fix the v1 pruning and lag defects (v2)
+  detail: 'atemp kept, timestamp lags; v1 kept under previous_runs.v1.'
 - status: shipped
   title: Bound the floor gap with block bootstraps
   detail: Hourly, day-block, and week-block 95% CIs all exclude zero.
-- status: shipped
-  title: Label ablation scores as post-freeze diagnostics
-  detail: Variant test scores never select a variant; diagnostics only.
 - status: next
-  title: Correct pruning and test holiday features
-  detail: 'Gate: validation MAE ≤34.2 and reduced late-December residual.'
+  title: Test holiday features and the ablation MLP variant
+  detail: 'Gate: validation MAE ≤31.9 and reduced late-December residual.'
 key_concepts:
 - '**Seasonal-naive floor:** predict the count at the same hour last week. Every candidate must beat this simple baseline,
   with an interval on the gain.'
 - '**Frozen test window:** each candidate receives one final-window score. Every modeling choice uses validation; ablation
   test scores are post-freeze diagnostics.'
-- '**Positional lags:** past-only shifts over the observed sequence. They make the treatment of missing hours explicit in
-  the feature contract.'
-- '**Feature-selection record:** mutual information and a ridge permutation probe inform selection; the committed run drops atemp
-  and keeps temp despite atemp having slightly higher mutual information.'
+- '**Date-aware lags:** past-only joins on timestamp minus h. A missing reference hour yields NaN, so the treatment of
+  missing hours is explicit in the feature contract (v2; v1 shifted positionally).'
+- '**Feature-selection record:** mutual information and a ridge permutation probe inform selection; the v2 rule keeps atemp
+  and drops temp, matching atemp''s slightly higher mutual information (v1 did the opposite).'
 - '**Hand-written training loop:** the PyTorch MLP exposes seeded initialization, Huber loss, early stopping, and per-epoch
   evidence of overfitting.'
 - '**Paired block bootstrap:** resample the same intact day/week blocks for both models to test sensitivity to hourly serial
@@ -455,12 +466,12 @@ figure_captions:
   temp_vs_rentals: Rentals versus temperature, colored by season. Compare equal temperatures across colors. Ridership rises
     within a season's band, but the same temperature can map to different demand by season.
   correlation_heatmap: Correlation heatmap for numeric features and rentals. Stronger colors indicate closer movement together.
-    temp and atemp are near-duplicates (r = 0.99), so pruning drops atemp and keeps temp.
+    temp and atemp are near-duplicates (r = 0.99), so pruning keeps atemp (the higher-MI member) and drops temp.
   mi_lollipop: Mutual-information ranking of 16 candidate features on the training window. Longer stems mean more information.
-    Grey stems mark pruned fields; the committed run drops atemp despite its slightly higher MI, and past-count lags dominate.
-  mlp_loss_curves: Per-epoch train and validation MAE for the PyTorch MLP, with the best epoch marked. Training falls early then plateaus near 20–21
+    Grey stems mark pruned fields; the v2 rule keeps atemp, the higher-MI member of the temp/atemp pair, and past-count lags dominate.
+  mlp_loss_curves: Per-epoch train and validation MAE for the PyTorch MLP, with the best epoch marked. Training falls early then plateaus near 21
     while validation stalls, exposing the gap that regularization controls address.
-  learning_curves: Validation MAE versus training-set fraction for tuned LightGBM and the MLP. LightGBM still descends at the full fraction and the MLP is non-monotone;
+  learning_curves: Validation MAE versus training-set fraction for tuned LightGBM and the MLP. Both curves are non-monotone at the full fraction;
     these curves do not establish a row-count ceiling or early-stopping benefit.
   model_comparison: One frozen test MAE per candidate, with the seasonal-naive floor as the dashed grey reference. Compare
     points with that reference. The served model is the validation leader, never the lowest test-score selector.
@@ -468,12 +479,12 @@ figure_captions:
     on the frozen test window, on one shared diverging scale centered at zero. Red means over-forecast and blue means under-forecast;
     compare colors across both panels to locate structured misses.
   residual_vs_fitted: Residual versus fitted value on the test window. Read vertical spread from left to right. Spread widens
-    with predicted demand; mean residual is +9.2 overall and +28.6 for fitted 300–600, indicating under-forecast bias.
+    with predicted demand; mean residual is +4.3 overall and +13.7 for fitted 300–600, indicating under-forecast bias.
   ablation_dotplot: MLP regularization ablation (2x2x2) on validation MAE, with teal marking the shipped configuration. Compare
     the lowest validation point with teal. Early stopping matters; variant test scores appear separately as post-freeze diagnostics.
   bootstrap_ci: Three histograms of 2,000 paired resamples each — hourly rows, 24-hour blocks, and 168-hour blocks — for the
-    served-model vs floor MAE gain on the frozen test window. The 95% CIs are [52.5, 63.1], [44.2, 71.8], and [38.8, 73.4].
+    served-model vs floor MAE gain on the frozen test window. The 95% CIs are [44.4, 54.0], [37.4, 61.2], and [33.0, 63.8].
     Wider block intervals show serial-dependence sensitivity, not model-selection variance.
-  sensitivity_pruning_lags: Test-MAE delta of the corrected variant (keeps atemp, joins lags by timestamp) minus the committed
-    run per candidate, with paired 24-hour block-bootstrap 95% CIs. Left of zero favors the variant. LightGBM gains 1.6 while
-    the served MLP worsens by 1.7 [CI +0.6 to +2.8], so the committed headline stands; project 13 serves the committed model.
+  sensitivity_pruning_lags: Test-MAE delta of the corrected v2 recipe (keeps atemp, joins lags by timestamp) minus the v1
+    run per candidate, with paired 24-hour block-bootstrap 95% CIs. Left of zero favors v2. LightGBM gains 1.6 while
+    the MLP worsens by 1.7 [CI +0.6 to +2.8]; v2 is now the committed run and v1 is kept under previous_runs.v1.

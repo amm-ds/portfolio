@@ -1,22 +1,23 @@
 # 13 · Model API Serving & Docker Deployment
 
 **Domain:** model serving & deployment ·
-**Data:** served MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly, sha256-pinned) ·
+**Data:** served LightGBM re-derived from experiment 12's committed v2 recipe (UCI Bike Sharing hourly, sha256-pinned) ·
 **Status:** working showcase —
 [Project README](https://github.com/amm-ds/portfolio/tree/main/projects/13-model-serving) ·
 [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/13-model-serving/DESIGN.md) ·
 [Dataset card](https://amm-ds.github.io/portfolio/data-registry/bike-sharing/)
 
-> Project 12's MLP (25.4316 test MAE) is rebuilt and exported to ONNX behind a 7.2e-07 parity gate. One
-> FastAPI schema serves both backends. Paired tests: 1.6 ms p50, ~950 req/s knee, ~56k rows/s batched; image
-> 6.5 GB, or 291 MB ONNX-only.
+> Project 12's v2 LightGBM (23.7636 test MAE) is rebuilt and exported to ONNX
+> behind a 2.6e-4-rental parity gate. One FastAPI schema serves both backends.
+> Paired tests: 2.0 ms p50 native, ~1,012 req/s knee, 28k-41k rows/s batched;
+> image 1,060 MB, or 292 MB ONNX-only.
 
 **TL;DR:** teams asking what serving a selected tabular model actually
 looks like — latency percentiles, a throughput knee, batch curves, memory,
 image size, and a cost line with its assumptions written down. Three gates
 stand before any benchmark number is trusted: the served artifact must be
-the selected model (re-derived from the committed recipe, bit for bit), the
-export must compute the same function as the native model (parity gate),
+the selected model (re-derived from the committed v2 recipe, bit for bit),
+the export must compute the same function as the native model (parity gate),
 and the measurement must be paired, warmed, and seeded. The reusable asset
 is the protocol; absolute numbers, curve shapes, and paired deltas are all
 host-specific observations to re-measure on the target deployment.
@@ -27,14 +28,16 @@ host-specific observations to re-measure on the target deployment.
 
 The study does not import experiment 12 — workspace members are siblings,
 not deps — it re-implements the tiny recipe: the same pinned zip, the same
-cyclical features and past-only lags, the same selection rule (15 features,
-`atemp` pruned at r = 0.987), the same hour-embedding MLP, the same seed
-42. The re-derived frame checksum matches experiment 12's dataset contract
-and the model lands on the same test MAE digit for digit (25.4316) before
-anything is exported. The ONNX export (opset 17, dynamic batch) then faces
-a hard parity gate: 512 seeded probe rows across the legal feature
-envelope, native vs ONNX Runtime within 1e-4 max-abs on the raw network
-output — measured at 7.15e-07, three orders inside the gate.
+cyclical features and date-aware lags joined on `timestamp - h`, the same
+selection rule (15 features, `atemp` kept over `temp` at r = 0.987), the
+same seeded Optuna study and final fit, the same seed 42. The re-derived
+frame checksum matches experiment 12's dataset contract and the model lands
+on the same test MAE digit for digit (23.7636) before anything is exported.
+The v2 MLP (27.16) is the cited validation runner-up, not the served model.
+The ONNX export (opset 15, dynamic batch) then faces a hard parity gate:
+512 seeded probe rows across the legal feature envelope, native vs ONNX
+Runtime within 1e-4 max-abs plus a float32 relative term on the raw
+prediction — measured at 2.65e-4 rentals, about 26× inside the limit.
 
 One small FastAPI service serves either backend behind a `--backend
 native|onnx` flag — a pydantic request schema mirroring the feature
@@ -51,10 +54,10 @@ Latency percentiles, concurrency sweep at 300 requests per cell:
 
 | concurrency | native p50 ms | onnx p50 ms | native req/s | onnx req/s |
 |---|---|---|---|---|
-| 1 | 1.6 | 1.6 | 595 | 612 |
-| 4 | 4.0 | 3.9 | 933 | 970 |
-| 16 | 25.2 | 26.1 | 470 | 470 |
-| 64 | 65.4 | 63.1 | 628 | 716 |
+| 1 | 2.0 | 2.4 | 452 | 237 |
+| 4 | 3.7 | 6.9 | 1,012 | 528 |
+| 16 | 26.5 | 35.6 | 468 | 317 |
+| 64 | 68.6 | 125.5 | 606 | 332 |
 
 Explicit batch endpoint, rows/s at sizes 1/8/32/128. Per-request latency
 stays comparatively flat under saturation; the figure does not separate
@@ -62,31 +65,33 @@ queueing from computation or test dynamic request batching:
 
 | batch size | native rows/s | onnx rows/s |
 |---|---|---|
-| 1 | 577 | 513 |
-| 8 | 4,425 | 5,104 |
-| 32 | 16,797 | 18,674 |
-| 128 | 55,806 | 57,451 |
+| 1 | 429 | 382 |
+| 8 | 3,975 | 4,432 |
+| 32 | 13,645 | 19,209 |
+| 128 | 28,223 | 40,872 |
 
-Throughput climbs to a knee near 950 req/s around concurrency 4; past it
-the co-located driver contends for the same CPU and the curve reshuffles —
-high-concurrency cells measure contention, not pure service capacity, and
-ONNX's up-to-15% leads at the saturated cells read as scheduling noise on
-a shared CPU, not capability. The footprint story is measured, not
-estimated: fresh-process RSS 298 vs 318 MB (native vs ONNX), and a 6.47 GB
-image — 145 MB base, 6.19 GB venv, 1 MB model — dominated by torch and the
-CUDA libraries a CPU service never loads. A `chown` after `COPY` once
-doubled the venv layer; measuring found it. Electricity uses the
-committed concurrency-16 throughput basis: ~$1.15e-05 per 1k predictions at
-a declared 65 W and $0.30 per kWh. That cost basis is not the concurrency-4
+Native throughput climbs to a knee near 1,012 req/s around concurrency 4;
+past it the co-located driver contends for the same CPU and the curve
+reshuffles — high-concurrency cells measure contention, not pure service
+capacity, and the backend gaps read as scheduling noise on a shared CPU,
+not capability. The footprint story is measured, not estimated:
+fresh-process RSS 213 vs 113 MB (native vs ONNX), and a 1,060 MB image —
+145 MB base, 983 MB venv, 2 MB model. Torch is out of the serving path
+entirely; the v1 MLP image measured 6.5 GB with its torch and CUDA stack.
+Electricity uses the committed concurrency-16 throughput basis:
+~$1.16e-05 native and ~$1.71e-05 ONNX per 1k predictions at a declared
+65 W and $0.30 per kWh. That cost basis is not the concurrency-4
 throughput knee, and the wattage is an assumption, not a measurement.
 
-![Three honest footprints: fresh-process RSS, the measured 6.47 GB image broken into base, venv and model, and electricity cost per 1k predictions at the committed concurrency-16 basis.](../assets/projects/13-model-serving/footprint_cost_bars.png){ width="100%" }
+![Three honest footprints: fresh-process RSS, the measured 1,060 MB image broken into base, venv and model, and electricity cost per 1k predictions at the committed concurrency-16 basis.](../assets/projects/13-model-serving/footprint_cost_bars.png){ width="100%" }
 
 The full protocol (reproduction gate, 512-row parity probe grid, paired
 benchmark with warm-up excluded and median-of-3 repeats, fresh-process RSS
 probes, multi-stage Docker build with healthcheck-gated readiness),
 versions and hardware live in `reports/evaluation_metadata.json`;
 per-cell tables and figures in `reports/`. The measured ONNX-only slim image
-is 291 MB and passes its readiness/prediction smoke; the full image retains
-both backends. Deliberately skipped: TLS/auth, multi-worker serving, GPU
-serving, and a torch-free native-backend image.
+is 292 MB (3.6× smaller than the full image) and passes its
+readiness/prediction smoke; the full image retains both backends. The v1
+study (served MLP, 25.4316) is kept under `previous_runs.v1` in
+`reports/metrics.json`. Deliberately skipped: TLS/auth, multi-worker
+serving, GPU serving.

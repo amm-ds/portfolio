@@ -28,9 +28,9 @@ Everything from raw frame to metric follows one contract:
 raw zip ──▶ sha256 gate ──▶ hour.csv ──▶ DQ gates (26 checks)
       ──▶ time split: train | validation 8wk | frozen test 8wk
       ──▶ features: cyclical hour/weekday/month, calendar binaries,
-          lags 1h/24h/168h (past-only, positional)
+          lags 1h/24h/168h (past-only, joined on timestamp - h)
       ──▶ selection: MI (train) + permutation (ridge on validation)
-          + correlated-pair pruning (committed run drops atemp and keeps temp, despite atemp's higher MI)
+          + correlated-pair pruning (v2 keeps atemp, the higher-MI member)
       ──▶ ladder, every run seeded:
           seasonal naive | ridge | random forest | LightGBM + Optuna HPO
           | tabular MLP (PyTorch, hand-written loop)
@@ -43,18 +43,20 @@ raw zip ──▶ sha256 gate ──▶ hour.csv ──▶ DQ gates (26 checks)
   fitted step inside the sklearn Pipeline (train statistics only); the first
   168 training rows lose their NaN lag rows. `casual`/`registered` are
   dropped — they sum to the target.
-- **Positional lags, stated:** the UCI series has 165 missing hours, mostly
-  early 2011 plus a 36-hour gap on 2012-10-29/30 inside validation. Lags are
-  positional shifts over the observed sequence, so lag 168 and the seasonal floor
-  can drift up to 36 hours for about a week after that gap; lag 24 is shifted for
-  about a day and a half. The DQ gate bounds the missing fraction at 2% instead
-  of demanding a perfect grid.
-- **The MLP is a first-class citizen, not a victory lap:** cyclical-hour
+- **Date-aware lags, stated:** the UCI series has 165 missing hours, mostly
+  early 2011 plus a 36-hour gap on 2012-10-29/30 inside validation. Under the
+  committed v2 recipe, lags join on `timestamp - h` and are NaN when that hour
+  is missing; NaN-lag rows leave train/validation (complete-case), and the
+  frozen test window keeps every row with those few lag cells median-imputed
+  from training. The v1 run shifted lags positionally; it is preserved under
+  `previous_runs.v1`.
+- **The MLP is a first-class candidate, not a victory lap:** cyclical-hour
   `nn.Embedding` + numeric trunk, AdamW, dropout, weight decay, Huber loss
   (smooth MAE surrogate in standardized-y space), early stopping on the
   validation window with best-state restore, per-epoch train/validation loss
   curves, and a 2x2x2 ablation (dropout x weight decay x early stopping).
-  It ships even where trees win — the loop itself is the deliverable.
+  Under v2 it loses validation to LightGBM and stays in the ladder as a
+  candidate — the loop itself is the deliverable.
 - **Overfitting controls as artifacts:** `mlp_loss_curves`, `learning_curves`
   (LightGBM + MLP), and `ablation_dotplot` are committed figures.
 
@@ -64,11 +66,11 @@ Full rationale and rejected alternatives: [DESIGN.md](DESIGN.md).
 
 | candidate | val MAE | test MAE | test RMSE | test MAPE % |
 |---|---|---|---|---|
-| seasonal naive (floor) | 88.7 | 83.2 | 134.0 | 153.2 |
-| ridge | 68.9 | 51.1 | 77.8 | 86.4 |
-| random forest | 39.5 | 26.3 | 45.7 | 25.7 |
-| LightGBM (Optuna HPO) | 34.4 | 25.4 | 40.2 | 27.4 |
-| tabular MLP (PyTorch) ← validation pick, tied | 34.2 | 25.4 | 39.3 | 33.7 |
+| seasonal naive (floor) | 62.4 | 73.0 | 120.0 | 129.9 |
+| ridge | 56.6 | 48.7 | 72.2 | 101.1 |
+| random forest | 36.2 | 26.1 | 42.4 | 62.5 |
+| LightGBM (Optuna HPO) ← served | 31.9 | 23.8 | 37.1 | 53.3 |
+| tabular MLP (PyTorch) | 35.1 | 27.2 | 40.4 | 47.7 |
 
 Key findings:
 
@@ -76,37 +78,33 @@ Key findings:
   the `model_comparison` figure; the served model was chosen by validation
   MAE, never by test.
 - **The floor is real:** the seasonal-naive comparator (same hour last week)
-  posts 83.2 test MAE; the served MLP improves on it by 57.8
-  rentals/hour on average. The hourly paired-bootstrap 95% CI is [52.5, 63.1];
-  day-block and week-block sensitivity intervals are wider at [44.2, 71.8] and
-  [38.8, 73.4], respectively (2,000 resamples each). All exclude zero.
-- **Feature selection agreed with the EDA:** mutual information ranks the
-  three lags first (MI 0.89 / 0.76 / 0.71 nats), then the cyclical hour pair;
-  the committed correlated-pair record dropped `atemp` (r = 0.987 with `temp`)
-  despite `atemp`'s slightly higher MI; correcting that mismatch needs a fresh run.
-- **The two defects are priced, not hidden:** a corrected variant (keeps
-  `atemp`, joins lags by timestamp) scores MAE 27.2 [CI +0.6–+2.8 vs committed]
-  for the served MLP — worse, not better — so the headline keeps the committed
-  run and project 13 serves the committed model. The same fixes improve
-  LightGBM to 23.8 (delta −1.6 [CI −3.0–−0.4]) and the date-aware floor to
-  73.0; per-candidate deltas live in `reports/sensitivity_pruning_lags.json`.
+  posts 73.0 test MAE; the served LightGBM improves on it by 49.2
+  rentals/hour on average. The hourly paired-bootstrap 95% CI is [44.4, 54.0];
+  day-block and week-block sensitivity intervals are wider at [37.4, 61.2] and
+  [33.0, 63.8], respectively (2,000 resamples each). All exclude zero.
+- **v2 fixes two disclosed defects; v1 remains for comparison:** the v1
+  pruning rule dropped `atemp` (the higher-MI member of the `temp`/`atemp`
+  pair) and v1 lags shifted positionally across missing hours. The corrected
+  MLP is worse (27.16 vs 25.43); the corrected LightGBM is better (23.76 vs
+  25.37) and is now the served model. v1 is kept under `previous_runs.v1` in
+  `reports/metrics.json`, and the paired v1→v2 comparison with block-bootstrap
+  CIs stays in `reports/sensitivity_pruning_lags.json`.
 - **Read the ablation at face value:** the 2x2x2 grid is on `ablation_dotplot`.
   Early stopping is the load-bearing control (every off-row is worse on
-  validation); the validation argmin is a dropout-off row about 2 rentals below
-  the shipped configuration. The configuration fixed in `params.yaml` before
-  the ablation stands. Variant
-  test scores are post-freeze diagnostics, never selectors.
-- **The MLP-trees race is a tie, not a champion:** validation MAE 34.2 (MLP)
-  vs 34.4 (LightGBM); the paired bootstrap on the validation difference
-  (MLP − LightGBM) is −0.18 with 95% CI [−1.7, +1.2] (2,000 seeded
-  resamples, `metrics.json:validation_tie_interval`) — the interval spans
-  zero, so per the stated protocol the two are tied on validation and the MLP
-  stays the served artifact without a champion label. On the single test pass
-  LightGBM's MAE is 0.06 rentals lower while
-  the MLP holds the better RMSE (39.3 vs 40.2). Both crush the floor's 83.2.
+  validation); the validation argmin is a dropout-off, weight-decay-off row at
+  29.5 — below the served LightGBM's 31.9 — but it is a post-freeze diagnostic,
+  never a selection input; promoting it needs its own frozen-protocol run. The
+  configuration fixed in `params.yaml` before the ablation stands.
+- **The MLP-trees race is decided, not a tie:** validation MAE 31.9 (LightGBM)
+  vs 35.1 (MLP); the paired bootstrap on the validation difference
+  (MLP − LightGBM) is +3.2 with 95% CI [+1.8, +4.5] (2,000 seeded
+  resamples, `metrics.json:validation_tie_interval`) — the interval excludes
+  zero in LightGBM's favor, so LightGBM is the served artifact. On the test
+  pass LightGBM leads on MAE (23.8 vs 27.2) and RMSE (37.1 vs 40.4); the MLP
+  holds the better MAPE (47.7% vs 53.3%).
 - **The residual slices name the next feature:** high-demand hours
-  under-forecast by +28.6 rentals on average, while late-December holiday hours
-  and several bad-weather cells over-forecast; calendar-event features are next.
+  under-forecast by +13.7 rentals on average, while late-December holiday hours
+  and bad-weather evenings over-forecast; calendar-event features are next.
 - **Limits, labeled:** validation made every choice; ablation test scores are
   post-freeze diagnostics. Day/week intervals expose serial-dependence
   sensitivity. MAPE denominators are floored at 1 rental; one city over two
@@ -136,7 +134,7 @@ uv run dvc metrics show                          # run ladder from the lockfile
 Deterministic: seed 42 controls the synthetic twin, the splits, the Optuna
 sampler, LightGBM (`deterministic=True, num_threads=1`), the random forest
 (`n_jobs=1`) and the MLP (seeded init + shuffling, single-threaded). Tests
-(36, no network, synthetic fixtures only):
+(44, no network, synthetic fixtures only):
 
 ```bash
 uv run pytest projects/12-tabular-ml-lifecycle -q
@@ -158,10 +156,12 @@ uv run pytest projects/12-tabular-ml-lifecycle -q
   that mutate future rows to prove lags never look ahead.
 - **Deep learning without a framework hiding the loop:** the PyTorch MLP
   carries a hand-written training loop with the overfitting controls measured,
-  not assumed (loss curves, learning curves, 2x2x2 ablation).
+  not assumed (loss curves, learning curves, 2x2x2 ablation) — and it loses
+  to the boosted tree honestly when it loses.
 - **Honest uncertainty:** the served-model-versus-floor gap carries paired hourly,
   day-block, and week-block intervals; residual slices say where the model is
-  still wrong. Variant test scores are labeled post-freeze diagnostics.
+  still wrong. Variant test scores are labeled post-freeze diagnostics, and the
+  v1→v2 defect fix is priced with paired intervals, not asserted.
 
 ## Roadmap
 
@@ -171,9 +171,12 @@ uv run pytest projects/12-tabular-ml-lifecycle -q
   hand-written PyTorch MLP; bootstrap CIs; residual analysis.
 - **Delivered:** overfitting-control artifacts (per-epoch loss curves,
   learning curves, 2x2x2 ablation) as committed figures.
+- **Delivered (v2):** the two disclosed v1 defects fixed — pruning keeps
+  `atemp`, lags join on timestamp; v1 preserved under `previous_runs.v1`.
 - **Deferred:** calendar-event features (holidays are binary flags only) and
   probabilistic forecasts; refitting the selected model on train+validation before
-  serving; transfer checks on another city's system.
+  serving; transfer checks on another city's system; a frozen-protocol run of
+  the best ablation MLP variant.
 
 ## Figures
 
@@ -189,5 +192,5 @@ uv run pytest projects/12-tabular-ml-lifecycle -q
 | rentals by hour season | [reports/figures/rentals_by_hour_season.html](reports/figures/rentals_by_hour_season.html) |
 | residual heatmap | [reports/figures/residual_heatmap.html](reports/figures/residual_heatmap.html) |
 | residual vs fitted | [reports/figures/residual_vs_fitted.html](reports/figures/residual_vs_fitted.html) |
+| sensitivity pruning lags | [reports/figures/sensitivity_pruning_lags.html](reports/figures/sensitivity_pruning_lags.html) |
 | temp vs rentals | [reports/figures/temp_vs_rentals.html](reports/figures/temp_vs_rentals.html) |
-
