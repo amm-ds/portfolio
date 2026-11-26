@@ -265,8 +265,8 @@ sections:
       The confusion matrix uses the bounded transformer, not the final
       cascade. Business predicted as
       Sci/Tech dominates, with 25 of 250 bounded test items.
-    - In `per_class_f1_comparison`, compare the topic bars. Per-class F1
-      The same Business and Sci/Tech blur accounts for the residual gap.
+    - In `per_class_f1_comparison`, compare the topic bars. The same Business
+      and Sci/Tech blur accounts for the residual per-class F1 gap.
     - In `scale_ladder`, follow the rising scores as training rows increase.
       Same-rows CPU and Apple-GPU (MPS) twins sit `0.0002` test `macro-F1`
       apart. Their fresh gap is

@@ -4,7 +4,7 @@
 handbook + project 01's Wikipedia FAISS index (read-only) · **Status:**
 working showcase on the standard platform
 
-> Plan-act-review workflow with typed outcomes and deadlines. Recorded runs: 15/15 fixed tasks, 13/13 unseen answers, 5/6 correct refusals. A live re-run with hosted models: 13/13 answers, 6/6 refusals, all 19 tasks within budget.
+> Plan-act-review workflow with typed outcomes and deadlines. Recorded runs: 15/15 fixed tasks, 13/13 unseen answers, 5/6 correct refusals. A live hosted re-run passed 13/13 answers and 6/6 refusals; across five repeats, pass^5 = 17/19 within budget.
 >
 > 13/13 unseen answers, 5/6 refusals. All-hosted live held-out: 13/13 answers, 6/6 live-grader
 > refusals, 19/19 budgets on the first run; five identical repeats pass 17/19 tasks all five
