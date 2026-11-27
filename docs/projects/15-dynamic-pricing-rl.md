@@ -38,7 +38,10 @@ custom encoder combines two convolution layers over 14 days of price/demand
 history with current inventory and time features. Seed 1 wins validation at
 0.514370 mean normalised profit; only that checkpoint is retained. B1 was tuned
 on 2,000 train episodes and locked as comparator on 300 validation episodes
-before PPO selection.
+before PPO selection. B1 also beat the learner on validation (0.5225 against
+seed 1's 0.5144, from `reports/baselines_val.json` and `reports/ppo_val.json`),
+so the test loss was visible before the sealed read. The story quotes the
+action-mask implementation from `src/dynamic_pricing/env.py:183-197`.
 
 ## Sealed results
 
@@ -65,6 +68,17 @@ All executable policies have zero test violations, so **P2 passes**. RL beats
 B0 by 24.72%, B2 by 28.69%, and B3 by 1.82%, but those secondary comparisons
 do not change the primary verdict.
 
+The paired gap breaks down by demand sensitivity (`analysis.gap_by_slice` in
+`reports/metrics.json`, computed by `src/dynamic_pricing/analyse_gap_by_slice.py`).
+From least to most price-sensitive (|epsilon| terciles, cuts 2.178 and 2.878),
+the mean RL - B1 gap is -0.0174 [-0.0205, -0.0143], -0.0105 [-0.0138, -0.0073],
+and -0.0012 [-0.0033, +0.0010]: the fixed markup hurts most where shoppers are
+least price-sensitive, and the learner closes the gap as sensitivity rises.
+RL wins 35.1% of the 1,000 paired episodes. By stock pressure rho, the mean gap
+is -0.0082 at 0.7, -0.0107 at 1.0, and -0.0102 at 1.3. Resampling the paired
+episodes keeps the learner behind in all 2,000 resamples (seed 42), so the gap
+is not luck in this test.
+
 ![B1 and RL price paths for three fixed-seed sealed test episodes, each covering 91 days.](../assets/projects/15-dynamic-pricing-rl/price_traces.png){ width="100%" }
 
 The bound view makes the remaining gap concrete: RL reaches 96.76% of the fluid
@@ -76,9 +90,11 @@ bound share are P3 context only.
 
 ## Limits and next step
 
-The learned policy should not be deployed from this evidence. Static 1.30×
-captures margin under the assumed demand response, while PPO's adaptive paths
-do not outperform it. Results cover only this simulator: elasticity is not
+The learned policy should not be deployed from this evidence. B1 climbs from
+1.10× to 1.30× over the first 14 days, then holds 1.30× for the rest of the
+episode, capturing margin under the assumed demand response, while PPO's
+adaptive paths do not outperform it. Results cover only this simulator: elasticity is not
 causal M5 elasticity, no real prices changed, and customer memory and product
-substitution are absent. Future mechanisms need development-split work followed
+substitution are absent. Only seed 1's checkpoint was retained, and B1 also
+beat RL on validation, so seed-level variance is not measured. Future mechanisms need development-split work followed
 by a fresh sealed protocol; the consumed test sets cannot become tuning data.

@@ -17,7 +17,7 @@ sections:
 
     The answer is negative: `RL` reaches `0.5120` mean normalised profit while `B1` reaches `0.5217`. Next, we define success ([Objectives →](#sec-objectives)).
 
-    **In plain terms:** We taught a system to change prices over 91 days without breaking stock or pricing rules. It learned well, but a simple fixed price still made more money in the final test.
+    **In plain terms:** We taught a system to change prices over 91 days without breaking stock or pricing rules. It beat three simpler rules, but a simple fixed price still made more money in the final test.
   figures: []
 - id: objectives
   text_md: |
@@ -72,7 +72,27 @@ sections:
 
     `HistoryEncoder` reads `14` days of price and demand. Two one-dimensional convolution layers use `16` channels and kernel `3`. Their features join the current scalars. `MaskablePPO` then uses separate `[64, 64]` policy and value networks. `SubprocVecEnv(8)` reached `57,543` steps/s in a `10,000`-step test; `DummyVecEnv(8)` reached `47,352`.
 
-    Seeds `0`, `1`, and `2` each request `3,000,000` steps. Their validation means over `300` episodes are `0.512536`, `0.514370`, and `0.514288`. Seed `1` wins, and only its checkpoint stays. All seeds have `0` validation violations. A separate `2,000` train episodes tune the rules: `B1` picks `1.30×`; `B2` picks `20%` behind and `5%` ahead thresholds.
+    Seeds `0`, `1`, and `2` each request `3,000,000` steps. Their validation means over `300` episodes are `0.512536`, `0.514370`, and `0.514288`. Seed `1` wins, and only its checkpoint stays. All seeds have `0` validation violations. A separate `2,000` train episodes tune the rules: `B1` picks `1.30×`; `B2` picks `20%` behind and `5%` ahead thresholds. B1 also beat the learner on validation: `0.5225` against seed `1`'s `0.5144` (`reports/baselines_val.json`, `reports/ppo_val.json`), so the test loss was visible before the sealed read.
+
+    The mask that makes P2 measurable is short. From `src/dynamic_pricing/env.py:183-197`:
+
+    ```python
+    def action_masks(self) -> NDArray[np.bool_]:
+        """Mask C1-C3: ladder band, one-step changes, seven-day cooldown."""
+        if self._spec is None:
+            raise RuntimeError("reset with an EpisodeSpec first")
+        mask = np.zeros(len(MULTIPLIERS), dtype=np.bool_)
+        for action in range(len(MULTIPLIERS)):
+            change = action - self._current_action
+            one_step = abs(change) <= 1
+            cooldown = (
+                change == 0
+                or self._last_change_day is None
+                or self._day - self._last_change_day >= 7
+            )
+            mask[action] = one_step and cooldown
+        return mask
+    ```
 
     Training is frozen. The last protocol guards the single final comparison ([Evaluation →](#sec-evaluation)).
 
@@ -96,12 +116,14 @@ sections:
 
     Every executable policy has `0` test violations: **P2 passes**. `reports/test_episodes.json` (`1.2 MiB`) retains per-episode results and the fixed-seed traces. Next, we examine where RL helps and where static margin wins ([Results →](#sec-results)).
 
-    **In plain terms:** The learner scored 0.5120 against 0.5217 for the fixed-price rule, about 1.86% less. That gap is consistent across repeated checks, while every method followed every pricing rule.
+    **In plain terms:** The learner scored 0.5120 against 0.5217 for the fixed-price rule, about 1.86% less. All 2,000 resamples of the paired episode gaps stay negative, so the loss is not luck in this test, and every method followed every pricing rule.
   figures: [profit_vs_baselines]
 - id: results
   text_md: |
     **The learned policy beats three baselines, but not the one that matters.**
     Against `B0`, `B2`, and `B3`, RL's relative gains are `24.72%`, `28.69%`, and `1.82%`. These secondary wins do not satisfy P1. The static `B1` policy captures margin under the assumed elasticity prior; adaptive pricing does not recover its `0.009696` mean advantage.
+
+    The paired gap breaks down by demand sensitivity (`reports/metrics.json` `analysis.gap_by_slice`, computed by `src/dynamic_pricing/analyse_gap_by_slice.py`). From least to most price-sensitive (`|epsilon|` terciles, cuts `2.178` and `2.878`), the mean `RL - B1` gap is `-0.0174` [`-0.0205`, `-0.0143`], `-0.0105` [`-0.0138`, `-0.0073`], and `-0.0012` [`-0.0033`, `+0.0010`]: the fixed markup hurts most where shoppers are least price-sensitive, and the learner closes the gap as sensitivity rises. RL wins `35.1%` of the `1,000` paired episodes. By stock pressure `rho`, the mean gap is `-0.0082` at `0.7`, `-0.0107` at `1.0`, and `-0.0102` at `1.3`. Resampling the paired episodes keeps the learner behind in all `2,000` resamples (seed `42`), so the gap is not luck in this test.
 
     `price_traces` shows fixed-seed test episodes `89`, `654`, and `773`, each with `91` days for `B1` and `RL`. The episodes were selected by seed before outcomes were inspected and captured during the single sealed pass. `bound_share_by_rho` shows RL attaining `97.36%`, `96.90%`, and `95.74%` of the relaxed ceiling at `rho` `0.7`, `1.0`, and `1.3`; overall shares are `96.76%` for RL and `98.60%` for B1.
 
@@ -121,10 +143,14 @@ sections:
 - id: conclusions
   text_md: |
     **A negative primary result is still a useful engineering result.**
-    Masked PPO learned a competent, constraint-safe policy and outperformed `B0`, `B2`, and adaptive `B3`. It did not beat tuned static `B1`; the paired interval is entirely negative. Under this simulator, a fixed `1.30×` multiplier captures margin that the learned policy does not recover.
+    Masked PPO learned a competent, constraint-safe policy and outperformed `B0`, `B2`, and adaptive `B3`. It did not beat tuned static `B1`; the paired interval is entirely negative. Under this simulator, `B1` climbs from `1.10×` to `1.30×` over the first `14` days, then holds `1.30×` for the rest of the episode, capturing margin that the learned policy does not recover.
 
     ```diagram auto-15-dynamic-pricing-rl-4
     ```
+
+    ## Results summary
+
+    P1 fails and P2 passes: RL reaches `0.5120` against B1's `0.5217`, a `-1.86%` relative lift whose paired interval is entirely negative, and every executable policy records `0` violations. The paired gap is largest where demand is least price-sensitive (`-0.0174`) and smallest where it is most sensitive (`-0.0012`); RL wins `35.1%` of paired episodes.
 
     ## What the experiment taught
 
@@ -135,6 +161,7 @@ sections:
     ## Limits
 
     - **Simulator results only:** no real prices were changed and no actual revenue was measured.
+    - **One retained seed:** only seed `1`'s checkpoint was kept, and `B1` also beat RL on validation (`0.5225` vs `0.5144`); seed-level variance is not measured.
     - Elasticity is an assumption anchored to Bijmolt et al. (`2005`), not causal M5 elasticity.
     - The simulator omits reference-price and substitution effects; shoppers neither remember earlier prices nor switch products.
     - `UB` is a relaxed known-elasticity ceiling, not an achievable service level.
@@ -164,9 +191,11 @@ sections:
 
     Full evidence lives in `reports/metrics.json`, `reports/test_episodes.json`, `reports/sealed_access.json`, and the [standalone report](reports/report.html). Rebuild the presentation without another policy evaluation ([Reproduce →](README.md#reproduce)).
 
-    **In plain terms:** A simple fixed price won this simulation, so we would not deploy the learner. The useful result is a fair testing setup that proves safe behaviour and makes the loss clear instead of hiding it.
+    **In plain terms:** A simple fixed price won this simulation, so we would not deploy the learner. The useful result is a fair testing setup that shows zero rule breaks in every simulated test and makes the loss clear instead of hiding it.
   figures: []
 key_concepts:
+- "**M5:** Walmart's daily sales panel. Here it calibrates demand levels, weekday shapes, and reference prices; it does not prove how price changes cause demand to move."
+- "**MaskablePPO:** a policy-gradient learner that receives an action mask on every step, so illegal price moves are blocked before they happen rather than penalised afterwards."
 - "**Common random numbers:** Every policy receives the same episode uniform stream, so demand randomness cannot explain paired profit differences."
 - "**Action masking:** Legal price actions are supplied during learning and prediction; P2 measures violations separately rather than hiding them in reward penalties."
 - "**Fluid upper bound:** A known-elasticity linear program provides a relaxed ceiling for context, not an executable comparator."

@@ -94,7 +94,10 @@ new protocol version and fresh sealed specs, not deleting the access log.
 
 The three PPO runs use `3,000,000` requested steps each and `SubprocVecEnv(8)`.
 Only the validation-winning `reports/models/ppo_seed_1.zip` is retained through
-DVC; the other checkpoints are deleted.
+DVC; the other checkpoints are deleted. B1 also beat RL on validation
+(`0.5225` vs `0.5144` in `reports/baselines_val.json` and
+`reports/ppo_val.json`), so the sealed loss was visible before the test read,
+and seed-level variance is not measured.
 
 ## Tests
 

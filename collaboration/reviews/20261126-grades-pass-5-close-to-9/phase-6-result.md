@@ -143,3 +143,23 @@ Per `09-kimi-08-grade-fix.md`: the phase-7 08 row now reads 9/9/8/9 → 8.8
 (owner decision: keep 8.8 on one host, T capped at 8). Copy gates re-run
 after the edit: `check_headline_numbers` exit 0, `check_docs` exit 0,
 `git diff --check` exit 0.
+
+## Addendum 2026-11-27 — grade pass 6 (project 15)
+
+Narrow gates (all exit 0): pytest 15 (40 passed: 36 + 4 new analysis tests);
+ruff check / ruff format --check on project 15; mypy libs projects apps;
+lint_story_language; check_short_copy --check; gen_static_registry --check;
+gen_story_short --check; check_headline_numbers; check_docs;
+check_demo_contract; check_diagram_fences; check_figure_axes;
+check_figure_budget.
+
+`stamp_metrics_meta.py --check`: FAILED as expected before the owner commits —
+3 stale `_meta` blocks (15's new analysis key; 13 and 12 from the Phase 4
+promotion). Cause: the stamp's recorded `git_sha` must be an ancestor of HEAD
+with an identical payload, which cannot hold until the payload is committed.
+Owner sequence after committing the payload: run `stamp_metrics_meta.py`,
+verify `--check` exits 0, commit the `_meta` changes separately.
+
+Broader gates (once, after all edits): ruff check . 0; ruff format --check .
+0; mkdocs build --strict 0; git diff --check 0; web npm test 0, npm run lint
+0, npm run build 0.
