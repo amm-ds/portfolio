@@ -1,19 +1,19 @@
 {
   "_meta": {
-    "created_at": "2026-11-18T12:58:57+01:00",
+    "created_at": "2026-11-26T21:41:22+01:00",
     "data_contract_sha256": null,
-    "git_sha": "a5036433fbc12cf8245b2e8908d7ea4c2937d8c8",
-    "params_sha256": "2f00ebeab80e20fd3df5b7ca4c8124777bebdbb13783b803226904b7478eb4bd",
+    "git_sha": "268730b1d38b23e78fe4b9671dc01f153b6c56e2",
+    "params_sha256": "6e4887676106e724e11972d42fa9bbb329492b0a8e9655d729805c93f33a4d45",
     "schema_version": 1,
     "seed": 42,
-    "uv_lock_sha256": "a735e76464d1cc9b6d9a0484ad91cc3bba276dceba8ae99c55b315f98a180aed"
+    "uv_lock_sha256": "addd27c801e092deeda02188b81dcd8d92748bdfbfa3af6e8f5aa64ad4ee0f90"
   },
   "analysis": {
     "limits": [
       "Single laptop, no GPU, one uvicorn worker, one model: absolute numbers, paired native-vs-ONNX deltas, and curve shapes are host-specific observations, not demonstrated transfer; re-measure with the paired harness.",
-      "The load driver runs on the same machine as the service \u2014 localhost latency has no network term, and the CPU is shared between driver and service under high concurrency.",
+      "The load driver runs on the same machine as the service — localhost latency has no network term, and the CPU is shared between driver and service under high concurrency.",
       "Fresh-process RSS is the steady state after warm-up, not a peak under load; the image size is the uncompressed on-disk total.",
-      "Cost per 1k predictions uses measured throughput with a declared 65 W system draw (no wall meter) and $0.30 per kWh \u2014 an assumption, stated next to the number, not a measurement."
+      "Cost per 1k predictions uses measured throughput with a declared 65 W system draw (no wall meter) and $0.30 per kWh — an assumption, stated next to the number, not a measurement."
     ],
     "stages": {
       "bench_runtime_s": 30.044,

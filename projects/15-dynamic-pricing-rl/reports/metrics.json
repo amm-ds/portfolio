@@ -1,12 +1,81 @@
 {
   "_meta": {
-    "created_at": "2026-11-25T22:36:36+01:00",
+    "created_at": "2026-11-27T16:43:04+01:00",
     "data_contract_sha256": null,
-    "git_sha": "3fd1f98a1488c664dc8080b5ca3b990aa8f28f30",
+    "git_sha": "268730b1d38b23e78fe4b9671dc01f153b6c56e2",
     "params_sha256": "52cf069d1034626b639c05d03407bd545eda9fa0cd2147d4b48893711e852b07",
     "schema_version": 1,
     "seed": 42,
-    "uv_lock_sha256": "cfaed5eee2d80ad00be3ed47a3c1380280704fa96e3062541a1b2926765f750a"
+    "uv_lock_sha256": "addd27c801e092deeda02188b81dcd8d92748bdfbfa3af6e8f5aa64ad4ee0f90"
+  },
+  "analysis": {
+    "gap_by_slice": {
+      "by_elasticity_tercile": {
+        "high": {
+          "ci95": [
+            -0.003300956777909613,
+            0.0010333814265602159
+          ],
+          "mean_gap": -0.001154672235373773,
+          "n": 333
+        },
+        "low": {
+          "ci95": [
+            -0.020469077152122993,
+            -0.014333260266598147
+          ],
+          "mean_gap": -0.017418275751612314,
+          "n": 334
+        },
+        "mid": {
+          "ci95": [
+            -0.013816821698808292,
+            -0.007293766476329586
+          ],
+          "mean_gap": -0.010490517004613517,
+          "n": 333
+        }
+      },
+      "by_rho": {
+        "0.7": {
+          "ci95": [
+            -0.010691125630514034,
+            -0.005516676433719443
+          ],
+          "mean_gap": -0.008155858339979834,
+          "n": 334
+        },
+        "1.0": {
+          "ci95": [
+            -0.013669263416315018,
+            -0.007953421716225895
+          ],
+          "mean_gap": -0.010746197706000086,
+          "n": 333
+        },
+        "1.3": {
+          "ci95": [
+            -0.013892629224367611,
+            -0.006993578496843025
+          ],
+          "mean_gap": -0.010189224012921888,
+          "n": 333
+        }
+      },
+      "elasticity_cuts_abs_epsilon": [
+        2.178283468473902,
+        2.8780628203070946
+      ],
+      "method": "per-episode paired RL − B1 normalised-profit difference; episode-unit percentile bootstrap, 2,000 resamples, seed 42",
+      "n_episodes": 1000,
+      "n_resamples": 2000,
+      "resamples_below_zero": 2000,
+      "rl_win_share": 0.351,
+      "script": "src/dynamic_pricing/analyse_gap_by_slice.py",
+      "script_sha256": "1ad0b0a7bd241454760df0d2875738499f131a789c21a445ea81c813be367c46",
+      "seed": 42,
+      "source": "reports/test_episodes.json"
+    }
   },
   "bound_share_method": "ratio of mean normalised profits within each rho group",
   "constraint_gate": {
@@ -436,74 +505,5 @@
     "P1": "fail",
     "P2": "pass",
     "P3": "context_only"
-  },
-  "analysis": {
-    "gap_by_slice": {
-      "source": "reports/test_episodes.json",
-      "script": "src/dynamic_pricing/analyse_gap_by_slice.py",
-      "script_sha256": "1ad0b0a7bd241454760df0d2875738499f131a789c21a445ea81c813be367c46",
-      "method": "per-episode paired RL − B1 normalised-profit difference; episode-unit percentile bootstrap, 2,000 resamples, seed 42",
-      "by_elasticity_tercile": {
-        "low": {
-          "mean_gap": -0.017418275751612314,
-          "ci95": [
-            -0.020469077152122993,
-            -0.014333260266598147
-          ],
-          "n": 334
-        },
-        "mid": {
-          "mean_gap": -0.010490517004613517,
-          "ci95": [
-            -0.013816821698808292,
-            -0.007293766476329586
-          ],
-          "n": 333
-        },
-        "high": {
-          "mean_gap": -0.001154672235373773,
-          "ci95": [
-            -0.003300956777909613,
-            0.0010333814265602159
-          ],
-          "n": 333
-        }
-      },
-      "elasticity_cuts_abs_epsilon": [
-        2.178283468473902,
-        2.8780628203070946
-      ],
-      "rl_win_share": 0.351,
-      "by_rho": {
-        "0.7": {
-          "mean_gap": -0.008155858339979834,
-          "ci95": [
-            -0.010691125630514034,
-            -0.005516676433719443
-          ],
-          "n": 334
-        },
-        "1.0": {
-          "mean_gap": -0.010746197706000086,
-          "ci95": [
-            -0.013669263416315018,
-            -0.007953421716225895
-          ],
-          "n": 333
-        },
-        "1.3": {
-          "mean_gap": -0.010189224012921888,
-          "ci95": [
-            -0.013892629224367611,
-            -0.006993578496843025
-          ],
-          "n": 333
-        }
-      },
-      "resamples_below_zero": 2000,
-      "n_resamples": 2000,
-      "seed": 42,
-      "n_episodes": 1000
-    }
   }
 }

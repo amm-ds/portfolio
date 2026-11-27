@@ -1,213 +1,174 @@
 {
   "_meta": {
-    "created_at": "2026-11-26T17:57:36+01:00",
+    "created_at": "2026-11-26T21:30:00+01:00",
     "data_contract_sha256": null,
-    "git_sha": "2beafb93519a79fc5eda36d4aae5601af861301b",
-    "params_sha256": "32ea9bcdf45c23012e2a34d2287029a2464487165df43a74bafb1f8e29603f0e",
+    "git_sha": "268730b1d38b23e78fe4b9671dc01f153b6c56e2",
+    "params_sha256": "0068be73cd3a3b5382d7d6a6e3cb855c59927d4a624c1993487d47ebe92b4f06",
     "schema_version": 1,
     "seed": 42,
-    "uv_lock_sha256": "cfaed5eee2d80ad00be3ed47a3c1380280704fa96e3062541a1b2926765f750a"
-  },
-  "seasonal_naive": {
-    "mae": 72.97619047619048,
-    "rmse": 120.02315004872622,
-    "mape": 129.9389240205119
-  },
-  "ridge": {
-    "mae": 48.68153816676309,
-    "rmse": 72.16679489724636,
-    "mape": 101.07764136758934
-  },
-  "random_forest": {
-    "mae": 26.13282986111111,
-    "rmse": 42.37806687964137,
-    "mape": 62.530503990107974
-  },
-  "lightgbm_hpo": {
-    "mae": 23.76360139335002,
-    "rmse": 37.102001989827166,
-    "mape": 53.27271055371774
-  },
-  "mlp": {
-    "mae": 27.161182233265468,
-    "rmse": 40.424154578060154,
-    "mape": 47.741824137721686
-  },
-  "validation_tie_interval": {
-    "metric": "val_mae_mlp_minus_lightgbm",
-    "point": 3.192027869680153,
-    "lo": 1.7872859182492462,
-    "hi": 4.536349529819827,
-    "n_boot": 2000,
-    "significant_95": true,
-    "seed": 45,
-    "interpretation": "Positive favors LightGBM, negative favors the MLP. The interval prices paired validation-hour noise on the MLP-minus-LightGBM validation delta; per the stated protocol the validation leader is the served artifact (LightGBM under the committed v2 recipe \u2014 no tie)."
+    "uv_lock_sha256": "addd27c801e092deeda02188b81dcd8d92748bdfbfa3af6e8f5aa64ad4ee0f90"
   },
   "analysis": {
-    "split": "test window: final test_weeks; one score per candidate",
+    "ablation_post_freeze_diagnostics": [
+      {
+        "dropout_on": true,
+        "early_stopping_on": true,
+        "epochs_run": 26,
+        "selected": true,
+        "test_mae": 27.161182233265468,
+        "val_mae": 35.13113859559278,
+        "variant": "dropout=on|wd=on|es=on",
+        "weight_decay_on": true
+      },
+      {
+        "dropout_on": true,
+        "early_stopping_on": false,
+        "epochs_run": 150,
+        "selected": false,
+        "test_mae": 24.69199764160883,
+        "val_mae": 32.81399449341853,
+        "variant": "dropout=on|wd=on|es=off",
+        "weight_decay_on": true
+      },
+      {
+        "dropout_on": true,
+        "early_stopping_on": true,
+        "epochs_run": 26,
+        "selected": false,
+        "test_mae": 27.170086077281407,
+        "val_mae": 35.20775067668801,
+        "variant": "dropout=on|wd=off|es=on",
+        "weight_decay_on": false
+      },
+      {
+        "dropout_on": true,
+        "early_stopping_on": false,
+        "epochs_run": 150,
+        "selected": false,
+        "test_mae": 24.790686596007575,
+        "val_mae": 33.36475866084645,
+        "variant": "dropout=on|wd=off|es=off",
+        "weight_decay_on": false
+      },
+      {
+        "dropout_on": false,
+        "early_stopping_on": true,
+        "epochs_run": 47,
+        "selected": false,
+        "test_mae": 23.571100059009733,
+        "val_mae": 29.636155629139694,
+        "variant": "dropout=off|wd=on|es=on",
+        "weight_decay_on": true
+      },
+      {
+        "dropout_on": false,
+        "early_stopping_on": false,
+        "epochs_run": 150,
+        "selected": false,
+        "test_mae": 25.441201215698605,
+        "val_mae": 32.569168219833905,
+        "variant": "dropout=off|wd=on|es=off",
+        "weight_decay_on": true
+      },
+      {
+        "dropout_on": false,
+        "early_stopping_on": true,
+        "epochs_run": 47,
+        "selected": false,
+        "test_mae": 23.441059305554344,
+        "val_mae": 29.52028328780483,
+        "variant": "dropout=off|wd=off|es=on",
+        "weight_decay_on": false
+      },
+      {
+        "dropout_on": false,
+        "early_stopping_on": false,
+        "epochs_run": 150,
+        "selected": false,
+        "test_mae": 26.130913671993074,
+        "val_mae": 33.147749839976235,
+        "variant": "dropout=off|wd=off|es=off",
+        "weight_decay_on": false
+      }
+    ],
+    "ablation_protocol": "Validation selected the shipped configuration before test scoring; test scores are diagnostics, never selectors.",
     "champion": "lightgbm_hpo",
     "champion_selected_by": "lowest validation MAE (test never consulted)",
-    "val_mae": {
-      "seasonal_naive": 62.35818601076095,
-      "ridge": 56.625753522805475,
-      "random_forest": 36.23319153154472,
-      "lightgbm_hpo": 31.939110725912627,
-      "mlp": 35.13113859559278
+    "hpo": {
+      "best_params": {
+        "colsample_bytree": 0.9301787640261187,
+        "learning_rate": 0.08375058536782541,
+        "max_depth": 7.0,
+        "min_child_samples": 42.0,
+        "num_leaves": 15.0,
+        "reg_lambda": 5.728730206013902,
+        "subsample": 0.5890956468712901
+      },
+      "best_val_mae": 31.939110725912627,
+      "n_trials": 50,
+      "time_budget_s": 240,
+      "trial_cap": 50
     },
+    "limits": [
+      "Model selection, early stopping and the shipped ablation configuration used validation only. Test scores for all ablation variants are post-freeze diagnostics, not selection evidence.",
+      "Hourly errors are serially dependent. Day/week block bootstraps are sensitivity analyses on the same test window, not independent confirmations.",
+      "MAPE denominators are floored at 1 rental; near-zero hours inflate MAPE even when the absolute error is small — read MAE first.",
+      "Two years and four seasons, one city, one system: transfer to other fleets or regimes is plausible, not measured."
+    ],
     "mae_improvement_vs_floor_ci": {
-      "point": 49.212589082840466,
-      "lo": 44.426862577358364,
       "hi": 53.9883293392151,
+      "lo": 44.426862577358364,
       "n_boot": 2000,
+      "point": 49.212589082840466,
       "significant_95": true
     },
     "serial_dependence_sensitivity": {
-      "hourly": {
-        "point": 49.212589082840466,
-        "lo": 44.426862577358364,
-        "hi": 53.9883293392151,
-        "n_boot": 2000,
-        "significant_95": true
-      },
       "day": {
         "block_hours": 24,
-        "point": 49.212589082840466,
-        "lo": 37.36727623324195,
         "hi": 61.16382395340198,
+        "lo": 37.36727623324195,
         "n_boot": 2000,
+        "point": 49.212589082840466,
+        "significant_95": true
+      },
+      "hourly": {
+        "hi": 53.9883293392151,
+        "lo": 44.426862577358364,
+        "n_boot": 2000,
+        "point": 49.212589082840466,
         "significant_95": true
       },
       "week": {
         "block_hours": 168,
-        "point": 49.212589082840466,
-        "lo": 32.995212867789284,
         "hi": 63.843368673427385,
+        "lo": 32.995212867789284,
         "n_boot": 2000,
+        "point": 49.212589082840466,
         "significant_95": true
       }
     },
-    "hpo": {
-      "best_params": {
-        "learning_rate": 0.08375058536782541,
-        "num_leaves": 15.0,
-        "max_depth": 7.0,
-        "min_child_samples": 42.0,
-        "subsample": 0.5890956468712901,
-        "colsample_bytree": 0.9301787640261187,
-        "reg_lambda": 5.728730206013902
-      },
-      "n_trials": 50,
-      "best_val_mae": 31.939110725912627,
-      "time_budget_s": 240,
-      "trial_cap": 50
-    },
-    "ablation_post_freeze_diagnostics": [
-      {
-        "variant": "dropout=on|wd=on|es=on",
-        "dropout_on": true,
-        "weight_decay_on": true,
-        "early_stopping_on": true,
-        "val_mae": 35.13113859559278,
-        "test_mae": 27.161182233265468,
-        "epochs_run": 26,
-        "selected": true
-      },
-      {
-        "variant": "dropout=on|wd=on|es=off",
-        "dropout_on": true,
-        "weight_decay_on": true,
-        "early_stopping_on": false,
-        "val_mae": 32.81399449341853,
-        "test_mae": 24.69199764160883,
-        "epochs_run": 150,
-        "selected": false
-      },
-      {
-        "variant": "dropout=on|wd=off|es=on",
-        "dropout_on": true,
-        "weight_decay_on": false,
-        "early_stopping_on": true,
-        "val_mae": 35.20775067668801,
-        "test_mae": 27.170086077281407,
-        "epochs_run": 26,
-        "selected": false
-      },
-      {
-        "variant": "dropout=on|wd=off|es=off",
-        "dropout_on": true,
-        "weight_decay_on": false,
-        "early_stopping_on": false,
-        "val_mae": 33.36475866084645,
-        "test_mae": 24.790686596007575,
-        "epochs_run": 150,
-        "selected": false
-      },
-      {
-        "variant": "dropout=off|wd=on|es=on",
-        "dropout_on": false,
-        "weight_decay_on": true,
-        "early_stopping_on": true,
-        "val_mae": 29.636155629139694,
-        "test_mae": 23.571100059009733,
-        "epochs_run": 47,
-        "selected": false
-      },
-      {
-        "variant": "dropout=off|wd=on|es=off",
-        "dropout_on": false,
-        "weight_decay_on": true,
-        "early_stopping_on": false,
-        "val_mae": 32.569168219833905,
-        "test_mae": 25.441201215698605,
-        "epochs_run": 150,
-        "selected": false
-      },
-      {
-        "variant": "dropout=off|wd=off|es=on",
-        "dropout_on": false,
-        "weight_decay_on": false,
-        "early_stopping_on": true,
-        "val_mae": 29.52028328780483,
-        "test_mae": 23.441059305554344,
-        "epochs_run": 47,
-        "selected": false
-      },
-      {
-        "variant": "dropout=off|wd=off|es=off",
-        "dropout_on": false,
-        "weight_decay_on": false,
-        "early_stopping_on": false,
-        "val_mae": 33.147749839976235,
-        "test_mae": 26.130913671993074,
-        "epochs_run": 150,
-        "selected": false
-      }
-    ],
-    "ablation_protocol": "Validation selected the shipped configuration before test scoring; test scores are diagnostics, never selectors.",
-    "limits": [
-      "Model selection, early stopping and the shipped ablation configuration used validation only. Test scores for all ablation variants are post-freeze diagnostics, not selection evidence.",
-      "Hourly errors are serially dependent. Day/week block bootstraps are sensitivity analyses on the same test window, not independent confirmations.",
-      "MAPE denominators are floored at 1 rental; near-zero hours inflate MAPE even when the absolute error is small \u2014 read MAE first.",
-      "Two years and four seasons, one city, one system: transfer to other fleets or regimes is plausible, not measured."
-    ]
+    "split": "test window: final test_weeks; one score per candidate",
+    "val_mae": {
+      "lightgbm_hpo": 31.939110725912627,
+      "mlp": 35.13113859559278,
+      "random_forest": 36.23319153154472,
+      "ridge": 56.625753522805475,
+      "seasonal_naive": 62.35818601076095
+    }
+  },
+  "lightgbm_hpo": {
+    "mae": 23.76360139335002,
+    "mape": 53.27271055371774,
+    "rmse": 37.102001989827166
+  },
+  "mlp": {
+    "mae": 27.161182233265468,
+    "mape": 47.741824137721686,
+    "rmse": 40.424154578060154
   },
   "previous_runs": {
     "v1": {
-      "seasonal_naive": {
-        "mae": 83.19940476190476,
-        "mape": 153.19989911042663,
-        "rmse": 134.02384071855417
-      },
-      "ridge": {
-        "mae": 51.09094969058817,
-        "mape": 86.36397422637272,
-        "rmse": 77.7812613005462
-      },
-      "random_forest": {
-        "mae": 26.31669750330688,
-        "mape": 25.749461779518867,
-        "rmse": 45.66907793770365
-      },
+      "champion": "mlp",
       "lightgbm_hpo": {
         "mae": 25.37318492658977,
         "mape": 27.4218582655074,
@@ -218,6 +179,23 @@
         "mape": 33.717433700685255,
         "rmse": 39.322385862511936
       },
+      "note": "The pre-promotion committed run (v1), superseded by the v2 recipe in grade pass 5 (option B): v2 fixes the two disclosed defects — pruning keeps atemp, lags join on timestamp. The v1->v2 comparison with paired CIs is reports/sensitivity_pruning_lags.json; v1 model artifacts and figures live in git history.",
+      "random_forest": {
+        "mae": 26.31669750330688,
+        "mape": 25.749461779518867,
+        "rmse": 45.66907793770365
+      },
+      "recipe": "params_v1.yaml (positional lags, drop-higher-MI pruning)",
+      "ridge": {
+        "mae": 51.09094969058817,
+        "mape": 86.36397422637272,
+        "rmse": 77.7812613005462
+      },
+      "seasonal_naive": {
+        "mae": 83.19940476190476,
+        "mape": 153.19989911042663,
+        "rmse": 134.02384071855417
+      },
       "validation_tie_interval": {
         "hi": 1.2133984619833675,
         "interpretation": "Negative favors the MLP. The interval prices paired validation-hour noise; per the stated protocol the two top candidates are reported as tied on validation and the MLP is the served artifact, not a proven winner.",
@@ -227,10 +205,32 @@
         "point": -0.17980542964669155,
         "seed": 45,
         "significant_95": false
-      },
-      "champion": "mlp",
-      "recipe": "params_v1.yaml (positional lags, drop-higher-MI pruning)",
-      "note": "The pre-promotion committed run (v1), superseded by the v2 recipe in grade pass 5 (option B): v2 fixes the two disclosed defects \u2014 pruning keeps atemp, lags join on timestamp. The v1->v2 comparison with paired CIs is reports/sensitivity_pruning_lags.json; v1 model artifacts and figures live in git history."
+      }
     }
+  },
+  "random_forest": {
+    "mae": 26.13282986111111,
+    "mape": 62.530503990107974,
+    "rmse": 42.37806687964137
+  },
+  "ridge": {
+    "mae": 48.68153816676309,
+    "mape": 101.07764136758934,
+    "rmse": 72.16679489724636
+  },
+  "seasonal_naive": {
+    "mae": 72.97619047619048,
+    "mape": 129.9389240205119,
+    "rmse": 120.02315004872622
+  },
+  "validation_tie_interval": {
+    "hi": 4.536349529819827,
+    "interpretation": "Positive favors LightGBM, negative favors the MLP. The interval prices paired validation-hour noise on the MLP-minus-LightGBM validation delta; per the stated protocol the validation leader is the served artifact (LightGBM under the committed v2 recipe — no tie).",
+    "lo": 1.7872859182492462,
+    "metric": "val_mae_mlp_minus_lightgbm",
+    "n_boot": 2000,
+    "point": 3.192027869680153,
+    "seed": 45,
+    "significant_95": true
   }
 }
