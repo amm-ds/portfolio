@@ -258,7 +258,9 @@ class TestTerminalOutcomes:
         result = run_workflow(
             "Wait for a slow provider",
             model=FunctionModel(slow_responder),
-            deadline_s=0.01,
+            # 0.25 s: the deadline must exceed graph-setup time on a loaded
+            # host; 0.01 raced setup and flaked (the responder never started).
+            deadline_s=0.25,
         )
 
         assert cancelled

@@ -181,7 +181,9 @@ class TestSuiteBudget:
                 raise
             raise AssertionError("deadline should cancel the model call")
 
-        task = evals.TASK_SUITE[0].model_copy(update={"latency_budget_s": 0.01})
+        # 0.25 s: the budget must exceed graph-setup time on a loaded host;
+        # 0.01 raced setup and flaked (the responder never started).
+        task = evals.TASK_SUITE[0].model_copy(update={"latency_budget_s": 0.25})
         records = evals.run_suite(EvalConfig(), model=FunctionModel(slow_responder), tasks=[task])
 
         assert cancelled
