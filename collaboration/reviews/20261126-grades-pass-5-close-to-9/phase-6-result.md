@@ -112,3 +112,27 @@ pytest libs/portfolio-core: 0   (131)
 pytest apps/showcase-api: 0   (103)
 ```
 
+
+## Addendum 2026-11-27 — 09 deadline tests fixed (owner-approved)
+
+Per `10-kimi-09-test-approval.md`: the two deadline tests
+(`test_workflow.py::…test_deadline_cancels_model_call_and_returns_terminal_result`,
+`test_suite_budget.py::…test_task_wall_clock_deadline_is_enforced`) had their
+budget raised from 0.01 s to 0.25 s. Chosen approach: **raise the deadline**
+(not weaken the assertion), keeping each test's full meaning — the deadline
+fires AND the in-flight model call is cancelled. The 10 ms budget raced
+graph setup on a loaded host; 0.25 s clears setup with margin while the
+30 s responder keeps the test fast.
+
+Five consecutive full-suite runs after the change (commit `d160aed4`):
+
+| run | exit | result |
+|---|---|---|
+| 1 | 0 | 107 passed |
+| 2 | 0 | 107 passed |
+| 3 | 0 | 107 passed |
+| 4 | 0 | 107 passed |
+| 5 | 0 | 107 passed |
+
+ruff check / ruff format --check on the two files: 0 / 0.
+`mypy libs projects apps`: 0 (276 files). No `src/`, copy, or metric changed.
