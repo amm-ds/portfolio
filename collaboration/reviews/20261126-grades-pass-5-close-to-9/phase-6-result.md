@@ -136,3 +136,10 @@ Five consecutive full-suite runs after the change (commit `d160aed4`):
 
 ruff check / ruff format --check on the two files: 0 / 0.
 `mypy libs projects apps`: 0 (276 files). No `src/`, copy, or metric changed.
+
+## Addendum 2026-11-27 — 08 grade record fix (owner decision)
+
+Per `09-kimi-08-grade-fix.md`: the phase-7 08 row now reads 9/9/8/9 → 8.8
+(owner decision: keep 8.8 on one host, T capped at 8). Copy gates re-run
+after the edit: `check_headline_numbers` exit 0, `check_docs` exit 0,
+`git diff --check` exit 0.

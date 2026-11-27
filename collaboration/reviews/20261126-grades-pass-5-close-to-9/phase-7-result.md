@@ -30,7 +30,7 @@ spend **$1.60 of the $5.00 cap**.
 | 05 Churn pipeline | 8.3 | **9.0** | 9/9/9/9 | E3 20-split selection uncertainty (median −$392, [−$439, −$340]); committed split inside on the favorable side; threshold-selection caveat in copy |
 | 06 Routing optimization | 8.8 | **9.0** | 9/9/9/9 | 5-vs-8 count fixed with the −0.005% tie threshold; finding titles |
 | 07 Mobility | 8.5 | **9.0** | 9/9/9/9 | E2 served-model paired CIs (day-block + zone-cluster, all four comparisons exclude zero); coverage persisted at `analysis.p90_coverage` |
-| 08 Inference serving | 7.8 | **8.8** | 9/9/6/9 | C/V fixed in pass 4; T capped at 6: E10 stopped at its re-measurement gate (+20.5%/+6.0% drift, Ollama 0.40.4→0.40.17, co-tenant load); owner accepted 8.8 on one host. The E10 harness is committed and ready for a quiet window |
+| 08 Inference serving | 7.8 | **8.8** | 9/9/8/9 | C/V fixed in pass 4; T capped at 8: E10 stopped at its re-measurement gate (+20.5%/+6.0% drift, Ollama 0.40.4→0.40.17, co-tenant load); owner accepted 8.8 on one host, 2026-11-27. The E10 harness is committed and ready for a quiet window |
 | 09 Agentic workflows | 8.3 | **9.0** | 9/9/9/9 | E7 five live repeats: pass^5 = 17/19 disclosed everywhere (per pass-3 P2.2, the honest repeat result is still T9); first-contact copy fixed |
 | 10 Uplift experimentation | 8.0 | **9.0** | 9/9/9/9 | E1 CIs persisted in `metrics.json` `analysis.ci`, bit-identical to 0c01c45d, gated from both files; qini axes fixed; 12.03 two-interval wording resolved |
 | 11 Data engineering | 8.8 | **9.0** | 9/9/9/9 | Finding titles (Phase C) |
@@ -47,7 +47,7 @@ their Limits sections.**
   −0.0625 > 0.03; cross-family κ 0.55 < 0.6, and the cross-family judge is
   weak evidence by construction). Not a downgrade: the pass-4 entry was 8.3.
 - 08 stays 8.8 — E10's stop rule fired; no quality-axis evidence was added.
-  08: axes 9/9/6/9 give 8.3 by the overall formula; the owner accepted 8.8; pending owner confirmation of which axes back 8.8.
+  08: axes 9/9/8/9 give 8.8 by the overall formula. Owner decision 2026-11-27: keep 8.8 on one host (T capped at 8).
 - 15 stays 9.0 in this table — the 9.3 browser check belongs to the deploy
   step (orchestrator), not to a commit.
 
