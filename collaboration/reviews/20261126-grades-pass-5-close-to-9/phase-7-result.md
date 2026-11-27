@@ -36,9 +36,9 @@ spend **$1.60 of the $5.00 cap**.
 | 11 Data engineering | 8.8 | **9.0** | 9/9/9/9 | Finding titles (Phase C) |
 | 12 Tabular lifecycle | 8.0 | **9.0** | 9/9/9/9 | Option B promoted: v2 fixes both disclosed defects; corrected MLP worse (27.16 vs 25.43) stated plainly; LightGBM better (23.76) and now served; v1 under `previous_runs.v1` |
 | 13 Model serving | 8.5 | **9.0** | 9/9/9/9 | Regenerated from v2 with LightGBM: reproduction diff 0.0; ONNX parity max-abs 2.65e-4 against the gate of 1e-4 rentals plus a float32 term of 1e-5 × largest prediction (limit 6.8e-3) — above the bare 1e-4, would fail without the term (owner accepted 2026-11-26); image 6.5 GB → 1.06 GB (torch dropped); p50 2.0 ms |
-| 15 Dynamic pricing RL | 9.0 | **9.0** | 9/10/9/8 | Pass-4 diagram specs + fence gate landed. Note: 9.3 pending the orchestrator's browser check of the five diagrams at deploy |
+| 15 Dynamic pricing RL | 9.0 | **9.3** | 9/10/9/9 | Pass-4 diagram specs + fence gate landed; V raised 8 → 9 on the deploy-step browser check of the five diagrams (5 of 5 rendered, 0 console errors; reported by the deploy agent, not re-run here). Owner approved 2026-11-27 |
 
-**Portfolio: 12 of 14 at 9.0; 01 and 08 at 8.8 with the caps disclosed in
+**Portfolio: 12 of 14 at 9.0 or above (15 at 9.3); 01 and 08 at 8.8 with the caps disclosed in
 their Limits sections.**
 
 ## Downgrades / non-promotions (causes)
@@ -48,8 +48,18 @@ their Limits sections.**
   weak evidence by construction). Not a downgrade: the pass-4 entry was 8.3.
 - 08 stays 8.8 — E10's stop rule fired; no quality-axis evidence was added.
   08: axes 9/9/8/9 give 8.8 by the overall formula. Owner decision 2026-11-27: keep 8.8 on one host (T capped at 8).
-- 15 stays 9.0 in this table — the 9.3 browser check belongs to the deploy
-  step (orchestrator), not to a commit.
+- 15 moves 9.0 → 9.3 (V 8 → 9, owner approved 2026-11-27). Basis: the
+  deploy-step browser check was reported passed (5 of 5 diagrams rendered,
+  0 console errors, 0 failed requests). Claude did not re-run it.
+
+## Release record
+
+- Released 2026-11-27: `main` and `wave8-articles-truthfulness-2026-11-25`
+  at `f26bf9d9` (origin matches; no force-push or amend).
+- Live `/health` sha `f26bf9d94ca8f040378c56006c96f0629a6fd071`.
+- Project 13 live: 0 "champion" matches; v2 LightGBM 23.7636 shown.
+- Project 15 diagrams: reported by the deploy agent; not verified by curl
+  (diagrams render client-side).
 
 ## Not done / follow-ups
 
